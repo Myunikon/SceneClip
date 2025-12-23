@@ -1,0 +1,6 @@
+﻿
+> v3_tauri@0.1.0 build
+> tsc && vite build
+
+src/components/layout/AppLayout.tsx(16,84): error TS2339: Property 'isDownloadingBinaries' does not exist on type 'AppState'.
+src/store/slices/createVideoSlice.ts(88,19): error TS2353: Object literal may only specify known properties, and 'showBinarySetup' does not exist in type 'AppState | Partial<AppState> | ((state: AppState) => AppState | Partial<AppState>)'.

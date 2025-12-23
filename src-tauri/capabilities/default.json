@@ -1,0 +1,169 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the main window",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "core:window:allow-destroy",
+    "core:window:allow-hide",
+    "core:window:allow-show",
+    "os:default",
+    "dialog:default",
+    "clipboard-manager:default",
+    "clipboard-manager:allow-read-text",
+    "clipboard-manager:allow-write-text",
+    "notification:default",
+    "opener:default",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        { "path": "$HOME/**" },
+        { "path": "$DOWNLOAD/**" },
+        { "path": "$APP_DATA/**" },
+        { "path": "$APPDATA/**" },
+        { "path": "C:\\Users\\ACER ID\\Downloads\\**" } 
+      ]
+    },
+    "shell:allow-open",
+    "shell:allow-kill",
+    "http:default",
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [
+        "$HOME/**",
+        "$APP_DATA/**",
+        "$APPDATA/**",
+        "$DOWNLOAD/**",
+        "C:\\Users\\ACER ID\\AppData\\Roaming\\clipscene\\binaries\\**"
+      ]
+    },
+    {
+      "identifier": "fs:allow-mkdir",
+      "allow": [
+        "$HOME/**",
+        "$APP_DATA/**",
+        "$APPDATA/**",
+        "$DOWNLOAD/**",
+        "C:\\Users\\ACER ID\\AppData\\Roaming\\clipscene\\binaries\\**"
+      ]
+    },
+    {
+      "identifier": "fs:allow-read-file",
+      "allow": [
+        "$HOME/**",
+        "$APP_DATA/**",
+        "$APPDATA/**",
+        "$DOWNLOAD/**",
+        "C:\\Users\\ACER ID\\AppData\\Roaming\\clipscene\\binaries\\**"
+      ]
+    },
+    {
+      "identifier": "fs:allow-write-file",
+      "allow": [
+        "$HOME/**",
+        "$APP_DATA/**",
+        "$APPDATA/**",
+        "$DOWNLOAD/**",
+        "C:\\Users\\ACER ID\\AppData\\Roaming\\clipscene\\binaries\\**"
+      ]
+    },
+    {
+      "identifier": "fs:allow-remove",
+      "allow": [
+        "$HOME/**",
+        "$APP_DATA/**",
+        "$APPDATA/**",
+        "$DOWNLOAD/**",
+        "C:\\Users\\ACER ID\\AppData\\Roaming\\clipscene\\binaries\\**"
+      ]
+    },
+    {
+      "identifier": "fs:allow-lstat",
+      "allow": [
+        "$APP_DATA/**",
+        "$APPDATA/**",
+        "$DOWNLOAD/**",
+        "C:\\Users\\ACER ID\\AppData\\Roaming\\clipscene\\binaries\\**"
+      ]
+    },
+    {
+      "identifier": "fs:allow-stat",
+      "allow": [
+        "$APP_DATA/**",
+        "$APPDATA/**",
+        "$DOWNLOAD/**",
+        "C:\\Users\\ACER ID\\AppData\\Roaming\\clipscene\\binaries\\**"
+      ]
+    },
+    {
+      "identifier": "fs:allow-rename",
+      "allow": [
+        "$APP_DATA/**",
+        "$APPDATA/**",
+        "$DOWNLOAD/**",
+        "C:\\Users\\ACER ID\\AppData\\Roaming\\clipscene\\binaries\\**"
+      ]
+    },
+    {
+      "identifier": "http:allow-fetch",
+      "allow": [
+        {
+          "url": "https://www.gyan.dev/**"
+        },
+        {
+          "url": "https://github.com/**"
+        },
+        {
+          "url": "https://api.github.com/**"
+        },
+        {
+          "url": "https://youtu.be/**"
+        },
+        {
+          "url": "https://youtube.com/**"
+        },
+        {
+          "url": "https://objects.githubusercontent.com/**"
+        }
+      ]
+    },
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "binaries/yt-dlp",
+          "sidecar": true,
+          "args": true
+        },
+        {
+          "name": "binaries/ffmpeg",
+          "sidecar": true,
+          "args": true
+        },
+        {
+          "name": "run-powershell",
+          "cmd": "powershell.exe",
+          "args": true
+        }
+      ]
+    },
+    {
+      "identifier": "shell:allow-spawn",
+      "allow": [
+        {
+          "name": "binaries/yt-dlp",
+          "sidecar": true,
+          "args": true
+        },
+        {
+          "name": "binaries/ffmpeg",
+          "sidecar": true,
+          "args": true
+        }
+      ]
+    }
+  ]
+}

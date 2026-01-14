@@ -12,7 +12,8 @@
     "tauri": "tauri",
     "benchmark": "node scripts/benchmark.js",
     "test": "vitest",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "setup-binaries": "node scripts/setup-binaries.js"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

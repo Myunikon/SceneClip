@@ -1,6 +1,23 @@
 import { motion } from "framer-motion";
+import { useAppStore } from "../store";
 
 export function CoolLoader({ text = "Initializing..." }: { text?: string }) {
+  const { settings } = useAppStore();
+
+  if (settings.lowPerformanceMode) {
+      return (
+          <div className="flex flex-col items-center justify-center gap-4 z-50">
+              {/* Static loader - 3 dots instead of spinning circle */}
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-primary"></div>
+                <div className="w-3 h-3 rounded-full bg-primary/60"></div>
+                <div className="w-3 h-3 rounded-full bg-primary/30"></div>
+              </div>
+              <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest">{text}</p>
+          </div>
+      )
+  }
+
   return (
     <div className="flex flex-col items-center justify-center gap-8 z-50">
       {/* Animation Container */}

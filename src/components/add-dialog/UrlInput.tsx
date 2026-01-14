@@ -24,15 +24,15 @@ export function UrlInput({ url, onChange, onPaste, t, batchMode = false, onBatch
                         type="button"
                         onClick={() => onBatchModeChange(!batchMode)}
                         className={cn(
-                            "text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1.5 transition-all font-medium border",
+                            "text-xs px-2.5 py-1 rounded-full flex items-center gap-1.5 transition-all font-medium border",
                             batchMode 
                                 ? 'bg-primary text-primary-foreground border-primary shadow-sm' 
                                 : 'bg-secondary/50 text-muted-foreground border-transparent hover:bg-secondary hover:text-foreground'
                         )}
                         title={batchMode ? "Switch to single URL" : "Switch to batch mode (multiple URLs)"}
                     >
-                        {batchMode ? <List className="w-3 h-3" /> : <Link className="w-3 h-3" />}
-                        {batchMode ? 'Batch Mode Active' : 'Single URL'}
+                        {batchMode ? <Link className="w-3 h-3" /> : <List className="w-3 h-3" />}
+                        {batchMode ? 'Switch to Single URL' : 'Switch to Batch Mode'}
                     </button>
                 )}
             </div>
@@ -42,8 +42,8 @@ export function UrlInput({ url, onChange, onPaste, t, batchMode = false, onBatch
                     <div className="relative">
                         <textarea
                             required
-                            className="w-full h-32 p-4 pl-11 rounded-xl bg-black/20 border border-white/10 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all placeholder:text-muted-foreground/30 resize-none font-mono leading-relaxed"
-                            placeholder="https://youtube.com/watch?v=...&#10;https://youtube.com/watch?v=..."
+                            className="w-full h-32 p-4 pl-11 rounded-xl bg-white dark:bg-black/20 border border-border dark:border-white/10 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all placeholder:text-muted-foreground/50 resize-none font-mono leading-relaxed shadow-sm"
+                            placeholder="https://youtube.com/watch?v=...&#10;https://tiktok.com/@user/video/...&#10;https://instagram.com/reel/..."
                             value={url}
                             onChange={e => onChange(e.target.value)}
                             autoFocus
@@ -60,8 +60,8 @@ export function UrlInput({ url, onChange, onPaste, t, batchMode = false, onBatch
                         <input 
                             required
                             type="url" 
-                            className="w-full p-4 pl-11 pr-12 rounded-xl bg-black/20 border border-white/10 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all placeholder:text-muted-foreground/30 shadow-inner"
-                            placeholder="https://youtube.com/watch?v=..."
+                            className="w-full p-4 pl-11 pr-12 rounded-xl bg-white dark:bg-black/20 border border-border dark:border-white/10 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all placeholder:text-muted-foreground/50 shadow-sm"
+                            placeholder="Paste video URL (YouTube, TikTok, Instagram, Twitter...)"
                             value={url}
                             onChange={e => onChange(e.target.value)}
                             autoFocus
@@ -89,7 +89,7 @@ export function UrlInput({ url, onChange, onPaste, t, batchMode = false, onBatch
                 )}
             </div>
             {batchMode && (
-                <p className="text-[10px] text-muted-foreground/70 pl-1">
+                <p className="text-xs text-muted-foreground/70 pl-1">
                     Paste multiple URLs, one per line.
                 </p>
             )}

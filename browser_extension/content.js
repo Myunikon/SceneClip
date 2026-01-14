@@ -1,5 +1,5 @@
 // ClipScene Content Script
-// Detects videos and injects download button
+// Detects videos and shows download button using a safe overlay strategy
 
 const DOWNLOAD_ICON = `
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -9,77 +9,133 @@ const DOWNLOAD_ICON = `
 </svg>
 `;
 
-// Helper to create the button
-function createDownloadButton(videoElement) {
-  // Check if already injected
-  if (videoElement.dataset.clipsceneInjected) return null;
-  videoElement.dataset.clipsceneInjected = "true";
+// Helper: Check if element is visible and large enough
+function isSignificantVideo(video) {
+  if (video.offsetParent === null) return false; // Hidden
+  const rect = video.getBoundingClientRect();
+  return rect.width > 200 && rect.height > 150; // Minimum size threshold
+}
+
+// Global set of tracked videos
+const trackedVideos = new Map();
+
+function updatePosition(video, btn) {
+  const rect = video.getBoundingClientRect();
+  const scrollX = window.scrollX || window.pageXOffset;
+  const scrollY = window.scrollY || window.pageYOffset;
+
+  // Position at top-right of the video
+  // Collision tweak: Move 50px down and 10px left to avoid common overlaps (Cast/Settings)
+  const top = rect.top + scrollY + 16; 
+  const right = document.documentElement.clientWidth - (rect.right + scrollX) + 16; 
+  // Note: We use 'right' for better anchoring 
+  
+  btn.style.top = `${top}px`;
+  btn.style.right = `${right}px`;
+  
+  // Visibility check
+  if (rect.width === 0 || rect.height === 0 || video.style.display === 'none') {
+    btn.style.display = 'none';
+  } else {
+    btn.style.display = 'flex';
+  }
+}
+
+function createOverlay(video) {
+  if (trackedVideos.has(video)) return;
+  if (!isSignificantVideo(video)) return;
 
   const btn = document.createElement("button");
   btn.className = "clipscene-download-btn";
   btn.innerHTML = `${DOWNLOAD_ICON} Download`;
   btn.title = "Download with ClipScene";
+  
+  // Style for body-attachment
+  Object.assign(btn.style, {
+    position: 'absolute',
+    zIndex: '2147483647',
+    // Initial hide until positioned
+    display: 'none'
+  });
 
   btn.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
     
-    // Prefer the Page URL so yt-dlp can do its magic (best for YouTube)
-    // For direct files, we might want src, but Page URL is safer for parsers.
+    // Prefer Page URL for YouTube, fallback to src for direct files
     const urlToDownload = window.location.href;
-    
     const protocolUrl = `clipscene://download?url=${encodeURIComponent(urlToDownload)}`;
+    
+    // "Blinking Tab" hack for protocol triggering (Reliable cross-browser)
     window.location.assign(protocolUrl);
   });
 
-  return btn;
-}
-
-// Wrapper to position button relative to video
-function injectOverlay(video) {
-  // Skip small videos / ads / previews (heuristic)
-  if (video.clientWidth < 100 || video.clientHeight < 100) return;
-
-  // Find a stable parent to attach to. 
-  // Ideally we want a parent that has the same dimensions as the video.
-  const parent = video.parentElement;
-  if (!parent) return;
-
-  // Add wrapper class for hover effects
-  parent.classList.add("clipscene-overlay-wrapper");
-  
-  // Make sure parent is relative so absolute button works
-  const style = window.getComputedStyle(parent);
-  if (style.position === "static") {
-    parent.style.position = "relative";
-  }
-
-  const btn = createDownloadButton(video);
-  if (btn) {
-    parent.appendChild(btn);
-  }
-}
-
-// Process existing videos
-document.querySelectorAll("video").forEach(injectOverlay);
-
-// Watch for new videos (YouTube SPA behavior)
-const observer = new MutationObserver((mutations) => {
-  for (const mutation of mutations) {
-    for (const node of mutation.addedNodes) {
-      if (node.nodeType === 1) {
-        if (node.tagName === "VIDEO") {
-          injectOverlay(node);
-        } else {
-          // Check children
-          node.querySelectorAll?.("video").forEach(injectOverlay);
+  // Hover Logic: Show button when hovering video OR button
+  const showBtn = () => btn.classList.add('visible');
+  const hideBtn = () => {
+    // Small delay to allow moving from video to button
+    setTimeout(() => {
+        if (!btn.matches(':hover') && !video.matches(':hover')) {
+            btn.classList.remove('visible');
         }
-      }
+    }, 100);
+  };
+
+  video.addEventListener('mouseenter', showBtn);
+  video.addEventListener('mouseleave', hideBtn);
+  btn.addEventListener('mouseenter', showBtn);
+  btn.addEventListener('mouseleave', hideBtn);
+
+  // Attach to body
+  document.body.appendChild(btn);
+  trackedVideos.set(video, btn);
+
+  // Initial Position
+  updatePosition(video, btn);
+}
+
+// Update Loop for positions (efficient 60fps or throttled)
+let ticking = false;
+function updateAllPositions() {
+  trackedVideos.forEach((btn, video) => {
+    // Garbage collection if video removed
+    if (!document.body.contains(video)) {
+      btn.remove();
+      trackedVideos.delete(video);
+      return;
     }
+    updatePosition(video, btn);
+  });
+  ticking = false;
+}
+
+function requestTick() {
+  if (!ticking) {
+    requestAnimationFrame(updateAllPositions);
+    ticking = true;
+  }
+}
+
+// Event Listeners for layout changes
+window.addEventListener('resize', requestTick);
+window.addEventListener('scroll', requestTick, { passive: true });
+
+// Mutation Observer to detect new videos
+const observer = new MutationObserver((mutations) => {
+  let shouldCheck = false;
+  for (const mutation of mutations) {
+    if (mutation.addedNodes.length > 0) shouldCheck = true;
+  }
+  
+  if (shouldCheck) {
+    document.querySelectorAll("video").forEach(createOverlay);
   }
 });
 
-observer.observe(document.body, {
-  childList: true,
-  subtree: true
-});
+observer.observe(document.body, { childList: true, subtree: true });
+
+// Scan initially
+document.querySelectorAll("video").forEach(createOverlay);
+
+// Periodic check for layout shifts (for SPAs that resize without window events)
+setInterval(requestTick, 1000);

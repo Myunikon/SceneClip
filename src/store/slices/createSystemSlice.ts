@@ -2,11 +2,12 @@ import { StateCreator } from 'zustand'
 // No change needed here, just context.
 import { AppState, SystemSlice } from './types'
 import { downloadDir } from '@tauri-apps/api/path'
-import { sendNotification } from '@tauri-apps/plugin-notification'
-import { toast } from 'sonner'
+import { notify } from '../../lib/notify'
 import { isTauriAvailable } from '../../lib/platform'
 import { runBinaryValidation } from '../../lib/binary-validator'
 import { getBinaryVersion } from '../../lib/updater-service'
+import { translations } from '../../lib/locales'
+import { Command } from '@tauri-apps/plugin-shell'
 
 export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (set, get) => ({
   binariesReady: false,
@@ -38,12 +39,52 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
          if (version) {
              try {
                 const { invoke } = await import('@tauri-apps/api/core')
-                const hasNvidia = await invoke('check_gpu_support').catch(() => false)
                 
-                get().addLog(`GPU Detection: ${hasNvidia ? 'NVIDIA Enc Detected' : 'CPU Only'}`)
-                set({ gpuType: hasNvidia ? 'nvidia' : 'cpu' })
+                // 1. CPU DIAGNOSTIC (First, as requested)
+                try {
+                     const cmd = Command.create('run-powershell', [
+                        '-NoProfile',
+                        '-Command',
+                        "Get-CimInstance Win32_Processor | Select-Object Name, Manufacturer, NumberOfCores, NumberOfLogicalProcessors, MaxClockSpeed, L3CacheSize | Format-List"
+                     ])
+                     const output = await cmd.execute()
+                     const cpuLog = output.stdout || output.stderr
+                     
+                     get().addLog({ message: `[CPU DETECT DIAGNOSTIC]\n${cpuLog.trim()}`, type: 'info' })
+                } catch (e) {
+                    console.warn("CPU Check failed:", e)
+                    get().addLog({ message: `[CPU Error] Failed to detect CPU details: ${e}`, type: 'error' })
+                }
+                
+                // 2. GPU DIAGNOSTIC
+                // Backend now returns GpuInfo struct
+                interface GpuInfo { vendor: string, model: string, renderer: string, debug_info: string }
+                const gpuInfo = await invoke<GpuInfo>('check_gpu_support')
+                
+                let logMsg = `GPU Detection: ${gpuInfo.vendor !== 'none' && gpuInfo.vendor !== 'cpu' ? gpuInfo.model : 'CPU Only'}`
+                if (gpuInfo.renderer.includes('Software')) {
+                    logMsg += ' (FFmpeg Hardware Encoder Unavailable)'
+                } else {
+                    logMsg += ` [Renderer: ${gpuInfo.renderer}]`
+                }
+                get().addLog({ message: logMsg, type: 'info' })
+                get().addLog({ message: `[GPU DETECT DIAGNOSTIC]\n${gpuInfo.debug_info}`, type: 'info' })
+                
+
+                
+                // Validate against known types
+                const validTypes = ['nvidia', 'amd', 'intel', 'cpu']
+                // Use OS vendor if valid, even if renderer is software (to show the name)
+                const finalType = validTypes.includes(gpuInfo.vendor) ? gpuInfo.vendor : 'cpu'
+                
+                set({ 
+                    gpuType: finalType as any,
+                    gpuModel: gpuInfo.model,
+                    gpuRenderer: gpuInfo.renderer
+                })
              } catch(e) {
-                 // Ignore invoke errors
+                 console.error("GPU details fetch failed:", e)
+                 get().addLog({ message: `[GPU Error] Backend check failed: ${e}`, type: 'error' })
              }
          }
       } catch (e) {
@@ -53,7 +94,8 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
 
   validateBinaries: async () => {
     // Delegated to service
-    await runBinaryValidation((msg) => get().addLog(msg))
+    const lang = get().settings.language || 'en'
+    await runBinaryValidation((entry) => get().addLog(entry), lang)
   },
 
   initListeners: async () => {
@@ -69,7 +111,7 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
         return
     }
     
-    console.log("Init Listeners (Tauri)")
+
     const { settings, setSetting, tasks, updateTask } = get()
     
     // CRASH RECOVERY
@@ -88,7 +130,7 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
     
     // Check for Binaries (Sidecar Check)
     try {
-        get().addLog('Checking bundled binaries...')
+        get().addLog({ message: 'Checking bundled binaries...', type: 'info' })
         
         const [ffVer, ytVer] = await Promise.all([
             getBinaryVersion('ffmpeg'),
@@ -96,89 +138,21 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
         ])
 
         if (ffVer && ytVer) {
-            get().addLog(`Binaries Found: ffmpeg=${ffVer}, yt-dlp=${ytVer}`)
+            get().addLog({ message: `Binaries Found: ffmpeg=${ffVer}, yt-dlp=${ytVer}`, type: 'success' })
             set({ binariesReady: true, ytdlpVersion: ytVer })
             get().detectHardwareAccel()
         } else {
              // If sidecar check fails, it means they are missing or permission denied
-             get().addLog(`Missing binaries! ffmpeg=${ffVer}, yt-dlp=${ytVer}`)
-             toast.error("Critical Error: Bundled binaries missing or not executable.")
+             get().addLog({ message: `Missing binaries! ffmpeg=${ffVer}, yt-dlp=${ytVer}`, type: 'error' })
+             notify.error("Critical Error: Bundled binaries missing or not executable.")
              set({ binariesReady: false })
         }
             
-        // Listen for Custom Downloader Events
-        try {
-            const { listen } = await import('@tauri-apps/api/event')
-            await listen<any>('download-progress', (event) => {
-                const { id, total_bytes, downloaded_bytes, status, speed } = event.payload
-                
-                const progress = total_bytes > 0 ? (downloaded_bytes / total_bytes) * 100 : 0
-                const speedMB = (speed / 1024 / 1024).toFixed(2) + ' MB/s'
-                
-                let eta = '...'
-                if (speed > 0 && total_bytes > downloaded_bytes) {
-                    const remaining = total_bytes - downloaded_bytes
-                    const sec = Math.ceil(remaining / speed)
-                        eta = sec > 60 
-                        ? `${Math.floor(sec / 60)}m ${sec % 60}s` 
-                        : `${sec}s`
-                } else if (status === 'completed') {
-                    eta = 'Done'
-                }
-
-                let uiStatus: any = 'downloading'
-                if (status === 'completed') uiStatus = 'completed'
-                if (status.startsWith('error')) uiStatus = 'error'
-                if (status === 'paused') uiStatus = 'paused'
-                
-                updateTask(id, {
-                    status: uiStatus,
-                    progress,
-                    speed: speedMB,
-                    eta,
-                    log: status.startsWith('error') ? status : undefined
-                })
-                
-                if (status === 'completed') {
-                        sendNotification({ title: 'Download Complete', body: id })
-                        toast.success(`Download Complete: ${id}`)
-                        
-                        // CHECK QUEUE STATUS FOR POST-ACTION
-                        setTimeout(async () => {
-                            const { tasks, settings } = get()
-                            const active = tasks.filter(t => t.status === 'downloading' || t.status === 'pending')
-                            
-                            if (active.length === 0 && settings.postDownloadAction !== 'none') {
-                                const action = settings.postDownloadAction
-                                const actionName = action === 'shutdown' ? 'Shutting down' : 'Sleeping'
-                                
-                                sendNotification({ 
-                                    title: 'Queue Finished', 
-                                    body: `${actionName} system in 5 seconds...` 
-                                })
-                                toast.info(`Queue Finished: ${actionName} in 5s...`)
-                                
-                                get().addLog(`[System] Queue finished. Executing ${action} in 5s...`)
-                                await new Promise(r => setTimeout(r, 5000))
-                                
-                                try {
-                                    const { invoke } = await import('@tauri-apps/api/core')
-                                    // NOTE: 'confirm: true' required by lib.rs security update
-                                    await invoke('perform_system_action', { action, confirm: true })
-                                } catch (e) {
-                                    console.error("System action failed:", e)
-                                }
-                            }
-                        }, 1000)
-                }
-            })
-            console.log("Custom Downloader Listener Attached")
-        } catch (e) {
-            console.error("Failed to attach listener:", e)
-        }
     } catch (e) {
         console.error("Binary check failed:", e)
-        get().addLog(`Binary check failed: ${e}`)
+        const t = translations[get().settings.language as keyof typeof translations]?.errors || translations.en.errors
+        notify.error(t.binary_validation, { description: String(e) })
+        get().addLog({ message: `Binary check failed: ${e}`, type: 'error' })
     }
   },
 
@@ -197,11 +171,13 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
               ffmpegNeedsUpdate: result.ffmpeg.hasUpdate
           })
           
-          get().addLog(`[Version Check] yt-dlp: ${result.ytdlp.current} → ${result.ytdlp.latest || 'N/A'} (Update: ${result.ytdlp.hasUpdate})`)
-          get().addLog(`[Version Check] FFmpeg: ${result.ffmpeg.current} → ${result.ffmpeg.latest || 'N/A'} (Update: ${result.ffmpeg.hasUpdate})`)
+          get().addLog({ message: `[Version Check] yt-dlp: ${result.ytdlp.current} → ${result.ytdlp.latest || 'N/A'} (Update: ${result.ytdlp.hasUpdate})`, type: 'info' })
+          get().addLog({ message: `[Version Check] FFmpeg: ${result.ffmpeg.current} → ${result.ffmpeg.latest || 'N/A'} (Update: ${result.ffmpeg.hasUpdate})`, type: 'info' })
       } catch (e) {
           console.error('Version check failed:', e)
-          get().addLog(`[Version Check] Failed: ${e}`)
+          const t = translations[get().settings.language as keyof typeof translations]?.errors || translations.en.errors
+          notify.error(t.update_check, { description: String(e) })
+          get().addLog({ message: `[Version Check] Failed: ${e}`, type: 'error' })
       } finally {
           set({ isCheckingUpdates: false })
       }

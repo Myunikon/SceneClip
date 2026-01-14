@@ -4,8 +4,9 @@ import App from "./App";
 import { AppGuard } from "./components/AppGuard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./assets/main.css";
+import "sonner/dist/styles.css";
 
-console.log("[Main] Mounting React App")
+
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <ErrorBoundary>

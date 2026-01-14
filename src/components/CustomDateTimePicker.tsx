@@ -230,7 +230,7 @@ export function CustomDateTimePicker({ value, onChange, t }: CustomDateTimePicke
                             <button 
                                 type="button"
                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMode('date'); }}
-                                className={cn("flex-1 py-1.5 text-[9px] font-bold uppercase transition-colors hover:bg-accent dark:hover:bg-white/5", mode === 'date' ? "text-orange-600 dark:text-orange-400 bg-accent dark:bg-white/5" : "text-muted-foreground")}
+                                className={cn("flex-1 py-1.5 text-xs font-bold uppercase transition-colors hover:bg-accent dark:hover:bg-white/5", mode === 'date' ? "text-orange-600 dark:text-orange-400 bg-accent dark:bg-white/5" : "text-muted-foreground")}
                             >
                                 {t?.calendar || "Calendar"}
                             </button>
@@ -238,7 +238,7 @@ export function CustomDateTimePicker({ value, onChange, t }: CustomDateTimePicke
                             <button 
                                 type="button"
                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMode('time'); }}
-                                className={cn("flex-1 py-1.5 text-[9px] font-bold uppercase transition-colors hover:bg-white/5", mode === 'time' ? "text-orange-400 bg-white/5" : "text-muted-foreground")}
+                                className={cn("flex-1 py-1.5 text-xs font-bold uppercase transition-colors hover:bg-white/5", mode === 'time' ? "text-orange-400 bg-white/5" : "text-muted-foreground")}
                             >
                                 {t?.time || "Time"}
                             </button>
@@ -259,7 +259,7 @@ export function CustomDateTimePicker({ value, onChange, t }: CustomDateTimePicke
                                 <div className="px-2 pb-2">
                                     <div className="grid grid-cols-7 mb-1">
                                         {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-                                            <div key={d} className="text-center text-[9px] uppercase font-bold text-muted-foreground">{d}</div>
+                                            <div key={d} className="text-center text-xs uppercase font-bold text-muted-foreground">{d}</div>
                                         ))}
                                     </div>
                                     <div className="grid grid-cols-7 gap-0.5">
@@ -272,7 +272,7 @@ export function CustomDateTimePicker({ value, onChange, t }: CustomDateTimePicke
                                                     disabled={disabled}
                                                     onClick={() => !disabled && handleDateSelect(d)}
                                                     className={cn(
-                                                        "h-6 w-6 rounded-full flex items-center justify-center text-[11px] transition-all",
+                                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs transition-all",
                                                         disabled 
                                                             ? "text-muted-foreground/30 cursor-not-allowed" 
                                                             : "hover:bg-accent dark:hover:bg-white/10",
@@ -290,7 +290,7 @@ export function CustomDateTimePicker({ value, onChange, t }: CustomDateTimePicke
                                     <button 
                                         type="button"
                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMode('time'); }} 
-                                        className="w-full py-1 bg-white/5 rounded hover:bg-white/10 text-[9px] font-bold text-muted-foreground hover:text-white transition-colors"
+                                        className="w-full py-1 bg-white/5 rounded hover:bg-white/10 text-xs font-bold text-muted-foreground hover:text-white transition-colors"
                                     >
                                         {t?.set_time_next || "Set Time Next"} &rarr;
                                     </button>

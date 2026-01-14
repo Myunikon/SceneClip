@@ -10,6 +10,8 @@
     "core:window:allow-destroy",
     "core:window:allow-hide",
     "core:window:allow-show",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-start-dragging",
     "os:default",
     "dialog:default",
     "clipboard-manager:default",
@@ -23,8 +25,7 @@
         { "path": "$HOME/**" },
         { "path": "$DOWNLOAD/**" },
         { "path": "$APP_DATA/**" },
-        { "path": "$APPDATA/**" },
-        { "path": "C:\\Users\\ACER ID\\Downloads\\**" } 
+        { "path": "$APPDATA/**" } 
       ]
     },
     "shell:allow-open",
@@ -36,8 +37,7 @@
         "$HOME/**",
         "$APP_DATA/**",
         "$APPDATA/**",
-        "$DOWNLOAD/**",
-        "C:\\Users\\ACER ID\\AppData\\Roaming\\clipscene\\binaries\\**"
+        "$DOWNLOAD/**"
       ]
     },
     {
@@ -46,8 +46,7 @@
         "$HOME/**",
         "$APP_DATA/**",
         "$APPDATA/**",
-        "$DOWNLOAD/**",
-        "C:\\Users\\ACER ID\\AppData\\Roaming\\clipscene\\binaries\\**"
+        "$DOWNLOAD/**"
       ]
     },
     {
@@ -56,8 +55,7 @@
         "$HOME/**",
         "$APP_DATA/**",
         "$APPDATA/**",
-        "$DOWNLOAD/**",
-        "C:\\Users\\ACER ID\\AppData\\Roaming\\clipscene\\binaries\\**"
+        "$DOWNLOAD/**"
       ]
     },
     {
@@ -66,8 +64,7 @@
         "$HOME/**",
         "$APP_DATA/**",
         "$APPDATA/**",
-        "$DOWNLOAD/**",
-        "C:\\Users\\ACER ID\\AppData\\Roaming\\clipscene\\binaries\\**"
+        "$DOWNLOAD/**"
       ]
     },
     {
@@ -76,8 +73,7 @@
         "$HOME/**",
         "$APP_DATA/**",
         "$APPDATA/**",
-        "$DOWNLOAD/**",
-        "C:\\Users\\ACER ID\\AppData\\Roaming\\clipscene\\binaries\\**"
+        "$DOWNLOAD/**"
       ]
     },
     {
@@ -85,8 +81,7 @@
       "allow": [
         "$APP_DATA/**",
         "$APPDATA/**",
-        "$DOWNLOAD/**",
-        "C:\\Users\\ACER ID\\AppData\\Roaming\\clipscene\\binaries\\**"
+        "$DOWNLOAD/**"
       ]
     },
     {
@@ -94,8 +89,7 @@
       "allow": [
         "$APP_DATA/**",
         "$APPDATA/**",
-        "$DOWNLOAD/**",
-        "C:\\Users\\ACER ID\\AppData\\Roaming\\clipscene\\binaries\\**"
+        "$DOWNLOAD/**"
       ]
     },
     {
@@ -103,8 +97,7 @@
       "allow": [
         "$APP_DATA/**",
         "$APPDATA/**",
-        "$DOWNLOAD/**",
-        "C:\\Users\\ACER ID\\AppData\\Roaming\\clipscene\\binaries\\**"
+        "$DOWNLOAD/**"
       ]
     },
     {
@@ -144,6 +137,11 @@
           "args": true
         },
         {
+          "name": "ffmpeg",
+          "sidecar": true,
+          "args": true
+        },
+        {
           "name": "run-powershell",
           "cmd": "powershell.exe",
           "args": true
@@ -161,6 +159,11 @@
         {
           "name": "binaries/ffmpeg",
           "sidecar": true,
+          "args": true
+        },
+        {
+          "name": "ffmpeg",
+          "cmd": "ffmpeg",
           "args": true
         }
       ]

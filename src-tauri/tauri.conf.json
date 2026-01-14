@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "ClipSceneYT",
+  "productName": "SceneClip",
   "version": "0.1.0",
   "identifier": "clipscene",
   "build": {
@@ -13,9 +13,11 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "ClipSceneYT",
+        "title": "SceneClip",
         "width": 800,
         "height": 600,
+        "minWidth": 360,
+        "minHeight": 500,
         "transparent": true
       }
     ],

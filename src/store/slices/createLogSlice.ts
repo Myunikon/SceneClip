@@ -3,8 +3,12 @@ import { AppState, LogSlice } from './types'
 
 export const createLogSlice: StateCreator<AppState, [], [], LogSlice> = (set) => ({
   logs: [],
-  addLog: (msg) => set(state => {
-      const newLogs = [...state.logs, { message: msg, timestamp: Date.now() }]
+  addLog: (entry) => set(state => {
+      const newLogs: import('./types').LogEntry[] = [...state.logs, { 
+          ...entry, 
+          id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36),
+          timestamp: Date.now() 
+      }]
       // Limit log buffer to 500 entries to prevent memory growth
       if (newLogs.length > 500) {
           newLogs.shift()
@@ -12,4 +16,8 @@ export const createLogSlice: StateCreator<AppState, [], [], LogSlice> = (set) =>
       return { logs: newLogs }
   }),
   clearLogs: () => set({ logs: [] }),
+  removeLog: (index) => set(state => ({
+      logs: state.logs.filter((_, i) => i !== index)
+  })),
 })
+

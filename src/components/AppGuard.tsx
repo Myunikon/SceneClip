@@ -40,7 +40,7 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
 
     if (initError || (!loading && !binariesReady)) {
         return (
-            <div className="h-screen w-screen flex flex-col items-center justify-center bg-background text-foreground space-y-6 animate-in fade-in">
+            <div className="h-screen w-full flex flex-col items-center justify-center bg-background text-foreground space-y-6 animate-in fade-in">
                 <div className="bg-destructive/10 p-4 rounded-full">
                      <AlertCircle className="w-12 h-12 text-destructive" />
                 </div>
@@ -65,7 +65,7 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
 
     if (loading) {
          return (
-            <div className="h-screen w-screen flex flex-col items-center justify-center bg-background text-foreground space-y-4">
+            <div className="h-screen w-full flex flex-col items-center justify-center bg-background text-foreground space-y-4">
                 <CoolLoader text="Initializing System..." />
             </div>
         )

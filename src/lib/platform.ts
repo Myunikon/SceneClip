@@ -18,7 +18,7 @@ export function getPlatform(): Platform {
   return cachedPlatform as Platform;
 }
 
-export function getPlatformInfo() {
+function getPlatformInfo() {
   const os = getPlatform();
   return {
     isWindows: os === "windows",

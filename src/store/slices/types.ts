@@ -5,24 +5,31 @@ export interface DownloadOptions {
   format?: string
   container?: string
   sponsorBlock?: boolean
-  turbo?: boolean
+  liveFromStart?: boolean // Download livestream from the beginning
+  splitChapters?: boolean // Split video into multiple files based on chapters
   customFilename?: string // User-defined filename (without extension)
   audioBitrate?: string // Audio quality in kbps (128, 192, 320)
   subtitles?: boolean // Download subtitles
+  subtitleFormat?: string // format to convert subtitles to (srt, ass, vtt, lrc)
   subtitleLang?: string // Subtitle language (en, id, auto, all)
   embedSubtitles?: boolean // Embed subtitles into video
-  videoCodec?: 'auto' | 'av1' | 'h264' | 'vp9' // Codec Preference
+  videoCodec?: 'auto' | 'av1' | 'h264' | 'vp9' | 'hevc' // Codec Preference
   scheduledTime?: number // Timestamp
+  audioNormalization?: boolean // Loudness Normalization
+  forceTranscode?: boolean // Force re-encoding if native codec unavailable
 }
 
 export interface DownloadTask {
   id: string
+  pid?: number // Process ID for robust killing
   url: string
   title: string
   status: 'pending' | 'fetching_info' | 'downloading' | 'completed' | 'error' | 'stopped' | 'paused' | 'scheduled'
+  statusDetail?: string // Granular status: "Merging...", "Extracting Audio...", "Fixing..."
   progress: number
   speed: string
   eta: string
+  totalSize?: string // e.g. "123.45MiB"
   range?: string
   format?: string
   log?: string
@@ -31,9 +38,14 @@ export interface DownloadTask {
   concurrentFragments?: number // Number of parallel chunks used
   scheduledTime?: number // Timestamp for scheduled start
   _options?: DownloadOptions
+  _downloadPhase?: number // Internal: Track multi-phase download progress (video=1, audio=2)
   // Developer Mode: Command details
   ytdlpCommand?: string
   ffmpegCommand?: string
+  // History Metadata
+  fileSize?: string
+  completedAt?: number
+  chapters?: any[] // Store chapters for sequential splitting
 }
 
 
@@ -52,6 +64,7 @@ export interface AppSettings {
   filenameTemplate: string
   resolution: string
   container: 'mp4' | 'mkv'
+  hardwareDecoding: 'auto' | 'cpu' | 'gpu'
 
 
   // Network
@@ -61,6 +74,8 @@ export interface AppSettings {
   proxy: string
   userAgent: string
   lowPerformanceMode: boolean
+  frontendFontSize: 'small' | 'medium' | 'large'
+
   
   // Advanced
   cookieSource: 'none' | 'browser' | 'txt'
@@ -72,9 +87,13 @@ export interface AppSettings {
   binaryPathFfmpeg: string
   embedMetadata: boolean
   embedThumbnail: boolean
+  embedChapters: boolean // Embed chapter markers in video
   postDownloadAction: 'none' | 'sleep' | 'shutdown'
   developerMode: boolean
-  disablePlayButton: boolean // Hide play button in History view
+  quickDownloadEnabled: boolean // Skip dialog for repeat downloads
+  showQuickModeButton: boolean // Show/hide Quick Mode toggle in dialog
+  lastDownloadOptions: DownloadOptions | null // Remember last used options
+  audioNormalization: boolean // Loudness Normalization (EBU R128)
 }
 
 export interface UISlice {
@@ -85,15 +104,21 @@ export interface UISlice {
 }
 
 export interface LogEntry {
-  message: string
+  id: string // Unique ID for diffing
+  message?: string // Fallback or raw message
+  translationKey?: string
+  params?: Record<string, string | number>
+  type: 'info' | 'success' | 'warning' | 'error'
   timestamp: number
 }
 
 export interface LogSlice {
   logs: LogEntry[]
-  addLog: (msg: string) => void
+  addLog: (entry: Omit<LogEntry, 'timestamp' | 'id'>) => void
   clearLogs: () => void
+  removeLog: (index: number) => void
 }
+
 
 export interface SettingsSlice {
   settings: AppSettings
@@ -105,7 +130,9 @@ export interface SystemSlice {
   binariesReady: boolean
   listenersInitialized: boolean
   hasNotifiedMissingBinaries: boolean // Track if we've alerted user
-  gpuType: 'cpu' | 'nvidia'
+  gpuType: 'cpu' | 'nvidia' | 'amd' | 'intel'
+  gpuModel?: string
+  gpuRenderer?: string
   
   // yt-dlp Version Tracking
   ytdlpVersion: string | null
@@ -128,6 +155,15 @@ export interface SystemSlice {
   validateBinaries: () => Promise<void>
 }
 
+export interface CompressionOptions {
+  preset: 'wa' | 'social' | 'archive' | 'custom'
+  crf: number
+  resolution: string
+  encoder: 'auto' | 'cpu' | 'nvenc' | 'amf' | 'qsv'
+  speedPreset: 'ultrafast' | 'veryfast' | 'medium' | 'slow' | 'veryslow'
+  audioBitrate?: string
+}
+
 export interface VideoSlice {
   tasks: DownloadTask[]
   addTask: (url: string, options: DownloadOptions) => Promise<void>
@@ -141,6 +177,8 @@ export interface VideoSlice {
   startTask: (id: string) => Promise<void>
   processQueue: () => void
   importTasks: (tasks: DownloadTask[]) => void
+  compressTask: (taskId: string, options: CompressionOptions) => Promise<void>
+  sanitizeTasks: () => void
 }
 
 export type AppState = UISlice & LogSlice & SettingsSlice & SystemSlice & VideoSlice

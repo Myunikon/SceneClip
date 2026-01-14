@@ -22,7 +22,7 @@
   gap: 6px;
 }
 
-.clipscene-overlay-wrapper:hover .clipscene-download-btn,
+.clipscene-download-btn.visible,
 .clipscene-download-btn:hover {
   opacity: 1;
 }

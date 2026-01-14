@@ -19,61 +19,186 @@ pub fn perform_system_action(action: String, confirm: bool) -> Result<(), String
     }
 }
 
+#[derive(serde::Serialize)]
+pub struct GpuInfo {
+    vendor: String,
+    model: String,
+    renderer: String,
+    debug_info: String,
+}
+
 #[command]
-pub async fn check_gpu_support(_app_handle: AppHandle) -> Result<bool, String> {
-    // SECURITY: Ignore frontend-provided path. Always use sidecar or trusted system binary.
-    // In production, you'd likely use a sidecar, but for now we'll check path or assume local.
-    // Simplifying to check system ffmpeg to avoid RCE risk of executing arbitrary passed strings.
+pub async fn check_gpu_support(app_handle: AppHandle) -> Result<GpuInfo, String> {
+    // 1. Check FFmpeg Encodes (Capability)
+    use tauri_plugin_shell::ShellExt;
 
-    // Safe way: Do not use user input for command construction
+    let mut debug_log = String::new();
+    debug_log.push_str("Using Sidecar: ffmpeg\n");
 
-    // SECURITY: Use absolute path to avoiding PATH poisoning.
-    // We assume the binary is in C:\Users\ACER ID\AppData\Roaming\clipscene\binaries\ffmpeg(.exe) as requested.
-    let ffmpeg_name = if cfg!(target_os = "windows") {
-        "ffmpeg.exe"
-    } else {
-        "ffmpeg"
-    };
+    // Default values if FFmpeg fails
+    let (mut vendor, mut renderer) = ("cpu", "Detection Failed");
 
-    // SECURITY: Use dynamic resolution via Tauri API
-    // We assume the binary is in the app data directory or resources.
-    // resolving 'binaries/ffmpeg(.exe)' inside AppConfig or generic Resource path.
-    use tauri::path::BaseDirectory;
-    let ffmpeg_path = _app_handle
-        .path()
-        .resolve(format!("binaries/{}", ffmpeg_name), BaseDirectory::AppData)
-        .map_err(|e| format!("Failed to resolve binary path: {}", e))?;
+    let cmd_setup = app_handle.shell().sidecar("ffmpeg");
 
-    if !ffmpeg_path.exists() {
-        // Fallback: Check local resources (sidecar location or similar) if not in AppData
-        return Err(format!("FFmpeg binary not found at {:?}", ffmpeg_path));
+    match cmd_setup {
+        Ok(cmd) => {
+            match cmd.args(["-encoders", "-hide_banner"]).output().await {
+                Ok(output) => {
+                    let stdout = String::from_utf8_lossy(&output.stdout);
+                    debug_log.push_str(&format!(
+                        "FFmpeg Capabilities (stdout len): {}\n",
+                        stdout.len()
+                    ));
+
+                    // Determine Vendor & Renderer (Cross-Platform)
+                    if stdout.contains("h264_nvenc") {
+                        vendor = "nvidia";
+                        renderer = "nvenc";
+                    } else if stdout.contains("h264_amf") {
+                        vendor = "amd";
+                        renderer = "amf";
+                    } else if stdout.contains("h264_qsv") {
+                        vendor = "intel";
+                        renderer = "qsv";
+                    } else if stdout.contains("h264_videotoolbox") {
+                        // macOS hardware encoding (Apple Silicon or Intel Mac with VideoToolbox)
+                        vendor = "apple";
+                        renderer = "videotoolbox";
+                    } else {
+                        vendor = "cpu";
+                        renderer = "libx264";
+                    }
+                    debug_log.push_str(&format!("FFmpeg Detected Vendor: {}\n", vendor));
+                }
+                Err(e) => {
+                    debug_log.push_str(&format!("FFmpeg Exec Failed: {}\n", e));
+                }
+            }
+        }
+        Err(e) => {
+            debug_log.push_str(&format!("Sidecar Setup Failed: {}\n", e));
+        }
     }
 
-    let mut cmd = tokio::process::Command::new(ffmpeg_path);
+    // 2. Get Actual GPU Model Name (OS Level)
+    let mut model_name = "Unknown Model".to_string();
+    let mut detected_os_vendor = "none";
 
     #[cfg(target_os = "windows")]
-    cmd.creation_flags(0x08000000);
+    {
+        // Use PowerShell to get video controller names
+        let mut cmd_wmic = tokio::process::Command::new("powershell");
+        cmd_wmic.creation_flags(0x08000000); // CREATE_NO_WINDOW
+        cmd_wmic.args(&[
+            "-NoProfile",
+            "-Command",
+            "Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name",
+        ]);
 
-    let output = cmd
-        .arg("-encoders")
-        .arg("-hide_banner")
-        .output()
-        .await
-        .map_err(|e| {
-            format!(
-                "Failed to execute FFmpeg at {:?}: {}",
-                cmd.as_std().get_program(),
-                e
-            )
-        })?;
+        match cmd_wmic.output().await {
+            Ok(wmic_output) => {
+                let wmic_stdout = String::from_utf8_lossy(&wmic_output.stdout);
+                let wmic_stderr = String::from_utf8_lossy(&wmic_output.stderr);
 
-    let stdout = String::from_utf8_lossy(&output.stdout);
+                debug_log.push_str("--- POWERSHELL OUTPUT ---\n");
+                debug_log.push_str(&wmic_stdout);
 
-    let has_nvidia = stdout.contains("h264_nvenc");
-    let has_amd = stdout.contains("h264_amf");
-    let has_intel = stdout.contains("h264_qsv");
+                if !wmic_stderr.trim().is_empty() {
+                    debug_log.push_str("--- POWERSHELL ERROR ---\n");
+                    debug_log.push_str(&wmic_stderr);
+                }
 
-    Ok(has_nvidia || has_amd || has_intel)
+                let gpu_lines: Vec<&str> = wmic_stdout
+                    .lines()
+                    .map(|l| l.trim())
+                    .filter(|l| !l.is_empty())
+                    .collect();
+
+                // Heuristic: finding a "real" GPU
+                for line in &gpu_lines {
+                    let upper = line.to_uppercase();
+                    debug_log.push_str(&format!("Checking GPU Line: {}\n", line));
+
+                    if upper.contains("NVIDIA") {
+                        model_name = line.to_string();
+                        detected_os_vendor = "nvidia";
+                        break;
+                    }
+                    if upper.contains("AMD") || upper.contains("RADEON") {
+                        model_name = line.to_string();
+                        detected_os_vendor = "amd";
+                        break;
+                    }
+                    if upper.contains("INTEL")
+                        && (upper.contains("IRIS")
+                            || upper.contains("ARC")
+                            || upper.contains("UHD"))
+                    {
+                        model_name = line.to_string();
+                        detected_os_vendor = "intel";
+                    }
+                }
+
+                if detected_os_vendor == "none" && !gpu_lines.is_empty() {
+                    // Fallback
+                    model_name = gpu_lines[0].to_string();
+                }
+            }
+            Err(e) => {
+                debug_log.push_str(&format!("PowerShell Exec Failed: {}\n", e));
+            }
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        // On macOS, if vendor is apple (VideoToolbox detected), set model appropriately
+        if vendor == "apple" {
+            model_name = "Apple Silicon / VideoToolbox".to_string();
+            detected_os_vendor = "apple";
+        } else {
+            model_name = "macOS System GPU".to_string();
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        model_name = "Linux System GPU".to_string();
+    }
+
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    {
+        model_name = "Generic System GPU".to_string();
+    }
+
+    debug_log.push_str(&format!("OS Detected Vendor: {}\n", detected_os_vendor));
+
+    let final_vendor = if vendor != "cpu" {
+        vendor
+    } else {
+        detected_os_vendor
+    };
+    let final_renderer = if vendor != "cpu" {
+        renderer
+    } else {
+        "libx264 (Software)"
+    };
+
+    if final_vendor == "none" || (final_vendor == "cpu" && model_name == "Unknown Model") {
+        model_name = "Software Rendering (CPU)".to_string();
+    }
+
+    debug_log.push_str(&format!(
+        "Final Decision: Vendor={}, Model={}, Renderer={}",
+        final_vendor, model_name, final_renderer
+    ));
+
+    Ok(GpuInfo {
+        vendor: final_vendor.to_string(),
+        model: model_name,
+        renderer: final_renderer.to_string(),
+        debug_info: debug_log,
+    })
 }
 
 #[command]

@@ -8,7 +8,7 @@ import { createSettingsSlice } from './slices/createSettingsSlice'
 import { createSystemSlice } from './slices/createSystemSlice'
 import { createVideoSlice } from './slices/createVideoSlice'
 
-export type { DownloadTask, AppState } from './slices/types'
+export type { DownloadTask, AppState, CompressionOptions } from './slices/types'
 
 export const useAppStore = create<AppState>()(
   persist(

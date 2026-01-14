@@ -79,6 +79,16 @@ pub fn run() {
                 let _ = apply_blur(&window, Some((0, 0, 0, 0)));
             }
 
+            let mut sys = sysinfo::System::new_with_specifics(
+                sysinfo::RefreshKind::nothing()
+                    .with_cpu(sysinfo::CpuRefreshKind::everything())
+                    .with_memory(sysinfo::MemoryRefreshKind::everything()),
+            );
+            // Initial refresh for baseline
+            sys.refresh_cpu_usage();
+
+            app.manage(std::sync::Mutex::new(sys));
+
             Ok(())
         })
         .run(tauri::generate_context!())

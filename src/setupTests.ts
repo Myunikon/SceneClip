@@ -60,6 +60,28 @@ vi.mock('@tauri-apps/plugin-http', () => ({
     })),
 }))
 
+// Missing Tauri Plugin Mocks (Added for completeness)
+vi.mock('@tauri-apps/plugin-clipboard-manager', () => ({
+    readText: vi.fn(() => Promise.resolve('')),
+    writeText: vi.fn(() => Promise.resolve()),
+}))
+
+vi.mock('@tauri-apps/plugin-notification', () => ({
+    sendNotification: vi.fn(() => Promise.resolve()),
+    requestPermission: vi.fn(() => Promise.resolve('granted')),
+    isPermissionGranted: vi.fn(() => Promise.resolve(true)),
+}))
+
+vi.mock('@tauri-apps/plugin-autostart', () => ({
+    enable: vi.fn(() => Promise.resolve()),
+    disable: vi.fn(() => Promise.resolve()),
+    isEnabled: vi.fn(() => Promise.resolve(false)),
+}))
+
+vi.mock('@tauri-apps/plugin-deep-link', () => ({
+    onOpenUrl: vi.fn(() => Promise.resolve(() => {})),
+}))
+
 // Mock matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

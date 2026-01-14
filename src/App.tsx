@@ -4,6 +4,7 @@ import { exists } from '@tauri-apps/plugin-fs'
 import { downloadDir } from '@tauri-apps/api/path'
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion'
 import { Toaster } from 'sonner'
+import { notify } from './lib/notify'
 import { useAppStore } from './store'
 import { translations } from './lib/locales'
 import { AddDialog } from './components/AddDialog'
@@ -38,12 +39,90 @@ function App() {
   // Online/Offline status
   const [isOffline, setIsOffline] = useState(!navigator.onLine)
 
+  /* -------------------------------------------------------------------------- */
+  /* QUICK DOWNLOAD HANDLER                                                     */
+  /* -------------------------------------------------------------------------- */
+  const handleNewTask = async (url?: string) => {
+    const { settings } = useAppStore.getState()
+    const { readText } = await import('@tauri-apps/plugin-clipboard-manager')
+    const { notify } = await import('./lib/notify')
+
+    // 1. Get Target URL (Argument or Clipboard)
+    let targetUrl = url
+    if (!targetUrl && settings.quickDownloadEnabled) {
+       try {
+           const clipText = await readText()
+           // Basic URL validation
+           if (clipText && (clipText.startsWith('http') || clipText.startsWith('www'))) {
+               targetUrl = clipText
+           }
+       } catch (e) { console.warn('Clipboard read failed', e) }
+    }
+
+    // 2. Try Quick Download
+    if (targetUrl && settings.quickDownloadEnabled) {
+        const quickUsed = await addDialogRef.current?.quickDownload(targetUrl)
+        if (quickUsed) {
+            notify.success('Quick Download Started', { 
+                description: targetUrl.substring(0, 50) + '...',
+                duration: 3000 
+            })
+            return // Done! Skip dialog
+        }
+    }
+
+    // 3. Fallback: Open Dialog
+    if (targetUrl) setClipboardUrl(targetUrl)
+    // Small timeout to ensure state updates propagate if needed
+    setTimeout(() => addDialogRef.current?.showModal(), 50)
+  }
+
+  // const addTask = (url: string, opts: any) => useAppStore.getState().addTask(url, opts)
   const addTask = (url: string, opts: any) => useAppStore.getState().addTask(url, opts)
-  const openDialog = () => addDialogRef.current?.showModal()
+
+  // Replaced simple openDialog with smart handler
+  const openDialog = () => handleNewTask()
 
   /* -------------------------------------------------------------------------- */
   /* GLOBAL EVENT LISTENERS                                                     */
   /* -------------------------------------------------------------------------- */
+  // Global Error Handler
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+        console.error("Global Error Caught:", event.error)
+        notify.error("Unexpected Error", { 
+            description: event.error?.message || "An unknown error occurred",
+            duration: 10000,
+            action: {
+                label: "Reload",
+                onClick: () => window.location.reload()
+            }
+        })
+    }
+
+    const handleRejection = (event: PromiseRejectionEvent) => {
+        console.error("Unhandled Promise Rejection:", event.reason)
+        // Extract useful message from various rejection shapes
+        let message = "Unknown error"
+        if (event.reason instanceof Error) message = event.reason.message
+        else if (typeof event.reason === 'string') message = event.reason
+        else if (event.reason?.message) message = event.reason.message
+
+        notify.error("Unhandled Async Error", { 
+            description: message,
+            duration: 10000 
+        })
+    }
+
+    window.addEventListener('error', handleError)
+    window.addEventListener('unhandledrejection', handleRejection)
+
+    return () => {
+        window.removeEventListener('error', handleError)
+        window.removeEventListener('unhandledrejection', handleRejection)
+    }
+  }, [])
+
   // Initial Theme Application
   useEffect(() => {
     const root = window.document.documentElement
@@ -60,6 +139,64 @@ function App() {
       }
   }, [settings.lowPerformanceMode])
 
+  // Window Close Handler (Scheduler Protection & Minimize logic)
+  useEffect(() => {
+      let unlisten: () => void;
+      const setupListener = async () => {
+          unlisten = await getCurrentWindow().onCloseRequested(async (event) => {
+              const state = useAppStore.getState()
+              const hasScheduled = state.tasks.some(t => t.status === 'scheduled')
+              const hasActive = state.tasks.some(t => t.status === 'downloading' || t.status === 'fetching_info')
+
+              // Priority 1: Scheduler Protection
+              if (hasScheduled) {
+                  event.preventDefault()
+                  await getCurrentWindow().minimize()
+                  notify.warning("Scheduler Active ⏳", {
+                      description: "App minimized to background to keep the timer running. Don't close it!",
+                      duration: 5000
+                  })
+                  return
+              }
+
+              // Priority 2: Active Downloads Protection (Optional, but good UX)
+              if (hasActive && state.settings.closeAction === 'minimize') {
+                   event.preventDefault()
+                   await getCurrentWindow().minimize()
+                   notify.info("Downloads Running ⬇️", {
+                       description: "App minimized to continue downloading.",
+                   })
+                   return
+              }
+
+              // Priority 3: User Preference
+              if (state.settings.closeAction === 'minimize') {
+                  event.preventDefault()
+                  await getCurrentWindow().minimize()
+              }
+          })
+      }
+      setupListener()
+      return () => { if (unlisten) unlisten() }
+  }, [])
+
+  // Font Size Application
+  useEffect(() => {
+    const root = document.documentElement
+    // Map sizes to pixel values (assuming base 16px)
+    // Small: 14px (87.5%), Medium: 16px (100%), Large: 18px (112.5%)
+    const sizeMap: Record<string, string> = {
+        small: '13px',
+        medium: '16px',
+        large: '20px'
+    }
+    
+    // Safety check for existing setting, fallback to medium
+    const targetSize = sizeMap[settings.frontendFontSize || 'medium']
+    root.style.fontSize = targetSize
+  }, [settings.frontendFontSize])
+
+
   // Scheduler Logic: Check every 10s
   useEffect(() => {
       const interval = setInterval(() => {
@@ -68,17 +205,20 @@ function App() {
           
           let needsProcessing = false
           tasks.forEach(task => {
-              if (task.status === 'scheduled' && task.scheduledTime && task.scheduledTime <= now) {
-                  // Time to run!
-                  updateTask(task.id, { status: 'pending', scheduledTime: undefined, log: 'Scheduled start triggered' })
-                  needsProcessing = true
+              if (task.status === 'scheduled' && task.scheduledTime) {
+                  const scheduledTimeMs = new Date(task.scheduledTime).getTime()
+                  if (scheduledTimeMs <= now) {
+                      // Time to run!
+                      updateTask(task.id, { status: 'pending', scheduledTime: undefined, log: 'Scheduled start triggered' })
+                      needsProcessing = true
+                  }
               }
           })
           
           if (needsProcessing) {
               processQueue()
           }
-      }, 10000) 
+      }, 30000) 
       
       return () => clearInterval(interval)
   }, [])
@@ -86,23 +226,44 @@ function App() {
   useEffect(() => {
     const handleOnline = () => setIsOffline(false)
     const handleOffline = () => setIsOffline(true)
+
     window.addEventListener('online', handleOnline)
     window.addEventListener('offline', handleOffline)
 
     // Global Key Bindings
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
         if (e.ctrlKey && e.key === 'q') return // Let toggle sidebar work (if exists)
         
         // Open Add Dialog
         if (e.ctrlKey && e.key === 'n') {
             e.preventDefault()
-            openDialog()
+            handleNewTask()
         }
 
         // Settings
         if (e.ctrlKey && e.key === ',') {
             e.preventDefault()
             setActiveTab('settings')
+        }
+
+        // History
+        if (e.ctrlKey && e.key === 'h') {
+             e.preventDefault()
+             setActiveTab('history')
+        }
+
+        // Downloads (Home)
+        if (e.ctrlKey && e.key === 'd') {
+             e.preventDefault()
+             setActiveTab('downloads')
+        }
+
+        // F11 Fullscreen
+        if (e.key === 'F11') {
+            e.preventDefault()
+            const win = getCurrentWindow()
+            const isFull = await win.isFullscreen()
+            await win.setFullscreen(!isFull)
         }
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -155,9 +316,10 @@ function App() {
   }, [])
 
   /* -------------------------------------------------------------------------- */
-  /* STARTUP VALIDATION: Check Download Path                                     */
+  /* STARTUP VALIDATION: Check Download Path & Sanitize Tasks                    */
   /* -------------------------------------------------------------------------- */
   useEffect(() => {
+    // 1. Validate Path
     const validatePath = async () => {
         const { settings, setSetting } = useAppStore.getState()
         if (settings.downloadPath) {
@@ -173,6 +335,9 @@ function App() {
         }
     }
     validatePath()
+
+    // 2. Sanitize Tasks (Reset 'stuck' active states from persistent store)
+    useAppStore.getState().sanitizeTasks()
   }, [])
 
   /* -------------------------------------------------------------------------- */
@@ -212,16 +377,14 @@ function App() {
     return () => { unlisten.then(f => f()) }
   }, [])
 
-  /* -------------------------------------------------------------------------- */
-  /* DEEP LINK LISTENER (clipscene://)                                           */
-  /* -------------------------------------------------------------------------- */
   useEffect(() => {
     let unlisten: Promise<() => void> | undefined;
 
     const setupListener = async () => {
         try {
             const { onOpenUrl } = await import('@tauri-apps/plugin-deep-link')
-            unlisten = onOpenUrl((urls) => {
+            
+            unlisten = onOpenUrl(async (urls) => {
                 console.log('Deep link received:', urls)
                 for (const url of urls) {
                     try {
@@ -230,9 +393,8 @@ function App() {
                         const targetUrl = urlObj.searchParams.get('url')
                         
                         if (targetUrl) {
-                            setClipboardUrl(targetUrl)
-                            // Small delay to ensure state updates
-                            setTimeout(() => openDialog(), 100)
+                            // Standardized handler for all tasks (Deep Link, Clipboard, Shortcuts)
+                            handleNewTask(targetUrl)
                         }
                     } catch (e) {
                         console.error('Failed to parse deep link:', e)
@@ -280,7 +442,10 @@ function App() {
   }
 
   return (
-    <MotionConfig transition={settings.lowPerformanceMode ? { duration: 0 } : undefined}>
+    <MotionConfig 
+      reducedMotion={settings.lowPerformanceMode ? "always" : "never"}
+      transition={settings.lowPerformanceMode ? { duration: 0 } : undefined}
+    >
     <AppLayout isOffline={isOffline} language={settings.language}>
         <AppHeader 
             activeTab={activeTab} 
@@ -311,7 +476,7 @@ function App() {
                             transition={{ duration: 0.25, ease: "easeOut" }}
                             className="p-6 max-w-6xl mx-auto w-full h-full flex flex-col col-start-1 row-start-1"
                         >
-                             <div className="flex-1 border rounded-xl bg-card shadow-sm overflow-hidden flex flex-col">
+                             <div className="flex-1 border rounded-xl bg-card/60 backdrop-blur-md shadow-sm overflow-hidden flex flex-col border-white/5">
                                  <DownloadsView />
                              </div>
                         </motion.div>
@@ -337,7 +502,7 @@ function App() {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 1.02 }}
                             transition={{ duration: 0.25, ease: "easeOut" }}
-                            className="w-full h-full col-start-1 row-start-1"
+                            className="w-full h-full col-start-1 row-start-1 bg-card/60 backdrop-blur-md rounded-xl border border-white/10 shadow-xl overflow-hidden"
                         >
                             <SettingsView toggleTheme={toggleTheme} setPreviewLang={setPreviewLang} />
                         </motion.div>
@@ -346,9 +511,9 @@ function App() {
              </div>
         </div>
 
-        <ClipboardListener onFound={(url) => { setClipboardUrl(url); addDialogRef.current?.showModal() }} />
+        <ClipboardListener onFound={(url) => handleNewTask(url)} />
 
-       <AddDialog ref={addDialogRef} addTask={addTask} initialUrl={clipboardUrl} previewLang={previewLang} />
+       <AddDialog ref={addDialogRef} addTask={addTask} initialUrl={clipboardUrl} previewLang={previewLang} isOffline={isOffline} />
        <GuideModal ref={guideModalRef} />
        <Onboarding />
 
@@ -360,7 +525,7 @@ function App() {
        />
        
        <StatusBar />
-       <Toaster position="bottom-right" theme={theme as any} richColors />
+       <Toaster position="bottom-right" theme={theme as any} richColors expand={true} className="!z-[9999]" toastOptions={{ style: { marginBottom: '28px', marginRight: '2px' } }} />
     </AppLayout>
     </MotionConfig>
   )

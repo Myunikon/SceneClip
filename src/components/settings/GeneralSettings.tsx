@@ -2,7 +2,6 @@ import { Moon, Sun, Globe } from 'lucide-react'
 import { Select } from '../Select'
 import { Switch } from '../Switch'
 import { AppSettings } from '../../store/slices/types'
-import { motion } from 'framer-motion'
 import { cn } from '../../lib/utils'
 import { X } from 'lucide-react'
 import { enable, disable } from '@tauri-apps/plugin-autostart'
@@ -57,7 +56,20 @@ export function GeneralSettings({ settings, setSetting, toggleTheme, t }: Genera
                             </button>
                         </div>
                     </div>
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold uppercase text-muted-foreground">{t.settings.general.font_size}</label>
+                        <Select 
+                            value={settings.frontendFontSize || 'medium'}
+                            onChange={(val) => setSetting('frontendFontSize', val)}
+                            options={[
+                                { value: "small", label: t.settings.general.font_small },
+                                { value: "medium", label: t.settings.general.font_medium },
+                                { value: "large", label: t.settings.general.font_large }
+                            ]}
+                        />
+                    </div>
                 </div>
+
                 <div className="pt-2 border-t border-border/50">
                     <label className="flex items-center justify-between cursor-pointer p-2 hover:bg-secondary/30 rounded-lg transition-colors">
                         <div className="flex flex-col">
@@ -92,10 +104,10 @@ export function GeneralSettings({ settings, setSetting, toggleTheme, t }: Genera
                             <label 
                                 key={opt.value}
                                 className={cn(
-                                    "flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition-all relative overflow-hidden group",
+                                    "flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition-all",
                                     settings.closeAction === opt.value
                                         ? "bg-primary text-primary-foreground border-primary shadow-md" 
-                                        : "bg-card hover:bg-secondary/80 border-input hover:border-primary/30"
+                                        : "bg-card text-foreground hover:bg-secondary/80 border-input hover:border-primary/30"
                                 )}
                             >
                                 <input 
@@ -105,13 +117,7 @@ export function GeneralSettings({ settings, setSetting, toggleTheme, t }: Genera
                                     checked={settings.closeAction === opt.value} 
                                     onChange={() => setSetting('closeAction', opt.value)} 
                                 />
-                                {settings.closeAction === opt.value && (
-                                    <motion.div 
-                                        layoutId="closeAction"
-                                        className="absolute inset-0 bg-white/10"
-                                    />
-                                )}
-                                <div className="relative z-10 flex items-center gap-2">
+                                <div className="flex items-center gap-2">
                                     {opt.icon}
                                     <span className="font-medium text-sm">{opt.label}</span>
                                 </div>

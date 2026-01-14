@@ -13,13 +13,16 @@ interface ShortcutsPopoverProps {
 const shortcuts = [
     { keys: ['Ctrl', 'N'], action: 'new_download' },
     { keys: ['Ctrl', ','], action: 'settings' },
+    { keys: ['Ctrl', 'H'], action: 'history' },
+    { keys: ['Ctrl', 'D'], action: 'downloads' },
+    { keys: ['F11'], action: 'fullscreen' },
     { keys: ['F12'], action: 'devtools' },
     { keys: ['Esc'], action: 'close_dialog' },
 ]
 
 export function ShortcutsPopover({ isOpen, onClose }: ShortcutsPopoverProps) {
     const { settings } = useAppStore()
-    const t = translations[settings.language as keyof typeof translations]
+    const t = translations[settings.language as keyof typeof translations] as any
     const popoverRef = useRef<HTMLDivElement>(null)
 
     // Close on click outside
@@ -50,6 +53,9 @@ export function ShortcutsPopover({ isOpen, onClose }: ShortcutsPopoverProps) {
         switch (action) {
             case 'new_download': return t.downloads.new_download
             case 'settings': return t.nav.settings
+            case 'history': return t.history.title
+            case 'downloads': return t.nav.downloads
+            case 'fullscreen': return t.guide?.sections?.shortcuts_fullscreen || 'Fullscreen' // Fallback
             case 'devtools': return 'DevTools'
             case 'close_dialog': return t.dialog?.cancel || 'Close'
             default: return action
@@ -93,7 +99,7 @@ export function ShortcutsPopover({ isOpen, onClose }: ShortcutsPopoverProps) {
                                     {shortcut.keys.map((key, j) => (
                                         <kbd 
                                             key={j}
-                                            className="px-1.5 py-0.5 bg-secondary border border-border rounded text-[10px] font-mono font-medium"
+                                            className="px-1.5 py-0.5 bg-secondary border border-border rounded text-xs font-mono font-medium"
                                         >
                                             {key}
                                         </kbd>

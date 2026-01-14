@@ -85,7 +85,7 @@ export function RangeSlider({ duration, start, end, onChange, disabled }: RangeS
                     }}
                 >
                     <div className={cn(
-                        "absolute -top-8 text-[10px] font-mono font-bold bg-white text-black px-1.5 py-0.5 rounded shadow whitespace-nowrap transition-opacity",
+                        "absolute -top-8 text-xs font-mono font-bold bg-white text-black px-1.5 py-0.5 rounded shadow whitespace-nowrap transition-opacity",
                         dragging === 'start' ? "opacity-100" : "opacity-0 hover:opacity-100"
                     )}>
                         {formatTime(start)}
@@ -105,7 +105,7 @@ export function RangeSlider({ duration, start, end, onChange, disabled }: RangeS
                     }}
                 >
                     <div className={cn(
-                        "absolute -top-8 text-[10px] font-mono font-bold bg-white text-black px-1.5 py-0.5 rounded shadow whitespace-nowrap transition-opacity",
+                        "absolute -top-8 text-xs font-mono font-bold bg-white text-black px-1.5 py-0.5 rounded shadow whitespace-nowrap transition-opacity",
                         dragging === 'end' ? "opacity-100" : "opacity-0 hover:opacity-100"
                     )}>
                         {formatTime(end)}

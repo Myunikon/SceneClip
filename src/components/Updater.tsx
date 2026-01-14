@@ -13,10 +13,10 @@ export function Updater() {
     const t = translations[language as keyof typeof translations].settings.updater
 
     const StatusBadge = ({ hasUpdate, checked }: { hasUpdate: boolean, checked: boolean }) => {
-        if (!checked) return <span className="text-[10px] text-muted-foreground">{t.not_checked}</span>
+        if (!checked) return <span className="text-xs text-muted-foreground">{t.not_checked}</span>
         return hasUpdate 
-            ? <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-500 rounded font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{t.update_available}</span>
-            : <span className="text-[10px] px-1.5 py-0.5 bg-green-500/20 text-green-500 rounded font-medium flex items-center gap-1"><CheckCircle className="w-3 h-3" />{t.up_to_date}</span>
+            ? <span className="text-xs px-1.5 py-0.5 bg-amber-500/20 text-amber-500 rounded font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{t.update_available}</span>
+            : <span className="text-xs px-1.5 py-0.5 bg-green-500/20 text-green-500 rounded font-medium flex items-center gap-1"><CheckCircle className="w-3 h-3" />{t.up_to_date}</span>
     }
 
     return (
@@ -64,17 +64,20 @@ export function Updater() {
                         <StatusBadge hasUpdate={ffmpegNeedsUpdate} checked={!!ffmpegLatestVersion} />
                     </div>
                     <div className="text-xs text-muted-foreground font-mono truncate">
-                        {t.current_ver}: <span className="text-foreground text-[10px]">{ffmpegVersion || t.unknown}</span>
+                        {t.current_ver}: <span className="text-foreground text-xs">{ffmpegVersion || t.unknown}</span>
                     </div>
                     {ffmpegLatestVersion && (
-                        <div className="text-xs text-muted-foreground/70 truncate text-[10px]">
+                        <div className="text-xs text-muted-foreground/70 truncate text-xs">
                             Latest: {ffmpegLatestVersion}
                         </div>
                     )}
                 </div>
              </div>
              
-             <p className="text-[10px] text-muted-foreground/60 text-center">
+             {/* Hardware Acceleration Status - Only show if GPU is detected (Active) */}
+
+             
+             <p className="text-xs text-muted-foreground/60 text-center">
                 {t.binary_bundled}
              </p>
         </div>

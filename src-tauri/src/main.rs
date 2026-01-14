@@ -2,5 +2,5 @@
 #![cfg_attr(windows, windows_subsystem = "windows")]
 
 fn main() {
-    v3_tauri_lib::run()
+    sceneclip_lib::run()
 }

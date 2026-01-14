@@ -1,6 +1,7 @@
 import { Globe, Shield, Zap, Wifi } from 'lucide-react'
+import { Switch } from '../Switch'
 import { AppSettings } from '../../store/slices/types'
-
+import { cn } from '../../lib/utils'
 
 interface NetworkSettingsProps {
     settings: AppSettings
@@ -10,7 +11,7 @@ interface NetworkSettingsProps {
 
 export function NetworkSettings({ settings, setSetting, t }: NetworkSettingsProps) {
     return (
-        <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
+        <div className={cn("space-y-4", !settings.lowPerformanceMode && "animate-in slide-in-from-right-4 duration-300")}>
             <section className="p-5 border rounded-xl bg-card/30 space-y-4">
                 <h3 className="font-semibold text-lg flex items-center gap-2">
                     <Globe className="w-4 h-4 text-primary"/> {t.settings.network?.connection || "Connection"}
@@ -51,16 +52,32 @@ export function NetworkSettings({ settings, setSetting, t }: NetworkSettingsProp
                     />
                 </div>
 
-                <div className="space-y-2 pt-2">
-                    <label className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-2">
-                        <Globe className="w-3 h-3"/> {t.settings.network?.user_agent || t.settings?.network?.placeholders?.ua}
-                    </label>
-                    <input 
-                        className="w-full p-2 rounded-md border bg-background/50 font-mono text-xs focus:ring-1 focus:ring-primary outline-none"
-                        value={settings.userAgent}
-                        onChange={(e) => setSetting('userAgent', e.target.value)}
-                        placeholder={t.settings?.network?.placeholders?.ua}
-                    />
+                <div className="space-y-4 pt-4 border-t border-border/50">
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <label className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-2">
+                                <Globe className="w-3 h-3"/> {t.settings.network?.user_agent || "Enable Imposter Mode (User Agent)"}
+                            </label>
+                            <p className="text-[10px] text-muted-foreground/70">
+                                {t.settings.network?.ua_desc || "Masquerade as Chrome to avoid 429 errors."}
+                            </p>
+                        </div>
+                        <Switch 
+                            checked={settings.userAgent !== " "}
+                            onCheckedChange={(checked: boolean) => setSetting('userAgent', checked ? "" : " ")}
+                        />
+                    </div>
+                    
+                    {settings.userAgent !== " " && (
+                        <div className="animate-in slide-in-from-top-2 fade-in duration-200">
+                             <input 
+                                className="w-full p-2 rounded-md border bg-background/50 font-mono text-xs focus:ring-1 focus:ring-primary outline-none"
+                                value={settings.userAgent}
+                                onChange={(e) => setSetting('userAgent', e.target.value)}
+                                placeholder={t.settings?.network?.placeholders?.ua}
+                            />
+                        </div>
+                    )}
                 </div>
             </section>
 
@@ -73,7 +90,7 @@ export function NetworkSettings({ settings, setSetting, t }: NetworkSettingsProp
                     <div className="flex flex-col space-y-2">
                         <label className="text-xs font-semibold uppercase text-muted-foreground flex items-center justify-between">
                             <span className="flex items-center gap-2"><Wifi className="w-3 h-3 text-blue-400"/> {t.settings.network?.concurrent_fragments}</span>
-                            <span className="text-primary font-mono bg-primary/10 px-2 py-0.5 rounded text-[10px]">{settings.concurrentFragments || 4} chunks</span>
+                            <span className="text-primary font-mono bg-primary/10 px-2 py-0.5 rounded text-xs">{settings.concurrentFragments || 4} chunks</span>
                         </label>
                         
                         <div className="bg-secondary/20 p-4 rounded-xl space-y-4 border border-border/50">
@@ -87,15 +104,15 @@ export function NetworkSettings({ settings, setSetting, t }: NetworkSettingsProp
                                 onChange={(e) => setSetting('concurrentFragments', parseInt(e.target.value))}
                             />
                             
-                            <div className="text-[10px] text-muted-foreground space-y-2 border-t border-border/50 pt-3">
+                            <div className="text-xs text-muted-foreground space-y-2 border-t border-border/50 pt-3">
                                 <p className="font-medium text-foreground/80 flex items-center gap-1">
                                     <Zap className="w-3 h-3 text-yellow-500" />
                                     {t.settings.network?.perf_tuning}
                                 </p>
                                 <ul className="list-disc pl-4 space-y-1 opacity-80">
-                                    <li><strong>{t.settings.network?.perf_safe?.split(':')[0]}:</strong> {t.settings.network?.perf_safe?.split(':')[1]}</li>
-                                    <li><strong>{t.settings.network?.perf_fast?.split(':')[0]}:</strong> {t.settings.network?.perf_fast?.split(':')[1]}</li>
-                                    <li><strong>{t.settings.network?.perf_aggressive?.split(':')[0]}:</strong> {t.settings.network?.perf_aggressive?.split(':')[1]}</li>
+                                    <li><strong>{t.settings.network?.perf_safe_title}:</strong> {t.settings.network?.perf_safe_desc}</li>
+                                    <li><strong>{t.settings.network?.perf_fast_title}:</strong> {t.settings.network?.perf_fast_desc}</li>
+                                    <li><strong>{t.settings.network?.perf_aggressive_title}:</strong> {t.settings.network?.perf_aggressive_desc}</li>
                                 </ul>
                                 <p className="text-red-400/80 italic mt-1">
                                     {t.settings.network?.perf_warning}

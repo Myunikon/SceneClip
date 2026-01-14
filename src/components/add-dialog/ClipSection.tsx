@@ -2,77 +2,65 @@ import { Scissors } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { RangeSlider } from '../RangeSlider'
 import { Switch } from '../Switch'
-import { cn } from '../../lib/utils'
-import { translations } from '../../lib/locales'
+import { cn, formatTime, parseTime } from '../../lib/utils'
+import { DialogOptions, DialogOptionSetters } from '../../types'
 
 interface ClipSectionProps {
-    isClipping: boolean
-    setIsClipping: (v: boolean) => void
     duration?: number
-    rangeStart: string
-    setRangeStart: (v: string) => void
-    rangeEnd: string
-    setRangeEnd: (v: string) => void
-    t: typeof translations['en']['dialog']
-}
-
-// Helpers
-const formatTime = (seconds: number) => {
-    const h = Math.floor(seconds / 3600)
-    const m = Math.floor((seconds % 3600) / 60)
-    const s = Math.floor(seconds % 60)
-    if (h > 0) return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
-}
-
-export const parseTime = (str: string) => {
-    if (!str) return 0
-    const parts = str.split(':').map(Number).reverse()
-    let seconds = 0
-    if (parts[0]) seconds += parts[0]
-    if (parts[1]) seconds += parts[1] * 60
-    if (parts[2]) seconds += parts[2] * 3600
-    return seconds
+    maxDuration?: number // For GIF mode - max clip length
+    t: any
+    
+    // Grouped Props
+    options: DialogOptions
+    setters: DialogOptionSetters
 }
 
 export function ClipSection({ 
-    isClipping, setIsClipping, duration, 
-    rangeStart, setRangeStart, rangeEnd, setRangeEnd, 
-    t 
+    duration, maxDuration, t,
+    options, setters
 }: ClipSectionProps) {
+    const { isClipping, rangeStart, rangeEnd, format } = options
+    const { setIsClipping, setRangeStart, setRangeEnd } = setters
+    
+    // For GIF mode (when maxDuration is set), clipping is mandatory
+    const isMandatory = !!maxDuration
+    const effectiveIsClipping = isMandatory || isClipping
+    
     return (
         <div className="space-y-3">
+        {/* Toggle - Hidden/Disabled for GIF mode since it's mandatory */}
+        {!isMandatory && (
             <div 
                 className={cn(
-                    "flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer",
-                    isClipping 
-                        ? "bg-gradient-to-br from-orange-500/20 to-amber-500/20 border-orange-500/50 shadow-lg shadow-orange-500/10" 
-                        : "bg-secondary/10 border-white/5 hover:bg-secondary/20 hover:border-white/10"
+                    "flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all min-h-[64px]",
+                    effectiveIsClipping 
+                        ? "bg-orange-500/10 border-orange-500/30" 
+                        : "bg-transparent border-white/5 hover:bg-white/5"
                 )} 
                 onClick={() => setIsClipping(!isClipping)}
             >
                 <div className="flex items-center gap-3">
                     <div className={cn(
-                        "p-2 rounded-lg",
-                        isClipping ? "bg-orange-500 text-white" : "bg-white/5 text-muted-foreground"
+                        "p-1.5 rounded-lg",
+                        effectiveIsClipping ? "bg-orange-500 text-white" : "bg-white/10 text-muted-foreground"
                     )}>
                         <Scissors className="w-4 h-4" />
                     </div>
                     <div>
-                        <div className={cn(
-                            "font-bold text-sm",
-                            isClipping ? "text-orange-200" : "text-foreground"
-                        )}>{t.trim_video}</div>
-                        <div className="text-[10px] text-muted-foreground/60 leading-tight">
-                            Cut specific portion of the video
+                        <div className="font-bold text-[0.93rem] leading-none">
+                            {format === 'audio' ? (t.trim_audio || "Trim Audio") : t.trim_video}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5 opacity-80">
+                            {t.trim_desc || "Cut specific portion of the video"}
                         </div>
                     </div>
                 </div>
-                <Switch checked={isClipping} onCheckedChange={setIsClipping} className={isClipping ? "data-[state=checked]:bg-orange-500" : ""} />
+                <Switch checked={effectiveIsClipping} onCheckedChange={setIsClipping} className={effectiveIsClipping ? "data-[state=checked]:bg-orange-500 scale-90" : "scale-90"} />
             </div>
+        )}
 
             <AnimatePresence>
-                {isClipping && (
+                {effectiveIsClipping && (
                     <motion.div 
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
@@ -93,7 +81,7 @@ export function ClipSection({
                                     />
                                 </div>
                             ) : (
-                                <div className="text-xs text-muted-foreground text-center py-2 bg-secondary/20 rounded-lg">
+                                <div className="text-xs text-muted-foreground text-center py-2 bg-muted/50 dark:bg-secondary/20 rounded-lg border border-border/50">
                                     {t.metadata_required}
                                 </div>
                             )}
@@ -103,7 +91,7 @@ export function ClipSection({
                             )}>
                                 <input 
                                     className={cn(
-                                        "w-full p-2.5 border rounded-lg bg-secondary/20 text-sm text-center font-mono focus:ring-2 outline-none transition-all",
+                                        "w-full p-2.5 border rounded-lg bg-white dark:bg-secondary/20 text-sm text-center font-mono focus:ring-2 outline-none transition-all shadow-sm",
                                         (rangeStart && rangeEnd && parseTime(rangeStart) >= parseTime(rangeEnd)) 
                                         ? "border-red-500 focus:ring-red-500/20 text-red-500 placeholder:text-red-300" 
                                         : "placeholder:text-muted-foreground/30 focus:ring-primary/10"
@@ -123,10 +111,10 @@ export function ClipSection({
                                         }
                                     }}
                                 />
-                                <span className="text-muted-foreground/50 text-xs font-bold">TO</span>
+                                <span className="text-muted-foreground/50 text-xs font-bold">{t.clip?.to || "TO"}</span>
                                 <input 
                                     className={cn(
-                                        "w-full p-2.5 border rounded-lg bg-secondary/20 text-sm text-center font-mono focus:ring-2 outline-none transition-all",
+                                        "w-full p-2.5 border rounded-lg bg-white dark:bg-secondary/20 text-sm text-center font-mono focus:ring-2 outline-none transition-all shadow-sm",
                                         (rangeStart && rangeEnd && parseTime(rangeStart) >= parseTime(rangeEnd)) 
                                         ? "border-red-500 focus:ring-red-500/20 text-red-500 placeholder:text-red-300" 
                                         : "placeholder:text-muted-foreground/30 focus:ring-primary/10"
@@ -148,8 +136,28 @@ export function ClipSection({
                                 />
                             </div>
                             {(rangeStart && rangeEnd && parseTime(rangeStart) >= parseTime(rangeEnd)) && (
-                                <p className="text-[10px] text-red-500 font-bold mt-2 text-center animate-in slide-in-from-top-1">
+                                <p className="text-xs text-red-500 font-bold mt-2 text-center animate-in slide-in-from-top-1">
                                     {t.time_error}
+                                </p>
+                            )}
+                            {/* Duration exceeded warning for GIF */}
+                            {maxDuration && rangeStart && rangeEnd && (parseTime(rangeEnd) - parseTime(rangeStart)) > maxDuration && (
+                                <p className="text-xs text-pink-600 dark:text-pink-400 font-bold mt-2 text-center animate-in slide-in-from-top-1">
+                                    ⚠️ {t.gif_maker?.too_long?.replace('{max}', String(maxDuration)).replace('{current}', String(Math.round(parseTime(rangeEnd) - parseTime(rangeStart)))) || `Clip is too long! Max ${maxDuration}s for GIF. Current: ${Math.round(parseTime(rangeEnd) - parseTime(rangeStart))}s`}
+                                </p>
+                            )}
+                            {/* Show current clip duration */}
+                            {rangeStart && rangeEnd && parseTime(rangeEnd) > parseTime(rangeStart) && (
+                                <p className={cn(
+                                    "text-xs font-medium mt-2 text-center",
+                                    maxDuration && (parseTime(rangeEnd) - parseTime(rangeStart)) > maxDuration 
+                                        ? "text-pink-600 dark:text-pink-400" 
+                                        : "text-muted-foreground"
+                                )}>
+                                    {maxDuration 
+                                        ? (t.clip?.duration_max?.replace('{current}', String(Math.round(parseTime(rangeEnd) - parseTime(rangeStart)))).replace('{max}', String(maxDuration)) || `Clip duration: ${Math.round(parseTime(rangeEnd) - parseTime(rangeStart))}s / ${maxDuration}s max`)
+                                        : (t.clip?.duration?.replace('{current}', String(Math.round(parseTime(rangeEnd) - parseTime(rangeStart)))) || `Clip duration: ${Math.round(parseTime(rangeEnd) - parseTime(rangeStart))}s`)
+                                    }
                                 </p>
                             )}
                         </div>

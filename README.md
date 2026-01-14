@@ -1,8 +1,8 @@
-# ClipSceneYT 🎬
+# SceneClip 🎬
 
-**ClipSceneYT** is a modern, high-performance video downloader and clipper built with **Tauri v2** and **React**. It leverages the power of `yt-dlp` and `ffmpeg` to provide a seamless experience for downloading full videos or extracting precise clips with correct metadata.
+**SceneClip** is a modern, high-performance video downloader and clipper built with **Tauri v2** and **React**. It leverages the power of `yt-dlp` and `ffmpeg` to provide a seamless experience for downloading full videos or extracting precise clips with correct metadata.
 
-![License](https://img.shields.io/github/license/Myunikon/YTClipScene)
+![License](https://img.shields.io/github/license/Myunikon/SceneClip)
 ![Tauri](https://img.shields.io/badge/Built_with-Tauri_v2-blue)
 ![React](https://img.shields.io/badge/Frontend-React_18-61DAFB)
 
@@ -31,7 +31,7 @@
 
 ## 📦 Installation
 
-Releases are available in the [Releases](https://github.com/Myunikon/YTClipScene/releases) page (Coming Soon).
+Releases are available in the [Releases](https://github.com/Myunikon/SceneClip/releases) page (Coming Soon).
 
 ### Building from Source
 
@@ -44,8 +44,8 @@ Releases are available in the [Releases](https://github.com/Myunikon/YTClipScene
 2.  **Clone the Repository**:
 
     ```bash
-    git clone https://github.com/Myunikon/YTClipScene.git
-    cd YTClipScene
+    git clone https://github.com/Myunikon/SceneClip.git
+    cd SceneClip
     ```
 
 3.  **Install Dependencies**:
@@ -71,7 +71,7 @@ Releases are available in the [Releases](https://github.com/Myunikon/YTClipScene
 If you've experienced issues where a 10-second clip shows up as 20 minutes in Windows Media Player (but plays fine in VLC), this app fixes it!
 
 **The Fix:**
-ClipSceneYT forces `ffmpeg` as the downloader for clips and disables `embed-metadata` and `embed-thumbnail` specifically during clipping operations. This prevents `yt-dlp` from injecting the original video's global metadata into the cut file.
+SceneClip forces `ffmpeg` as the downloader for clips and disables `embed-metadata` and `embed-thumbnail` specifically during clipping operations. This prevents `yt-dlp` from injecting the original video's global metadata into the cut file.
 
 ## 🤝 Contributing
 

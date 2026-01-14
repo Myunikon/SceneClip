@@ -58,8 +58,8 @@ export function ClipboardListener({ onFound }: ClipboardListenerProps) {
             }
         }
 
-        // Poll every 1 second
-        intervalRef.current = setInterval(checkClipboard, 1000)
+        // Poll every 3 seconds
+        intervalRef.current = setInterval(checkClipboard, 3000)
 
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current)
@@ -99,7 +99,7 @@ export function ClipboardListener({ onFound }: ClipboardListenerProps) {
                                 <h4 className="font-bold text-sm flex items-center gap-2">
                                     {t.title}
                                     <span className="flex h-2 w-2 relative">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 will-change-transform"></span>
                                         <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                                     </span>
                                 </h4>

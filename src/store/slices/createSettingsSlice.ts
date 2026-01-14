@@ -2,7 +2,7 @@ import { StateCreator } from 'zustand'
 import { AppState, SettingsSlice, AppSettings } from './types'
 
 export const DEFAULT_SETTINGS: AppSettings = {
-    theme: 'dark',
+    theme: 'light',
     language: 'en',
     launchAtStartup: false,
     startMinimized: false,
@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     filenameTemplate: '{title}.{ext}',
     resolution: 'Best',
     container: 'mp4',
+    hardwareDecoding: 'cpu',
 
     concurrentDownloads: 3,
     concurrentFragments: 4,
@@ -21,6 +22,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
     proxy: '',
     userAgent: '',
     lowPerformanceMode: false,
+    frontendFontSize: 'medium',
+
 
     cookieSource: 'none',
     browserType: 'chrome',
@@ -30,9 +33,13 @@ export const DEFAULT_SETTINGS: AppSettings = {
     binaryPathFfmpeg: '',
     embedMetadata: true,
     embedThumbnail: true,
+    embedChapters: true,
     postDownloadAction: 'none',
     developerMode: false,
-    disablePlayButton: false
+    quickDownloadEnabled: false,
+    showQuickModeButton: true,
+    lastDownloadOptions: null,
+    audioNormalization: false
 }
 
 export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> = (set) => ({
@@ -40,22 +47,8 @@ export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> 
   
   setSetting: (key, val) => {
       set(state => ({ settings: { ...state.settings, [key]: val } }))
-      // Mask sensitive values in logs
-      const sensitiveKeys = ['proxy', 'cookiePath', 'userAgent']
-      const logVal = sensitiveKeys.includes(key) ? '***REDACTED***' : val
-      console.log("Store Set:", key, logVal)
   },
   updateSettings: (newSettings) => {
       set(state => ({ settings: { ...state.settings, ...newSettings } }))
-      
-      // Data Redaction for Security: Mask sensitive fields before logging
-      const safeLog = { ...newSettings }
-      const sensitiveKeys = ['proxy', 'cookiePath', 'userAgent']
-      
-      sensitiveKeys.forEach(key => {
-          if (key in safeLog) (safeLog as any)[key] = '***REDACTED***'
-      })
-
-      console.log("Store Bulk Update:", safeLog)
   },
 })

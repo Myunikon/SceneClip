@@ -1,55 +1,60 @@
-import { useState, useEffect } from 'react'
-import { Zap, Monitor, Music, Film, Smartphone, Sparkles } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { Zap, Monitor, Music, Film, Smartphone, Sparkles, Cpu, FileVideo2, Star, TriangleAlert } from 'lucide-react'
 import { translations } from '../lib/locales'
 import { useAppStore } from '../store'
 import { cn } from '../lib/utils'
 
+import { DialogOptions, DialogOptionSetters } from '../types'
+
 interface SelectDownloadTypeProps {
-    format: string
-    setFormat: (fmt: string) => void
-    container: string
-    setContainer: (fmt: string) => void
+    options: DialogOptions
+    setters: DialogOptionSetters
     availableResolutions?: number[]
     availableAudioBitrates?: number[]
-    audioBitrate?: string
-    setAudioBitrate?: (bitrate: string) => void
-    codec?: string
-    setCodec?: (codec: string) => void
+    availableVideoCodecs?: string[]
+    availableAudioCodecs?: string[]
+    isLowPerf?: boolean
 }
 
 export function SelectDownloadType({ 
-    format, setFormat, 
-    container, setContainer, 
-    availableResolutions, 
-    availableAudioBitrates,
-    audioBitrate = '192', setAudioBitrate,
-    codec = 'auto', setCodec
+    options, setters,
+    availableResolutions, availableAudioBitrates, availableVideoCodecs, availableAudioCodecs,
+    isLowPerf = false
 }: SelectDownloadTypeProps) {
+    const { format, container, audioBitrate, audioFormat, videoCodec: codec } = options
+    const { setFormat, setContainer, setAudioBitrate, setAudioFormat, setVideoCodec: setCodec } = setters
+    
+    // Default values fallback not needed as hook provides defaults
     const { settings } = useAppStore()
     const t = translations[settings.language].dialog
 
-    const [mode, setMode] = useState<'video' | 'audio'>('video')
-    
-    // Sync mode with current format
-    useEffect(() => {
-        if (format === 'audio') setMode('audio')
-        else setMode('video')
-    }, [format]) 
-    
-    const handleTabChange = (m: 'video' | 'audio') => {
-        setMode(m)
-        if (m === 'audio') {
-            setFormat('audio') 
-        } else {
-            if (format === 'audio') setFormat('Best') 
-        }
-    }
+    //  Inferred mode for internal render logic (but now controlled by parent)
+    const mode = format === 'audio' ? 'audio' : format === 'gif' ? 'gif' : 'video'
 
+    // Use dynamic bitrates if available, otherwise static list
+    const audioFormats = (availableAudioBitrates && availableAudioBitrates.length > 0)
+        ? [
+            { value: '320', label: 'Best Available', desc: t.quality_profiles.highest_quality }, // Add Best option dynamically
+            ...availableAudioBitrates.map(rate => {
+                let desc = t.quality_profiles.standard
+                if (rate >= 256) desc = t.quality_profiles.highest_quality
+                if (rate <= 64) desc = t.quality_profiles.data_saver // Reusing data saver for low quality
+                
+                return { value: rate.toString(), label: `${rate} kbps`, desc}
+            })
+        ]
+        : [
+            { value: '320', label: 'Best (320k)', desc: t.quality_profiles.highest_quality },
+            { value: '256', label: '256 kbps', desc: t.quality_profiles.highest_quality },
+            { value: '192', label: '192 kbps', desc: t.quality_profiles.standard },
+            { value: '128', label: '128 kbps', desc: t.quality_profiles.data_saver },
+        ]
+        
     const videoFormats = (availableResolutions && availableResolutions.length > 0)
         ? [
             { value: 'Best', label: t.formats.best, icon: Sparkles, desc: t.quality_profiles.highest_quality },
-            ...availableResolutions.map(h => {
+            ...availableResolutions
+                .filter(h => h >= 144) // Filter out very low resolutions (< 144p)
+                .map(h => {
                 let label = `${h}p`
                 let icon = Smartphone
                 let desc = t.quality_profiles.standard
@@ -70,206 +75,162 @@ export function SelectDownloadType({
             { value: '480p', label: '480p', icon: Smartphone, desc: t.quality_profiles.standard },
         ]
 
-    // Use dynamic bitrates if available, otherwise static list
-    const audioFormats = (availableAudioBitrates && availableAudioBitrates.length > 0)
-        ? availableAudioBitrates.map(rate => {
-            let desc = t.quality_profiles.standard
-            if (rate >= 256) desc = t.quality_profiles.highest_quality
-            if (rate <= 64) desc = t.quality_profiles.data_saver // Reusing data saver for low quality
-            
-            return { value: rate.toString(), label: `${rate} kbps`, desc}
-        })
-        : [
-            { value: '320', label: '320 kbps', desc: t.quality_profiles.highest_quality },
-            { value: '256', label: '256 kbps', desc: t.quality_profiles.highest_quality },
-            { value: '192', label: '192 kbps', desc: t.quality_profiles.standard },
-            { value: '128', label: '128 kbps', desc: t.quality_profiles.data_saver },
-        ]
-
     return (
-        <div className="space-y-4">
-            
-            {/* Format Type Tabs */}
-            <div className="flex bg-black/20 p-1 rounded-xl border border-white/5">
-                <button
-                    type="button"
-                    onClick={() => handleTabChange('video')}
-                    className={cn(
-                        "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all relative z-10",
-                        mode === 'video' 
-                            ? "text-primary-foreground shadow-lg shadow-primary/20" 
-                            : "text-muted-foreground hover:text-foreground"
-                    )}
-                >
-                    {mode === 'video' && (
-                        <motion.div 
-                            layoutId="active-tab"
-                            className="absolute inset-0 bg-primary rounded-lg -z-10"
-                            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                        />
-                    )}
-                    <Monitor className="w-4 h-4" /> Video
-                </button>
-                <button
-                    type="button"
-                    onClick={() => handleTabChange('audio')}
-                    className={cn(
-                        "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all relative z-10",
-                        mode === 'audio' 
-                            ? "text-white shadow-lg shadow-blue-600/20" 
-                            : "text-muted-foreground hover:text-foreground"
-                    )}
-                >
-                     {mode === 'audio' && (
-                        <motion.div 
-                            layoutId="active-tab"
-                            className="absolute inset-0 bg-blue-600 rounded-lg -z-10"
-                            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                        />
-                    )}
-                    <Music className="w-4 h-4" /> Audio
-                </button>
-            </div>
-
-            <AnimatePresence mode="wait">
-                {mode === 'video' ? (
-                    <motion.div
-                        key="video"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        transition={{ duration: 0.2, ease: "easeInOut" }}
-                        className="space-y-4"
-                    >
-                        <div className="flex items-center justify-between">
-                            <label className="text-sm font-bold uppercase text-muted-foreground tracking-wider">{t.labels.quality_profile}</label>
-                            
-                            {/* Container Selector - Now Inline */}
-                            <div className="flex items-center gap-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
-                                <span className="text-xs uppercase font-bold text-muted-foreground pl-2 pr-1">{t.labels.fmt}</span>
-                                {['mp4', 'mkv', 'webm'].map(c => (
-                                    <button
-                                        key={c}
-                                        type="button"
-                                        onClick={() => setContainer(c)}
-                                        className={cn(
-                                            "px-3 py-1.5 rounded-md text-xs font-bold uppercase transition-colors",
-                                            container === c 
-                                                ? "bg-white/10 text-white shadow-sm" 
-                                                : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-                                        )}
-                                    >
-                                        {c}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                            {videoFormats.map((f) => {
-                                const Icon = f.icon
-                                const isSelected = format === f.value
-                                
-                                return (
-                                    <button
-                                        key={f.value}
-                                        type="button"
-                                        onClick={() => setFormat(f.value)}
-                                        className={cn(
-                                            "relative group flex flex-col items-start p-3 rounded-xl border text-left transition-all duration-200 h-[84px]",
-                                            isSelected 
-                                                ? "bg-white/5 border-primary/50 ring-1 ring-primary/50" 
-                                                : "bg-transparent border-white/10 hover:bg-white/5 hover:scale-[1.02]"
-                                        )}
-                                    >
-                                        {isSelected && (
-                                            <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary shadow-sm shadow-primary" />
-                                        )}
-                                        
-                                        <Icon className={cn("w-5 h-5 mb-auto", isSelected ? "text-primary" : "text-muted-foreground")} />
-                                        
-                                        <div>
-                                            <div className={cn("font-bold text-sm", isSelected ? "text-foreground" : "text-muted-foreground group-hover:text-foreground")}>
-                                                {f.label}
-                                            </div>
-                                            <div className="text-[10px] text-muted-foreground/60 font-medium">
-                                                {f.desc}
-                                            </div>
-                                        </div>
-                                    </button>
-                                )
-                            })}
-                        </div>
-                        
-                        {/* Codec Selector */}
-                        <div className="pt-2">
-                            <label className="text-sm font-bold uppercase text-muted-foreground tracking-wider mb-2 block">{(t.labels as any).codec || "Codec Preference"}</label>
-                            <div className="grid grid-cols-3 gap-2">
-                                {[
-                                    { id: 'auto', label: 'Auto (Best)', desc: 'Highest Quality' },
-                                    { id: 'h264', label: 'H.264', desc: 'Max Compatibility' },
-                                    { id: 'av1', label: 'AV1 / VP9', desc: 'Max Efficiency' }
-                                ].map(c => (
-                                    <button
-                                        key={c.id}
-                                        type="button"
-                                        onClick={() => setCodec && setCodec(c.id)}
-                                        className={cn(
-                                            "flex flex-col items-center p-2 rounded-lg border transition-all duration-200 text-center",
-                                            codec === c.id
-                                                ? "bg-white/5 border-primary/50 ring-1 ring-primary/50 text-foreground" 
-                                                : "bg-transparent border-white/10 hover:bg-white/5 text-muted-foreground"
-                                        )}
-                                    >
-                                        <div className="font-bold text-xs mb-0.5">{c.label}</div>
-                                        <div className="text-[9px] opacity-70">{c.desc}</div>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                    </motion.div>
-                ) : (
-                    <motion.div
-                        key="audio"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.2, ease: "easeInOut" }}
-                    >
-                        <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/5 border border-blue-500/20 mb-4 flex items-start gap-4">
-                            <div className="p-2 bg-blue-500 rounded-lg shadow-lg shadow-blue-500/20 shrink-0">
-                                <Zap className="w-6 h-6 text-white" />
+        <div className="space-y-4 p-1">
+            {mode === 'gif' ? (
+                <div className="space-y-4">
+                    {/* 1. Resolution Card */}
+                    <div className="p-3 rounded-xl border bg-transparent border-white/10 space-y-3">
+                         <div className="flex items-center gap-3">
+                            <div className="p-1.5 rounded-lg bg-white/10 text-muted-foreground shrink-0">
+                                <Monitor className="w-4 h-4" />
                             </div>
                             <div>
-                                <div className="font-bold text-base text-blue-200 mb-1">{t.audio_extraction.title}</div>
-                                <div className="text-xs text-muted-foreground/80 leading-relaxed">
-                                    {availableAudioBitrates && availableAudioBitrates.length > 0 
-                                        ? t.audio_extraction.desc_auto 
-                                        : t.audio_extraction.desc_manual}
+                                <div className="font-bold text-[0.93rem] leading-none">{t.gif_options?.res_title}</div>
+                                <div className="text-xs text-muted-foreground mt-0.5 opacity-80">
+                                    {options.gifScale === 0 ? t.gif_options?.res_desc :  // Hack: 0 is original
+                                     options.gifScale === 480 ? t.gif_options?.res_desc :
+                                     t.gif_options?.res_desc}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                            {[
+                                { val: 0, label: t.gif_options?.res_original },
+                                { val: 480, label: t.gif_options?.res_social },
+                                { val: 320, label: t.gif_options?.res_sticker },
+                            ].map(s => (
+                                <button
+                                    key={s.val}
+                                    type="button"
+                                    onClick={() => setters.setGifScale(s.val)}
+                                    className={cn(
+                                        "flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all border",
+                                        options.gifScale === s.val
+                                            ? isLowPerf ? "bg-blue-600 text-white" : "bg-primary/10 dark:bg-white/10 border-primary/30 dark:border-white/20 text-foreground shadow-sm"
+                                            : "bg-black/20 border-white/5 text-muted-foreground hover:bg-white/5"
+                                    )}
+                                >
+                                    {s.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 2. FPS Card */}
+                    <div className="p-3 rounded-xl border bg-transparent border-white/10 space-y-3">
+                         <div className="flex items-center gap-3">
+                            <div className="p-1.5 rounded-lg bg-white/10 text-muted-foreground shrink-0">
+                                <Film className="w-4 h-4" />
+                            </div>
+                            <div>
+                                <div className="font-bold text-[0.93rem] leading-none">{t.gif_options?.fps_title}</div>
+                                <div className="text-xs text-muted-foreground mt-0.5 opacity-80">
+                                    {t.gif_options?.fps_desc}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                            {[
+                                { val: 30, label: t.gif_options?.fps_smooth },
+                                { val: 15, label: t.gif_options?.fps_standard },
+                                { val: 10, label: t.gif_options?.fps_lite },
+                            ].map(f => (
+                                <button
+                                    key={f.val}
+                                    type="button"
+                                    onClick={() => setters.setGifFps(f.val)}
+                                    className={cn(
+                                        "flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all border",
+                                        options.gifFps === f.val
+                                            ? isLowPerf ? "bg-blue-600 text-white" : "bg-primary/10 dark:bg-white/10 border-primary/30 dark:border-white/20 text-foreground shadow-sm"
+                                            : "bg-black/20 border-white/5 text-muted-foreground hover:bg-white/5"
+                                    )}
+                                >
+                                    {f.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 3. Quality Card */}
+                    <div className="p-3 rounded-xl border bg-transparent border-white/10 space-y-3">
+                         <div className="flex items-center gap-3">
+                            <div className="p-1.5 rounded-lg bg-white/10 text-muted-foreground shrink-0">
+                                <Sparkles className="w-4 h-4" />
+                            </div>
+                            <div>
+                                <div className="font-bold text-[0.93rem] leading-none">{t.gif_options?.quality_title}</div>
+                                <div className="text-xs text-muted-foreground mt-0.5 opacity-80">
+                                    {options.gifQuality === 'high' ? "Uses Palette Generation (Sharp colors)" : "Standard dithering (Fast render)"}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                             {[
+                                { id: 'high', label: t.gif_options?.quality_high, recommended: true },
+                                { id: 'fast', label: t.gif_options?.quality_fast, recommended: false },
+                            ].map(q => (
+                                <button
+                                    key={q.id}
+                                    type="button"
+                                    onClick={() => setters.setGifQuality(q.id as any)}
+                                    className={cn(
+                                        "relative flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all border",
+                                        options.gifQuality === q.id
+                                            ? isLowPerf ? "bg-blue-600 text-white" : "bg-primary/10 dark:bg-white/10 border-primary/30 dark:border-white/20 text-foreground shadow-sm"
+                                            : "bg-black/20 border-white/5 text-muted-foreground hover:bg-white/5"
+                                    )}
+                                >
+                                    {q.recommended && (
+                                         <div className="absolute -top-1 -right-1">
+                                            <Star className="w-2.5 h-2.5 text-yellow-500 fill-yellow-500" />
+                                         </div>
+                                    )}
+                                    {q.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            ) : mode === 'audio' ? (
+                <div className="space-y-4">
+                    {/* 1. Audio Quality Card (Top) */}
+                    <div className="p-3 rounded-xl border bg-transparent border-white/10 space-y-3 mt-1">
+                        <div className="flex items-center gap-3">
+                            <div className="p-1.5 rounded-lg bg-white/10 text-muted-foreground shrink-0">
+                                <Zap className="w-4 h-4" />
+                            </div>
+                            <div>
+                                <div className="font-bold text-[0.93rem] leading-none">{t.audio_extraction.title}</div>
+                                <div className="text-xs text-muted-foreground mt-0.5 opacity-80">
+                                    Higher bitrate means clearer sound details.
                                 </div>
                             </div>
                         </div>
 
-                        <label className="text-sm font-bold uppercase text-muted-foreground tracking-wider mb-2 block">{t.labels.bitrate_quality}</label>
                         <div className="grid grid-cols-2 gap-2">
                             {audioFormats.map((f) => {
                                 const isSelected = audioBitrate === f.value
+                                const isBest = f.value === '320' || f.label.includes('Best')
                                 return (
                                     <button
                                         key={f.value}
                                         type="button"
                                         onClick={() => setAudioBitrate && setAudioBitrate(f.value)}
                                         className={cn(
-                                            "relative flex items-center p-3 rounded-xl border text-left transition-all duration-200 gap-3",
+                                            "relative flex items-center p-3 rounded-xl border text-left gap-3 transition-all",
                                             isSelected 
-                                                ? "bg-white/5 border-blue-500/50 ring-1 ring-blue-500/50" 
-                                                : "bg-transparent border-white/10 hover:bg-white/5"
+                                                ? isLowPerf ? "bg-blue-50 dark:bg-blue-950 border-blue-500" : "bg-primary/10 dark:bg-white/5 border-primary/50 dark:border-white/20 ring-1 ring-primary/30 dark:ring-white/20"
+                                                : isLowPerf ? "bg-card border-border hover:bg-muted" : "bg-black/20 border-white/5 hover:bg-white/5"
                                         )}
                                     >
                                         <div className={cn(
-                                            "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
-                                            isSelected ? "bg-blue-500/20 text-blue-400" : "bg-white/5 text-muted-foreground"
+                                            "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                                            isSelected ? "bg-primary/20 text-primary dark:text-white" : isLowPerf ? "bg-muted text-muted-foreground" : "bg-white/5 text-muted-foreground"
                                         )}>
                                             <Music className="w-4 h-4" />
                                         </div>
@@ -278,17 +239,210 @@ export function SelectDownloadType({
                                             <div className={cn("font-bold text-sm", isSelected ? "text-foreground" : "text-muted-foreground")}>
                                                 {f.label}
                                             </div>
-                                            <div className="text-[10px] text-muted-foreground/60 font-medium">
+                                            <div className="text-xs text-muted-foreground font-medium opacity-80">
                                                 {f.desc}
                                             </div>
                                         </div>
+                                        {isBest && (
+                                             <div className="absolute top-2 right-2">
+                                                <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                                             </div>
+                                        )}
                                     </button>
                                 )
                             })}
                         </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    </div>
+
+                    {/* 2. Audio Format Card */}
+                    <div className="p-3 rounded-xl border bg-transparent border-white/10 space-y-3 mt-1">
+                         <div className="flex items-center gap-3">
+                            <div className="p-1.5 rounded-lg bg-white/10 text-muted-foreground shrink-0">
+                                <Music className="w-4 h-4" />
+                            </div>
+                            <div>
+                                <div className="font-bold text-[0.93rem] leading-none">Audio Format</div>
+                                <div className="text-xs text-muted-foreground mt-0.5 opacity-80">
+                                    {audioFormat === 'mp3' ? "Universal (Music/Podcast)" :
+                                     audioFormat === 'm4a' ? "Efficient (Apple/Mobile)" :
+                                     audioFormat === 'flac' ? "Lossless (Audiophile)" :
+                                     audioFormat === 'wav' ? "Uncompressed (Editing)" :
+                                     "Select Format"}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className={cn("flex items-center gap-1.5 overflow-x-auto pb-1")}>
+                            {['mp3', 'm4a', 'flac', 'wav'].map(c => (
+                                <button
+                                    key={c}
+                                    type="button"
+                                    onClick={() => setAudioFormat && setAudioFormat(c)}
+                                    className={cn(
+                                        "flex-1 px-3 py-2 rounded-lg text-xs font-bold uppercase transition-all border",
+                                        audioFormat === c 
+                                            ? isLowPerf ? "bg-blue-600 text-white" : "bg-primary/10 dark:bg-white/10 border-primary/30 dark:border-white/20 text-foreground shadow-sm"
+                                            : "bg-black/20 border-white/5 text-muted-foreground hover:bg-white/5"
+                                    )}
+                                >
+                                    {c}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {/* 1. Video Quality Card (Moved to Top) */}
+                    <div className="p-3 rounded-xl border bg-transparent border-white/10 space-y-3 mt-1">
+                        <div className="flex items-center gap-3">
+                            <div className="p-1.5 rounded-lg bg-white/10 text-muted-foreground shrink-0">
+                                <Sparkles className="w-4 h-4" />
+                            </div>
+                            <div>
+                                <div className="font-bold text-[0.93rem] leading-none">{t.video_quality?.title || "Video Quality"}</div>
+                                <div className="text-xs text-muted-foreground mt-0.5 opacity-80">
+                                    {t.video_quality?.desc || "Higher quality means larger file size."}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {videoFormats.map((f) => {
+                                const isSelected = format === f.value
+                                
+                                return (
+                                    <button
+                                        key={f.value}
+                                        type="button"
+                                        onClick={() => setFormat(f.value)}
+                                        className={cn(
+                                            "relative flex items-center justify-center p-2 rounded-xl border text-center h-[50px] transition-all",
+                                            isSelected 
+                                                ? isLowPerf ? "bg-primary/10 border-primary" : "bg-primary/10 dark:bg-white/5 border-primary/50 dark:border-white/20 text-foreground shadow-sm ring-1 ring-primary/30 dark:ring-white/20"
+                                                : isLowPerf ? "bg-card border-border hover:bg-muted" : "bg-black/20 border-white/5 hover:bg-white/5"
+                                        )}
+                                    >
+                                        {isSelected && (
+                                            <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary dark:bg-white shadow-sm" />
+                                        )}
+                                        
+                                        <div className={cn("font-bold text-xs leading-tight", isSelected ? "text-foreground" : "text-muted-foreground")}>
+                                            {f.label}
+                                        </div>
+                                        {f.value === 'Best' && (
+                                             <div className="absolute -top-1 -right-1">
+                                                <Star className="w-2.5 h-2.5 text-yellow-500 fill-yellow-500" />
+                                             </div>
+                                        )}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </div>
+
+                    {/* 2. Output Format Card */}
+                    <div className="p-3 rounded-xl border bg-transparent border-white/10 space-y-3 mt-1">
+                        <div className="flex items-center gap-3">
+                            <div className="p-1.5 rounded-lg bg-white/10 text-muted-foreground shrink-0">
+                                <FileVideo2 className="w-4 h-4" />
+                            </div>
+                            <div>
+                                <div className="font-bold text-[0.93rem] leading-none">{t.output_format?.title || "Output Format"}</div>
+                                <div className="text-xs text-muted-foreground mt-0.5 opacity-80">
+                                    {container === 'mp4' ? t.output_format?.desc_mp4 :
+                                     container === 'mkv' ? t.output_format?.desc_mkv :
+                                     container === 'webm' ? t.output_format?.desc_webm :
+                                     container === 'mov' ? t.output_format?.desc_mov :
+                                     t.output_format?.desc_default}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                            {['mp4', 'mkv', 'webm', 'mov'].map(c => (
+                                <button
+                                    key={c}
+                                    type="button"
+                                    onClick={() => setContainer(c)}
+                                    className={cn(
+                                        "flex-1 px-3 py-2 rounded-lg text-xs font-bold uppercase transition-all border",
+                                        container === c 
+                                            ? "bg-primary/10 dark:bg-white/10 border-primary/30 dark:border-white/20 text-foreground shadow-sm"
+                                            : "bg-black/20 border-white/5 text-muted-foreground hover:bg-white/5"
+                                    )}
+                                >
+                                    {c}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {/* 3. Codec Card */}
+                    <div className="p-3 rounded-xl border bg-transparent border-white/10 space-y-3 mt-1">
+                        <div className="flex items-center gap-3">
+                            <div className="p-1.5 rounded-lg bg-white/10 text-muted-foreground shrink-0">
+                                <Cpu className="w-4 h-4" />
+                            </div>
+                            <div>
+                                <div className="font-bold text-[0.93rem] leading-none">{t.codec?.label || "Codec"}</div>
+                                <div className="text-xs text-muted-foreground mt-0.5 opacity-80">
+                                    {codec === 'h264' ? t.codec?.h264 :
+                                     codec === 'hevc' ? t.codec?.hevc :
+                                     codec === 'vp9' ? t.codec?.vp9 :
+                                     codec === 'av1' ? t.codec?.av1 :
+                                     t.codec?.auto_desc}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Re-encoding Warning */}
+                        {codec !== 'auto' && availableVideoCodecs && !availableVideoCodecs.includes(codec) && (
+                            <div className="flex items-start gap-2 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-600 dark:text-yellow-400 animate-in fade-in slide-in-from-top-1">
+                                <TriangleAlert className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                                <div className="text-xs leading-tight font-medium">
+                                    <span className="font-bold">⚠️ {t.codec?.warning_title}:</span> {t.codec?.warning_desc?.replace('{codec}', codec.toUpperCase())}
+                                </div>
+                            </div>
+                        )}
+                        
+                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                            {[
+                                { id: 'auto', label: 'Auto' },
+                                { id: 'h264', label: 'H.264' },
+                                { id: 'hevc', label: 'H.265' },
+                                { id: 'vp9', label: 'VP9' },
+                                { id: 'av1', label: 'AV1' }
+                            ].map(c => (
+                                <button
+                                    key={c.id}
+                                    type="button"
+                                    onClick={() => setCodec && setCodec(c.id)}
+                                    className={cn(
+                                        "relative flex-1 px-3 py-2 rounded-lg text-[0.65rem] font-bold uppercase transition-all border",
+                                        codec === c.id
+                                            ? "bg-primary/10 dark:bg-white/10 border-primary/30 dark:border-white/20 text-foreground shadow-sm"
+                                            : "bg-black/20 border-white/5 text-muted-foreground hover:bg-white/5"
+                                    )}
+                                >
+                                    {c.id === 'auto' && (
+                                         <div className="absolute -top-1 -right-1">
+                                            <Star className="w-2.5 h-2.5 text-yellow-500 fill-yellow-500" />
+                                         </div>
+                                    )}
+                                    {c.label}
+                                </button>
+                            ))}
+                        </div>
+                        {/* Logic Constraint Warning */}
+                        {container === 'mov' && ['av1', 'vp9', 'hevc'].includes(codec) && (
+                            <div className="flex items-start gap-2 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-600 dark:text-yellow-400">
+                                <TriangleAlert className="w-3.5 h-3.5 mt-0.5" />
+                                <div className="text-[0.65rem] leading-tight font-medium" dangerouslySetInnerHTML={{ __html: t.logic_warnings?.mov_reencode.replace('{codec}', codec.toUpperCase()) || "" }} />
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

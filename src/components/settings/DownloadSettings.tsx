@@ -1,8 +1,9 @@
-import { Settings, Plus } from 'lucide-react'
+import { Plus, Database, Zap, Music } from 'lucide-react'
 import { Select } from '../Select'
 import { Switch } from '../Switch'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { AppSettings } from '../../store/slices/types'
+import { cn } from '../../lib/utils'
 
 interface DownloadSettingsProps {
     settings: AppSettings
@@ -12,10 +13,28 @@ interface DownloadSettingsProps {
 
 export function DownloadSettings({ settings, setSetting, t }: DownloadSettingsProps) {
     return (
-        <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
-            <section className="p-5 border rounded-xl bg-card/30 space-y-4">
-                <h3 className="font-semibold text-lg flex items-center gap-2">
-                    <Settings className="w-4 h-4 text-primary"/> {t.settings.downloads.storage}
+        <div className={cn("space-y-4", !settings.lowPerformanceMode && "animate-in slide-in-from-right-4 duration-300")}>
+            <section className="p-5 border border-border rounded-xl bg-white/50 dark:bg-card/30 space-y-4">
+                <h3 className="font-semibold text-lg flex items-center gap-2 text-foreground">
+                    <Zap className="w-4 h-4 text-amber-500"/> {t.settings.downloads.behavior}
+                </h3>
+                <label className="flex items-center justify-between cursor-pointer p-2 hover:bg-muted/50 dark:hover:bg-secondary/30 rounded-lg transition-colors">
+                    <div>
+                        <div className="font-medium text-foreground">{t.settings.downloads.quick_mode}</div>
+                        <div className="text-xs text-muted-foreground">
+                            {t.settings.downloads.quick_mode_desc}
+                        </div>
+                    </div>
+                    <Switch 
+                        checked={settings.quickDownloadEnabled} 
+                        onCheckedChange={val => setSetting('quickDownloadEnabled', val)} 
+                    />
+                </label>
+            </section>
+
+            <section className="p-5 border border-border rounded-xl bg-white/50 dark:bg-card/30 space-y-4">
+                <h3 className="font-semibold text-lg flex items-center gap-2 text-foreground">
+                    <Database className="w-4 h-4 text-primary"/> {t.settings.downloads.storage}
                 </h3>
                 <div className="space-y-2">
                     <label className="text-xs font-semibold uppercase text-muted-foreground">{t.settings.downloads.path}</label>
@@ -42,14 +61,32 @@ export function DownloadSettings({ settings, setSetting, t }: DownloadSettingsPr
                         <span>{t.settings.downloads.embed_thumbnail}</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer p-2 hover:bg-secondary/30 rounded-lg transition-colors">
-                        <Switch checked={settings.disablePlayButton} onCheckedChange={val => setSetting('disablePlayButton', val)} />
-                        <span>{t.settings.downloads.disable_play_button || 'Disable Play Button'}</span>
+                        <Switch checked={settings.embedChapters} onCheckedChange={val => setSetting('embedChapters', val)} />
+                        <span>{t.settings.downloads.embed_chapters || "Embed Chapters"}</span>
                     </label>
                 </div>
             </section>
             
-            <section className="p-5 border rounded-xl bg-card/30 space-y-4">
-                <h3 className="font-semibold text-lg flex items-center gap-2">
+            <section className="p-5 border border-border rounded-xl bg-white/50 dark:bg-card/30 space-y-4">
+                 <h3 className="font-semibold text-lg flex items-center gap-2 text-foreground">
+                    <Music className="w-4 h-4 text-purple-500"/> Audio Enhancements
+                </h3>
+                <label className="flex items-center justify-between cursor-pointer p-2 hover:bg-muted/50 dark:hover:bg-secondary/30 rounded-lg transition-colors">
+                    <div>
+                        <div className="font-medium text-foreground">Audio Normalization (Loudness)</div>
+                        <div className="text-xs text-muted-foreground">
+                            Normalize volume to broadcast standard (EBU R128). Great for music playlists.
+                        </div>
+                    </div>
+                    <Switch 
+                        checked={settings.audioNormalization} 
+                        onCheckedChange={val => setSetting('audioNormalization', val)} 
+                    />
+                </label>
+            </section>
+            
+            <section className="p-5 border border-border rounded-xl bg-white/50 dark:bg-card/30 space-y-4">
+                <h3 className="font-semibold text-lg flex items-center gap-2 text-foreground">
                     <Plus className="w-4 h-4 text-primary"/> {t.settings.downloads.defaults}
                 </h3>
                 <div className="space-y-2">
@@ -64,7 +101,7 @@ export function DownloadSettings({ settings, setSetting, t }: DownloadSettingsPr
                             <button 
                                 key={variable}
                                 onClick={() => setSetting('filenameTemplate', settings.filenameTemplate + variable)}
-                                className="px-2 py-1 bg-secondary hover:bg-primary/20 text-[10px] font-mono rounded border transition-colors"
+                                className="px-2 py-1 bg-secondary hover:bg-primary/20 text-xs font-mono rounded border transition-colors"
                             >
                                 {variable}
                             </button>

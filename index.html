@@ -1,19 +1,58 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ClipSceneYT</title>
+    <title>SceneClip</title>
     <script>
-      window.onerror = function(message, source, lineno, colno, error) {
+      window.onerror = function (message, source, lineno, colno, error) {
         console.error("Global Error:", message, error);
-        alert("Global Error: " + message + "\nSource: " + source + ":" + lineno);
+        alert(
+          "Global Error: " + message + "\nSource: " + source + ":" + lineno
+        );
       };
-      window.onunhandledrejection = function(event) {
+      window.onunhandledrejection = function (event) {
         console.error("Unhandled Promise Rejection:", event.reason);
         alert("Unhandled Promise Rejection: " + event.reason);
       };
+    </script>
+    <style>
+      :root {
+        /* Matches main.css dark background: hsl(222.2 84% 4.9%) */
+        background-color: #020817;
+        color: #fff;
+      }
+      /* Ensure proper background for light mode if explicitly set */
+      html.light {
+        background-color: #ffffff;
+        color: #000;
+      }
+      body {
+        background-color: inherit; /* Ensure body takes html background */
+        color: inherit;
+      }
+    </style>
+    <script>
+      (function () {
+        try {
+          // 1. Force dark immediately to prevent white flash
+          //    We'll remove it later if we find 'light' in storage
+          document.documentElement.classList.add("dark");
+
+          const storageFn = localStorage.getItem("app-storage-v2");
+          if (storageFn) {
+            const data = JSON.parse(storageFn);
+            if (data?.state?.settings?.theme === "light") {
+              // Only if explicitly light, switch to light
+              document.documentElement.classList.remove("dark");
+              document.documentElement.classList.add("light");
+            }
+          }
+        } catch (e) {
+          // Fallback is already dark, so safe to ignore
+        }
+      })();
     </script>
   </head>
   <body>

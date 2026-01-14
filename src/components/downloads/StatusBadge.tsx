@@ -1,27 +1,10 @@
 import { useAppStore } from '../../store'
 import { cn } from '../../lib/utils'
-
-interface TaskStatusMap {
-    [key: string]: {
-        en: string;
-        id: string;
-        ms: string;
-        zh: string;
-    };
-}
+import { translations } from '../../lib/locales'
 
 export function StatusBadge({ status }: { status: string }) {
     const { settings } = useAppStore()
-
-    const statusMap: TaskStatusMap = {
-        pending: { en: 'Pending', id: 'Menunggu', ms: 'Menunggu', zh: '等待中' },
-        fetching_info: { en: 'Fetching Info', id: 'Mengambil Info', ms: 'Mengambil Maklumat', zh: '获取信息' },
-        downloading: { en: 'Downloading', id: 'Mengunduh', ms: 'Memuat Turun', zh: '下载中' },
-        completed: { en: 'Completed', id: 'Selesai', ms: 'Selesai', zh: '完成' },
-        error: { en: 'Error', id: 'Gagal', ms: 'Ralat', zh: '错误' },
-        stopped: { en: 'Stopped', id: 'Berhenti', ms: 'Berhenti', zh: '停止' },
-        paused: { en: 'Paused', id: 'Jeda', ms: 'Jeda', zh: '已暂停' }
-    }
+    const t = translations[settings.language].task_status
 
     const colors: Record<string, string> = {
         pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-500',
@@ -34,7 +17,7 @@ export function StatusBadge({ status }: { status: string }) {
     }
 
     // Fallback logic
-    const label = statusMap[status]?.[settings.language as keyof typeof statusMap['pending']] || statusMap[status]?.en || status;
+    const label = (t as any)[status] || status;
 
     return (
         <span className={cn("px-2.5 py-0.5 rounded-full text-xs font-medium capitalize", colors[status] || colors.stopped)}>

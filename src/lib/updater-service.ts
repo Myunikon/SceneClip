@@ -41,7 +41,7 @@ export async function getLatestVersion(binaryName: 'yt-dlp' | 'ffmpeg'): Promise
             method: 'GET',
             headers: {
                 'Accept': 'application/vnd.github.v3+json',
-                'User-Agent': 'ClipSceneYT'
+                'User-Agent': 'SceneClip'
             }
         })
         

@@ -200,7 +200,7 @@ function MenuItem({
             onClick={onClick}
             disabled={disabled}
             className={`
-                flex items-center justify-between gap-4 px-3 py-1.5 text-[13px] w-full text-left
+                flex items-center justify-between gap-4 px-3 py-1.5 text-sm w-full text-left
                 transition-colors duration-75
                 ${disabled 
                     ? 'text-muted-foreground/40 cursor-default' 
@@ -213,7 +213,7 @@ function MenuItem({
                 {label}
             </span>
             {shortcut && (
-                <span className={`text-[12px] ${disabled ? 'text-muted-foreground/30' : 'text-muted-foreground'}`}>
+                <span className={`text-xs ${disabled ? 'text-muted-foreground/30' : 'text-muted-foreground'}`}>
                     {shortcut}
                 </span>
             )}

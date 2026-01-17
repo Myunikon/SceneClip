@@ -22,9 +22,15 @@
 <p align="center">
   <a href="#-quick-start">Quick Start</a> •
   <a href="#-features">Features</a> •
-  <a href="#%EF%B8%8F-installation">Installation</a> •
-  <a href="#-configuration">Configuration</a> •
+  <a href="#%EF%B8%8F-privacy--security">Privacy</a> •
+  <a href="#-roadmap">Roadmap</a> •
   <a href="#-faq">FAQ</a>
+</p>
+
+---
+
+<p align="center">
+  <img src="https://via.placeholder.com/800x450.png?text=SceneClip+Demo+GIF+Placeholder" alt="SceneClip Interface Preview" width="100%" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);"/>
 </p>
 
 ---
@@ -33,15 +39,15 @@
 
 ### ⚡ Installation
 
-SceneClip is a **portable** application. You do not need to install Python, FFMPEG, or yt-dlp heavily on your system. We bundle everything for you.
+SceneClip is a **fully portable** application. No need to manually install Python, FFMPEG, or yt-dlp. We bundle everything you need in a single file.
 
-|                                                 Platform                                                 |    Type     | Instructions                                                |
-| :------------------------------------------------------------------------------------------------------: | :---------: | ----------------------------------------------------------- |
-| <img src="https://img.shields.io/badge/-Windows-0078D6?style=flat-square&logo=windows&logoColor=white"/> |   `.exe`    | Download & Run. Click "Run Anyway" if SmartScreen appears.  |
-|   <img src="https://img.shields.io/badge/-macOS-000000?style=flat-square&logo=apple&logoColor=white"/>   |   `.dmg`    | Drag to Applications. Open (Right Click > Open if blocked). |
-|   <img src="https://img.shields.io/badge/-Linux-FCC624?style=flat-square&logo=linux&logoColor=black"/>   | `.AppImage` | `chmod +x SceneClip.AppImage` then run.                     |
+|                                                 Platform                                                 |    Type     | Instructions                                                                     |
+| :------------------------------------------------------------------------------------------------------: | :---------: | -------------------------------------------------------------------------------- |
+| <img src="https://img.shields.io/badge/-Windows-0078D6?style=flat-square&logo=windows&logoColor=white"/> |   `.exe`    | **Download & Run.**<br>If SmartScreen appears: Click `More Info` → `Run Anyway`. |
+|   <img src="https://img.shields.io/badge/-macOS-000000?style=flat-square&logo=apple&logoColor=white"/>   |   `.dmg`    | **Drag to Applications.**<br>If blocked: Right Click App → `Open` → `Open`.      |
+|   <img src="https://img.shields.io/badge/-Linux-FCC624?style=flat-square&logo=linux&logoColor=black"/>   | `.AppImage` | **Make Executable & Run.**<br>`chmod +x SceneClip.AppImage` in terminal.         |
 
-> 📥 **Download the latest release from [Releases Page](https://github.com/Myunikon/SceneClip/releases)**
+> 📥 **[Download the Latest Release Here](https://github.com/Myunikon/SceneClip/releases)**
 
 ---
 
@@ -53,29 +59,29 @@ SceneClip is a **portable** application. You do not need to install Python, FFMP
 
 **✂️ Smart Clipping**
 
-- **Precision Cuts**: Extract specific segments (e.g., 00:10 - 00:20) without re-encoding.
-- **Phantom Fix**: Proprietary algorithm to fix MP4 duration metadata so clips play correctly in all players.
-- **GIF Maker**: Convert video segments to high-quality GIFs.
+- **Precision Cuts**: Extract specific segments (e.g., `00:10` - `00:20`) without re-encoding the whole video.
+- **Phantom Fix**: Proprietary algorithm to rewrite MP4 duration atoms, ensuring clips play correctly on Windows Media Player & QuickTime.
+- **GIF Maker**: Turn video segments into high-quality, optimized GIFs.
 
 </td>
 <td width="33%" valign="top">
 
 **📥 Advanced Downloading**
 
-- **Multi-Format**: MP4, MKV, WEBM, MP3, FLAC, WAV.
-- **Codec Control**: Force usage of AV1, HEVC, H.264, or VP9.
-- **4K/8K Support**: Download original quality streams.
-- **Batch Mode**: Queue multiple URLs for sequential processing.
+- **Multi-Format**: Support for MP4, MKV, WEBM, MP3, FLAC, WAV.
+- **Quality Control**: From 144p up to **4K/8K** HDR.
+- **Codec Selection**: Force AV1, HEVC, H.264, or VP9.
+- **Batch Mode**: Queue multiple URLs for sequential, hands-free processing.
 
 </td>
 <td width="33%" valign="top">
 
 **🛠️ Power Tools**
 
-- **SponsorBlock**: Auto-skip intro, outro, and sponsors.
+- **SponsorBlock**: Automatically skip intros, outros, and sponsored segments.
 - **Subtitles**: Embed soft-subs or burn-in captions (SRT/VTT).
 - **Audio Norm**: Normalize audio levels to 0dB.
-- **Cookies**: Import `cookies.txt` for premium content.
+- **Cookies**: Import `cookies.txt` for premium/age-gated content.
 
 </td>
 </tr>
@@ -83,10 +89,36 @@ SceneClip is a **portable** application. You do not need to install Python, FFMP
 
 ### 🖼️ Modern UI & UX
 
-- **Theme Support**: 🌞 Light / 🌙 Dark / 💻 System
+- **Theme Support**: 🌞 Light / 🌙 Dark / 💻 System Sync
 - **Localization**: 🇬🇧 English, 🇮🇩 Indonesian, 🇲🇾 Malay, 🇨🇳 Chinese
-- **Clipboard Monitor**: Auto-detects supported URLs when you copy them.
-- **Notifications**: Native desktop alerts when tasks complete.
+- **Clipboard Monitor**: Auto-detects supported URLs when you copy them (can be toggled off).
+- **Native Notifications**: Desktop alerts when tasks complete.
+
+---
+
+## 🛡️ Privacy & Security
+
+We believe in **Local Processing**.
+
+- **No Data Collection**: SceneClip does not track your downloads or watch history.
+- **Offline Logic**: All video processing (clipping, converting, ffmpeg tasks) happens 100% on your machine.
+- **Open Source**: The code is transparent. You can audit exactly what the application does.
+
+<p align="center">
+  <img src="https://img.shields.io/badge/VirusTotal-Clean-brightgreen?style=flat-square&logo=virustotal" alt="VirusTotal Clean"/>
+</p>
+
+---
+
+## 🗺️ Roadmap
+
+See what's coming next or [request a feature](https://github.com/Myunikon/SceneClip/issues):
+
+- [x] Dark/Light Mode Support
+- [x] SponsorBlock Integration
+- [ ] **Playlist Downloading** (Download entire playlists in one click)
+- [ ] **Metadata Editor** (Edit ID3 tags for MP3s manually)
+- [ ] **MacOS Universal Binary** (Native M1/M2/M3 Support)
 
 ---
 
@@ -94,44 +126,42 @@ SceneClip is a **portable** application. You do not need to install Python, FFMP
 
 ### 1. Simple Download
 
-1.  Copy a link (YouTube, Twitter, Instagram, etc.).
-2.  SceneClip pops up. Click **Download**.
-3.  Choose Video or Audio. Done.
+1. Copy a link (YouTube, Twitter, Instagram, etc.).
+2. SceneClip detects it automatically. Click **Download**.
+3. Choose Video or Audio format. Done.
 
 ### 2. Creating a Clip
 
-1.  Select **"Clip Mode"** in the dialog.
-2.  Drag the sliders or type timestamps (e.g., `01:20` to `01:30`).
-3.  (Optional) Toggle **"Phantom Fix"** for maximum compatibility.
-4.  Click **Download**.
+1. Select **"Clip Mode"** in the dialog.
+2. Drag the timeline sliders or type exact timestamps (e.g., `01:20` to `01:30`).
+3. Toggle **"Phantom Fix"** for maximum player compatibility.
+4. Click **Download**.
 
 ### 3. Converting to GIF
 
-1.  Select **"GIF Mode"**.
-2.  Set **FPS** (15-60) and **Scale** (Width).
-3.  Choose Quality: **High** (Better colors) or **Fast** (Quicker encode).
+1. Select **"GIF Mode"**.
+2. Set **FPS** (15-60) and **Scale** (Width in px).
+3. Choose Quality: **High** (Better colors/dithering) or **Fast** (Quicker encode).
 
 ---
 
 ## ⚙️ Configuration
 
 <details>
-<summary><b>📂 File Paths & Templates</b></summary>
+<summary><b>📂 File Paths & Naming</b></summary>
 
-- **Downloads Folder**: customizable via Settings.
+- **Downloads Folder**: Customizable via Settings.
 - **Filename Template**:
   - Default: `%(title)s.%(ext)s`
   - Advanced: `%(uploader)s_%(upload_date)s_%(title)s.%(ext)s`
-
-</details>
+  </details>
 
 <details>
 <summary><b>🌐 Network & Access</b></summary>
 
 - **Proxy**: Supports HTTP/HTTPS/SOCKS proxies.
-- **Imposter Mode**: Spoof User-Agent (e.g., mimic an iPad or Android device) to bypass restrictions.
-- **Cookies**: Load `cookies.txt` (Netscape format) to access age-gated or member-only videos.
-
+- **Imposter Mode**: Spoof User-Agent (mimic iPad/Android) to bypass throttling.
+- **Cookies**: Load `cookies.txt` (Netscape format) to access member-only videos.
 </details>
 
 ---
@@ -139,27 +169,27 @@ SceneClip is a **portable** application. You do not need to install Python, FFMP
 ## ❓ FAQ
 
 <details>
-<summary><b>Why does Windows say "Unrecognized App" (SmartScreen)?</b></summary>
-SceneClip is an open-source project and is not digitally signed with a paid certificate (which costs ~$400/year). 
-This warning is normal for new apps. Simply click <b>More Info → Run Anyway</b>.
+<summary><b>Windows says "Unrecognized App" (SmartScreen). Is it safe?</b></summary>
+Yes. This warning appears because SceneClip is an open-source project and isn't signed with an expensive corporate certificate (~$400/year).
+<br><br>
+To install: Click <b>More Info</b> → <b>Run Anyway</b>. The source code is openly available for audit.
 </details>
 
 <details>
 <summary><b>What is "Phantom Duration Fix"?</b></summary>
-Sometimes, when you clip a 10-second part from a 5-hour stream using generic tools, Windows Media Player still thinks the video is 5 hours long. 
-<b>Phantom Fix</b> rewrites the MP4 atoms so the file is truly 10 seconds long in every player.
+When you clip a small segment from a long stream using standard tools, the file metadata often retains the original duration (e.g., a 10s clip thinks it is 5 hours long). <b>Phantom Fix</b> rewrites the MP4 atoms so the file is truly 10 seconds long, allowing proper seeking in all players.
 </details>
 
 <details>
 <summary><b>Which sites are supported?</b></summary>
-SceneClip uses `yt-dlp` under the hood, which supports <b>thousands</b> of sites including YouTube, Twitch, Twitter (X), Instagram, TikTok, Vimeo, and many more.
+SceneClip is powered by `yt-dlp`, supporting <b>thousands of sites</b> including YouTube, Twitch, Twitter (X), Instagram, TikTok, Vimeo, and many more.
 </details>
 
 ---
 
 ## 🛠️ For Developers
 
-Want to build from source?
+Interested in contributing? Here is how to build from source.
 
 ### Prerequisites
 
@@ -170,45 +200,41 @@ Want to build from source?
 
 ### Build Steps
 
-1.  **Clone Repo**:
+1. **Clone Repo**:
 
-    ```bash
-    git clone https://github.com/Myunikon/SceneClip.git
-    cd SceneClip
-    ```
+   ```bash
+   git clone https://github.com/Myunikon/SceneClip.git
+   cd SceneClip
+   ```
 
-2.  **Install Deps**:
+2. **Install Dependencies**:
 
-    ```bash
-    npm install
-    ```
+   ```bash
+   npm install
+   ```
 
-3.  **Setup Binaries** (Crucial):
+3. **Setup Binaries (Crucial)**:
+   This script downloads the OS-specific `yt-dlp` and `ffmpeg` executables needed for Tauri's sidecar pattern.
 
-    ```bash
-    npm run setup-binaries
-    ```
+   ```bash
+   npm run setup-binaries
+   ```
 
-    _This downloads the platform-specific `yt-dlp` and `ffmpeg` binaries._
-
-4.  **Run**:
-    ```bash
-    npm run tauri dev
-    ```
+4. **Run in Dev Mode**:
+   ```bash
+   npm run tauri dev
+   ```
 
 ---
 
-## 🛡️ VirusTotal Scan
-
 <p align="center">
-  <img src="https://img.shields.io/badge/VirusTotal-Clean-brightgreen?style=for-the-badge&logo=virustotal" alt="VirusTotal Clean"/>
+  <b>Enjoying SceneClip?</b>
+  <br/>
+  Gives us a star ⭐ on <a href="https://github.com/Myunikon/SceneClip">GitHub</a> to support development!
 </p>
 
-SceneClip is 100% open source. The binaries included (`yt-dlp`, `ffmpeg`) are fetched directly from their official repositories.
-
----
-
 <p align="center">
-  <sub>Made with ❤️ by <a href="https://github.com/Myunikon">Myunikon</a></sub><br/>
+  <sub>Made with ❤️ by <a href="https://github.com/Myunikon">Myunikon</a></sub>
+  <br/>
   <sub>Distributed under MIT License</sub>
 </p>

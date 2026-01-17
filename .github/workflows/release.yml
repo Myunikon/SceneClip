@@ -31,6 +31,11 @@ jobs:
         run: |
           brew install ffmpeg
 
+      # --- Windows Setup ---
+      - name: Install dependencies (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: choco install ffmpeg
+
       # --- Rust Setup ---
       - name: Rust setup
         uses: dtolnay/rust-toolchain@stable
@@ -62,6 +67,36 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "App v__VERSION__"
-          releaseBody: "See the assets to download this version and install."
+          releaseBody: |
+            ## 🚀 What's New
+            See the commit history for detailed changes in this version.
+
+            ## 📦 Installation Guide
+
+            ### 🪟 Windows
+            1. Download the `.exe` setup file (e.g., `SceneClip_*_x64-setup.exe`).
+            2. Run the installer.
+            3. **Note:** If you see a "Windows protected your PC" (SmartScreen) warning:
+               - Click **"More info"**.
+               - Click **"Run anyway"**.
+               *(This appears because the app is not digitally signed yet)*.
+
+            ### 🍎 macOS
+            1. Download the `.dmg` file.
+            2. Open it and drag **SceneClip** to your `Applications` folder.
+            3. If you can't open it due to "Unidentified Developer":
+               - Right-click the app in Finder.
+               - Select **Open**.
+               - Click **Open** in the dialog.
+
+            ### 🐧 Linux
+            **AppImage:**
+            1. Download the `.AppImage` file.
+            2. Make it executable: `chmod +x SceneClip_*.AppImage`
+            3. Run it: `./SceneClip_*.AppImage`
+
+            **Debian/Ubuntu:**
+            1. Download the `.deb` file.
+            2. Install it: `sudo dpkg -i SceneClip_*.deb`
           releaseDraft: true
           prerelease: false

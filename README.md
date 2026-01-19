@@ -14,9 +14,9 @@
   <img src="https://img.shields.io/badge/Frontend-React_18-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 18"/>
   <img src="https://img.shields.io/badge/Language-TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript"/>
   <br/>
-  <img src="https://img.shields.io/github/v/release/Myunikon/SceneClip?style=flat-square&label=Version&color=success" alt="Version"/>
-  <img src="https://img.shields.io/github/downloads/Myunikon/SceneClip/total?style=flat-square&label=Downloads&color=blue" alt="Downloads"/>
-  <img src="https://img.shields.io/github/license/Myunikon/SceneClip?style=flat-square&label=License" alt="License"/>
+  <img src="https://img.shields.io/github/v/release/Myunikon/YTClipScene?style=flat-square&label=Version&color=success" alt="Version"/>
+  <img src="https://img.shields.io/github/downloads/Myunikon/YTClipScene/total?style=flat-square&label=Downloads&color=blue" alt="Downloads"/>
+  <img src="https://img.shields.io/github/license/Myunikon/YTClipScene?style=flat-square&label=License" alt="License"/>
 </p>
 
 <p align="center">
@@ -39,15 +39,33 @@
 
 ### ⚡ Installation
 
-SceneClip is a **fully portable** application. No need to manually install Python, FFMPEG, or yt-dlp. We bundle everything you need in a single file.
+SceneClip bundles **ffmpeg** and **yt-dlp** automatically — no manual installation needed!
 
-|                                                 Platform                                                 |    Type     | Instructions                                                                     |
-| :------------------------------------------------------------------------------------------------------: | :---------: | -------------------------------------------------------------------------------- |
-| <img src="https://img.shields.io/badge/-Windows-0078D6?style=flat-square&logo=windows&logoColor=white"/> |   `.exe`    | **Download & Run.**<br>If SmartScreen appears: Click `More Info` → `Run Anyway`. |
-|   <img src="https://img.shields.io/badge/-macOS-000000?style=flat-square&logo=apple&logoColor=white"/>   |   `.dmg`    | **Drag to Applications.**<br>If blocked: Right Click App → `Open` → `Open`.      |
-|   <img src="https://img.shields.io/badge/-Linux-FCC624?style=flat-square&logo=linux&logoColor=black"/>   | `.AppImage` | **Make Executable & Run.**<br>`chmod +x SceneClip.AppImage` in terminal.         |
+| Platform | Installer | Portable |
+|:--------:|:---------:|:--------:|
+| <img src="https://img.shields.io/badge/-Windows-0078D6?style=flat-square&logo=windows&logoColor=white"/> | `.exe` setup | `.zip` (extract & run) |
+| <img src="https://img.shields.io/badge/-macOS-000000?style=flat-square&logo=apple&logoColor=white"/> | `.dmg` | `.zip` (extract & run) |
+| <img src="https://img.shields.io/badge/-Linux-FCC624?style=flat-square&logo=linux&logoColor=black"/> | `.deb` | `.AppImage` (portable) |
 
-> 📥 **[Download the Latest Release Here](https://github.com/Myunikon/SceneClip/releases)**
+> 📥 **[Download the Latest Release](https://github.com/Myunikon/YTClipScene/releases)**
+
+#### 🪟 Windows Notes
+If SmartScreen appears: Click **More Info** → **Run Anyway** (app is not code-signed yet).
+
+#### 🍎 macOS Notes
+If blocked: Right-click app → **Open** → **Open**.
+
+---
+
+### 🧩 Browser Extension
+
+Download directly from your browser! The extension adds a "Download with SceneClip" button to video sites.
+
+1. Download `SceneClip_browser_extension.zip` from [Releases](https://github.com/Myunikon/YTClipScene/releases)
+2. Extract the ZIP
+3. Load in browser:
+   - **Chrome/Edge**: `chrome://extensions` → Enable Developer Mode → Load Unpacked
+   - **Firefox**: `about:debugging` → This Firefox → Load Temporary Add-on
 
 ---
 
@@ -112,13 +130,15 @@ We believe in **Local Processing**.
 
 ## 🗺️ Roadmap
 
-See what's coming next or [request a feature](https://github.com/Myunikon/SceneClip/issues):
+See what's coming next or [request a feature](https://github.com/Myunikon/YTClipScene/issues):
 
 - [x] Dark/Light Mode Support
 - [x] SponsorBlock Integration
-- [ ] **Playlist Downloading** (Download entire playlists in one click)
-- [ ] **Metadata Editor** (Edit ID3 tags for MP3s manually)
-- [ ] **MacOS Universal Binary** (Native M1/M2/M3 Support)
+- [x] **Bundled Binaries** (ffmpeg & yt-dlp included!)
+- [x] **Portable Version** (ZIP for Windows/macOS)
+- [x] **Browser Extension** (Right-click to download)
+- [ ] **Playlist Downloading** (Download entire playlists)
+- [ ] **Metadata Editor** (Edit ID3 tags for MP3s)
 
 ---
 
@@ -203,8 +223,8 @@ Interested in contributing? Here is how to build from source.
 1. **Clone Repo**:
 
    ```bash
-   git clone https://github.com/Myunikon/SceneClip.git
-   cd SceneClip
+   git clone https://github.com/Myunikon/YTClipScene.git
+   cd YTClipScene
    ```
 
 2. **Install Dependencies**:
@@ -230,7 +250,7 @@ Interested in contributing? Here is how to build from source.
 <p align="center">
   <b>Enjoying SceneClip?</b>
   <br/>
-  Gives us a star ⭐ on <a href="https://github.com/Myunikon/SceneClip">GitHub</a> to support development!
+  Gives us a star ⭐ on <a href="https://github.com/Myunikon/YTClipScene">GitHub</a> to support development!
 </p>
 
 <p align="center">

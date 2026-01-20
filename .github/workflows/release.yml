@@ -68,33 +68,13 @@ jobs:
         run: |
           npm run setup-binaries -- --target mac-x64 --target mac-arm64
           
-          # Create Universal binaries using lipo
+          # Verify both architectures are present for Tauri to bundle
           cd src-tauri
+          echo "=== macOS Sidecar Binaries ==="
+          ls -la yt-dlp-* ffmpeg-* 2>/dev/null || echo "No binaries found"
           
-          # Create universal yt-dlp (combine x64 and arm64)
-          if [ -f "yt-dlp-x86_64-apple-darwin" ] && [ -f "yt-dlp-aarch64-apple-darwin" ]; then
-            lipo -create -output yt-dlp-universal-apple-darwin \
-              yt-dlp-x86_64-apple-darwin \
-              yt-dlp-aarch64-apple-darwin
-            chmod +x yt-dlp-universal-apple-darwin
-            echo "[OK] Created yt-dlp-universal-apple-darwin"
-          fi
-          
-          # Create universal ffmpeg (combine x64 and arm64 if both exist, otherwise copy x64)
-          if [ -f "ffmpeg-x86_64-apple-darwin" ] && [ -f "ffmpeg-aarch64-apple-darwin" ]; then
-            lipo -create -output ffmpeg-universal-apple-darwin \
-              ffmpeg-x86_64-apple-darwin \
-              ffmpeg-aarch64-apple-darwin
-            chmod +x ffmpeg-universal-apple-darwin
-            echo "[OK] Created ffmpeg-universal-apple-darwin"
-          elif [ -f "ffmpeg-x86_64-apple-darwin" ]; then
-            # If only x64 exists, copy it as universal (will work via Rosetta 2 on ARM)
-            cp ffmpeg-x86_64-apple-darwin ffmpeg-universal-apple-darwin
-            chmod +x ffmpeg-universal-apple-darwin
-            echo "[OK] Copied x64 ffmpeg as universal (Rosetta 2 compatible)"
-          fi
-          
-          ls -la *-universal-apple-darwin || true
+          # Note: Tauri will automatically bundle both x64 and arm64 binaries
+          # and select the correct one at runtime based on the host architecture
 
       - name: Setup Sidecar Binaries (Linux)
         if: matrix.platform == 'ubuntu-22.04'

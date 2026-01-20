@@ -63,16 +63,23 @@ const getCurrentTargetKey = () => {
     return null;
 };
 
-// Helper: Download File
+// Helper: Download File with redirect support (handles both absolute and relative redirects)
 const downloadFile = (url, dest) => {
     return new Promise((resolve, reject) => {
         const makeRequest = (currentUrl) => {
-            const protocol = currentUrl.startsWith('https') ? https : http;
+            const parsedUrl = new URL(currentUrl);
+            const protocol = parsedUrl.protocol === 'https:' ? https : http;
+
             protocol.get(currentUrl, {
                 headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SceneClip/1.0)' }
             }, (response) => {
                 if (response.statusCode === 302 || response.statusCode === 301) {
-                    makeRequest(response.headers.location);
+                    // Handle both absolute and relative redirects
+                    const location = response.headers.location;
+                    const redirectUrl = location.startsWith('http')
+                        ? location
+                        : new URL(location, currentUrl).href;
+                    makeRequest(redirectUrl);
                     return;
                 }
                 if (response.statusCode !== 200) {

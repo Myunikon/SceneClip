@@ -66,15 +66,40 @@ jobs:
       - name: Setup Sidecar Binaries (macOS Universal)
         if: matrix.platform == 'macos-latest'
         run: |
+          # Download binary (this downloads x64 and arm64 versions)
           npm run setup-binaries -- --target mac-x64 --target mac-arm64
           
-          # Verify both architectures are present for Tauri to bundle
           cd src-tauri
-          echo "=== macOS Sidecar Binaries ==="
-          ls -la yt-dlp-* ffmpeg-* 2>/dev/null || echo "No binaries found"
           
-          # Note: Tauri will automatically bundle both x64 and arm64 binaries
-          # and select the correct one at runtime based on the host architecture
+          # --- FIX: Manual Universal Creation ---
+          # Instead of lipo (which fails on non-Mach-O binaries) or relying on automatic bundling (which fails if universal file is missing),
+          # we simply copy x64 binary as the 'universal' binary.
+          # macOS on Apple Silicon runs x64 binaries via Rosetta 2 automatically.
+          
+          # 1. Handle yt-dlp
+          if [ -f "yt-dlp-x86_64-apple-darwin" ]; then
+            cp yt-dlp-x86_64-apple-darwin yt-dlp-universal-apple-darwin
+            chmod +x yt-dlp-universal-apple-darwin
+            echo "[OK] Created yt-dlp-universal-apple-darwin (Copy of x64)"
+          else
+            echo "[ERROR] Source yt-dlp-x86_64-apple-darwin not found!"
+            ls -la
+            exit 1
+          fi
+          
+          # 2. Handle ffmpeg
+          if [ -f "ffmpeg-x86_64-apple-darwin" ]; then
+            cp ffmpeg-x86_64-apple-darwin ffmpeg-universal-apple-darwin
+            chmod +x ffmpeg-universal-apple-darwin
+            echo "[OK] Created ffmpeg-universal-apple-darwin (Copy of x64)"
+          else
+            echo "[ERROR] Source ffmpeg-x86_64-apple-darwin not found!"
+            ls -la
+            exit 1
+          fi
+          
+          # Verify files exist before build
+          ls -la *-universal-apple-darwin
 
       - name: Setup Sidecar Binaries (Linux)
         if: matrix.platform == 'ubuntu-22.04'

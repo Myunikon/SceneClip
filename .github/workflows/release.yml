@@ -5,7 +5,26 @@ on:
       - "v*"
 
 jobs:
+  create-release:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create_release.outputs.id }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "SceneClip ${{ github.ref_name }}"
+          draft: true
+          prerelease: false
+          body: ""
+
   release:
+    needs: create-release
     permissions:
       contents: write
     strategy:
@@ -112,12 +131,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          releaseId: ${{ needs.create-release.outputs.release_id }}
           tagName: ${{ github.ref_name }}
-          releaseName: "SceneClip ${{ github.ref_name }}"
-          releaseBody: |
-
-          releaseDraft: true
-          prerelease: false
           args: ${{ matrix.args }}
 
       # --- Create Browser Extension ZIP (run on one platform only) ---

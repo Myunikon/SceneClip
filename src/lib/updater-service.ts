@@ -7,7 +7,7 @@ import { fetch } from '@tauri-apps/plugin-http'
 export async function getBinaryVersion(binaryName: 'yt-dlp' | 'ffmpeg'): Promise<string | null> {
     try {
         // match the name in capabilities/default.json
-        const cmd = Command.sidecar(`binaries/${binaryName}`, binaryName === 'ffmpeg' ? ['-version'] : ['--version'])
+        const cmd = Command.sidecar(binaryName, binaryName === 'ffmpeg' ? ['-version'] : ['--version'])
         const output = await cmd.execute()
 
         console.log(`[Binary Check] ${binaryName} exit code: ${output.code}`)

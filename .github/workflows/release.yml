@@ -41,6 +41,8 @@ jobs:
       # --- Rust Setup ---
       - name: Rust setup
         uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2

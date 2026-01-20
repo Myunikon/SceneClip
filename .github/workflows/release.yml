@@ -115,78 +115,7 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: "SceneClip ${{ github.ref_name }}"
           releaseBody: |
-            ## 🎬 SceneClip ${{ github.ref_name }}
 
-            ### 📋 Changelog
-            - ✅ Bundled ffmpeg and yt-dlp included (no separate installation needed!)
-            - ✅ Portable version available for Windows and macOS
-            - 🔧 Improved stability and performance
-            - 🐛 Bug fixes and improvements
-
-            See the [commit history](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) for detailed changes.
-
-            ---
-
-            ## 📦 Download Guide
-
-            ### 🪟 Windows
-
-            | Type | File | Description |
-            |------|------|-------------|
-            | **Installer** | `SceneClip_*_x64-setup.exe` | Recommended. Installs to Program Files |
-            | **Portable** | `SceneClip_*_x64_portable.zip` | No installation needed. Extract and run |
-
-            > **Note:** If you see "Windows protected your PC" (SmartScreen):
-            > 1. Click **"More info"**
-            > 2. Click **"Run anyway"**
-            > *(App is not code-signed yet)*
-
-            ---
-
-            ### 🍎 macOS
-
-            | Type | File | Description |
-            |------|------|-------------|
-            | **DMG** | `SceneClip_*_universal.dmg` | Drag to Applications folder |
-            | **Portable** | `SceneClip_*_macos_portable.zip` | Extract and run directly |
-
-            > **Note:** If you see "unidentified developer":
-            > 1. Right-click the app → **Open**
-            > 2. Click **Open** in the dialog
-
-            ---
-
-            ### 🐧 Linux
-
-            | Type | File | Description |
-            |------|------|-------------|
-            | **AppImage** | `SceneClip_*_amd64.AppImage` | Portable! `chmod +x` and run |
-            | **Debian/Ubuntu** | `SceneClip_*_amd64.deb` | `sudo dpkg -i SceneClip_*.deb` |
-
-            ---
-
-            ## 🧩 Browser Extension
-
-            Download `SceneClip_browser_extension.zip` and install manually:
-
-            **Chrome/Brave/Edge:**
-            1. Go to `chrome://extensions`
-            2. Enable "Developer mode" (top right)
-            3. Click "Load unpacked"
-            4. Select the extracted extension folder
-
-            **Firefox:**
-            1. Go to `about:debugging`
-            2. Click "This Firefox" > "Load Temporary Add-on"
-            3. Select any file in the extension folder
-
-            ---
-
-            ## ✨ Included Dependencies
-            - **ffmpeg** - Video processing (bundled)
-            - **yt-dlp** - Video downloading (bundled)
-
-            No additional software installation required!
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

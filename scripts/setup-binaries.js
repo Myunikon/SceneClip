@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import https from 'https';
+import http from 'http';
 import { createWriteStream } from 'fs';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -66,7 +67,7 @@ const getCurrentTargetKey = () => {
 const downloadFile = (url, dest) => {
     return new Promise((resolve, reject) => {
         const makeRequest = (currentUrl) => {
-            const protocol = currentUrl.startsWith('https') ? https : require('http');
+            const protocol = currentUrl.startsWith('https') ? https : http;
             protocol.get(currentUrl, {
                 headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SceneClip/1.0)' }
             }, (response) => {

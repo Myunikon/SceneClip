@@ -58,9 +58,18 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      # --- Binaries Setup (Downloads ffmpeg and yt-dlp directly) ---
-      - name: Setup Sidecar Binaries
-        run: npm run setup-binaries -- --all
+      # --- Binaries Setup (Downloads ffmpeg and yt-dlp for current platform) ---
+      - name: Setup Sidecar Binaries (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: npm run setup-binaries -- --target win-x64
+
+      - name: Setup Sidecar Binaries (macOS Universal)
+        if: matrix.platform == 'macos-latest'
+        run: npm run setup-binaries -- --target mac-x64 --target mac-arm64
+
+      - name: Setup Sidecar Binaries (Linux)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: npm run setup-binaries -- --target linux-x64
 
 
 

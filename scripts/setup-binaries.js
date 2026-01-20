@@ -197,13 +197,31 @@ async function main() {
     const args = process.argv.slice(2);
     const downloadAll = args.includes('--all');
 
+    // Parse --target flags (e.g., --target win-x64 --target mac-arm64)
+    const targetFlags = [];
+    for (let i = 0; i < args.length; i++) {
+        if (args[i] === '--target' && args[i + 1]) {
+            targetFlags.push(args[i + 1]);
+            i++; // Skip the next arg since we consumed it
+        }
+    }
+
     if (downloadAll) {
         console.log('Mode: Download ALL platforms (Windows, macOS, Linux)');
-        // Process Windows first, then others
         await setupTarget('win-x64', TARGETS['win-x64']);
         await setupTarget('mac-x64', TARGETS['mac-x64']);
         await setupTarget('mac-arm64', TARGETS['mac-arm64']);
         await setupTarget('linux-x64', TARGETS['linux-x64']);
+    } else if (targetFlags.length > 0) {
+        console.log(`Mode: Specific targets (${targetFlags.join(', ')})`);
+        for (const key of targetFlags) {
+            if (TARGETS[key]) {
+                await setupTarget(key, TARGETS[key]);
+            } else {
+                console.error(`[ERROR] Unknown target: ${key}`);
+                console.log(`Available targets: ${Object.keys(TARGETS).join(', ')}`);
+            }
+        }
     } else {
         const currentKey = getCurrentTargetKey();
         if (!currentKey || !TARGETS[currentKey]) {

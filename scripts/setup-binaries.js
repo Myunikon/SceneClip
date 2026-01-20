@@ -148,8 +148,12 @@ async function setupTarget(key, config) {
 
         if (!fs.existsSync(ffmpegPath)) {
             let archiveName = 'ffmpeg_archive';
-            if (config.ffmpegUrl.endsWith('.zip')) archiveName += '.zip';
-            else if (config.ffmpegUrl.endsWith('.tar.xz')) archiveName += '.tar.xz';
+            // Handle both .zip extension and URLs ending with /zip (like evermeet.cx)
+            if (config.ffmpegUrl.endsWith('.zip') || config.ffmpegUrl.endsWith('/zip')) {
+                archiveName += '.zip';
+            } else if (config.ffmpegUrl.endsWith('.tar.xz')) {
+                archiveName += '.tar.xz';
+            }
 
             const archivePath = path.join(tempDir, archiveName);
 

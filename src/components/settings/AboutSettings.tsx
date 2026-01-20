@@ -78,7 +78,7 @@ export function AboutSettings({ t, addLog, setShowEasterEgg }: AboutSettingsProp
                         ClipScene<span className="text-primary">YT</span>
                     </h2>
                     <p className="text-sm font-mono text-muted-foreground mt-1 bg-secondary/50 inline-block px-2 py-0.5 rounded-md border border-border/50">
-                        v1.0.1 (Stable)
+                        v1.0.0 (Stable)
                     </p>
                 </div>
 

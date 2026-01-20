@@ -30,12 +30,20 @@
 ---
 
 <p align="center">
-  <img src="./public/sceneclip-preview.png" alt="SceneClip Main Interface" width="90%" style="border-radius: 8px;"/>
+  <img src="./public/sceneclip-preview.png" alt="SceneClip Download Interface" width="90%"/>
+  <br/>
+  <sub>📥 <b>Download</b> — Paste URL, choose format & quality, start downloading</sub>
 </p>
 
 <p align="center">
-  <img src="./public/sceneclip-preview1.png" alt="SceneClip Download Options" width="45%"/>
+  <img src="./public/sceneclip-preview1.png" alt="SceneClip History" width="45%"/>
+  &nbsp;&nbsp;
   <img src="./public/sceneclip-preview2.png" alt="SceneClip Settings" width="45%"/>
+</p>
+<p align="center">
+  <sub>📋 <b>History</b> — View download history</sub>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <sub>⚙️ <b>Settings</b> — Customize your experience</sub>
 </p>
 
 ---

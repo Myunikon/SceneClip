@@ -58,20 +58,9 @@ jobs:
 
       # --- Binaries Setup (Downloads ffmpeg and yt-dlp directly) ---
       - name: Setup Sidecar Binaries
-        run: npm run setup-binaries
+        run: npm run setup-binaries -- --all
 
-      # --- macOS: Setup binaries for both architectures ---
-      - name: Setup Sidecar Binaries (macOS arm64)
-        if: matrix.platform == 'macos-latest'
-        run: |
-          # Rename x86_64 binaries
-          cd src-tauri
-          # Download arm64 versions
-          curl -L -o yt-dlp-aarch64-apple-darwin https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos
-          chmod +x yt-dlp-aarch64-apple-darwin
-          # For ffmpeg, evermeet provides universal binary, copy it
-          cp ffmpeg-x86_64-apple-darwin ffmpeg-aarch64-apple-darwin
-          chmod +x ffmpeg-aarch64-apple-darwin
+
 
       - name: Build the app
         uses: tauri-apps/tauri-action@v0

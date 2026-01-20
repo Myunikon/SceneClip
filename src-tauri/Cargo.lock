@@ -4111,7 +4111,7 @@ dependencies = [
 
 [[package]]
 name = "sceneclip"
-version = "1.0.1"
+version = "1.0.0"
 dependencies = [
  "futures",
  "reqwest",

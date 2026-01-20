@@ -127,13 +127,9 @@ jobs:
 
 
       - name: Build the app
-        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: ${{ github.ref_name }}
-          args: ${{ matrix.args }}
-          # Removed releaseId to prevent tauri-action from attempting upload
+        run: npx tauri build ${{ matrix.args }}
 
       # --- Create Browser Extension ZIP (run on one platform only) ---
       - name: Create Browser Extension ZIP

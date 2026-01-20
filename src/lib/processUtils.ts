@@ -57,7 +57,7 @@ export function timeToSeconds(timeStr: string): number {
   if (!timeStr) return 0
   // If just number
   if (!timeStr.includes(':')) return parseFloat(timeStr) || 0
-  
+
   const parts = timeStr.split(':').map(parseFloat)
   let seconds = 0
   if (parts.length === 3) {
@@ -81,7 +81,7 @@ export function timeToSeconds(timeStr: string): number {
 export async function killProcessTree(pid: number, logFn: LogFunction): Promise<void> {
   try {
     const osType = await type()
-    
+
     if (osType === 'windows') {
       // Use PowerShell to kill the process and all children
       const cmd = Command.create('run-powershell', [
@@ -90,8 +90,14 @@ export async function killProcessTree(pid: number, logFn: LogFunction): Promise<
         `foreach ($child in $children) { Stop-Process -Id $child.ProcessId -Force -ErrorAction SilentlyContinue }; ` +
         `Stop-Process -Id ${pid} -Force -ErrorAction SilentlyContinue`
       ])
-      await cmd.execute()
-      logFn({ message: `[Kill] Terminated process tree for PID ${pid} (Windows)`, type: 'info' })
+      const output = await cmd.execute()
+      if (output.code !== 0) {
+        // Decode stderr if it's not a string
+        const stderr = typeof output.stderr === 'string' ? output.stderr : new TextDecoder().decode(output.stderr as any)
+        logFn({ message: `[Kill] Failed to terminate PID ${pid}: ${stderr.substring(0, 100)}`, type: 'warning' })
+      } else {
+        logFn({ message: `[Kill] Terminated process tree for PID ${pid} (Windows)`, type: 'info' })
+      }
     } else {
       // Unix (Linux/macOS): Use pkill -P to kill all child processes first
       try {
@@ -100,7 +106,7 @@ export async function killProcessTree(pid: number, logFn: LogFunction): Promise<
       } catch {
         // pkill may fail if no children exist - this is fine
       }
-      
+
       // Then kill the parent process with SIGKILL (-9)
       try {
         const killParent = Command.create('kill', ['-9', String(pid)])
@@ -108,7 +114,7 @@ export async function killProcessTree(pid: number, logFn: LogFunction): Promise<
       } catch {
         // Process may already be dead
       }
-      
+
       logFn({ message: `[Kill] Terminated process tree for PID ${pid} (Unix)`, type: 'info' })
     }
   } catch (e) {

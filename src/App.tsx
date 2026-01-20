@@ -399,6 +399,28 @@ function App() {
     }, [])
 
     /* -------------------------------------------------------------------------- */
+    /* LAZY BINARY VALIDATION (PERFORMANCE OPTIMIZATION)                          */
+    /* -------------------------------------------------------------------------- */
+    useEffect(() => {
+        // Defer validation to allow UI to paint first (Startup Boost)
+        const timer = setTimeout(async () => {
+            // Import dynamically to avoid bundle bloat on critical path
+            const { runBinaryValidation } = await import('./lib/binary-validator')
+
+            // Simple logger adapter that prints to console debug
+            // In a real app we might want to pipe this to the system log store silently
+            runBinaryValidation((entry) => {
+                if (entry.type === 'error' || entry.type === 'warning') {
+                    console.debug(`[LazyValidator] ${entry.message}`)
+                }
+            }, settings.language)
+
+        }, 2000) // Wait 2 seconds (sufficient for "Instant" feel)
+
+        return () => clearTimeout(timer)
+    }, [])
+
+    /* -------------------------------------------------------------------------- */
     /* THEME TOGGLE (With View Transition)                                        */
     /* -------------------------------------------------------------------------- */
     const toggleTheme = async () => {

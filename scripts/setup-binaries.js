@@ -3,35 +3,66 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import https from 'https';
 import { createWriteStream } from 'fs';
-import { pipeline } from 'stream/promises';
-import { createGunzip } from 'zlib';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const BIN_DIR = path.resolve(__dirname, '../src-tauri/binaries');
+const BIN_DIR = path.resolve(__dirname, '../src-tauri');
 
 if (!fs.existsSync(BIN_DIR)) {
     fs.mkdirSync(BIN_DIR, { recursive: true });
 }
 
-// Map Node platform/arch to Rust/Tauri target triples
-const getTargetTriple = () => {
-    const arch = process.arch === 'arm64' ? 'aarch64' : 'x86_64';
-    const platform = process.platform;
-
-    if (platform === 'win32') return `${arch}-pc-windows-msvc`;
-    if (platform === 'darwin') return `${arch}-apple-darwin`;
-    if (platform === 'linux') return `${arch}-unknown-linux-gnu`;
-
-    throw new Error(`Unknown platform: ${platform}`);
+// Configuration for all supported targets
+const TARGETS = {
+    'win-x64': {
+        triple: 'x86_64-pc-windows-msvc',
+        platform: 'win32',
+        arch: 'x64',
+        ffmpegUrl: 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip',
+        ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe',
+        ext: '.exe'
+    },
+    'mac-x64': {
+        triple: 'x86_64-apple-darwin',
+        platform: 'darwin',
+        arch: 'x64',
+        ffmpegUrl: 'https://evermeet.cx/ffmpeg/getrelease/zip',
+        ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos',
+        ext: ''
+    },
+    'mac-arm64': {
+        triple: 'aarch64-apple-darwin',
+        platform: 'darwin',
+        arch: 'arm64',
+        // Strategy: Use x64 build via Rosetta 2 (Standard practice for broad compat)
+        ffmpegUrl: 'https://evermeet.cx/ffmpeg/getrelease/zip',
+        // Strategy: Use Universal Binary (Native support for both)
+        ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos',
+        ext: ''
+    },
+    'linux-x64': {
+        triple: 'x86_64-unknown-linux-gnu',
+        platform: 'linux',
+        arch: 'x64',
+        ffmpegUrl: 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz',
+        ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp',
+        ext: ''
+    }
 };
 
-const TARGET_TRIPLE = getTargetTriple();
-console.log(`[SETUP] Target Triple: ${TARGET_TRIPLE}`);
+// Helper: Get Current Target Key
+const getCurrentTargetKey = () => {
+    const p = process.platform;
+    const a = process.arch;
+    if (p === 'win32') return 'win-x64';
+    if (p === 'linux') return 'linux-x64';
+    if (p === 'darwin') return a === 'arm64' ? 'mac-arm64' : 'mac-x64';
+    return null;
+};
 
-// Follow redirects and download file
+// Helper: Download File
 const downloadFile = (url, dest) => {
     return new Promise((resolve, reject) => {
         const makeRequest = (currentUrl) => {
@@ -44,7 +75,7 @@ const downloadFile = (url, dest) => {
                     return;
                 }
                 if (response.statusCode !== 200) {
-                    reject(new Error(`Failed to download: ${response.statusCode}`));
+                    reject(new Error(`Failed to download ${url}: ${response.statusCode}`));
                     return;
                 }
                 const file = createWriteStream(dest);
@@ -53,157 +84,137 @@ const downloadFile = (url, dest) => {
                     file.close(() => resolve(dest));
                 });
             }).on('error', (err) => {
-                fs.unlink(dest, () => reject(err));
+                try { fs.unlinkSync(dest); } catch (e) { }
+                reject(err);
             });
         };
         makeRequest(url);
     });
 };
 
-// Extract ZIP file (Windows)
-async function extractZip(zipPath, extractDir) {
-    if (process.platform === 'win32') {
-        await execAsync(`powershell -Command "Expand-Archive -Path '${zipPath}' -DestinationPath '${extractDir}' -Force"`);
-    } else {
-        await execAsync(`unzip -o "${zipPath}" -d "${extractDir}"`);
-    }
-}
-
-// Extract tar.xz file (Linux/macOS)
-async function extractTarXz(tarPath, extractDir) {
-    await execAsync(`tar -xf "${tarPath}" -C "${extractDir}"`);
-}
-
-async function setupYtDlp() {
-    const ytdlpName = process.platform === 'win32' ? `yt-dlp-${TARGET_TRIPLE}.exe` : `yt-dlp-${TARGET_TRIPLE}`;
-    const ytdlpPath = path.join(BIN_DIR, ytdlpName);
-
-    if (fs.existsSync(ytdlpPath)) {
-        console.log(`[SKIP] yt-dlp already exists: ${ytdlpName}`);
-        return;
-    }
-
-    let ytdlpUrl = '';
-    if (process.platform === 'linux') {
-        ytdlpUrl = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp';
-    } else if (process.platform === 'darwin') {
-        ytdlpUrl = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos';
-    } else if (process.platform === 'win32') {
-        ytdlpUrl = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe';
-    }
-
-    console.log(`[DOWNLOAD] yt-dlp from ${ytdlpUrl}...`);
-    await downloadFile(ytdlpUrl, ytdlpPath);
-    fs.chmodSync(ytdlpPath, 0o755);
-    console.log(`[OK] Saved yt-dlp to ${ytdlpName}`);
-}
-
-async function setupFfmpeg() {
-    const ffmpegName = process.platform === 'win32' ? `ffmpeg-${TARGET_TRIPLE}.exe` : `ffmpeg-${TARGET_TRIPLE}`;
-    const ffmpegPath = path.join(BIN_DIR, ffmpegName);
-
-    if (fs.existsSync(ffmpegPath)) {
-        console.log(`[SKIP] ffmpeg already exists: ${ffmpegName}`);
-        return;
-    }
-
-    const tempDir = path.join(BIN_DIR, 'temp_ffmpeg');
-    if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-    }
+// Helper: Extract Archive
+async function extractArchive(filePath, destDir) {
+    const ext = path.extname(filePath).toLowerCase();
+    console.log(`[EXTRACT] ${path.basename(filePath)}...`);
 
     try {
-        if (process.platform === 'win32') {
-            // Windows: Download from BtbN/FFmpeg-Builds (GPL build with all codecs)
-            const ffmpegUrl = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip';
-            const zipPath = path.join(tempDir, 'ffmpeg.zip');
-
-            console.log(`[DOWNLOAD] ffmpeg from BtbN/FFmpeg-Builds...`);
-            await downloadFile(ffmpegUrl, zipPath);
-
-            console.log(`[EXTRACT] Extracting ffmpeg...`);
-            await extractZip(zipPath, tempDir);
-
-            // Find ffmpeg.exe in extracted folder
-            const extractedDir = fs.readdirSync(tempDir).find(f => f.startsWith('ffmpeg-'));
-            const ffmpegExe = path.join(tempDir, extractedDir, 'bin', 'ffmpeg.exe');
-
-            if (fs.existsSync(ffmpegExe)) {
-                fs.copyFileSync(ffmpegExe, ffmpegPath);
-                fs.chmodSync(ffmpegPath, 0o755);
-                console.log(`[OK] ffmpeg setup complete: ${ffmpegName}`);
+        if (ext === '.zip') {
+            if (process.platform === 'win32') {
+                await execAsync(`powershell -Command "Expand-Archive -Path '${filePath}' -DestinationPath '${destDir}' -Force"`);
             } else {
-                throw new Error(`ffmpeg.exe not found in extracted archive`);
+                await execAsync(`unzip -o "${filePath}" -d "${destDir}"`);
             }
-
-        } else if (process.platform === 'darwin') {
-            // macOS: Download from evermeet.cx
-            const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
-            // evermeet.cx provides universal binaries
-            const ffmpegUrl = 'https://evermeet.cx/ffmpeg/getrelease/zip';
-            const zipPath = path.join(tempDir, 'ffmpeg.zip');
-
-            console.log(`[DOWNLOAD] ffmpeg from evermeet.cx...`);
-            await downloadFile(ffmpegUrl, zipPath);
-
-            console.log(`[EXTRACT] Extracting ffmpeg...`);
-            await extractZip(zipPath, tempDir);
-
-            const ffmpegBin = path.join(tempDir, 'ffmpeg');
-            if (fs.existsSync(ffmpegBin)) {
-                fs.copyFileSync(ffmpegBin, ffmpegPath);
-                fs.chmodSync(ffmpegPath, 0o755);
-                console.log(`[OK] ffmpeg setup complete: ${ffmpegName}`);
-            } else {
-                throw new Error(`ffmpeg not found in extracted archive`);
-            }
-
-        } else if (process.platform === 'linux') {
-            // Linux: Download from johnvansickle.com (static build)
-            const arch = process.arch === 'arm64' ? 'arm64' : 'amd64';
-            const ffmpegUrl = `https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-${arch}-static.tar.xz`;
-            const tarPath = path.join(tempDir, 'ffmpeg.tar.xz');
-
-            console.log(`[DOWNLOAD] ffmpeg from johnvansickle.com...`);
-            await downloadFile(ffmpegUrl, tarPath);
-
-            console.log(`[EXTRACT] Extracting ffmpeg...`);
-            await extractTarXz(tarPath, tempDir);
-
-            // Find ffmpeg in extracted folder
-            const extractedDir = fs.readdirSync(tempDir).find(f => f.startsWith('ffmpeg-'));
-            const ffmpegBin = path.join(tempDir, extractedDir, 'ffmpeg');
-
-            if (fs.existsSync(ffmpegBin)) {
-                fs.copyFileSync(ffmpegBin, ffmpegPath);
-                fs.chmodSync(ffmpegPath, 0o755);
-                console.log(`[OK] ffmpeg setup complete: ${ffmpegName}`);
-            } else {
-                throw new Error(`ffmpeg not found in extracted archive`);
-            }
+        } else if (filePath.endsWith('.tar.xz')) {
+            // Use tar. On Windows 10+, tar.exe is usually available.
+            await execAsync(`tar -xf "${filePath}" -C "${destDir}"`);
+        } else {
+            throw new Error(`Unsupported archive format: ${ext}`);
         }
+    } catch (e) {
+        throw new Error(`Extraction failed: ${e.message}`);
+    }
+}
+
+async function setupTarget(key, config) {
+    console.log(`\n--- Setting up for ${key} (${config.triple}) ---`);
+    const tempDir = path.join(BIN_DIR, `temp_${key}`);
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+
+    try {
+        // 1. Setup yt-dlp
+        const ytdlpName = `yt-dlp-${config.triple}${config.ext}`;
+        const ytdlpPath = path.join(BIN_DIR, ytdlpName);
+
+        if (!fs.existsSync(ytdlpPath)) {
+            console.log(`[DOWNLOAD] yt-dlp from ${config.ytdlpUrl}...`);
+            await downloadFile(config.ytdlpUrl, ytdlpPath);
+            fs.chmodSync(ytdlpPath, 0o755);
+            console.log(`[OK] Saved ${ytdlpName}`);
+        } else {
+            console.log(`[SKIP] ${ytdlpName} exists`);
+        }
+
+        // 2. Setup ffmpeg
+        const ffmpegName = `ffmpeg-${config.triple}${config.ext}`;
+        const ffmpegPath = path.join(BIN_DIR, ffmpegName);
+
+        if (!fs.existsSync(ffmpegPath)) {
+            let archiveName = 'ffmpeg_archive';
+            if (config.ffmpegUrl.endsWith('.zip')) archiveName += '.zip';
+            else if (config.ffmpegUrl.endsWith('.tar.xz')) archiveName += '.tar.xz';
+
+            const archivePath = path.join(tempDir, archiveName);
+
+            console.log(`[DOWNLOAD] ffmpeg archive from ${config.ffmpegUrl}...`);
+            await downloadFile(config.ffmpegUrl, archivePath);
+
+            await extractArchive(archivePath, tempDir);
+
+            // Find binary in extracted folders
+            // Recursive search for 'ffmpeg' or 'ffmpeg.exe'
+            const findFile = (dir, filename) => {
+                const entries = fs.readdirSync(dir, { withFileTypes: true });
+                for (const entry of entries) {
+                    const fullPath = path.join(dir, entry.name);
+                    if (entry.isDirectory()) {
+                        const found = findFile(fullPath, filename);
+                        if (found) return found;
+                    } else if (entry.name === filename) {
+                        return fullPath;
+                    }
+                }
+                return null;
+            };
+
+            const targetBinaryName = config.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg';
+            const foundBinary = findFile(tempDir, targetBinaryName);
+
+            if (foundBinary) {
+                fs.copyFileSync(foundBinary, ffmpegPath);
+                fs.chmodSync(ffmpegPath, 0o755);
+                console.log(`[OK] Saved ${ffmpegName}`);
+            } else {
+                console.error(`[ERROR] Could not find ${targetBinaryName} in extracted archive for ${key}`);
+            }
+        } else {
+            console.log(`[SKIP] ${ffmpegName} exists`);
+        }
+
+    } catch (e) {
+        console.error(`[ERROR] Handling ${key}: ${e.message}`);
     } finally {
-        // Cleanup temp directory
-        if (fs.existsSync(tempDir)) {
-            fs.rmSync(tempDir, { recursive: true, force: true });
-        }
+        // Cleanup temp
+        try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (e) { }
     }
 }
 
 async function main() {
     console.log('='.repeat(50));
-    console.log('SceneClip Binary Setup');
+    console.log('SceneClip Binary Setup Manager');
     console.log('='.repeat(50));
 
-    await setupYtDlp();
-    await setupFfmpeg();
+    const args = process.argv.slice(2);
+    const downloadAll = args.includes('--all');
+
+    if (downloadAll) {
+        console.log('Mode: Download ALL platforms (Windows, macOS, Linux)');
+        // Process Windows first, then others
+        await setupTarget('win-x64', TARGETS['win-x64']);
+        await setupTarget('mac-x64', TARGETS['mac-x64']);
+        await setupTarget('mac-arm64', TARGETS['mac-arm64']);
+        await setupTarget('linux-x64', TARGETS['linux-x64']);
+    } else {
+        const currentKey = getCurrentTargetKey();
+        if (!currentKey || !TARGETS[currentKey]) {
+            console.error(`Current platform ${process.platform}/${process.arch} is not explicitly supported or mapped.`);
+            process.exit(1);
+        }
+        console.log(`Mode: Current Platform Only (${currentKey})`);
+        await setupTarget(currentKey, TARGETS[currentKey]);
+    }
 
     console.log('='.repeat(50));
-    console.log('[DONE] All binaries ready!');
-    console.log('='.repeat(50));
+    console.log('Setup Complete!');
 }
 
-main().catch(e => {
-    console.error('[ERROR]', e);
-    process.exit(1);
-});
+main();

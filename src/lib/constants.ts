@@ -4,8 +4,8 @@
  */
 
 export const BINARIES = {
-    FFMPEG: 'binaries/ffmpeg',
-    YTDLP: 'binaries/yt-dlp'
+    FFMPEG: 'ffmpeg',
+    YTDLP: 'yt-dlp'
 }
 
 export const DEFAULTS = {

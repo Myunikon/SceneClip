@@ -55,6 +55,14 @@ export async function buildYtDlpArgs(
     const fmt = options.format || settings.resolution
     const container = options.container || settings.container || 'mp4'
 
+    // GPU Detection Logic
+    let activeGpuType = gpuType
+    if (settings.hardwareDecoding === 'cpu') {
+        activeGpuType = 'cpu'
+    } else if (settings.hardwareDecoding === 'gpu' && gpuType === 'cpu') {
+        console.warn("User forced GPU but none detected. Falling back to CPU for safety.")
+    }
+
     if (fmt === 'audio') {
         // Use user's preferred audio format, default to mp3 for maximum compatibility
         const audioFormat = options.audioFormat || 'mp3'
@@ -100,6 +108,8 @@ export async function buildYtDlpArgs(
 
 
     } else {
+        // activeGpuType calculated above
+
         let h = ''
         if (fmt !== 'Best' && fmt !== 'audio') {
 
@@ -130,14 +140,39 @@ export async function buildYtDlpArgs(
             let transcodeArgs = ''
 
             // Audio Copy (-c:a copy) preserves original audio quality
+            const getEncoder = (sw: string, nvidia: string, amd: string, intel: string, apple: string) => {
+                if (activeGpuType === 'nvidia') return nvidia
+                if (activeGpuType === 'amd') return amd
+                if (activeGpuType === 'intel') return intel
+                if (activeGpuType === 'apple') return apple
+                return sw
+            }
+
             if (codec === 'h264') {
-                transcodeArgs = '-c:v libx264 -crf 23 -preset medium -c:a copy'
+                const enc = getEncoder('libx264', 'h264_nvenc', 'h264_amf', 'h264_qsv', 'h264_videotoolbox')
+                // Apply GPU-specific quality settings if using GPU
+                if (activeGpuType !== 'cpu') {
+                    if (activeGpuType === 'nvidia') transcodeArgs = `-c:v ${enc} -rc:v vbr -cq:v 19 -preset p4 -c:a copy`
+                    else if (activeGpuType === 'amd') transcodeArgs = `-c:v ${enc} -rc cqp -qp_i 22 -qp_p 22 -c:a copy`
+                    else if (activeGpuType === 'intel') transcodeArgs = `-c:v ${enc} -global_quality 20 -c:a copy`
+                    else if (activeGpuType === 'apple') transcodeArgs = `-c:v ${enc} -q:v 65 -c:a copy`
+                } else {
+                    transcodeArgs = `-c:v ${enc} -crf 23 -preset medium -c:a copy`
+                }
             } else if (codec === 'av1') {
                 transcodeArgs = '-c:v libsvtav1 -crf 30 -preset 8 -c:a copy'
             } else if (codec === 'vp9') {
                 transcodeArgs = '-c:v libvpx-vp9 -crf 30 -b:v 0 -c:a copy'
             } else if (codec === 'hevc') {
-                transcodeArgs = '-c:v libx265 -crf 26 -preset medium -c:a copy'
+                const enc = getEncoder('libx265', 'hevc_nvenc', 'hevc_amf', 'hevc_qsv', 'hevc_videotoolbox')
+                if (activeGpuType !== 'cpu') {
+                    if (activeGpuType === 'nvidia') transcodeArgs = `-c:v ${enc} -rc:v vbr -cq:v 26 -preset p4 -c:a copy`
+                    else if (activeGpuType === 'amd') transcodeArgs = `-c:v ${enc} -rc cqp -qp_i 26 -qp_p 26 -c:a copy`
+                    else if (activeGpuType === 'intel') transcodeArgs = `-c:v ${enc} -global_quality 26 -c:a copy`
+                    else if (activeGpuType === 'apple') transcodeArgs = `-c:v ${enc} -q:v 60 -c:a copy`
+                } else {
+                    transcodeArgs = `-c:v ${enc} -crf 26 -preset medium -c:a copy`
+                }
             }
 
             if (transcodeArgs) {
@@ -172,12 +207,7 @@ export async function buildYtDlpArgs(
     }
 
     const isClipping = !!(options.rangeStart || options.rangeEnd)
-    let activeGpuType = gpuType
-    if (settings.hardwareDecoding === 'cpu') {
-        activeGpuType = 'cpu'
-    } else if (settings.hardwareDecoding === 'gpu' && gpuType === 'cpu') {
-        console.warn("User forced GPU but none detected. Falling back to CPU for safety.")
-    }
+    // activeGpuType calculated earlier
 
     if (activeGpuType !== 'cpu' && fmt !== 'audio' && fmt !== 'gif' && !(options.forceTranscode && isClipping)) {
         const encoderMap: Record<string, string> = {
@@ -214,7 +244,8 @@ export async function buildYtDlpArgs(
                 }
             }
 
-            args.push('--downloader-args', hwArgs)
+            // FIX: Use --postprocessor-args for ffmpeg hardware encoding, NOT --downloader-args
+            args.push('--postprocessor-args', `ffmpeg:${hwArgs.replace('ffmpeg:', '')}`)
         }
     }
 

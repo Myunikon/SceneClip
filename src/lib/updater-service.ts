@@ -9,16 +9,24 @@ export async function getBinaryVersion(binaryName: 'yt-dlp' | 'ffmpeg'): Promise
         // match the name in capabilities/default.json
         const cmd = Command.sidecar(`binaries/${binaryName}`, binaryName === 'ffmpeg' ? ['-version'] : ['--version'])
         const output = await cmd.execute()
-        
+
+        console.log(`[Binary Check] ${binaryName} exit code: ${output.code}`)
+
         if (output.code === 0) {
-            const stdout = output.stdout.trim()
-            // ffmpeg version output is multiline, take first line
-            // yt-dlp is usually single line 2024.10.10
+            let stdout = typeof output.stdout === 'string' ? output.stdout : new TextDecoder().decode(output.stdout)
+            const stderr = typeof output.stderr === 'string' ? output.stderr : new TextDecoder().decode(output.stderr)
+
+            stdout = stdout.trim()
+            const fullOutput = stdout || stderr // Fallback to stderr if stdout is empty
+
             if (binaryName === 'ffmpeg') {
-                const match = stdout.match(/ffmpeg version ([^\s]+)/)
-                return match ? match[1] : stdout.split('\n')[0]
+                const match = fullOutput.match(/ffmpeg version ([^\s]+)/i)
+                return match ? match[1] : fullOutput.split('\n')[0]
             }
-            return stdout.split('\n')[0]
+            return fullOutput.split('\n')[0]
+        } else {
+            const stderr = typeof output.stderr === 'string' ? output.stderr : new TextDecoder().decode(output.stderr)
+            console.warn(`[Binary Check] ${binaryName} failed:`, stderr)
         }
     } catch (e) {
         console.error(`Failed to get version for ${binaryName}:`, e)
@@ -36,7 +44,7 @@ export async function getLatestVersion(binaryName: 'yt-dlp' | 'ffmpeg'): Promise
             'ffmpeg': 'BtbN/FFmpeg-Builds'
         }
         const repo = repoMap[binaryName]
-        
+
         const response = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
             method: 'GET',
             headers: {
@@ -44,7 +52,7 @@ export async function getLatestVersion(binaryName: 'yt-dlp' | 'ffmpeg'): Promise
                 'User-Agent': 'SceneClip'
             }
         })
-        
+
         if (response.ok) {
             const data = await response.json() as { tag_name: string }
             // yt-dlp uses version like "2024.12.23"
@@ -63,15 +71,21 @@ export async function getLatestVersion(binaryName: 'yt-dlp' | 'ffmpeg'): Promise
  */
 export function compareVersions(current: string | null, latest: string | null): number {
     if (!current || !latest) return 0
-    
-    // Normalize: extract numbers from version strings
-    const normalize = (v: string) => v.replace(/[^\d.]/g, '').replace(/\./g, '')
-    
-    const c = normalize(current)
-    const l = normalize(latest)
-    
-    if (c === l) return 0
-    return c < l ? -1 : 1
+
+    // Robust numeric chunk comparison (handles "7.0.2" vs "2024.12.23")
+    const extractParts = (v: string) => v.split(/[^0-9]+/).filter(Boolean).map(Number)
+
+    const cParts = extractParts(current)
+    const lParts = extractParts(latest)
+
+    for (let i = 0; i < Math.max(cParts.length, lParts.length); i++) {
+        const cVal = cParts[i] || 0
+        const lVal = lParts[i] || 0
+        if (cVal < lVal) return -1
+        if (cVal > lVal) return 1
+    }
+
+    return 0
 }
 
 /**
@@ -85,12 +99,12 @@ export async function checkForUpdates(): Promise<{
         getBinaryVersion('yt-dlp'),
         getBinaryVersion('ffmpeg')
     ])
-    
+
     const [ytdlpLatest, ffmpegLatest] = await Promise.all([
         getLatestVersion('yt-dlp'),
         getLatestVersion('ffmpeg')
     ])
-    
+
     return {
         ytdlp: {
             current: ytdlpCurrent,

@@ -81,11 +81,19 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
 
     processQueue: () => {
         const { tasks, settings, startTask } = get()
-        const active = tasks.filter(t => t.status === 'downloading').length
+        // FIX RACE CONDITION: Count ALL active tasks including:
+        // 1. Currently downloading
+        // 2. Fetching info (preparing to download)
+        // 3. Tasks being started (in startingTaskIds but not yet status-updated)
+        const activeCount = tasks.filter(t =>
+            t.status === 'downloading' ||
+            t.status === 'fetching_info' ||
+            startingTaskIds.has(t.id)
+        ).length
         const limit = settings.concurrentDownloads || 3
 
-        if (active < limit) {
-            // Check startingTaskIds to prevent race condition
+        if (activeCount < limit) {
+            // Find next pending task that's not already being started
             const pending = tasks.find(t =>
                 t.status === 'pending' && !startingTaskIds.has(t.id)
             )
@@ -100,7 +108,7 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
         const { tasks, settings, updateTask } = get()
         const task = tasks.find(t => t.id === id)
         if (!task) {
-            startingTaskIds.delete(id) // Clean up if task not found
+            cleanupTask(id) // FIX MEMORY LEAK: Clean up all tracking maps
             return
         }
 
@@ -120,11 +128,15 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
 
             if (!version) {
                 notify.error('Critical Error: FFmpeg binary missing.')
+                cleanupTask(id) // FIX MEMORY LEAK: Clean up on early return
+                updateTask(id, { status: 'error', log: 'FFmpeg binary missing' })
                 return
             }
         } catch (e) {
             console.error("Binary check failed:", e)
             notify.error('Failed to verify FFmpeg binary', { description: String(e) })
+            cleanupTask(id) // FIX MEMORY LEAK: Clean up on early return
+            updateTask(id, { status: 'error', log: `Binary check failed: ${e}` })
             return
         }
 
@@ -179,7 +191,7 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
             // 2. Prepare Filename
             // IMPORTANT: Use settings.container (output format) NOT meta.ext (source format)
             // yt-dlp converts webm to mp4 via --merge-output-format, so filename must match
-            const outputExt = options.format === 'audio' ? 'mp3' : (options.container || settings.container || 'mp4')
+            const outputExt = options.format === 'audio' ? 'mp3' : (options.format === 'gif' ? 'gif' : (options.container || settings.container || 'mp4'))
 
             let finalName: string
             if (options.customFilename) {
@@ -430,7 +442,7 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
                 })
 
                 cmd.on('error', (err: any) => {
-                    activeProcessMap.delete(id)
+                    cleanupTask(id) // FIX MEMORY LEAK: Clean up all tracking maps
                     // Check for encoding error and provide helpful message
                     const errStr = String(err)
                     if (errStr.includes('utf-8') || errStr.includes('utf8')) {
@@ -448,6 +460,7 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
                 throw new Error(`Failed to spawn native downloader: ${e}`)
             }
         } catch (e) {
+            cleanupTask(id) // FIX MEMORY LEAK: Clean up all tracking maps on error
             get().addLog({ message: `Task Error: ${e}`, type: 'error' })
             const msg = e instanceof Error ? e.message : String(e)
             updateTask(id, { status: 'error', log: msg })

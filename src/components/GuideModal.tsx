@@ -1,9 +1,9 @@
 
 import { useRef, forwardRef, useImperativeHandle, useState } from 'react'
-import { 
-    Rocket, Scissors, Zap, Terminal, AlertTriangle, 
-    BookOpen, MousePointerClick, CheckCircle2, 
-    Clipboard, Settings 
+import {
+    Rocket, Scissors, Terminal, AlertTriangle,
+    BookOpen, MousePointerClick, CheckCircle2,
+    Clipboard, Settings
 } from 'lucide-react'
 import { useAppStore } from '../store'
 import { translations } from '../lib/locales'
@@ -15,7 +15,7 @@ export interface GuideModalRef {
     close: () => void
 }
 
-type GuideSection = 'start' | 'clipping' | 'performance' | 'advanced' | 'faq'
+type GuideSection = 'start' | 'clipping' | 'advanced' | 'faq'
 
 export const GuideModal = forwardRef<GuideModalRef, {}>((_, ref) => {
     const dialogRef = useRef<HTMLDialogElement>(null)
@@ -32,13 +32,12 @@ export const GuideModal = forwardRef<GuideModalRef, {}>((_, ref) => {
     const sections = [
         { id: 'start', label: t.guide.menu?.start || "Getting Started", icon: Rocket },
         { id: 'clipping', label: t.guide.menu?.clip || "Clipping", icon: Scissors },
-        { id: 'performance', label: t.guide.menu?.perf || "Performance", icon: Zap },
         { id: 'advanced', label: t.guide.menu?.advanced || "Advanced", icon: Terminal },
         { id: 'faq', label: t.guide.menu?.faq || "FAQ", icon: AlertTriangle },
     ]
 
     return (
-        <dialog 
+        <dialog
             ref={dialogRef}
             className="fixed inset-0 m-auto bg-transparent p-0 backdrop:bg-black/80 w-full max-w-4xl h-[600px] rounded-2xl shadow-2xl open:animate-in open:fade-in open:zoom-in-95 backdrop:animate-in backdrop:fade-in outline-none"
             onClick={(e) => {
@@ -46,7 +45,7 @@ export const GuideModal = forwardRef<GuideModalRef, {}>((_, ref) => {
             }}
         >
             <div className="flex h-full bg-background/95 backdrop-blur-xl text-foreground rounded-2xl overflow-hidden border border-white/10 glass-panel">
-                
+
                 {/* --- LEFT SIDEBAR --- */}
                 <div className="w-64 bg-secondary/30 border-r border-white/5 flex flex-col">
                     <div className="p-6 border-b border-white/5">
@@ -68,8 +67,8 @@ export const GuideModal = forwardRef<GuideModalRef, {}>((_, ref) => {
                                 onClick={() => setActiveSection(section.id as GuideSection)}
                                 className={cn(
                                     "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
-                                    activeSection === section.id 
-                                        ? "bg-primary text-primary-foreground shadow-md" 
+                                    activeSection === section.id
+                                        ? "bg-primary text-primary-foreground shadow-md"
                                         : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
                                 )}
                             >
@@ -80,7 +79,7 @@ export const GuideModal = forwardRef<GuideModalRef, {}>((_, ref) => {
                     </nav>
 
                     <div className="p-4 border-t border-white/5">
-                        <button 
+                        <button
                             onClick={() => dialogRef.current?.close()}
                             className="w-full py-2 bg-secondary hover:bg-secondary/80 rounded-lg text-xs font-bold transition-colors"
                         >
@@ -103,7 +102,6 @@ export const GuideModal = forwardRef<GuideModalRef, {}>((_, ref) => {
                             {/* RENDER CONTENT BASED ON ACTIVE SECTION */}
                             {activeSection === 'start' && <GettingStartedContent t={t} />}
                             {activeSection === 'clipping' && <ClippingContent t={t} />}
-                            {activeSection === 'performance' && <PerformanceContent t={t} />}
                             {activeSection === 'advanced' && <AdvancedContent t={t} />}
                             {activeSection === 'faq' && <FaqContent t={t} />}
                         </motion.div>
@@ -122,30 +120,30 @@ function GettingStartedContent({ t }: { t: any }) {
         <div className="space-y-6">
             <header className="space-y-2 border-b border-white/5 pb-4">
                 <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <Rocket className="w-6 h-6 text-blue-500" /> {t.guide.menu?.start}
+                    <Rocket className="w-6 h-6 text-orange-500" /> {t.guide.menu?.start}
                 </h1>
                 <p className="text-muted-foreground">{t.guide.subtitle}</p>
             </header>
 
             <div className="grid gap-6">
-                <StepItem 
-                    num="1" 
+                <StepItem
+                    num="1"
                     title={t.guide.steps?.smart?.title || "Smart Detection"}
                     desc={t.guide.steps?.smart?.desc}
                     icon={<Clipboard className="w-5 h-5" />}
                 />
-                <StepItem 
-                    num="2" 
-                    title={t.guide.steps?.format?.title || "Format Selection"} 
+                <StepItem
+                    num="2"
+                    title={t.guide.steps?.format?.title || "Format Selection"}
                     desc={t.guide.steps?.format?.desc}
                     icon={<Settings className="w-5 h-5" />}
                 />
             </div>
 
-            <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl flex gap-3">
-                <MousePointerClick className="w-5 h-5 text-blue-400 shrink-0" />
-                <div className="space-y-1">
-                    <h4 className="text-sm font-bold text-blue-400">Pro Tip: Drag & Drop</h4>
+            <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-xl flex gap-3">
+                <MousePointerClick className="w-5 h-5 text-orange-400 shrink-0" />
+                <div>
+                    <h4 className="text-sm font-bold text-orange-400">Pro Tip: Drag & Drop</h4>
                     <p className="text-xs text-muted-foreground">
                         Drag any .txt file containing links into the app to start a batch download instantly.
                     </p>
@@ -180,55 +178,23 @@ function ClippingContent({ t }: { t: any }) {
     )
 }
 
-function PerformanceContent({ t }: { t: any }) {
-    return (
-        <div className="space-y-6">
-            <header className="space-y-2 border-b border-white/5 pb-4">
-                <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <Zap className="w-6 h-6 text-yellow-500" /> {t.guide.steps?.perf?.title}
-                </h1>
-                <p className="text-muted-foreground">{t.guide.steps?.perf?.desc}</p>
-            </header>
-
-            <div className="grid md:grid-cols-2 gap-4">
-                <div className="p-4 border border-white/10 rounded-xl space-y-2">
-                    <div className="flex items-center gap-2 text-yellow-500 font-bold">
-                        <Zap className="w-4 h-4" /> Low Performance Mode
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                        Disables animations and glass effects. Recommended for laptops running on battery or without dedicated GPUs.
-                    </p>
-                </div>
-
-                <div className="p-4 border border-white/10 rounded-xl space-y-2">
-                    <div className="flex items-center gap-2 text-green-500 font-bold">
-                        <Rocket className="w-4 h-4" /> Hardware Acceleration
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                        SceneClip auto-detects NVIDIA/AMD/Intel GPUs to speed up video conversion and reduce CPU load.
-                    </p>
-                </div>
-            </div>
-        </div>
-    )
-}
 
 function AdvancedContent({ t }: { t: any }) {
     return (
         <div className="space-y-6">
             <header className="space-y-2 border-b border-white/5 pb-4">
                 <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <Terminal className="w-6 h-6 text-purple-500" /> {t.guide.steps?.terminal?.title}
+                    <Terminal className="w-6 h-6 text-red-500" /> {t.guide.steps?.terminal?.title}
                 </h1>
                 <p className="text-muted-foreground">{t.guide.steps?.terminal?.desc}</p>
             </header>
 
             <ul className="space-y-4">
-                <FeatureRow 
+                <FeatureRow
                     title="Terminal Logs"
                     desc="View raw output from yt-dlp and FFmpeg. Essential for debugging errors."
                 />
-                <FeatureRow 
+                <FeatureRow
                     title="Browser Cookies"
                     desc="Download Age-Restricted content by using cookies from your browser (Chrome/Firefox)."
                 />
@@ -248,17 +214,17 @@ function FaqContent({ t }: { t: any }) {
             </header>
 
             <div className="space-y-4">
-                <FaqItem 
-                    q="Download stuck at 100%?" 
-                    a="The app is likely merging video and audio streams. This can take a while for large files (4K/8K)." 
+                <FaqItem
+                    q="Download stuck at 100%?"
+                    a="The app is likely merging video and audio streams. This can take a while for large files (4K/8K)."
                 />
-                <FaqItem 
-                    q="Sign in to confirm your age?" 
-                    a="Go to Settings > Advanced > Source and select your browser to use its cookies." 
+                <FaqItem
+                    q="Sign in to confirm your age?"
+                    a="Go to Settings > Advanced > Source and select your browser to use its cookies."
                 />
-                <FaqItem 
-                    q="Slow download speed?" 
-                    a="Try changing 'Connection Type' in Network Settings to 'Aggressive'. Warning: May cause temporary IP bans." 
+                <FaqItem
+                    q="Slow download speed?"
+                    a="Try changing 'Connection Type' in Network Settings to 'Aggressive'. Warning: May cause temporary IP bans."
                 />
             </div>
         </div>
@@ -284,7 +250,7 @@ function StepItem({ num, title, desc, icon }: { num: string, title: string, desc
 function FeatureRow({ title, desc }: { title: string, desc: string }) {
     return (
         <li className="flex gap-3 items-start p-3 rounded-lg hover:bg-white/5 transition-colors border border-transparent hover:border-white/5">
-            <CheckCircle2 className="w-5 h-5 text-purple-500 shrink-0 mt-0.5" />
+            <CheckCircle2 className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
             <div>
                 <strong className="block text-sm text-foreground">{title}</strong>
                 <span className="text-xs text-muted-foreground">{desc}</span>

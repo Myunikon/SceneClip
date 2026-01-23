@@ -64,10 +64,12 @@ function createOverlay(video) {
 
     // Prefer Page URL for YouTube, fallback to src for direct files
     const urlToDownload = window.location.href;
-    const protocolUrl = `clipscene://download?url=${encodeURIComponent(urlToDownload)}`;
 
-    // "Blinking Tab" hack for protocol triggering (Reliable cross-browser)
-    window.location.assign(protocolUrl);
+    // Send to Background Script (which handles cookies & local server)
+    chrome.runtime.sendMessage({
+      action: "download-video",
+      url: urlToDownload
+    });
   });
 
   // Hover Logic: Show button when hovering video OR button

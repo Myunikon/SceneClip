@@ -1,0 +1,125 @@
+name: Build Custom FFmpeg (Minimal)
+
+on:
+  workflow_dispatch: # Run manually when you want to update the binary
+  schedule:
+    - cron: '0 0 1 * *' # Run once a month to keep fresh
+
+jobs:
+  build-minimal-ffmpeg:
+    name: Build Minimal FFmpeg
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            target_name: ffmpeg-x86_64-unknown-linux-gnu
+            install_cmd: |
+              sudo apt-get update
+              sudo apt-get install -y build-essential nasm yasm pkg-config libx264-dev libx265-dev libnuma-dev libvpx-dev libmp3lame-dev libopus-dev libsvtav1-dev libssl-dev zlib1g-dev upx
+
+          - os: macos-13
+            target_name: ffmpeg-x86_64-apple-darwin
+            install_cmd: |
+              brew install nasm yasm pkg-config x264 x265 libvpx lame opus svt-av1 openssl@3 upx
+
+          - os: ubuntu-22.04
+            target_name: ffmpeg-x86_64-pc-windows-msvc.exe
+            cross_compile: true
+            install_cmd: |
+              sudo apt-get update
+              sudo apt-get install -y build-essential nasm yasm pkg-config mingw-w64 upx zip
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: ${{ matrix.install_cmd }}
+
+      - name: Download FFmpeg Source (v6.1)
+        run: |
+          git clone --depth 1 --branch release/6.1 https://github.com/FFmpeg/FFmpeg.git ffmpeg-src
+
+      - name: Configure Minimal Build
+        working-directory: ffmpeg-src
+        run: |
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            export PKG_CONFIG_PATH="/usr/local/opt/openssl@3/lib/pkgconfig:$PKG_CONFIG_PATH"
+          fi
+
+          # Cross-Compile Setup
+          EXTRA_FLAGS=""
+          if [[ "${{ matrix.target_name }}" == *"windows"* ]]; then
+            EXTRA_FLAGS="--arch=x86_64 --target-os=mingw32 --cross-prefix=x86_64-w64-mingw32-"
+          fi
+
+          # configuration flags for minimal size
+          ./configure \
+            $EXTRA_FLAGS \
+            --pkg-config-flags="--static" \
+            --extra-cflags="-Os" \
+            --extra-ldflags="-static" \
+            --disable-debug \
+            --disable-doc \
+            --disable-ffplay \
+            --disable-ffprobe \
+            --enable-gpl \
+            --enable-version3 \
+            --enable-nonfree \
+            --enable-small \
+            --enable-protocol=file,http,https \
+            --enable-demuxer=mov,mp4,m4a,matroska,webm,aac,mp3,wav,flac,ogg,image2 \
+            --enable-muxer=mp4,matroska,webm,gif,mp3,wav,flac,ogg,opus,ipod,image2 \
+            --enable-decoder=h264,hevc,vp9,av1,aac,mp3,flac,wav,opus,vorbis,png,webp \
+            --enable-encoder=libx264,libx265,libvpx_vp9,libsvtav1,libmp3lame,libopus,aac,gif \
+            --enable-filter=scale,fps,palettegen,paletteuse,crop,split \
+            --enable-zlib \
+            --disable-autodetect \
+            $( [ "$RUNNER_OS" == "macOS" ] && echo "--enable-videotoolbox" ) \
+             || (cat ffbuild/config.log && exit 1)
+
+      - name: Compile
+        working-directory: ffmpeg-src
+        run: make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
+
+      - name: Strip & Compress (UPX)
+        working-directory: ffmpeg-src
+        run: |
+          echo "Original Size:"
+          ls -lh ffmpeg
+          strip ffmpeg
+          upx --best -k ffmpeg
+          echo "Compressed Size:"
+          ls -lh ffmpeg
+
+      - name: Rename Output
+        run: mv ffmpeg-src/ffmpeg ${{ matrix.target_name }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ matrix.os }}
+          path: ${{ matrix.target_name }}
+
+  release-binaries:
+    needs: build-minimal-ffmpeg
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: binaries
+          merge-multiple: true
+
+      - name: Create 'binaries' Tag Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: binaries
+          name: "Custom Minimal Binaries"
+          draft: false
+          prerelease: true
+          files: binaries/*

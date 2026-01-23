@@ -92,7 +92,7 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
     // State
     const [selectedPreset, setSelectedPreset] = useState<PresetKey>('social')
     const [isAdvanced, setIsAdvanced] = useState(false)
-    
+
     // Custom settings
     const [crf, setCrf] = useState(23)
     const [resolution, setResolution] = useState('1080')
@@ -126,7 +126,7 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
             resolution,
             encoder,
             speedPreset: speedPreset as any,
-            audioBitrate 
+            audioBitrate
         })
         onClose()
     }
@@ -139,7 +139,7 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
                     {isAlreadyCompressed && (
                         <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-start gap-3">
                             <div className="mt-0.5 min-w-[16px]">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
                             </div>
                             <p className="text-xs text-yellow-500/90 leading-relaxed font-medium">
                                 {t.double_compression_warning}
@@ -148,17 +148,17 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <PresetCard 
+                        <PresetCard
                             id="wa" title={t.preset_wa} desc={t.preset_wa_desc_audio} icon={Smartphone} color="text-green-500"
-                            active={selectedPreset === 'wa'} onClick={() => setSelectedPreset('wa')} 
+                            active={selectedPreset === 'wa'} onClick={() => setSelectedPreset('wa')}
                         />
-                        <PresetCard 
-                            id="social" title={t.preset_social} desc={t.preset_social_desc_audio} icon={Music} color="text-blue-500"
-                            active={selectedPreset === 'social'} onClick={() => setSelectedPreset('social')} 
+                        <PresetCard
+                            id="social" title={t.preset_social} desc={t.preset_social_desc_audio} icon={Music} color="text-orange-500"
+                            active={selectedPreset === 'social'} onClick={() => setSelectedPreset('social')}
                         />
-                        <PresetCard 
-                            id="archive" title={t.preset_archive} desc={t.preset_archive_desc_audio} icon={HardDrive} color="text-purple-500"
-                            active={selectedPreset === 'archive'} onClick={() => setSelectedPreset('archive')} 
+                        <PresetCard
+                            id="archive" title={t.preset_archive} desc={t.preset_archive_desc_audio} icon={HardDrive} color="text-red-500"
+                            active={selectedPreset === 'archive'} onClick={() => setSelectedPreset('archive')}
                         />
                     </div>
                 </>
@@ -167,32 +167,32 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
         // Video/Image Presets
         return (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                 <PresetCard 
-                    id="wa" 
-                    title={t.preset_wa} 
-                    desc={mediaType === 'image' ? "Small (480p)" : t.preset_wa_desc} 
-                    icon={Smartphone} 
-                    color="text-green-500" 
-                    active={selectedPreset === 'wa'} 
-                    onClick={() => setSelectedPreset('wa')} 
+                <PresetCard
+                    id="wa"
+                    title={t.preset_wa}
+                    desc={mediaType === 'image' ? "Small (480p)" : t.preset_wa_desc}
+                    icon={Smartphone}
+                    color="text-green-500"
+                    active={selectedPreset === 'wa'}
+                    onClick={() => setSelectedPreset('wa')}
                 />
-                 <PresetCard 
-                    id="social" 
-                    title={t.preset_social} 
-                    desc={mediaType === 'image' ? "Balanced (720p)" : t.preset_social_desc} 
-                    icon={Zap} 
-                    color="text-blue-500" 
-                    active={selectedPreset === 'social'} 
-                    onClick={() => setSelectedPreset('social')} 
+                <PresetCard
+                    id="social"
+                    title={t.preset_social}
+                    desc={mediaType === 'image' ? "Balanced (720p)" : t.preset_social_desc}
+                    icon={Zap}
+                    color="text-orange-500"
+                    active={selectedPreset === 'social'}
+                    onClick={() => setSelectedPreset('social')}
                 />
-                 <PresetCard 
-                    id="archive" 
-                    title={t.preset_archive} 
-                    desc={t.preset_archive_desc} 
-                    icon={HardDrive} 
-                    color="text-purple-500" 
-                    active={selectedPreset === 'archive'} 
-                    onClick={() => setSelectedPreset('archive')} 
+                <PresetCard
+                    id="archive"
+                    title={t.preset_archive}
+                    desc={t.preset_archive_desc}
+                    icon={HardDrive}
+                    color="text-red-500"
+                    active={selectedPreset === 'archive'}
+                    onClick={() => setSelectedPreset('archive')}
                 />
             </div>
         )
@@ -202,15 +202,15 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
 
     return createPortal(
         <AnimatePresence>
-            <motion.div 
+            <motion.div
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
                 onClick={onClose}
             >
-                <motion.div 
-                    initial={{ scale: 0.95, opacity: 0, y: 10 }} 
-                    animate={{ scale: 1, opacity: 1, y: 0 }} 
-                    exit={{ scale: 0.95, opacity: 0, y: 10 }} 
+                <motion.div
+                    initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.95, opacity: 0, y: 10 }}
                     onClick={(e) => e.stopPropagation()}
                     className="w-full max-w-lg bg-background border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
                 >
@@ -218,7 +218,7 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
                     <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
                         <div>
                             <h2 className="text-lg font-bold flex items-center gap-2">
-                                {mediaType === 'audio' ? <Music className="w-5 h-5 text-pink-500" /> : <Video className="w-5 h-5 text-primary" />}
+                                {mediaType === 'audio' ? <Music className="w-5 h-5 text-red-500" /> : <Video className="w-5 h-5 text-primary" />}
                                 {mediaType === 'audio' ? t.title_audio : mediaType === 'image' ? t.title_image : t.title_video}
                             </h2>
                             <p className="text-xs text-muted-foreground truncate max-w-[300px]">{task.title}</p>
@@ -230,7 +230,7 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
 
                     {/* Body */}
                     <div className="p-5 overflow-y-auto space-y-6">
-                        
+
                         {/* File Missing Warning */}
                         {fileMissing && (
                             <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 flex items-start gap-3">
@@ -238,7 +238,7 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
                                 <div className="flex-1">
                                     <p className="font-medium text-destructive">{t.file_missing || 'File Not Found'}</p>
                                     <p className="text-sm text-muted-foreground mt-1">{t.file_missing_desc || 'The original file has been moved or deleted.'}</p>
-                                    <button 
+                                    <button
                                         onClick={handleBrowseFile}
                                         className="mt-3 flex items-center gap-2 px-3 py-1.5 text-sm bg-secondary hover:bg-secondary/80 rounded-lg transition-colors"
                                     >
@@ -255,11 +255,11 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
                                 Checking file...
                             </div>
                         )}
-                        
+
                         {/* Render Dynamic Presets */}
                         {renderPresets()}
 
-                         {/* File Info */}
+                        {/* File Info */}
                         <div className="bg-secondary/30 rounded-lg p-3 text-sm flex justify-between items-center text-muted-foreground">
                             <span>{t.original_size}: <span className="text-foreground font-mono">{task.fileSize || 'Unknown'}</span></span>
                             <span>{t.format}: <span className="uppercase text-foreground">{task.format || 'Auto'}</span></span>
@@ -267,8 +267,8 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
 
                         {/* Advanced Settings */}
                         <div className="border border-border rounded-xl overflow-hidden">
-                             {/* Toggle Button */}
-                            <button 
+                            {/* Toggle Button */}
+                            <button
                                 onClick={() => setIsAdvanced(!isAdvanced)}
                                 className="w-full flex items-center justify-between px-4 py-3 bg-secondary/10 hover:bg-secondary/20 transition-colors text-sm font-medium"
                             >
@@ -278,18 +278,18 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
 
                             <AnimatePresence>
                                 {isAdvanced && (
-                                    <motion.div 
+                                    <motion.div
                                         initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
                                         className="overflow-hidden"
                                     >
                                         <div className="p-4 space-y-4 bg-muted/10 border-t border-border/50">
-                                            
+
                                             {/* AUDIO ONLY SETTINGS */}
                                             {mediaType === 'audio' && (
                                                 <div className="space-y-1.5">
                                                     <label className="text-xs font-medium text-muted-foreground">{t.lbl_bitrate}</label>
-                                                    <Select 
-                                                        value={audioBitrate} 
+                                                    <Select
+                                                        value={audioBitrate}
                                                         onChange={(v) => { setAudioBitrate(v); setSelectedPreset('custom' as any) }}
                                                         options={[
                                                             { value: '64k', label: '64 kbps (Voice)' },
@@ -306,65 +306,65 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
                                             {/* VIDEO/IMAGE ONLY SETTINGS */}
                                             {mediaType !== 'audio' && (
                                                 <>
-                                                 <div className="space-y-1.5">
-                                                     <label className="text-xs font-medium text-muted-foreground">{t.lbl_resolution}</label>
-                                                     <Select 
-                                                        value={resolution} 
-                                                        onChange={(v) => { setResolution(v); setSelectedPreset('custom' as any) }}
-                                                        options={[
-                                                            { value: 'original', label: 'Original (No Resize)' },
-                                                            { value: '1080', label: '1080p (FHD)' },
-                                                            { value: '720', label: '720p (HD)' },
-                                                            { value: '480', label: '480p (SD)' }
-                                                        ]}
-                                                     />
-                                                 </div>
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-xs font-medium text-muted-foreground">{t.lbl_resolution}</label>
+                                                        <Select
+                                                            value={resolution}
+                                                            onChange={(v) => { setResolution(v); setSelectedPreset('custom' as any) }}
+                                                            options={[
+                                                                { value: 'original', label: 'Original (No Resize)' },
+                                                                { value: '1080', label: '1080p (FHD)' },
+                                                                { value: '720', label: '720p (HD)' },
+                                                                { value: '480', label: '480p (SD)' }
+                                                            ]}
+                                                        />
+                                                    </div>
 
-                                                 {/* Video-Only Settings (Hidden for Image) */}
-                                                 {mediaType === 'video' && (
-                                                     <>
-                                                         {/* CRF Slider */}
-                                                        <div className="space-y-1.5">
-                                                            <div className="flex justify-between">
-                                                                <label className="text-xs font-medium text-muted-foreground">{t.lbl_quality}</label>
-                                                                <span className="text-xs font-mono bg-secondary px-1.5 rounded">{crf}</span>
+                                                    {/* Video-Only Settings (Hidden for Image) */}
+                                                    {mediaType === 'video' && (
+                                                        <>
+                                                            {/* CRF Slider */}
+                                                            <div className="space-y-1.5">
+                                                                <div className="flex justify-between">
+                                                                    <label className="text-xs font-medium text-muted-foreground">{t.lbl_quality}</label>
+                                                                    <span className="text-xs font-mono bg-secondary px-1.5 rounded">{crf}</span>
+                                                                </div>
+                                                                <input
+                                                                    type="range" min="0" max="51" step="1"
+                                                                    value={crf}
+                                                                    onChange={(e) => { setCrf(Number(e.target.value)); setSelectedPreset('custom' as any) }}
+                                                                    className="w-full transition-all accent-primary"
+                                                                />
+                                                                <div className="flex justify-between text-[10px] text-muted-foreground">
+                                                                    <span>Original (0)</span>
+                                                                    <span>Standard (23)</span>
+                                                                    <span>Low (51)</span>
+                                                                </div>
                                                             </div>
-                                                            <input 
-                                                                type="range" min="0" max="51" step="1" 
-                                                                value={crf} 
-                                                                onChange={(e) => { setCrf(Number(e.target.value)); setSelectedPreset('custom' as any) }}
-                                                                className="w-full transition-all accent-primary"
-                                                            />
-                                                            <div className="flex justify-between text-[10px] text-muted-foreground">
-                                                                <span>Original (0)</span>
-                                                                <span>Standard (23)</span>
-                                                                <span>Low (51)</span>
-                                                            </div>
-                                                        </div>
 
-                                                        {/* Encoder */}
-                                                        <div className="space-y-1.5">
-                                                            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                                                                <Cpu className="w-3 h-3" /> {t.lbl_encoder}
-                                                            </label>
-                                                            <Select 
-                                                                value={encoder} 
-                                                                onChange={(v) => { setEncoder(v as any); setSelectedPreset('custom' as any) }}
-                                                                options={[
-                                                                    { value: 'auto', label: 'Auto (Detect)' },
-                                                                    { value: 'cpu', label: 'CPU (x264 software)' },
-                                                                    { value: 'nvenc', label: 'NVIDIA (NVENC)' },
-                                                                    { value: 'amf', label: 'AMD (AMF)' },
-                                                                    { value: 'qsv', label: 'Intel (QSV)' }
-                                                                ]}
-                                                            />
-                                                        </div>
-                                                        
-                                                        {/* Speed Preset */}
-                                                        <div className="space-y-1.5">
+                                                            {/* Encoder */}
+                                                            <div className="space-y-1.5">
+                                                                <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                                                                    <Cpu className="w-3 h-3" /> {t.lbl_encoder}
+                                                                </label>
+                                                                <Select
+                                                                    value={encoder}
+                                                                    onChange={(v) => { setEncoder(v as any); setSelectedPreset('custom' as any) }}
+                                                                    options={[
+                                                                        { value: 'auto', label: 'Auto (Detect)' },
+                                                                        { value: 'cpu', label: 'CPU (x264 software)' },
+                                                                        { value: 'nvenc', label: 'NVIDIA (NVENC)' },
+                                                                        { value: 'amf', label: 'AMD (AMF)' },
+                                                                        { value: 'qsv', label: 'Intel (QSV)' }
+                                                                    ]}
+                                                                />
+                                                            </div>
+
+                                                            {/* Speed Preset */}
+                                                            <div className="space-y-1.5">
                                                                 <label className="text-xs font-medium text-muted-foreground">{t.lbl_speed}</label>
-                                                                <Select 
-                                                                    value={speedPreset} 
+                                                                <Select
+                                                                    value={speedPreset}
                                                                     onChange={(v) => { setSpeedPreset(v); setSelectedPreset('custom' as any) }}
                                                                     options={[
                                                                         { value: 'ultrafast', label: 'Ultrafast (Low Quality)' },
@@ -375,8 +375,8 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
                                                                     ]}
                                                                 />
                                                             </div>
-                                                     </>
-                                                 )}
+                                                        </>
+                                                    )}
                                                 </>
                                             )}
                                         </div>
@@ -391,7 +391,7 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
                         <button onClick={onClose} className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-lg transition-colors">
                             {t.btn_cancel}
                         </button>
-                        <button 
+                        <button
                             onClick={handleCompress}
                             className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2 rounded-lg text-sm font-medium shadow-lg shadow-primary/25 transition-all active:scale-95 flex items-center gap-2"
                         >
@@ -407,13 +407,12 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
 
 function PresetCard({ title, desc, icon: Icon, color, active, onClick }: any) {
     return (
-        <button 
+        <button
             onClick={onClick}
-            className={`relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200 ${
-                active 
-                ? 'border-primary bg-primary/5 shadow-md scale-[1.02]' 
-                : 'border-border hover:border-border/80 hover:bg-secondary/50'
-            }`}
+            className={`relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200 ${active
+                    ? 'border-primary bg-primary/5 shadow-md scale-[1.02]'
+                    : 'border-border hover:border-border/80 hover:bg-secondary/50'
+                }`}
         >
             <div className={`p-2.5 rounded-full mb-3 ${active ? 'bg-primary/10' : 'bg-secondary'}`}>
                 <Icon className={`w-6 h-6 ${color}`} />

@@ -1,205 +1,162 @@
 import { Scissors } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { RangeSlider } from '../RangeSlider'
-import { Switch } from '../Switch'
 import { cn, formatTime, parseTime } from '../../lib/utils'
-import { DialogOptions, DialogOptionSetters } from '../../types'
+import { SettingCard, OptionCard } from '../CommonSettings'
+import { useAddDialogContext } from './AddDialogContext'
 
 interface ClipSectionProps {
-    duration?: number
-    maxDuration?: number // For GIF mode - max clip length
-    t: any
-
-    // Grouped Props
-    options: DialogOptions
-    setters: DialogOptionSetters
+    maxDuration?: number // Still keeping this as an optional prop if needed for GIF specific override, or derive from options/context?
 }
 
-export function ClipSection({
-    duration, maxDuration, t,
-    options, setters
-}: ClipSectionProps) {
+const TIME_INPUT_REGEX = /[^0-9:]/g
+
+export function ClipSection({ maxDuration }: ClipSectionProps) {
+    const { options, setters, meta, t } = useAddDialogContext()
+    const duration = meta?.duration
+
     const { isClipping, rangeStart, rangeEnd, format } = options
     const { setIsClipping, setRangeStart, setRangeEnd } = setters
 
     // For GIF mode (when maxDuration is set), clipping is mandatory
     const isMandatory = !!maxDuration
-    const effectiveIsClipping = isMandatory || isClipping
+
+    // Helper to validate and clamp times on blur
+    const handleTimeBlur = (isStart: boolean) => {
+        let s = parseTime(rangeStart)
+        let e = parseTime(rangeEnd)
+
+        // 1. Clamp to duration bounds
+        if (duration) {
+            s = Math.max(0, Math.min(s, duration))
+            e = Math.max(0, Math.min(e, duration))
+        } else {
+            s = Math.max(0, s)
+            e = Math.max(0, e)
+        }
+
+        // 2. Swap if inverted
+        if (s >= e) {
+            if (isStart) {
+                // If we edited start and it went past end, push end to Match or valid range?
+                // Logic: Swap them
+                const temp = s
+                s = e
+                e = temp
+            } else {
+                // If we edited end and it went before start, swap
+                const temp = s
+                s = e
+                e = temp
+            }
+        }
+
+        // 3. Special case: If exactly same, maybe default to 10s gap? 
+        // Existing logic was just swap. Let's keep it simple.
+
+        setRangeStart(formatTime(s))
+        setRangeEnd(formatTime(e))
+    }
 
     return (
         <div className="space-y-3">
-            {/* Toggle - Hidden/Disabled for GIF mode since it's mandatory */}
-            {!isMandatory && (
-                <div
-                    className={cn(
-                        "flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all min-h-[64px]",
-                        effectiveIsClipping
-                            ? "bg-orange-500/10 border-orange-500/30"
-                            : "bg-transparent border-white/5 hover:bg-white/5"
-                    )}
-                    onClick={() => setIsClipping(!isClipping)}
+            {isMandatory ? (
+                <OptionCard
+                    icon={<Scissors className="w-4 h-4" />}
+                    title={format === 'audio' ? (t.trim_audio || "Trim Audio") : t.trim_video}
+                    description={t.trim_desc || "Cut specific portion of the video"}
+                    activeColor="orange"
+                    className="!bg-card dark:!bg-black/20 !border-border dark:!border-white/10"
                 >
-                    <div className="flex items-center gap-3">
-                        <div className={cn(
-                            "p-1.5 rounded-lg",
-                            effectiveIsClipping ? "bg-orange-500 text-white" : "bg-white/10 text-muted-foreground"
-                        )}>
-                            <Scissors className="w-4 h-4" />
-                        </div>
-                        <div>
-                            <div className="font-bold text-[0.93rem] leading-none">
-                                {format === 'audio' ? (t.trim_audio || "Trim Audio") : t.trim_video}
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-0.5 opacity-80">
-                                {t.trim_desc || "Cut specific portion of the video"}
-                            </div>
-                        </div>
-                    </div>
-                    <Switch checked={effectiveIsClipping} onCheckedChange={setIsClipping} className={effectiveIsClipping ? "data-[state=checked]:bg-orange-500 scale-90" : "scale-90"} />
-                </div>
+                    {renderClipContent()}
+                </OptionCard>
+            ) : (
+                <SettingCard
+                    icon={<Scissors className="w-4 h-4" />}
+                    title={format === 'audio' ? (t.trim_audio || "Trim Audio") : t.trim_video}
+                    description={t.trim_desc || "Cut specific portion of the video"}
+                    checked={isClipping}
+                    onCheckedChange={setIsClipping}
+                    activeColor="orange"
+                    expandableContent={renderClipContent()}
+                    className="!bg-card dark:!bg-black/20 !border-border dark:!border-white/10"
+                />
             )}
-
-            <AnimatePresence>
-                {effectiveIsClipping && (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden"
-                    >
-                        <div className="pt-8 pb-4 px-2 space-y-6">
-                            {duration ? (
-                                <div className="mx-4">
-                                    <RangeSlider
-                                        duration={duration}
-                                        start={rangeStart ? parseTime(rangeStart) : 0}
-                                        end={rangeEnd ? parseTime(rangeEnd) : duration}
-                                        onChange={(s, e) => {
-                                            setRangeStart(formatTime(s))
-                                            setRangeEnd(formatTime(e))
-                                        }}
-                                    />
-                                </div>
-                            ) : (
-                                <div className="text-xs text-muted-foreground text-center py-2 bg-muted/50 dark:bg-secondary/20 rounded-lg border border-border/50">
-                                    {t.metadata_required}
-                                </div>
-                            )}
-
-                            <div className={cn("flex items-center gap-2 transition-colors",
-                                (rangeStart && rangeEnd && parseTime(rangeStart) >= parseTime(rangeEnd)) ? "text-red-500" : ""
-                            )}>
-                                <input
-                                    className={cn(
-                                        "w-full p-2.5 border rounded-lg bg-white dark:bg-secondary/20 text-sm text-center font-mono focus:ring-2 outline-none transition-all shadow-sm",
-                                        (rangeStart && rangeEnd && parseTime(rangeStart) >= parseTime(rangeEnd))
-                                            ? "border-red-500 focus:ring-red-500/20 text-red-500 placeholder:text-red-300"
-                                            : "placeholder:text-muted-foreground/30 focus:ring-primary/10"
-                                    )}
-                                    placeholder="00:00"
-                                    value={rangeStart}
-                                    onChange={e => {
-                                        const val = e.target.value.replace(/[^0-9:]/g, '')
-                                        setRangeStart(val)
-                                    }}
-                                    onBlur={() => {
-                                        let s = parseTime(rangeStart)
-                                        let e = parseTime(rangeEnd)
-
-                                        // 1. Clamp values to video duration if known
-                                        if (duration) {
-                                            if (s > duration) s = 0 // Reset invalid start
-                                            if (e > duration) e = duration // Clamp absolute end
-                                        }
-
-                                        // 2. Prevent negatives
-                                        if (s < 0) s = 0
-                                        if (e < 0) e = 0 // Should not happen with regex but safe to keep
-
-                                        // 3. Ensure Logical Order (Start < End)
-                                        // If they define a range where s >= e, we try to be smart
-                                        if (s >= e) {
-                                            if (e === 0 && duration) {
-                                                // If End is 0 (likely uninitialized or cleared), set it to duration
-                                                e = duration
-                                            } else {
-                                                // Otherwise swap them, assuming user entered values in wrong boxes
-                                                const temp = s
-                                                s = e
-                                                e = temp
-                                            }
-                                        }
-
-                                        setRangeStart(formatTime(s))
-                                        setRangeEnd(formatTime(e))
-                                    }}
-                                />
-                                <span className="text-muted-foreground/50 text-xs font-bold">{t.clip?.to || "TO"}</span>
-                                <input
-                                    className={cn(
-                                        "w-full p-2.5 border rounded-lg bg-white dark:bg-secondary/20 text-sm text-center font-mono focus:ring-2 outline-none transition-all shadow-sm",
-                                        (rangeStart && rangeEnd && parseTime(rangeStart) >= parseTime(rangeEnd))
-                                            ? "border-red-500 focus:ring-red-500/20 text-red-500 placeholder:text-red-300"
-                                            : "placeholder:text-muted-foreground/30 focus:ring-primary/10"
-                                    )}
-                                    placeholder={duration ? formatTime(duration) : "00:10"}
-                                    value={rangeEnd}
-                                    onChange={e => {
-                                        const val = e.target.value.replace(/[^0-9:]/g, '')
-                                        setRangeEnd(val)
-                                    }}
-                                    onBlur={() => {
-                                        let s = parseTime(rangeStart)
-                                        let e = parseTime(rangeEnd)
-
-                                        if (duration) {
-                                            if (e > duration) e = duration
-                                            if (s > duration) s = 0
-                                        }
-
-                                        if (s < 0) s = 0
-                                        if (e < 0) e = 0
-
-                                        if (s >= e) {
-                                            const temp = s
-                                            s = e
-                                            e = temp
-                                        }
-
-                                        setRangeStart(formatTime(s))
-                                        setRangeEnd(formatTime(e))
-                                    }}
-                                />
-                            </div>
-                            {(rangeStart && rangeEnd && parseTime(rangeStart) >= parseTime(rangeEnd)) && (
-                                <p className="text-xs text-red-500 font-bold mt-2 text-center animate-in slide-in-from-top-1">
-                                    {t.time_error}
-                                </p>
-                            )}
-                            {/* Duration exceeded warning for GIF */}
-                            {maxDuration && rangeStart && rangeEnd && (parseTime(rangeEnd) - parseTime(rangeStart)) > maxDuration && (
-                                <p className="text-xs text-pink-600 dark:text-pink-400 font-bold mt-2 text-center animate-in slide-in-from-top-1">
-                                    ⚠️ {t.gif_maker?.too_long?.replace('{max}', String(maxDuration)).replace('{current}', String(Math.round(parseTime(rangeEnd) - parseTime(rangeStart)))) || `Clip is too long! Max ${maxDuration}s for GIF. Current: ${Math.round(parseTime(rangeEnd) - parseTime(rangeStart))}s`}
-                                </p>
-                            )}
-                            {/* Show current clip duration */}
-                            {rangeStart && rangeEnd && parseTime(rangeEnd) > parseTime(rangeStart) && (
-                                <p className={cn(
-                                    "text-xs font-medium mt-2 text-center",
-                                    maxDuration && (parseTime(rangeEnd) - parseTime(rangeStart)) > maxDuration
-                                        ? "text-pink-600 dark:text-pink-400"
-                                        : "text-muted-foreground"
-                                )}>
-                                    {maxDuration
-                                        ? (t.clip?.duration_max?.replace('{current}', String(Math.round(parseTime(rangeEnd) - parseTime(rangeStart)))).replace('{max}', String(maxDuration)) || `Clip duration: ${Math.round(parseTime(rangeEnd) - parseTime(rangeStart))}s / ${maxDuration}s max`)
-                                        : (t.clip?.duration?.replace('{current}', String(Math.round(parseTime(rangeEnd) - parseTime(rangeStart)))) || `Clip duration: ${Math.round(parseTime(rangeEnd) - parseTime(rangeStart))}s`)
-                                    }
-                                </p>
-                            )}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </div>
     )
+
+    function renderClipContent() {
+        return (
+            <div className="pt-4 pb-2 px-1 space-y-3">
+                {duration ? (
+                    <div className="mx-2">
+                        <RangeSlider
+                            duration={duration}
+                            start={rangeStart ? parseTime(rangeStart) : 0}
+                            end={rangeEnd ? parseTime(rangeEnd) : duration}
+                            onChange={(s, e) => {
+                                setRangeStart(formatTime(s))
+                                setRangeEnd(formatTime(e))
+                            }}
+                        />
+                    </div>
+                ) : (
+                    <div className="text-xs text-muted-foreground text-center py-1.5 bg-muted/50 dark:bg-secondary/20 rounded-lg border border-border/50">
+                        {t.metadata_required}
+                    </div>
+                )}
+
+                <div className="flex items-center gap-2">
+                    <div className={cn(
+                        "flex flex-1 items-center gap-1.5 p-0.5 rounded-lg border bg-white dark:bg-black/20 shadow-sm transition-all focus-within:ring-2 focus-within:ring-primary/20",
+                        (rangeStart && rangeEnd && parseTime(rangeStart) >= parseTime(rangeEnd)) ? "border-red-500/50" : "border-border dark:border-white/10"
+                    )}>
+                        <input
+                            className="w-full min-w-0 bg-transparent py-1.5 px-2 text-sm text-center font-mono outline-none placeholder:text-muted-foreground/30 focus:placeholder:text-muted-foreground/50 transition-colors"
+                            placeholder="00:00"
+                            value={rangeStart}
+                            onChange={e => setRangeStart(e.target.value.replace(TIME_INPUT_REGEX, ''))}
+                            onBlur={() => handleTimeBlur(true)}
+                        />
+                        <span className="text-muted-foreground/40 text-xs shrink-0">→</span>
+                        <input
+                            className="w-full min-w-0 bg-transparent py-1.5 px-2 text-sm text-center font-mono outline-none placeholder:text-muted-foreground/30 focus:placeholder:text-muted-foreground/50 transition-colors"
+                            placeholder={duration ? formatTime(duration) : "00:10"}
+                            value={rangeEnd}
+                            onChange={e => setRangeEnd(e.target.value.replace(TIME_INPUT_REGEX, ''))}
+                            onBlur={() => handleTimeBlur(false)}
+                        />
+                    </div>
+
+                    {/* Duration Badge - Compact */}
+                    <div className={cn(
+                        "shrink-0 h-8 px-2.5 rounded-lg border flex items-center justify-center gap-1 font-mono text-xs font-medium shadow-sm transition-all",
+                        maxDuration && rangeStart && rangeEnd && (parseTime(rangeEnd) - parseTime(rangeStart)) > maxDuration
+                            ? "bg-orange-500/10 border-orange-500/30 text-orange-600 dark:text-orange-400"
+                            : (rangeStart && rangeEnd && parseTime(rangeEnd) > parseTime(rangeStart))
+                                ? "bg-primary/10 border-primary/20 text-primary"
+                                : "bg-muted/50 border-border dark:border-white/10 text-muted-foreground"
+                    )}>
+                        <span className="text-[10px] opacity-70">⏱</span>
+                        <span>
+                            {rangeStart && rangeEnd && parseTime(rangeEnd) > parseTime(rangeStart)
+                                ? `${Math.round(parseTime(rangeEnd) - parseTime(rangeStart))}s`
+                                : "--s"
+                            }
+                        </span>
+                    </div>
+                </div>
+
+                {(rangeStart && rangeEnd && parseTime(rangeStart) >= parseTime(rangeEnd)) && (
+                    <p className="text-xs text-red-500 font-bold mt-2 text-center animate-in slide-in-from-top-1">
+                        {t.time_error}
+                    </p>
+                )}
+                {maxDuration && rangeStart && rangeEnd && (parseTime(rangeEnd) - parseTime(rangeStart)) > maxDuration && (
+                    <p className="text-xs text-orange-600 dark:text-orange-400 font-bold mt-2 text-center animate-in slide-in-from-top-1">
+                        ⚠️ {t.gif_maker?.too_long?.replace('{max}', String(maxDuration)).replace('{current}', String(Math.round(parseTime(rangeEnd) - parseTime(rangeStart)))) || `Clip is too long! Max ${maxDuration}s for GIF. Current: ${Math.round(parseTime(rangeEnd) - parseTime(rangeStart))}s`}
+                    </p>
+                )}
+            </div>
+        )
+    }
 }

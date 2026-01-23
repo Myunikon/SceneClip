@@ -24,7 +24,7 @@ const createMockSettings = (overrides: Partial<AppSettings> = {}): AppSettings =
     speedLimit: '',
     proxy: '',
     userAgent: '',
-    lowPerformanceMode: false,
+
     cookieSource: 'none',
     useSponsorBlock: false,
     sponsorSegments: [],
@@ -39,8 +39,9 @@ const createMockSettings = (overrides: Partial<AppSettings> = {}): AppSettings =
     quickDownloadEnabled: false,
     showQuickModeButton: false,
     lastDownloadOptions: null,
-    hardwareDecoding: 'auto',
+    hardwareDecoding: true,
     audioNormalization: false,
+    disablePlayButton: false,
     ...overrides
 })
 
@@ -206,19 +207,19 @@ describe('buildYtDlpArgs GPU Acceleration', () => {
 
     it('should inject nvidia encoder args when gpuType is nvidia', async () => {
         const args = await buildYtDlpArgs(url, {}, settings, 'test.mp4', 'nvidia')
-        expect(args).toContain('--downloader-args')
+        expect(args).toContain('--postprocessor-args')
         expect(args).toContain('ffmpeg:-c:v h264_nvenc')
     })
 
     it('should inject amd encoder args when gpuType is amd', async () => {
         const args = await buildYtDlpArgs(url, {}, settings, 'test.mp4', 'amd')
-        expect(args).toContain('--downloader-args')
+        expect(args).toContain('--postprocessor-args')
         expect(args).toContain('ffmpeg:-c:v h264_amf')
     })
 
     it('should inject intel encoder args when gpuType is intel', async () => {
         const args = await buildYtDlpArgs(url, {}, settings, 'test.mp4', 'intel')
-        expect(args).toContain('--downloader-args')
+        expect(args).toContain('--postprocessor-args')
         expect(args).toContain('ffmpeg:-c:v h264_qsv')
     })
 
@@ -488,23 +489,23 @@ describe('buildYtDlpArgs Advanced Scenarios', () => {
     it('should use Intel QSV flags with ICQ mode during clipping', async () => {
         // ICQ mode (-global_quality) is only applied during clipping for quality consistency
         const args = await buildYtDlpArgs(url, { rangeStart: '10' }, settings, 'test.mp4', 'intel')
-        const dlArgs = args[args.indexOf('--downloader-args') + 1]
-        expect(dlArgs).toContain('h264_qsv')
-        expect(dlArgs).toContain('-global_quality') // ICQ mode for clips
+        const ppArgs = args.filter((_, i) => args[i - 1] === '--postprocessor-args').join(' ')
+        expect(ppArgs).toContain('h264_qsv')
+        expect(ppArgs).toContain('-global_quality') // ICQ mode for clips
     })
 
     it('should use AMD AMF flags with clipping optimization', async () => {
         // AMF with clipping triggers specific rate control
         const args = await buildYtDlpArgs(url, { rangeStart: '10' }, settings, 'test.mp4', 'amd')
-        const dlArgs = args[args.indexOf('--downloader-args') + 1]
-        expect(dlArgs).toContain('h264_amf')
-        expect(dlArgs).toContain('-rc cqp') // Constant Quality
+        const ppArgs = args.filter((_, i) => args[i - 1] === '--postprocessor-args').join(' ')
+        expect(ppArgs).toContain('h264_amf')
+        expect(ppArgs).toContain('-rc cqp') // Constant Quality
     })
 
     it('should use Apple VideoToolbox flags', async () => {
         const args = await buildYtDlpArgs(url, {}, settings, 'test.mp4', 'apple')
-        const dlArgs = args[args.indexOf('--downloader-args') + 1]
-        expect(dlArgs).toContain('h264_videotoolbox')
+        const ppArgs = args[args.indexOf('--postprocessor-args') + 1]
+        expect(ppArgs).toContain('h264_videotoolbox')
     })
 
     // 4. LIVESTREAM
@@ -543,7 +544,7 @@ describe('buildYtDlpArgs Advanced Scenarios', () => {
 
     // 5. HARDWARE ACCELERATION FALLBACKS (Safety Checks)
     it('should fall back to CPU if User wants GPU but System detects CPU', async () => {
-        const gpuSettings = createMockSettings({ hardwareDecoding: 'gpu' })
+        const gpuSettings = createMockSettings({ hardwareDecoding: true })
         // System reports 'cpu' (4th arg)
         const args = await buildYtDlpArgs(url, {}, gpuSettings, 'test.mp4', 'cpu')
 
@@ -553,7 +554,7 @@ describe('buildYtDlpArgs Advanced Scenarios', () => {
     })
 
     it('should NOT use Video HW Accel for Audio-only downloads', async () => {
-        const gpuSettings = createMockSettings({ hardwareDecoding: 'gpu' })
+        const gpuSettings = createMockSettings({ hardwareDecoding: true })
         // System has NVIDIA
         const args = await buildYtDlpArgs(url, { format: 'audio' }, gpuSettings, 'test.mp3', 'nvidia')
 
@@ -578,7 +579,7 @@ describe('buildYtDlpArgs Advanced Scenarios', () => {
     })
 
     it('should NOT use Video HW Accel for GIF downloads (uses VideoConvertor)', async () => {
-        const gpuSettings = createMockSettings({ hardwareDecoding: 'gpu' })
+        const gpuSettings = createMockSettings({ hardwareDecoding: true })
         // GIF mode with NVIDIA GPU available
         const args = await buildYtDlpArgs(url, { format: 'gif' }, gpuSettings, 'test.gif', 'nvidia')
 
@@ -588,7 +589,7 @@ describe('buildYtDlpArgs Advanced Scenarios', () => {
     })
 
     it('should skip HW downloader args when forceTranscode + clipping are both active', async () => {
-        const settings = createMockSettings({ hardwareDecoding: 'gpu' })
+        const settings = createMockSettings({ hardwareDecoding: true })
         const options: YtDlpOptions = {
             rangeStart: '10', // Clipping
             rangeEnd: '30',
@@ -599,11 +600,10 @@ describe('buildYtDlpArgs Advanced Scenarios', () => {
 
         // HW downloader args should be SKIPPED to avoid conflict with VideoConvertor post-processor
         expect(args.join(' ')).not.toContain('--downloader-args')
-        expect(args.join(' ')).not.toContain('h264_nvenc')
 
-        // But VideoConvertor args SHOULD be present
+        // But VideoConvertor args SHOULD be present and use NVENC
         expect(args.join(' ')).toContain('VideoConvertor')
-        expect(args.join(' ')).toContain('libx264')
+        expect(args.join(' ')).toContain('h264_nvenc')
     })
 
     it('should correctly handle AV1 codec with MP4 container', async () => {
@@ -838,8 +838,8 @@ describe('buildYtDlpArgs Edge Cases & Bad Scenarios', () => {
             expect(args.join(' ')).not.toContain('h264_amf')
         })
 
-        it('should respect hardwareDecoding=cpu setting even with nvidia GPU', async () => {
-            const cpuSettings = createMockSettings({ hardwareDecoding: 'cpu' })
+        it('should respect hardwareDecoding=false setting even with nvidia GPU', async () => {
+            const cpuSettings = createMockSettings({ hardwareDecoding: false })
             const args = await buildYtDlpArgs(url, {}, cpuSettings, 'test.mp4', 'nvidia')
             expect(args.join(' ')).not.toContain('h264_nvenc')
         })
@@ -848,8 +848,12 @@ describe('buildYtDlpArgs Edge Cases & Bad Scenarios', () => {
             const gpuTypes = ['nvidia', 'amd', 'intel', 'apple'] as const
             for (const gpu of gpuTypes) {
                 const args = await buildYtDlpArgs(url, { rangeStart: '10', rangeEnd: '20' }, settings, 'test.mp4', gpu)
-                // Should contain quality settings for clipping
-                expect(args).toContain('--downloader-args')
+
+                // Should use postprocessor-args for clipping HW accel
+                expect(args).toContain('--postprocessor-args')
+                // Should find HW encoder
+                const ppArgs = args.filter((_, i) => args[i - 1] === '--postprocessor-args').join(' ')
+                expect(ppArgs).toContain('ffmpeg:')
             }
         })
     })

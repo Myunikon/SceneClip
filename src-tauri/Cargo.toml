@@ -37,3 +37,14 @@ window-vibrancy = { git = "https://github.com/tauri-apps/window-vibrancy", branc
 tauri-plugin-os = "2"
 sysinfo = "0.33"
 tauri-plugin-deep-link = "2.4.5"
+tauri-plugin-single-instance = { version = "2.3.7", features = ["deep-link"] }
+axum = { version = "0.7", features = ["macros"] }
+tower-http = { version = "0.5", features = ["cors"] }
+
+[profile.release]
+panic = "abort" # Strip expensive panic clean-up logic
+codegen-units = 1 # Compile more slowly, but better optimization
+lto = true # Enable Link Time Optimization
+opt-level = "s" # Optimize for size ("z" is also an option, but "s" is often balanced)
+strip = true # Remove debug symbols
+

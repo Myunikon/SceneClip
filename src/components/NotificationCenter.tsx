@@ -10,7 +10,7 @@ const typeStyles = {
     success: { icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-500/10' },
     error: { icon: AlertCircle, color: 'text-red-400', bg: 'bg-red-500/10' },
     warning: { icon: AlertTriangle, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
-    info: { icon: Info, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+    info: { icon: Info, color: 'text-orange-400', bg: 'bg-orange-500/10' },
 }
 
 export function NotificationCenter() {
@@ -18,7 +18,7 @@ export function NotificationCenter() {
     const { logs, clearLogs, settings } = useAppStore()
     const popoverRef = useRef<HTMLDivElement>(null)
     const t = (translations[settings.language as keyof typeof translations] || translations['en']) as any
-    
+
     // Only show last 50 logs, most recent first
     // Filter out 'info' logs (debug/verbose) and map strictly to "important" events
     const logsWithIndex = logs.map((log, idx) => ({ ...log, originalIndex: idx }))
@@ -26,7 +26,7 @@ export function NotificationCenter() {
         .filter(log => log.type !== 'info') // User req: only important events (error, warning, success)
         .reverse()
         .slice(0, 50)
-        
+
     const unreadCount = recentLogs.length // Show count of filtered important logs only? Or all? User likely cares about important ones.
 
     // Close on outside click
@@ -114,7 +114,7 @@ export function NotificationCenter() {
                                 {recentLogs.map((log) => {
                                     const style = typeStyles[log.type] || typeStyles.info
                                     const Icon = style.icon
-                                    
+
                                     // Localization Handling
                                     let message = log.message || ''
                                     if (log.translationKey && t.logs?.[log.translationKey]) {
@@ -127,8 +127,8 @@ export function NotificationCenter() {
                                     }
 
                                     return (
-                                        <div 
-                                            key={log.originalIndex} 
+                                        <div
+                                            key={log.originalIndex}
                                             className={`px-4 py-3 hover:bg-secondary/30 transition-colors ${style.bg} group/item relative pr-8`}
                                         >
                                             <div className="flex gap-3">
@@ -142,8 +142,8 @@ export function NotificationCenter() {
                                                     </p>
                                                 </div>
                                             </div>
-                                            
-                                            <button 
+
+                                            <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     useAppStore.getState().removeLog(log.originalIndex);

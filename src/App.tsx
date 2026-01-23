@@ -42,7 +42,12 @@ function App() {
     /* -------------------------------------------------------------------------- */
     /* QUICK DOWNLOAD HANDLER                                                     */
     /* -------------------------------------------------------------------------- */
-    const handleNewTask = async (url?: string) => {
+    const [clipboardCookies, setClipboardCookies] = useState<string | undefined>(undefined)
+    const [clipboardUA, setClipboardUA] = useState<string | undefined>(undefined)
+    const [clipboardStart, setClipboardStart] = useState<number | undefined>(undefined)
+    const [clipboardEnd, setClipboardEnd] = useState<number | undefined>(undefined)
+
+    const handleNewTask = async (url?: string, cookies?: string, userAgent?: string, start?: number, end?: number) => {
         const { settings } = useAppStore.getState()
         const { readText } = await import('@tauri-apps/plugin-clipboard-manager')
         const { notify } = await import('./lib/notify')
@@ -61,21 +66,38 @@ function App() {
 
         // 2. Try Quick Download
         if (targetUrl && settings.quickDownloadEnabled) {
-            const quickUsed = await addDialogRef.current?.quickDownload(targetUrl)
-            if (quickUsed) {
-                notify.success('Quick Download Started', {
-                    description: targetUrl.substring(0, 50) + '...',
-                    duration: 3000
-                })
-                return // Done! Skip dialog
+            // For quick download, we pass cookies directly if available
+            // But wait, quickDownload in AddDialog uses last options.
+            // We need to inject these new options.
+            // Since quickDownload is on the ref, we might need to modify it or just open dialog if cookies present.
+            // Safety: If cookies are crucial (e.g. Premium), we should probably show dialog or ensure they are used.
+            // Let's Force Dialog if cookies are provided to be safe, OR update quickDownload to accept overrides.
+            // For now, let's open dialog if cookies/UA are present to let user confirm.
+            if (!cookies) {
+                const quickUsed = await addDialogRef.current?.quickDownload(targetUrl)
+                if (quickUsed) {
+                    notify.success('Quick Download Started', {
+                        description: targetUrl.substring(0, 50) + '...',
+                        duration: 3000
+                    })
+                    return // Done! Skip dialog
+                }
             }
         }
 
         // 3. Fallback: Open Dialog
         if (targetUrl) {
             setClipboardUrl(targetUrl)
+            setClipboardCookies(cookies)
+            setClipboardUA(userAgent)
+            setClipboardStart(start)
+            setClipboardEnd(end)
         } else {
             setClipboardUrl('') // Clear stale clipboard data to ensure fresh dialog
+            setClipboardCookies(undefined)
+            setClipboardUA(undefined)
+            setClipboardStart(undefined)
+            setClipboardEnd(undefined)
         }
         // Small timeout to ensure state updates propagate if needed
         setTimeout(() => addDialogRef.current?.showModal(), 50)
@@ -134,14 +156,7 @@ function App() {
         root.classList.add(settings.theme)
     }, [settings.theme])
 
-    // Low Performance Mode Application
-    useEffect(() => {
-        if (settings.lowPerformanceMode) {
-            document.body.classList.add('low-perf-mode')
-        } else {
-            document.body.classList.remove('low-perf-mode')
-        }
-    }, [settings.lowPerformanceMode])
+
 
     // Window Close Handler (Scheduler Protection & Minimize logic)
     useEffect(() => {
@@ -399,6 +414,33 @@ function App() {
     }, [])
 
     /* -------------------------------------------------------------------------- */
+    /* LOCAL SERVER LISTENER (Browser Extension v2)                               */
+    /* -------------------------------------------------------------------------- */
+    useEffect(() => {
+        let unlisten: Promise<() => void> | undefined;
+
+        const setupServerListener = async () => {
+            try {
+                const { listen } = await import('@tauri-apps/api/event')
+                unlisten = listen('server-v1-download', (event: any) => {
+                    console.log('Server Event:', event.payload)
+                    const { url, cookies, user_agent, start_time, end_time } = event.payload
+                    if (url) {
+                        handleNewTask(url, cookies, user_agent, start_time, end_time)
+                    }
+                })
+            } catch (e) {
+                console.error("Failed to setup server listener", e)
+            }
+        }
+        setupServerListener()
+
+        return () => {
+            if (unlisten) unlisten.then(f => f())
+        }
+    }, [])
+
+    /* -------------------------------------------------------------------------- */
     /* LAZY BINARY VALIDATION (PERFORMANCE OPTIMIZATION)                          */
     /* -------------------------------------------------------------------------- */
     useEffect(() => {
@@ -449,10 +491,7 @@ function App() {
     }
 
     return (
-        <MotionConfig
-            reducedMotion={settings.lowPerformanceMode ? "always" : "never"}
-            transition={settings.lowPerformanceMode ? { duration: 0 } : undefined}
-        >
+        <MotionConfig>
             <AppLayout isOffline={isOffline} language={settings.language}>
                 <AppHeader
                     activeTab={activeTab}
@@ -468,9 +507,7 @@ function App() {
 
                 {/* MAIN CONTENT */}
                 <div className="flex-1 overflow-hidden relative flex flex-col">
-                    {!settings.lowPerformanceMode && (
-                        <div className="absolute top-0 left-0 w-full h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2"></div>
-                    )}
+                    <div className="absolute top-0 left-0 w-full h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2"></div>
 
                     <div className="relative z-10 h-full overflow-hidden grid grid-cols-1 grid-rows-1">
                         <AnimatePresence>
@@ -520,7 +557,17 @@ function App() {
 
                 <ClipboardListener onFound={(url) => handleNewTask(url)} />
 
-                <AddDialog ref={addDialogRef} addTask={addTask} initialUrl={clipboardUrl} previewLang={previewLang} isOffline={isOffline} />
+                <AddDialog
+                    ref={addDialogRef}
+                    addTask={addTask}
+                    initialUrl={clipboardUrl}
+                    initialCookies={clipboardCookies}
+                    initialUserAgent={clipboardUA}
+                    initialStart={clipboardStart}
+                    initialEnd={clipboardEnd}
+                    previewLang={previewLang}
+                    isOffline={isOffline}
+                />
                 <GuideModal ref={guideModalRef} />
                 <Onboarding />
 

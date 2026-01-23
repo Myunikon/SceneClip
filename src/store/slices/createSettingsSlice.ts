@@ -1,54 +1,58 @@
 import { StateCreator } from 'zustand'
-import { AppState, SettingsSlice, AppSettings } from './types'
+import { AppState, SettingsSlice } from './types'
 
-export const DEFAULT_SETTINGS: AppSettings = {
-    theme: 'light',
-    language: 'en',
-    launchAtStartup: false,
-    startMinimized: false,
-    closeAction: 'quit',
-    hasSeenOnboarding: false,
+export const createSettingsSlice: StateCreator<
+    AppState,
+    [["zustand/devtools", never]],
+    [],
+    SettingsSlice
+> = (set) => ({
+    settings: {
+        theme: 'system',
+        language: 'en',
+        launchAtStartup: false,
+        startMinimized: false,
+        closeAction: 'minimize',
+        hasSeenOnboarding: false,
 
-    downloadPath: '',
-    alwaysAskPath: false,
-    filenameTemplate: '{title}.{ext}',
-    resolution: 'Best',
-    container: 'mp4',
-    hardwareDecoding: 'cpu',
+        downloadPath: '',
+        alwaysAskPath: false,
+        filenameTemplate: '{Title}',
+        resolution: 'Best',
+        container: 'mp4',
+        hardwareDecoding: true,
 
-    concurrentDownloads: 3,
-    concurrentFragments: 4,
-    speedLimit: '',
-    proxy: '',
-    userAgent: '',
-    lowPerformanceMode: false,
-    frontendFontSize: 'medium',
+        concurrentDownloads: 2,
+        concurrentFragments: 4,
+        speedLimit: '',
+        proxy: '',
+        userAgent: '',
+        frontendFontSize: 'medium',
 
-
-    cookieSource: 'none',
-    browserType: 'chrome',
-    useSponsorBlock: false,
-    sponsorSegments: ['sponsor', 'intro', 'outro'],
-    binaryPathYtDlp: '',
-    binaryPathFfmpeg: '',
-    embedMetadata: true,
-    embedThumbnail: true,
-    embedChapters: true,
-    postDownloadAction: 'none',
-    developerMode: false,
-    quickDownloadEnabled: false,
-    showQuickModeButton: true,
-    lastDownloadOptions: null,
-    audioNormalization: false
-}
-
-export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> = (set) => ({
-  settings: DEFAULT_SETTINGS,
-  
-  setSetting: (key, val) => {
-      set(state => ({ settings: { ...state.settings, [key]: val } }))
-  },
-  updateSettings: (newSettings) => {
-      set(state => ({ settings: { ...state.settings, ...newSettings } }))
-  },
+        cookieSource: 'none',
+        browserType: 'chrome',
+        cookiePath: '',
+        useSponsorBlock: false,
+        sponsorSegments: [],
+        binaryPathYtDlp: '',
+        binaryPathFfmpeg: '',
+        embedMetadata: true,
+        embedThumbnail: true,
+        embedChapters: true,
+        postDownloadAction: 'none',
+        developerMode: false,
+        quickDownloadEnabled: false,
+        showQuickModeButton: true,
+        lastDownloadOptions: null,
+        audioNormalization: false,
+        disablePlayButton: false
+    },
+    updateSettings: (newSettings) =>
+        set((state) => ({
+            settings: { ...state.settings, ...newSettings },
+        })),
+    setSetting: (key, val) =>
+        set((state) => ({
+            settings: { ...state.settings, [key]: val },
+        })),
 })

@@ -1,78 +1,138 @@
+/* Tailwind CSS Base Styles */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 240 5% 98%; /* Premium Off-White */
-    --foreground: 240 10% 3.9%;
+    /* ========================================================================
+       LIGHT MODE: Paper Metaphor Design System
+       - Canvas: Off-white (#F9FAFB) to reduce eye strain
+       - Surface: Pure white (#FFFFFF) for elevated content
+       - Text: Soft black to avoid halation
+       - Borders: Cool-gray tinted for visual harmony
+       ======================================================================== */
 
-    --card: 0 0% 100%; /* Pure White */
-    --card-foreground: 240 10% 3.9%;
+    /* Backgrounds (Canvas → Surface hierarchy) */
+    --background: 210 20% 98%;
+    /* Off-white canvas: #F9FAFB */
+    --foreground: 220 13% 10%;
+    /* Soft black: ~#171B21 */
+
+    --card: 0 0% 100%;
+    /* Pure white surface: #FFFFFF */
+    --card-foreground: 220 13% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover-foreground: 220 13% 10%;
 
-    --primary: 240 5.9% 10%;
+    /* Primary Action Color (Neutral Dark) */
+    --primary: 240 6% 10%;
+    /* Near black: #18181B */
     --primary-foreground: 0 0% 98%;
 
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
+    /* Secondary/Muted Areas */
+    --secondary: 220 14% 96%;
+    /* Light gray: #F3F4F6 */
+    --secondary-foreground: 220 13% 18%;
 
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    /* Gray 600: #4B5563 - WCAG 4.5:1 */
 
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+    --accent: 220 14% 93%;
+    --accent-foreground: 220 13% 18%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    /* Borders (Cool-gray tinted) */
+    --border: 220 13% 91%;
+    /* Cool gray: #E5E7EB */
+    --input: 220 13% 87%;
+    /* Slightly darker for affordance: #D1D5DB */
+    --ring: 240 6% 10%;
+    /* Match primary */
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+    /* 12px for G2-like smoothness */
 
-    /* Clean Glass Strategy Variables */
-    --glass-opacity: 0.7; 
-    --glass-border: 1px solid rgba(0,0,0, 0.08);
-    --glass-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    /* === Shadow System (HSL-based, Blue-Gray tint) === */
+    --shadow-color: 220 10% 15%;
+    --shadow-sm:
+      0 1px 2px 0 hsl(var(--shadow-color) / 0.05);
+    --shadow-md:
+      0 4px 6px -1px hsl(var(--shadow-color) / 0.08),
+      0 2px 4px -2px hsl(var(--shadow-color) / 0.04);
+    --shadow-lg:
+      0 10px 15px -3px hsl(var(--shadow-color) / 0.08),
+      0 4px 6px -4px hsl(var(--shadow-color) / 0.04);
+    --shadow-xl:
+      0 20px 25px -5px hsl(var(--shadow-color) / 0.1),
+      0 8px 10px -6px hsl(var(--shadow-color) / 0.04);
+
+    /* Glass Strategy Variables */
+    --glass-opacity: 0.85;
+    --glass-border: 1px solid hsl(220 13% 87% / 0.8);
+    --glass-shadow: var(--shadow-md);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    /* ========================================================================
+       DARK MODE: Deep Contrast Design
+       ======================================================================== */
+    --background: 222 47% 6%;
+    /* Deep blue-black: #0A0E14 */
     --foreground: 210 40% 98%;
+    /* Near white: #F8FAFC */
 
-    --card: 222.2 84% 4.9%;
+    --card: 222 47% 8%;
+    /* Slightly elevated: #0D1219 */
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 222 47% 10%;
     --popover-foreground: 210 40% 98%;
 
+    /* Primary (Light foreground in dark mode) */
     --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    /* Near white */
+    --primary-foreground: 222 47% 11%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 217 33% 17%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 217 33% 17%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 217 33% 17%;
+    --input: 217 33% 20%;
+    --ring: 213 27% 84%;
+
+    /* === Shadow System (Deep shadows for dark mode) === */
+    --shadow-color: 222 50% 3%;
+    --shadow-sm:
+      0 1px 2px 0 hsl(var(--shadow-color) / 0.3);
+    --shadow-md:
+      0 4px 6px -1px hsl(var(--shadow-color) / 0.4),
+      0 2px 4px -2px hsl(var(--shadow-color) / 0.2);
+    --shadow-lg:
+      0 10px 15px -3px hsl(var(--shadow-color) / 0.5),
+      0 4px 6px -4px hsl(var(--shadow-color) / 0.3);
+    --shadow-xl:
+      0 20px 25px -5px hsl(var(--shadow-color) / 0.6),
+      0 8px 10px -6px hsl(var(--shadow-color) / 0.3);
 
     /* Dark Mode Glass Variables */
-    --glass-opacity: 0.4;
-    --glass-border: 1px solid rgba(255,255,255, 0.08);
-    --glass-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    --glass-opacity: 0.5;
+    --glass-border: 1px solid hsl(217 33% 25% / 0.5);
+    --glass-shadow: var(--shadow-lg);
   }
 }
 
@@ -80,21 +140,19 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
-    /* Subtle premium gradient overlay */
-    background-image: radial-gradient(
-        circle at 50% 0%,
-        hsl(var(--primary) / 0.15),
-        transparent 60%
-      ),
-      radial-gradient(
-        circle at 100% 100%,
-        hsl(var(--primary) / 0.1),
-        transparent 50%
-      );
+    /* Clean premium gradient overlay for Light Mode */
+    background-image: radial-gradient(circle at 60% -20%,
+        rgba(255, 200, 180, 0.15),
+        transparent 50%),
+      radial-gradient(circle at 0% 100%,
+        rgba(200, 220, 255, 0.15),
+        transparent 50%);
     background-attachment: fixed;
   }
+
 }
 
 /* Custom Scrollbar */
@@ -114,6 +172,29 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.5);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.2);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.4);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 ::-webkit-scrollbar-corner {
@@ -163,22 +244,22 @@ body.low-perf-mode {
 /* Force opaque backgrounds in low perf mode (dark) */
 .dark body.low-perf-mode .glass,
 .dark body.low-perf-mode .glass-strong {
-  background-color: hsl(222.2 84% 4.9%) !important;
-  border-color: hsl(217.2 32.6% 17.5%) !important;
+  background-color: hsl(222 47% 6%) !important;
+  border-color: hsl(217 33% 17%) !important;
   box-shadow: none !important;
 }
 
 /* ===== LIGHT MODE + LOW PERF MODE ===== */
-/* Pure white backgrounds for light theme in low-perf mode */
+/* Off-white backgrounds for light theme in low-perf mode */
 
 :root:not(.dark) body.low-perf-mode {
-  background-color: #f8f8f8 !important;
+  background-color: hsl(210 20% 98%) !important;
 }
 
 :root:not(.dark) body.low-perf-mode .glass,
 :root:not(.dark) body.low-perf-mode .glass-strong {
   background-color: #ffffff !important;
-  border-color: #e5e5e5 !important;
+  border-color: hsl(220 13% 91%) !important;
   box-shadow: none !important;
 }
 
@@ -203,7 +284,7 @@ body.low-perf-mode {
 
 /* Ensure borders are visible in light mode */
 :root:not(.dark) body.low-perf-mode [class*="border-white/"] {
-  border-color: #e5e5e5 !important;
+  border-color: hsl(220 13% 91%) !important;
 }
 
 /* Disable specific tailwind animations in low-perf mode */
@@ -214,4 +295,22 @@ body.low-perf-mode .animate-bounce,
 body.low-perf-mode [class*="animate-in"],
 body.low-perf-mode [class*="animate-["] {
   animation: none !important;
+}
+
+/* ===== ACCESSIBILITY: High Contrast Support ===== */
+@media (prefers-contrast: more) {
+  :root {
+    --border: 220 13% 70%;
+    /* Darker borders */
+    --muted-foreground: 220 9% 35%;
+    /* Darker secondary text */
+    --input: 220 13% 75%;
+    /* More visible input borders */
+  }
+
+  .dark {
+    --border: 217 33% 30%;
+    --muted-foreground: 215 20% 75%;
+    --input: 217 33% 35%;
+  }
 }

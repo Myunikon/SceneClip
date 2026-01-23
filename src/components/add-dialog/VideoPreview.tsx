@@ -78,7 +78,7 @@ export function VideoPreview({ loading, meta, error, t, url }: VideoPreviewProps
                                 <img
                                     src={imageSrc}
                                     referrerPolicy="no-referrer"
-                                    className="max-h-[350px] w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all duration-500 group-hover:scale-105"
+                                    className="max-h-[350px] w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105"
                                     alt="Thumbnail"
                                     draggable={false}
                                     onError={() => setImgError(true)}
@@ -104,7 +104,7 @@ export function VideoPreview({ loading, meta, error, t, url }: VideoPreviewProps
                                 </div>
                             </div>
                         ) : (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-secondary/80 to-muted/80 dark:from-secondary/20 dark:to-muted/10 p-6 text-center animate-in fade-in duration-500">
+                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-secondary/80 to-muted/80 dark:from-secondary/20 dark:to-muted/10 p-6 text-center animate-in fade-in duration-300">
                                 <div className="p-4 bg-background/50 dark:bg-white/5 rounded-full mb-3 backdrop-blur-sm shadow-sm ring-1 ring-white/10">
                                     <ImageOff className="w-8 h-8 text-muted-foreground/50" />
                                 </div>

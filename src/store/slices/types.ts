@@ -1,23 +1,16 @@
-export interface DownloadOptions {
-  path?: string // Save directory
-  rangeStart?: string | number
-  rangeEnd?: string | number
-  format?: string
-  container?: string
-  sponsorBlock?: boolean
-  liveFromStart?: boolean // Download livestream from the beginning
-  splitChapters?: boolean // Split video into multiple files based on chapters
-  customFilename?: string // User-defined filename (without extension)
-  audioBitrate?: string // Audio quality in kbps (128, 192, 320)
-  audioFormat?: 'mp3' | 'm4a' | 'flac' | 'wav' | 'opus' | 'aac' // Audio format for extraction
-  subtitles?: boolean // Download subtitles
-  subtitleFormat?: string // format to convert subtitles to (srt, ass, vtt, lrc)
-  subtitleLang?: string // Subtitle language (en, id, auto, all)
-  embedSubtitles?: boolean // Embed subtitles into video
-  videoCodec?: 'auto' | 'av1' | 'h264' | 'vp9' | 'hevc' // Codec Preference
-  scheduledTime?: number // Timestamp
-  audioNormalization?: boolean // Loudness Normalization
-  forceTranscode?: boolean // Force re-encoding if native codec unavailable
+
+export type { DownloadOptions, AppSettings, CompressionOptions } from '../../types'
+// Explicitly re-export interfaces if import type isn't sufficient for some tooling (though above should work)
+// But wait, the previous errors said 'DownloadOptions' not found in store/slices/types.ts file itself?
+// Ah, because I'm using them in the interfaces below.
+import { DownloadOptions, AppSettings, CompressionOptions } from '../../types'
+
+export type DownloadStatus = 'pending' | 'queued' | 'fetching_info' | 'downloading' | 'completed' | 'error' | 'stopped' | 'paused' | 'scheduled' | 'processing'
+
+export interface VideoChapter {
+  start_time: number
+  end_time: number
+  title: string
 }
 
 export interface DownloadTask {
@@ -25,7 +18,7 @@ export interface DownloadTask {
   pid?: number // Process ID for robust killing
   url: string
   title: string
-  status: 'pending' | 'fetching_info' | 'downloading' | 'completed' | 'error' | 'stopped' | 'paused' | 'scheduled'
+  status: DownloadStatus
   statusDetail?: string // Granular status: "Merging...", "Extracting Audio...", "Fixing..."
   progress: number
   speed: string
@@ -38,6 +31,7 @@ export interface DownloadTask {
   filePath?: string // Full path to file
   concurrentFragments?: number // Number of parallel chunks used
   scheduledTime?: number // Timestamp for scheduled start
+  addedAt?: number // Timestamp when added
   _options?: DownloadOptions
   _downloadPhase?: number // Internal: Track multi-phase download progress (video=1, audio=2)
   // Developer Mode: Command details
@@ -51,52 +45,6 @@ export interface DownloadTask {
 }
 
 
-export interface AppSettings {
-  // General
-  theme: 'dark' | 'light'
-  language: 'en' | 'id' | 'ms' | 'zh'
-  launchAtStartup: boolean
-  startMinimized: boolean
-  closeAction: 'minimize' | 'quit'
-  hasSeenOnboarding: boolean
-
-  // Downloads
-  downloadPath: string
-  alwaysAskPath: boolean
-  filenameTemplate: string
-  resolution: string
-  container: 'mp4' | 'mkv' | 'webm' | 'mov'
-  hardwareDecoding: 'auto' | 'cpu' | 'gpu'
-
-
-  // Network
-  concurrentDownloads: number
-  concurrentFragments: number // yt-dlp -N argument
-  speedLimit: string
-  proxy: string
-  userAgent: string
-  lowPerformanceMode: boolean
-  frontendFontSize: 'small' | 'medium' | 'large'
-
-
-  // Advanced
-  cookieSource: 'none' | 'browser' | 'txt'
-  browserType?: 'chrome' | 'edge' | 'firefox' | 'opera' | 'brave' | 'vivaldi' | 'chromium' | 'safari'
-  cookiePath?: string
-  useSponsorBlock: boolean
-  sponsorSegments: string[]
-  binaryPathYtDlp: string
-  binaryPathFfmpeg: string
-  embedMetadata: boolean
-  embedThumbnail: boolean
-  embedChapters: boolean // Embed chapter markers in video
-  postDownloadAction: 'none' | 'sleep' | 'shutdown'
-  developerMode: boolean
-  quickDownloadEnabled: boolean // Skip dialog for repeat downloads
-  showQuickModeButton: boolean // Show/hide Quick Mode toggle in dialog
-  lastDownloadOptions: DownloadOptions | null // Remember last used options
-  audioNormalization: boolean // Loudness Normalization (EBU R128)
-}
 
 export interface UISlice {
   showBinaryConfirmation: boolean
@@ -157,14 +105,6 @@ export interface SystemSlice {
   validateBinaries: () => Promise<void>
 }
 
-export interface CompressionOptions {
-  preset: 'wa' | 'social' | 'archive' | 'custom'
-  crf: number
-  resolution: string
-  encoder: 'auto' | 'cpu' | 'nvenc' | 'amf' | 'qsv'
-  speedPreset: 'ultrafast' | 'veryfast' | 'medium' | 'slow' | 'veryslow'
-  audioBitrate?: string
-}
 
 export interface VideoSlice {
   tasks: DownloadTask[]

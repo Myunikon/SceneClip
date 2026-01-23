@@ -4,11 +4,16 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { LeftPanel } from './add-dialog/LeftPanel'
 import { RightPanel } from './add-dialog/RightPanel'
 import { useAddDialog } from './add-dialog/useAddDialog'
+import { AddDialogProvider } from './add-dialog/AddDialogContext'
 import { parseTime, cn } from '../lib/utils'
 
 interface AddDialogProps {
     addTask: (url: string, opts: any) => any
     initialUrl?: string
+    initialCookies?: string
+    initialUserAgent?: string
+    initialStart?: number
+    initialEnd?: number
     previewLang?: string | null
     isOffline?: boolean
 }
@@ -30,11 +35,12 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
         t,
         formatFileSize,
         estimatedSize,
-        settings,
         resetForm,
         isDiskFull,
         diskFreeSpace
-    } = useAddDialog(props)
+    } = useAddDialog({
+        ...props
+    })
 
 
 
@@ -49,16 +55,11 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
     }))
 
     // Styles
-    const isLowPerf = settings.lowPerformanceMode
-    const backdropClass = isLowPerf
-        ? 'absolute inset-0 bg-black/80'
-        : 'absolute inset-0 bg-black/60 backdrop-blur-sm'
+    const backdropClass = 'absolute inset-0 bg-black/60 backdrop-blur-sm'
 
     // Dialog class logic
     const hasMeta = !!meta
-    const dialogClass = isLowPerf
-        ? `relative z-10 w-full ${hasMeta ? 'md:max-w-5xl' : 'md:max-w-lg'} md:rounded-2xl rounded-t-2xl rounded-b-none md:rounded-b-2xl overflow-hidden shadow-2xl flex flex-col md:max-h-[90vh] max-h-[85vh] border border-border bg-background mt-auto md:mt-0`
-        : `glass-strong relative z-10 w-full ${hasMeta ? 'md:max-w-5xl' : 'md:max-w-lg'} md:rounded-2xl rounded-t-2xl rounded-b-none md:rounded-b-2xl overflow-hidden shadow-2xl flex flex-col md:max-h-[90vh] max-h-[85vh] border border-white/10 mt-auto md:mt-0`
+    const dialogClass = `glass-strong relative z-10 w-full ${hasMeta ? 'md:max-w-5xl' : 'md:max-w-lg'} md:rounded-2xl rounded-t-2xl rounded-b-none md:rounded-b-2xl overflow-hidden shadow-2xl flex flex-col md:max-h-[90vh] max-h-[85vh] border border-white/10 mt-auto md:mt-0`
 
     // Animation Variants
     const desktopVariants = {
@@ -83,9 +84,7 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
     }, [])
 
 
-    const formClass = isLowPerf
-        ? 'flex flex-col flex-1 overflow-hidden bg-background'
-        : 'flex flex-col flex-1 overflow-hidden bg-background dark:bg-background/40 dark:backdrop-blur-md'
+    const formClass = 'flex flex-col flex-1 overflow-hidden bg-background dark:bg-background/40 dark:backdrop-blur-md'
 
     const formattedSize = formatFileSize(estimatedSize || 0)
 
@@ -140,27 +139,18 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
 
                             {/* Main Split Layout */}
                             <div className="flex flex-col lg:flex-row flex-1 lg:overflow-hidden overflow-y-auto scrollbar-thin">
-
-                                <LeftPanel
-                                    url={url} setUrl={setUrl}
-                                    handlePaste={handlePaste}
-                                    t={t}
-                                    loadingMeta={loadingMeta} meta={meta} errorMeta={errorMeta}
-                                    options={options} setters={setters}
-                                    browse={browse}
-                                />
-
-                                <RightPanel
-                                    url={url} hasMeta={hasMeta} meta={meta} t={t}
-
-                                    options={options} setters={setters}
-                                    availableResolutions={availableResolutions}
-                                    availableAudioBitrates={availableAudioBitrates}
-                                    availableVideoCodecs={availableVideoCodecs}
-                                    availableAudioCodecs={availableAudioCodecs}
-                                    availableLanguages={availableLanguages}
-                                    isLowPerf={settings.lowPerformanceMode}
-                                />
+                                <AddDialogProvider value={{
+                                    url, setUrl,
+                                    options, setters,
+                                    meta, loadingMeta, errorMeta, hasMeta,
+                                    availableResolutions, availableAudioBitrates, availableVideoCodecs, availableAudioCodecs, availableLanguages,
+                                    browse, handlePaste,
+                                    t, formatFileSize, estimatedSize,
+                                    isDiskFull, diskFreeSpace
+                                }}>
+                                    <LeftPanel />
+                                    <RightPanel />
+                                </AddDialogProvider>
                             </div>
 
                             <div className="flex justify-between items-center p-6 border-t border-border dark:border-white/10 bg-muted/50 dark:bg-card/95 shrink-0 gap-4 z-20">
@@ -195,15 +185,15 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
                                         onClick={() => handleSubmit()}
                                         disabled={!hasMeta || props.isOffline || (options.isClipping && !!options.rangeStart && !!options.rangeEnd && parseTime(options.rangeStart) >= parseTime(options.rangeEnd)) || isDiskFull}
                                         className={cn(
-                                            "relative isolate overflow-hidden group px-8 py-3.5 rounded-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center gap-2.5 transform active:scale-[0.98] border border-white/20",
+                                            "relative isolate overflow-hidden group px-8 py-3.5 rounded-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center gap-2.5 transform active:scale-95",
                                             isDiskFull
-                                                ? "bg-red-500/20 text-red-500 border-red-500/20"
-                                                : "bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white shadow-xl shadow-indigo-500/40 hover:shadow-2xl hover:shadow-indigo-500/50 hover:-translate-y-0.5"
+                                                ? "bg-red-500/20 text-red-500"
+                                                : "bg-gradient-to-r from-orange-500 via-red-500 to-purple-600 text-white shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 hover:brightness-110"
                                         )}
                                     >
-                                        {!isDiskFull && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out pointer-events-none" />}
-                                        <Download className="w-4 h-4 drop-shadow-sm" />
-                                        <span className="relative drop-shadow-sm tracking-wide">{options.batchMode ? t.download_all : t.download}</span>
+                                        <div className="absolute inset-0 -translate-x-full group-hover:animate-[shine_1.5s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-white/25 to-transparent z-10" />
+                                        <Download className="w-4 h-4" />
+                                        <span className="relative tracking-wide">{options.batchMode ? t.download_all : t.download}</span>
                                     </button>
                                 </div>
                             </div>

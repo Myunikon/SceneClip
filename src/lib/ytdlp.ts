@@ -31,6 +31,8 @@ export interface YtDlpOptions {
     gifScale?: number
     gifQuality?: 'high' | 'fast'
     forceTranscode?: boolean
+    cookies?: string
+    userAgent?: string
 }
 
 export async function buildYtDlpArgs(
@@ -57,10 +59,11 @@ export async function buildYtDlpArgs(
 
     // GPU Detection Logic
     let activeGpuType = gpuType
-    if (settings.hardwareDecoding === 'cpu') {
+    if (!settings.hardwareDecoding) {
         activeGpuType = 'cpu'
-    } else if (settings.hardwareDecoding === 'gpu' && gpuType === 'cpu') {
-        console.warn("User forced GPU but none detected. Falling back to CPU for safety.")
+    } else if (gpuType === 'cpu') {
+        // settings.hardwareDecoding is true, but no GPU detected
+        // We'll let it stay as 'cpu' or yt-dlp might fail
     }
 
     if (fmt === 'audio') {
@@ -333,8 +336,22 @@ export async function buildYtDlpArgs(
         args.push('--proxy', settings.proxy)
     }
 
-    // Cookie Source logic (System Browser)
-    if (settings.cookieSource === 'browser') {
+    // Cookie Source logic
+    // PRIORITY: 1. Task-specific Cookies (from Browser Extension) 2. System Browser 3. txt file
+    if (options.cookies) {
+        // If it looks like a file path (should probably be handled better, but for now extension sends CONTENT)
+        // Wait, yt-dlp expects a FILE for cookies. We can't pass raw content via CLI arg easily without a temp file.
+        // BUT, we can use stdin? No, yt-dlp doesn't support cookies viastdin easily.
+        // It supports --cookies "file".
+        // SO, if we receive RAW CONTENT, we must write it to a temp file first.
+        // However, `buildYtDlpArgs` is pure logic. The writing should happen before calling this, providing a path?
+        // OR the extension sends the path?
+        // The extension cannot write files on user system (except download).
+        // The LOCAL SERVER (Rust) receives the content. 
+        // We should write it to a temp file in Rust or here in JS.
+        // Let's assume options.cookies is a PATH to a temp file created by the caller (VideoSlice).
+        args.push('--cookies', options.cookies)
+    } else if (settings.cookieSource === 'browser') {
         const targetBrowser = settings.browserType || 'chrome';
         args.push('--cookies-from-browser', targetBrowser)
     } else if (settings.cookieSource === 'txt' && settings.cookiePath) {
@@ -342,12 +359,10 @@ export async function buildYtDlpArgs(
     }
 
     // Custom User-Agent (to avoid shadowbans)
-    // IMPORTER MODE LOGIC:
-    // 1. If user types " " (Space), disable UA completely (send nothing).
-    // 2. If user types specific UA, use it.
-    // 3. If empty, use Default Imposter Mode (Chrome).
-
-    if (settings.userAgent === " ") {
+    // PRIORITY: 1. Task-specific UA 2. Settings
+    if (options.userAgent) {
+        args.push('--user-agent', options.userAgent)
+    } else if (settings.userAgent === " ") {
         // User explicitly wants NO User-Agent (or default yt-dlp internal UA)
         console.log("User Agent disabled by user (Space detected)")
     } else {

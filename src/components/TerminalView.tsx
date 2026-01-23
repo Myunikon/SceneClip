@@ -14,8 +14,8 @@ export function TerminalView() {
     const [copied, setCopied] = useState(false)
 
     useEffect(() => {
-        endRef.current?.scrollIntoView({ behavior: settings.lowPerformanceMode ? 'auto' : 'smooth', block: 'nearest' })
-    }, [logs.length, settings.lowPerformanceMode]) // Only scroll on length change
+        endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }, [logs.length]) // Only scroll on length change
 
     // Filter logs based on selected filter
     const filteredLogs = useMemo(() => {
@@ -24,18 +24,18 @@ export function TerminalView() {
             const lower = (log.message || '').toLowerCase()
             switch (filter) {
                 case 'system':
-                    return lower.includes('system:') || lower.includes('[system]') || 
-                           lower.includes('store') || lower.includes('binary') ||
-                           lower.includes('ready') || lower.includes('error')
+                    return lower.includes('system:') || lower.includes('[system]') ||
+                        lower.includes('store') || lower.includes('binary') ||
+                        lower.includes('ready') || lower.includes('error')
                 case 'ytdlp':
-                    return lower.includes('yt-dlp') || lower.includes('ytdlp') || 
-                           lower.includes('[download]') || lower.includes('[info]') ||
-                           lower.includes('downloading') || lower.includes('eta') ||
-                           lower.includes('speed') || lower.includes('%')
+                    return lower.includes('yt-dlp') || lower.includes('ytdlp') ||
+                        lower.includes('[download]') || lower.includes('[info]') ||
+                        lower.includes('downloading') || lower.includes('eta') ||
+                        lower.includes('speed') || lower.includes('%')
                 case 'ffmpeg':
-                    return lower.includes('ffmpeg') || lower.includes('merge') || 
-                           lower.includes('muxing') || lower.includes('video:') ||
-                           lower.includes('audio:')
+                    return lower.includes('ffmpeg') || lower.includes('merge') ||
+                        lower.includes('muxing') || lower.includes('video:') ||
+                        lower.includes('audio:')
                 default:
                     return true
             }
@@ -84,8 +84,8 @@ export function TerminalView() {
                             onClick={() => setFilter(btn.id)}
                             className={`
                                 px-2 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1
-                                ${filter === btn.id 
-                                    ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                                ${filter === btn.id
+                                    ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                                     : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
                                 }
                             `}
@@ -101,17 +101,17 @@ export function TerminalView() {
                     <span className="text-xs text-gray-600">
                         {filteredLogs.length} / {logs.length}
                     </span>
-                    <button 
-                        onClick={handleCopyAll} 
-                        className="p-1.5 hover:bg-white/10 rounded flex items-center gap-1 text-gray-400 hover:text-white transition-colors" 
+                    <button
+                        onClick={handleCopyAll}
+                        className="p-1.5 hover:bg-white/10 rounded flex items-center gap-1 text-gray-400 hover:text-white transition-colors"
                         title="Copy All"
                     >
                         {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
                         <span className="text-xs">{copied ? 'Copied!' : 'Copy'}</span>
                     </button>
-                    <button 
-                        onClick={clearLogs} 
-                        className="p-1.5 hover:bg-red-500/20 rounded text-gray-400 hover:text-red-400 transition-colors" 
+                    <button
+                        onClick={clearLogs}
+                        className="p-1.5 hover:bg-red-500/20 rounded text-gray-400 hover:text-red-400 transition-colors"
                         title="Clear All"
                     >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -123,16 +123,15 @@ export function TerminalView() {
             <div className="flex-1 overflow-auto p-3 space-y-0.5">
                 {filteredLogs.length === 0 && (
                     <div className="text-gray-500 italic text-center py-8">
-                        {filter === 'all' 
-                            ? 'System ready. Waiting for tasks...' 
+                        {filter === 'all'
+                            ? 'System ready. Waiting for tasks...'
                             : `No ${filter} logs found.`}
                     </div>
                 )}
                 {filteredLogs.slice(-500).map((log) => (
-                    <MemoizedLogItem 
-                        key={log.id} 
-                        log={log} 
-                        lowPerf={settings.lowPerformanceMode}
+                    <MemoizedLogItem
+                        key={log.id}
+                        log={log}
                         onCopy={() => handleCopyLine(log)}
                     />
                 ))}
@@ -143,12 +142,11 @@ export function TerminalView() {
 }
 
 // Memoized Log Item to prevent unnecessary re-renders
-const MemoizedLogItem = React.memo(({ log, lowPerf, onCopy }: { log: any, lowPerf: boolean, onCopy: () => void }) => {
+const MemoizedLogItem = React.memo(({ log, onCopy }: { log: any, onCopy: () => void }) => {
     // Syntax highlighting logic
     const highlightedMessage = useMemo(() => {
         const msg = log.message || ''
-        if (lowPerf) return msg // Skip regex in low perf mode
-        
+
         // SECURITY: Escape HTML
         let result = msg
             .replace(/&/g, '&amp;')
@@ -156,7 +154,7 @@ const MemoizedLogItem = React.memo(({ log, lowPerf, onCopy }: { log: any, lowPer
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;')
-        
+
         // Apply coloring replacements (same as before but inside useMemo)
         result = result
             .replace(/(https?:\/\/[^\s]+)/g, '<span class="text-blue-400">$1</span>')
@@ -168,9 +166,9 @@ const MemoizedLogItem = React.memo(({ log, lowPerf, onCopy }: { log: any, lowPer
             .replace(/(success|completed|done|finished|100%)/gi, '<span class="text-emerald-400 font-bold">$1</span>')
             .replace(/^(System:)/gm, '<span class="text-orange-400 font-bold">$1</span>')
             .replace(/(\[[^\]]+\])/g, '<span class="text-gray-500">$1</span>')
-            
+
         return result
-    }, [log.message, lowPerf])
+    }, [log.message])
 
     return (
         <div className="group break-all whitespace-pre-wrap border-b border-white/5 pb-0.5 font-mono hover:bg-white/5 px-1 -mx-1 rounded relative flex gap-2">
@@ -178,13 +176,9 @@ const MemoizedLogItem = React.memo(({ log, lowPerf, onCopy }: { log: any, lowPer
                 [{new Date(log.timestamp).toLocaleTimeString()}]
             </span>
             <span>
-                {lowPerf ? (
-                    <span>{highlightedMessage}</span>
-                ) : (
-                    <span dangerouslySetInnerHTML={{ __html: highlightedMessage }} />
-                )}
+                <span dangerouslySetInnerHTML={{ __html: highlightedMessage }} />
             </span>
-            
+
             <button
                 onClick={onCopy}
                 className="absolute right-1 top-0.5 opacity-0 group-hover:opacity-100 p-0.5 hover:bg-white/10 rounded transition-opacity"
@@ -196,6 +190,6 @@ const MemoizedLogItem = React.memo(({ log, lowPerf, onCopy }: { log: any, lowPer
         </div>
     )
 }, (prev, next) => {
-    // Custom comparison: only re-render if ID, lowPerf, or message changes
-    return prev.log.id === next.log.id && prev.lowPerf === next.lowPerf && prev.log.message === next.log.message
+    // Custom comparison: only re-render if ID or message changes
+    return prev.log.id === next.log.id && prev.log.message === next.log.message
 })

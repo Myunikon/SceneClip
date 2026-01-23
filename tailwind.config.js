@@ -53,6 +53,9 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        xl: "calc(var(--radius) + 4px)",  /* 16px */
+        "2xl": "calc(var(--radius) + 8px)", /* 20px */
+        "3xl": "calc(var(--radius) + 12px)", /* 24px */
       },
       keyframes: {
         blob: {
@@ -69,9 +72,14 @@ export default {
             transform: "translate(0px, 0px) scale(1)",
           },
         },
+        shine: {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(100%)" }
+        }
       },
       animation: {
-        blob: "blob 15s infinite",
+        blob: "blob 30s infinite",
+        shine: "shine 1.5s infinite",
       },
     },
   },

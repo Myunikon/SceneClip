@@ -5,6 +5,7 @@ use tauri::{
 };
 
 mod commands;
+mod server;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -21,6 +22,12 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+          println!("{}, {argv:?}, {_cwd}", app.package_info().name);
+          let _ = app.get_webview_window("main")
+                     .expect("no main window")
+                     .set_focus();
+        }))
         .plugin(tauri_plugin_deep_link::init())
         .invoke_handler(tauri::generate_handler![
             commands::system::perform_system_action,
@@ -88,6 +95,9 @@ pub fn run() {
             sys.refresh_cpu_usage();
 
             app.manage(std::sync::Mutex::new(sys));
+
+            // Start Local Server
+            server::init(app.handle().clone());
 
             Ok(())
         })

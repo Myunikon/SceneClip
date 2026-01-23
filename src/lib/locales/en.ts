@@ -1,22 +1,22 @@
 export const en = {
     nav: {
-      downloads: "Downloads",
-      browser: "Browser",
-      settings: "Settings",
-      tools: "Tools",
-      terminal: "Terminal"
+        downloads: "Downloads",
+        browser: "Browser",
+        settings: "Settings",
+        tools: "Tools",
+        terminal: "Terminal"
     },
     error_boundary: {
         title: "Something went wrong.",
         reload: "Reload App"
     },
     status: {
-      missing: "Missing Components",
-      downloading_bin: "Downloading Components...",
-      ready: "Ready",
-      repair: "Download Components",
-      offline: "No Internet Connection",
-      slow_connect: "Network might be slow"
+        missing: "Missing Components",
+        downloading_bin: "Downloading Components...",
+        ready: "Ready",
+        repair: "Download Components",
+        offline: "No Internet Connection",
+        slow_connect: "Network might be slow"
     },
     task_status: {
         pending: "Pending",
@@ -28,27 +28,27 @@ export const en = {
         paused: "Paused"
     },
     header: {
-      title: "ClipScene",
+        title: "ClipScene",
     },
     downloads: {
-      title: "Downloads",
-      subtitle: "Manage your video downloads and clips.",
-      new_download: "New Download",
-      open_file: "Open File",
-      open_folder: "Open Folder",
-      stop: "Stop",
-      clear: "Clear",
-      empty: "No downloads yet",
-      empty_description: "Paste a link or press Ctrl+N to start.",
-      plus_more: "+1000 more",
-      headers: {
-        title_url: "Title / URL",
-        status: "Status",
-        progress: "Progress",
-        actions: "Actions",
-        eta: "ETA",
-        clip: "Clip"
-      }
+        title: "Downloads",
+        subtitle: "Manage your video downloads and clips.",
+        new_download: "New Download",
+        open_file: "Open File",
+        open_folder: "Open Folder",
+        stop: "Stop",
+        clear: "Clear",
+        empty: "No downloads yet",
+        empty_description: "Paste a link or press Ctrl+N to start.",
+        plus_more: "+1000 more",
+        headers: {
+            title_url: "Title / URL",
+            status: "Status",
+            progress: "Progress",
+            actions: "Actions",
+            eta: "ETA",
+            clip: "Clip"
+        }
     },
     settings: {
         title: "Settings",
@@ -56,10 +56,11 @@ export const en = {
         saved: "Saved!",
         about: "About",
         tabs: {
-            general: "General",
-            downloads: "Downloads",
+            general: "Appearance",
+            downloads: "Storage",
+            quality: "Quality",
             network: "Network",
-            advanced: "Advanced",
+            advanced: "System",
             guide: "Guide",
             about: "About"
         },
@@ -75,43 +76,43 @@ export const en = {
             close_action: "Close Button Action",
             minimize_tray: "Minimize to Tray",
             quit_app: "Quit App",
-            low_perf_mode: "Low Performance Mode",
-            low_perf_desc: "Disable all animations to save battery",
             font_size: "Font Size",
             font_small: "Small",
             font_medium: "Medium",
             font_large: "Large"
         },
         downloads: {
-            behavior: "Behavior",
-            quick_mode: "Quick Mode",
-            quick_mode_desc: "Use last settings to download instantly without showing dialog",
-            storage: "Storage",
-            path: "Default Download Path",
+            storage: "Storage & Path",
+            path: "Download Folder",
             change: "Change",
             always_ask: "Always ask where to save",
-            defaults: "Defaults",
-            filename_template: "Filename Template",
-            available_vars: "Available: {title}, {width}, {height}, {ext}",
+            filename_template: "Auto-Rename Rule (Template)",
+            available_vars: "Variables: {title}, {width}, {height}, {ext}",
             resolution: "Default Resolution",
-            container: "Container",
+            container: "Default Format (Container)",
             best: "Best Available",
-            audio: "Audio Only",
-            metadata_title: "Metadata & Tags",
+            audio: "Audio Only"
+        },
+        quality: {
+            video: "Video Content",
+            audio: "Audio Processing",
+            metadata: "Metadata & Tags",
             embed_metadata: "Embed Metadata",
             embed_thumbnail: "Embed Thumbnail",
-            disable_play_button: "Disable Play Button"
+            embed_chapters: "Embed Chapters",
+            audio_normalization: "Loudness Normalization",
+            sponsorblock: "SponsorBlock (Auto-Skip)",
+            enable_sb: "Enable SponsorBlock",
+            disable_play_button: "Hide Play Button in History"
         },
         network: {
-            connection: "Connection",
-            concurrent: "Concurrent Downloads",
-            warning_ip: "Warning: Too many simultaneous downloads may result in IP bans.",
-            speed_limit: "Speed Limit",
-            proxy: "Proxy URL",
-            user_agent: "Enable Imposter Mode (User Agent)",
-            ua_desc: "Masquerade as Chrome to avoid 429 errors.",
-            concurrent_fragments: "Concurrent Fragments",
-            perf_tuning: "Performance Tuning:",
+            connection: "Speed & Connection",
+            concurrent: "Simultaneous Downloads",
+            warning_ip: "Warning: Too many downloads may trigger IP protection.",
+            speed_limit: "Global Speed Limit",
+            proxy: "Proxy Configuration",
+            concurrent_fragments: "Download Segments (Split)",
+            perf_tuning: "Download Engine Power:",
             perf_safe_title: "1-4 (Safe)",
             perf_safe_desc: "Best for general usage and stable downloads.",
             perf_fast_title: "5-8 (Fast)",
@@ -128,13 +129,11 @@ export const en = {
             turbo_desc: "Use multi-threaded download engine for maximum speed."
         },
         advanced: {
-            auth: "Authentication & Cookies",
-            source: "Source",
-            use_browser: "Use Embedded Browser Session",
-            use_txt: "Load from cookies.txt",
-            sponsorblock: "SponsorBlock",
-            enable_sb: "Enable SponsorBlock",
-            binary_paths: "Binary Paths (Override)",
+            auth: "Browser Authentication",
+            source: "Source Choice",
+            use_browser: "Use System Browser Session (Cookies)",
+            use_txt: "Load from cookies.txt (Manual)",
+            binary_paths: "Integration Paths",
             clear_cache: "Clear Cache",
             post_action: "Post-Download Action (Queue Finished)",
             post_actions: {
@@ -168,12 +167,7 @@ export const en = {
                 confirm_reset: "Are you sure you want to reset all settings to defaults?"
             },
             errors: {
-                access_denied: "Access Denied",
-                access_desc: "Permission refused.",
-                folder_not_found: "Folder Not Found",
-                folder_desc: "The directory no longer exists.",
-                file_desc: "File may have been moved or deleted.",
-                open_folder: "Open Folder"
+                open: "Open Folder"
             },
             video_processing: {
                 title: "Video Processing",
@@ -239,213 +233,216 @@ export const en = {
         }
     },
     dialog: {
-      title: "Add Download",
-      new_download: "New Download",
-      customize_download: "Customize Download",
-      download_all: "Download All",
-      url_label: "Video URL",
-      format_label: "Format",
-      folder_label: "Save Folder",
-      clip_label: "Clip Range",
-      enhancements_label: "Enhancements",
-      help: {
-        format_help: "Choose 'Video' for image+sound, 'Audio' for music only, or 'GIF' for short silent animations.",
-        mp4_help: "MP4 is safest for all devices/TVs. MKV is more resilient (won't corrupt if download cuts off) but not all players support it.",
-        codec_help: "'H.264' is compatible with everything. 'AV1' saves data & is clearer but needs a new phone/PC. 'Auto' let us choose.",
-        audio_help: "320kbps is studio quality (best). 128kbps is standard YouTube.",
-        sponsor_help: "Automatically cuts out 'Don't forget to subscribe' or sponsor ads inside the video.",
-        clip_help: "Use this Scissors feature if you only want to grab a funny moment (e.g., minute 01:00 to 01:30) to save data."
-      },
-      turbo_label: "Turbo Mode (Multi-threaded)",
-      sponsor_label: "Remove Sponsors",
-      cancel: "Cancel",
-      download: "Download",
-      remove_sponsors: "Remove Sponsors",
-      remove_sponsors_desc: "Auto-skip intro, outro, & ads inside video",
-      loudness_normalization: "Loudness Normalization",
-      loudness_desc: "EBU R128 Standard",
-      subtitles_title: "Subtitles",
-      subtitles_desc: "Download & embed captions",
-      subtitle_safe_mode_title: "Safe Mode Active",
-      subtitle_safe_mode_desc: "Downloads will be significantly SLOWER to prevent YouTube blocking (HTTP 429). Please be patient.",
-      schedule_download: "Schedule Download",
-      schedule_desc: "Start task automatically at a later time",
-      live_from_start: "Live from Start",
-      live_from_start_desc: "Download livestream from the beginning",
-      split_chapters: "Split Chapters",
-      split_chapters_desc: "Separate video file per chapter",
-      subtitle_settings: "Subtitle Settings",
-      trim_video: "Trim Video",
-      trim_audio: "Trim Audio",
-      trim_desc: "Cut specific portion of the video",
-      schedule_time: "Schedule Time",
-      embed_subs: "Embed into video file",
-      estimated_size: "Estimated Size",
-      trimmed: "TRIMMED",
-      pick_date: "Pick a date...",
-      set_time_next: "Set Time Next",
-      calendar: "Calendar",
-      time: "Time",
-      done: "Done",
-      preview: {
-        failed: "Preview Failed",
-        no_data: "No data returned",
-        instruction: "Enter a valid URL to see preview"
-      },
-      formats: {
-        best: "Best Video + Audio",
-        audio_mp3: "Audio (MP3)",
-        audio_wav: "Audio (WAV Lossless)",
-        gif: "Animated GIF"
-      },
-      quality_profiles: {
-          highest_quality: "Highest Quality",
-          standard: "Standard",
-          ultra_hd: "Ultra HD",
-          qhd: "QHD",
-          full_hd: "Full HD",
-          hd: "HD",
-          data_saver: "Data Saver"
-      },
-      audio_extraction: {
-          title: "Audio Extraction",
-          desc_auto: "High-performance extraction to MP3. Bitrates detected from source video.",
-          desc_manual: "High-performance extraction to MP3. Select target bitrate quality."
-      },
-      labels: {
-          quality_profile: "Quality Profile",
-          fmt: "Fmt:",
-          bitrate_quality: "Bitrate Quality"
-      },
+        title: "Add Download",
+        new_download: "New Download",
+        customize_download: "Customize Download",
+        download_all: "Download All",
+        url_label: "Video URL",
+        format_label: "Format",
+        folder_label: "Save Folder",
+        clip_label: "Clip Range",
+        enhancements_label: "Enhancements",
+        help: {
+            format_help: "Choose 'Video' for image+sound, 'Audio' for music only, or 'GIF' for short silent animations.",
+            mp4_help: "MP4 is safest for all devices/TVs. MKV is more resilient (won't corrupt if download cuts off) but not all players support it.",
+            codec_help: "'H.264' is compatible with everything. 'AV1' saves data & is clearer but needs a new phone/PC. 'Auto' let us choose.",
+            audio_help: "320kbps is studio quality (best). 128kbps is standard YouTube.",
+            sponsor_help: "Automatically cuts out 'Don't forget to subscribe' or sponsor ads inside the video.",
+            clip_help: "Use this Scissors feature if you only want to grab a funny moment (e.g., minute 01:00 to 01:30) to save data."
+        },
+        turbo_label: "Turbo Mode (Multi-threaded)",
+        sponsor_label: "Remove Sponsors",
+        cancel: "Cancel",
+        download: "Download",
+        remove_sponsors: "Remove Sponsors",
+        remove_sponsors_desc: "Auto-skip intro, outro, & ads inside video",
+        loudness_normalization: "Loudness Normalization",
+        loudness_desc: "EBU R128 Standard",
+        subtitles_title: "Subtitles",
+        subtitles_desc: "Download & embed captions",
+        subtitle_safe_mode_title: "Safe Mode Active",
+        subtitle_safe_mode_desc: "Downloads will be significantly SLOWER to prevent YouTube blocking (HTTP 429). Please be patient.",
+        schedule_download: "Schedule Download",
+        schedule_desc: "Start task automatically at a later time",
+        live_from_start: "Live from Start",
+        live_from_start_desc: "Download livestream from the beginning",
+        split_chapters: "Split Chapters",
+        split_chapters_desc: "Separate video file per chapter",
+        sponsor_clip_conflict: "Unavailable while trimming",
+        video_codec: "Video Codec",
+        codec_desc: "AV1 is best, H264 is most compatible",
+        subtitle_settings: "Subtitle Settings",
+        trim_video: "Trim Video",
+        trim_audio: "Trim Audio",
+        trim_desc: "Cut specific portion of the video",
+        schedule_time: "Schedule Time",
+        embed_subs: "Embed into video file",
+        estimated_size: "Estimated Size",
+        trimmed: "TRIMMED",
+        pick_date: "Pick a date...",
+        set_time_next: "Set Time Next",
+        calendar: "Calendar",
+        time: "Time",
+        done: "Done",
+        preview: {
+            failed: "Preview Failed",
+            no_data: "No data returned",
+            instruction: "Enter a valid URL to see preview"
+        },
+        formats: {
+            best: "Best Video + Audio",
+            audio_mp3: "Audio (MP3)",
+            audio_wav: "Audio (WAV Lossless)",
+            gif: "Animated GIF"
+        },
+        quality_profiles: {
+            highest_quality: "Highest Quality",
+            standard: "Standard",
+            ultra_hd: "Ultra HD",
+            qhd: "QHD",
+            full_hd: "Full HD",
+            hd: "HD",
+            data_saver: "Data Saver"
+        },
+        audio_extraction: {
+            title: "Audio Extraction",
+            desc_auto: "High-performance extraction to MP3. Bitrates detected from source video.",
+            desc_manual: "High-performance extraction to MP3. Select target bitrate quality."
+        },
+        labels: {
+            quality_profile: "Quality Profile",
+            fmt: "Fmt:",
+            bitrate_quality: "Bitrate Quality"
+        },
 
-      metadata_required: "Metadata required for slider",
-      time_error: "Start time must be before End time",
-      
-      // Tab labels
-      tabs: {
-        video: "Video",
-        audio: "Audio", 
-        gif: "GIF"
-      },
-      
-      // GIF section
-      gif_maker: {
-        title: "High-Quality GIF Maker",
-        desc: "Create smooth, clear GIFs using palette generation. Perfect for memes and reaction clips.",
-        note: "(Note: Process takes longer than standard video download)",
-        trim_required: "Trim Required",
-        max_duration: "Max 30s",
-        trim_desc: "GIF format requires trimming. Select a short clip (max 30 seconds) for best results.",
-        too_long: "Clip is too long! Max {max}s for GIF. Current: {current}s"
-      },
-      
-      // Clip section
-      clip: {
-        duration: "Clip duration: {current}s",
-        duration_max: "Clip duration: {current}s / {max}s max",
-        to: "TO"
-      },
-      
-      // Codec
-      codec: {
-        label: "Codec",
-        auto_desc: "Auto Best Quality",
-        h264: "H.264 plays everywhere.",
-        hevc: "High Efficiency (H.265)",
-        vp9: "YouTube Standard (4K)",
-        av1: "AV1 saves space (Next-Gen).",
-        warning_title: "Re-encoding Required",
-        warning_desc: "Source does not have {codec}. Quality may degrade slightly & download will take longer."
-      },
-      
-      // New UI Sections
-      gif_options: {
-        res_title: "Resolution",
-        res_desc: "Smaller resolution makes GIF lighter to share.",
-        fps_title: "Frame Rate",
-        fps_desc: "Higher FPS means smoother motion but larger file.",
-        quality_title: "Quality Mode",
-        quality_high: "High Quality (Palette)",
-        quality_fast: "Fast (Normal)",
-        
-        // Options
-        res_original: "Original",
-        res_social: "Social (480p)",
-        res_sticker: "Sticker (320p)",
-        
-        fps_smooth: "Smooth (30fps)",
-        fps_standard: "Standard (15fps)",
-        fps_lite: "Lite (10fps)"
-      },
-      video_quality: {
-          title: "Video Quality",
-          desc: "Higher quality means larger file size."
-      },
-      output_format: {
-          title: "Output Format",
-          desc_mp4: "Universal (Best for TV/Mobile)",
-          desc_mkv: "Advanced (Subs/Multi-Audio)",
-          desc_webm: "Google Web Standard",
-          desc_mov: "Choose based on your video editor",
-          desc_default: "Select Format"
-      },
-      audio_options: {
-          title: "Audio Format",
-          desc_mp3: "Universal (Music/Podcast)",
-          desc_m4a: "Efficient (Apple/Mobile)",
-          desc_flac: "Lossless (Audiophile)",
-          desc_wav: "Uncompressed (Editing)",
-          desc: "Higher bitrate means clearer sound details.",
-          upscale_title: "Upscaling Warning",
-          upscale_desc: "Source is compressed (Lossy). Converting to {fmt} increases size but NOT quality.",
-          reencode_title: "Re-encoding",
-          reencode_desc: "Conversion to {fmt} required."
-      },
-      // Compression
-      compress: {
-        title_video: "Compress Video",
-        title_audio: "Compress Audio",
-        title_image: "Compress Image/GIF",
-        
-        preset_wa: "WhatsApp / Discord",
-        preset_wa_desc: "Smallest Size",
-        preset_wa_desc_audio: "Voice (64kbps)",
-        
-        preset_social: "Social Media",
-        preset_social_desc: "Balanced Quality",
-        preset_social_desc_audio: "Standard (128kbps)",
-        
-        preset_archive: "Archive / High",
-        preset_archive_desc: "Best Quality",
-        preset_archive_desc_audio: "High (320kbps)",
-        
-        advanced: "Advanced Settings",
-        original_size: "Original Size",
-        format: "Format",
-        
-        lbl_resolution: "Resolution Limit",
-        lbl_quality: "Quality (CRF)",
-        lbl_encoder: "Encoder (Hardware)",
-        lbl_speed: "Encoding Speed",
-        lbl_bitrate: "Audio Bitrate",
-        
-        btn_cancel: "Cancel",
-        btn_start: "Start Compression",
-        
-        // File validation
-        file_missing: "File Not Found",
-        file_missing_desc: "The original file has been moved or deleted.",
-        browse_file: "Browse...",
-        file_relocated: "File path updated successfully",
-        double_compression_warning: "This file appears to be already compressed. Compressing it again will significantly reduce quality."
-      },
-      logic_warnings: {
-          mov_reencode: "Format <strong>.MOV</strong> with <strong>{codec}</strong> requires re-encoding. This may take longer."
-      },
+        metadata_required: "Metadata required for slider",
+        time_error: "Start time must be before End time",
 
-      restart: "Restart",
-      filename_label: "Filename",
-      filename_placeholder: "Custom filename (optional)"
+        // Tab labels
+        tabs: {
+            video: "Video",
+            audio: "Audio",
+            gif: "GIF"
+        },
+
+        // GIF section
+        gif_maker: {
+            title: "High-Quality GIF Maker",
+            desc: "Create smooth, clear GIFs using palette generation. Perfect for memes and reaction clips.",
+            note: "(Note: Process takes longer than standard video download)",
+            trim_required: "Trim Required",
+            max_duration: "Max 30s",
+            trim_desc: "GIF format requires trimming. Select a short clip (max 30 seconds) for best results.",
+            too_long: "Clip is too long! Max {max}s for GIF. Current: {current}s"
+        },
+
+        // Clip section
+        clip: {
+            duration: "Clip duration: {current}s",
+            duration_max: "Clip duration: {current}s / {max}s max",
+            to: "TO"
+        },
+
+        // Codec
+        codec: {
+            label: "Codec",
+            auto_desc: "Auto Best Quality",
+            h264: "H.264 plays everywhere.",
+            hevc: "High Efficiency (H.265)",
+            vp9: "YouTube Standard (4K)",
+            av1: "AV1 saves space (Next-Gen).",
+            warning_title: "Re-encoding Required",
+            warning_desc: "Source does not have {codec}. Quality may degrade slightly & download will take longer."
+        },
+
+        // New UI Sections
+        gif_options: {
+            res_title: "Resolution",
+            res_desc: "Smaller resolution makes GIF lighter to share.",
+            fps_title: "Frame Rate",
+            fps_desc: "Higher FPS means smoother motion but larger file.",
+            quality_title: "Quality Mode",
+            quality_high: "High Quality (Palette)",
+            quality_fast: "Fast (Normal)",
+
+            // Options
+            res_original: "Original",
+            res_social: "Social (480p)",
+            res_sticker: "Sticker (320p)",
+
+            fps_smooth: "Smooth (30fps)",
+            fps_standard: "Standard (15fps)",
+            fps_lite: "Lite (10fps)"
+        },
+        video_quality: {
+            title: "Video Quality",
+            desc: "Higher quality means larger file size."
+        },
+        output_format: {
+            title: "Output Format",
+            desc_mp4: "Universal (Best for TV/Mobile)",
+            desc_mkv: "Advanced (Subs/Multi-Audio)",
+            desc_webm: "Google Web Standard",
+            desc_mov: "Choose based on your video editor",
+            desc_default: "Select Format"
+        },
+        audio_options: {
+            title: "Audio Format",
+            desc_mp3: "Universal (Music/Podcast)",
+            desc_m4a: "Efficient (Apple/Mobile)",
+            desc_flac: "Lossless (Audiophile)",
+            desc_wav: "Uncompressed (Editing)",
+            desc: "Higher bitrate means clearer sound details.",
+            upscale_title: "Upscaling Warning",
+            upscale_desc: "Source is compressed (Lossy). Converting to {fmt} increases size but NOT quality.",
+            reencode_title: "Re-encoding",
+            reencode_desc: "Conversion to {fmt} required."
+        },
+        // Compression
+        compress: {
+            title_video: "Compress Video",
+            title_audio: "Compress Audio",
+            title_image: "Compress Image/GIF",
+
+            preset_wa: "WhatsApp / Discord",
+            preset_wa_desc: "Smallest Size",
+            preset_wa_desc_audio: "Voice (64kbps)",
+
+            preset_social: "Social Media",
+            preset_social_desc: "Balanced Quality",
+            preset_social_desc_audio: "Standard (128kbps)",
+
+            preset_archive: "Archive / High",
+            preset_archive_desc: "Best Quality",
+            preset_archive_desc_audio: "High (320kbps)",
+
+            advanced: "Advanced Settings",
+            original_size: "Original Size",
+            format: "Format",
+
+            lbl_resolution: "Resolution Limit",
+            lbl_quality: "Quality (CRF)",
+            lbl_encoder: "Encoder (Hardware)",
+            lbl_speed: "Encoding Speed",
+            lbl_bitrate: "Audio Bitrate",
+
+            btn_cancel: "Cancel",
+            btn_start: "Start Compression",
+
+            // File validation
+            file_missing: "File Not Found",
+            file_missing_desc: "The original file has been moved or deleted.",
+            browse_file: "Browse...",
+            file_relocated: "File path updated successfully",
+            double_compression_warning: "This file appears to be already compressed. Compressing it again will significantly reduce quality."
+        },
+        logic_warnings: {
+            mov_reencode: "Format <strong>.MOV</strong> with <strong>{codec}</strong> requires re-encoding. This may take longer."
+        },
+
+        restart: "Restart",
+        filename_label: "Filename",
+        filename_placeholder: "Custom filename (optional)"
     },
     updater_banner: {
         update_available: "yt-dlp update available:",
@@ -484,7 +481,12 @@ export const en = {
         filter_source: "Source",
         sort_asc: "Oldest First",
         sort_desc: "Newest First",
-        scan_files: "Scan Files"
+        scan_files: "Scan Files",
+        scan_missing_files: "Scan Complete: {count} missing files found",
+        scan_healthy_files: "Scan Complete: All files are healthy",
+        recover: "Recover File",
+        find_on_disk: "Find on Disk",
+        redownload: "Redownload Content"
     },
     guide: {
         title: "User Manual",
@@ -492,7 +494,6 @@ export const en = {
         menu: {
             start: "Getting Started",
             clip: "Clipping & Edit",
-            perf: "Performance",
             advanced: "Advanced",
             faq: "Common Errors"
         },
@@ -508,10 +509,6 @@ export const en = {
             format: {
                 title: "Format & Convert",
                 desc: "Choose your flavor: 4K Video, Clear MP3 Audio, or instant GIF memes."
-            },
-            perf: {
-                title: "Performance Mode",
-                desc: "PC lagging? Enable 'Low Performance Mode' (Lightning Icon) to save CPU/GPU."
             },
             terminal: {
                 title: "Terminal & Logs",
@@ -560,38 +557,38 @@ export const en = {
         binary_error: "Binary Check Failed"
     },
     context_menu: {
-            back: "Back",
-            refresh: "Refresh",
-            home: "Home",
-            copy: "Copy",
-            paste: "Paste",
-            copy_link: "Copy Link",
-            screenshot: "Screenshot",
-            more_soon: "More coming soon..."
-        },
+        back: "Back",
+        refresh: "Refresh",
+        home: "Home",
+        copy: "Copy",
+        paste: "Paste",
+        copy_link: "Copy Link",
+        screenshot: "Screenshot",
+        more_soon: "More coming soon..."
+    },
     statusbar: {
-      idle: "Idle",
-      active: "Active",
-      queued: "queued",
-      nvidia_gpu: "Nvidia GPU",
-      amd_gpu: "AMD GPU",
-      intel_gpu: "Intel GPU",
-      apple_gpu: "Apple GPU",
-      cpu_mode: "CPU Mode",
-      auto_cpu: "Auto (CPU)",
-      forced: "Forced",
-      cpu_usage: "CPU Usage",
-      ram_usage: "RAM",
-      disk_free: "Disk Free",
-      download_speed: "Download Speed",
-      upload_speed: "Upload Speed",
-      active_downloads: "Active Downloads",
-      hw_accel: "Hardware Acceleration",
-      app_version: "App Version",
-      open_folder: "Open Download Folder",
-      stats_unavailable: "System stats unavailable",
-      storage_devices: "Storage Devices",
-      available: "free"
+        idle: "Idle",
+        active: "Active",
+        queued: "queued",
+        nvidia_gpu: "Nvidia GPU",
+        amd_gpu: "AMD GPU",
+        intel_gpu: "Intel GPU",
+        apple_gpu: "Apple GPU",
+        cpu_mode: "CPU Mode",
+        auto_cpu: "Auto (CPU)",
+        forced: "Forced",
+        cpu_usage: "CPU Usage",
+        ram_usage: "RAM",
+        disk_free: "Disk Free",
+        download_speed: "Download Speed",
+        upload_speed: "Upload Speed",
+        active_downloads: "Active Downloads",
+        hw_accel: "Hardware Acceleration",
+        app_version: "App Version",
+        open_folder: "Open Download Folder",
+        stats_unavailable: "System stats unavailable",
+        storage_devices: "Storage Devices",
+        available: "free"
     },
     errors: {
         system_action: "System action failed: {action}",
@@ -601,6 +598,15 @@ export const en = {
         binary_crash: "Critical Binary Error",
         copy_logs: "Failed to copy logs",
         copy_line: "Failed to copy line",
-        path_empty: "Path is empty"
-    }
+        path_empty: "Path is empty",
+        access_denied: "Access Denied",
+        access_desc: "Permission refused.",
+        folder_not_found: "Folder Not Found",
+        folder_desc: "The directory no longer exists.",
+        file_desc: "File may have been moved or deleted.",
+        open_folder: "Open Folder"
+    },
+    all: "All",
+    video: "Video",
+    audio: "Audio"
 }

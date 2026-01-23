@@ -1,8 +1,6 @@
-import { Globe, Shield, Zap, Wifi } from 'lucide-react'
-import { Switch } from '../Switch'
+import { Zap } from 'lucide-react'
 import { Select } from '../Select'
 import { AppSettings } from '../../store/slices/types'
-import { cn } from '../../lib/utils'
 
 interface NetworkSettingsProps {
     settings: AppSettings
@@ -17,10 +15,10 @@ export function NetworkSettings({ settings, setSetting, t }: NetworkSettingsProp
                 : 'custom'
 
     return (
-        <div className={cn("space-y-4", !settings.lowPerformanceMode && "animate-in slide-in-from-right-4 duration-300")}>
+        <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
             <section className="p-5 border rounded-xl bg-card/30 space-y-4">
                 <h3 className="font-semibold text-lg flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-primary" /> {t.settings.network?.connection || "Connection"}
+                    {t.settings.network?.connection || "Connection"}
                 </h3>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -51,7 +49,7 @@ export function NetworkSettings({ settings, setSetting, t }: NetworkSettingsProp
 
                 <div className="space-y-2 pt-2">
                     <label className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-2">
-                        <Shield className="w-3 h-3" /> {t.settings.network?.proxy || "Proxy Server"}
+                        {t.settings.network?.proxy || "Proxy Server"}
                     </label>
                     <input
                         className="w-full p-2 rounded-md border bg-background/50 font-mono text-xs focus:ring-1 focus:ring-primary outline-none"
@@ -61,44 +59,18 @@ export function NetworkSettings({ settings, setSetting, t }: NetworkSettingsProp
                     />
                 </div>
 
-                <div className="space-y-4 pt-4 border-t border-border/50">
-                    <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                            <label className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-2">
-                                <Globe className="w-3 h-3" /> {t.settings.network?.user_agent || "Enable Imposter Mode (User Agent)"}
-                            </label>
-                            <p className="text-[10px] text-muted-foreground/70">
-                                {t.settings.network?.ua_desc || "Masquerade as Chrome to avoid 429 errors."}
-                            </p>
-                        </div>
-                        <Switch
-                            checked={settings.userAgent !== " "}
-                            onCheckedChange={(checked: boolean) => setSetting('userAgent', checked ? "" : " ")}
-                        />
-                    </div>
 
-                    {settings.userAgent !== " " && (
-                        <div className="animate-in slide-in-from-top-2 fade-in duration-200">
-                            <input
-                                className="w-full p-2 rounded-md border bg-background/50 font-mono text-xs focus:ring-1 focus:ring-primary outline-none"
-                                value={settings.userAgent}
-                                onChange={(e) => setSetting('userAgent', e.target.value)}
-                                placeholder={t.settings?.network?.placeholders?.ua}
-                            />
-                        </div>
-                    )}
-                </div>
             </section>
 
             <section className="p-5 border rounded-xl bg-card/30 space-y-4">
                 <h3 className="font-semibold text-lg flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-primary" /> {t.settings.network?.performance || "Performance"}
+                    {t.settings.network?.performance || "Performance"}
                 </h3>
 
                 <div className="space-y-4 pt-2">
                     <div className="flex flex-col space-y-2">
                         <label className="text-xs font-semibold uppercase text-muted-foreground flex items-center justify-between">
-                            <span className="flex items-center gap-2"><Wifi className="w-3 h-3 text-blue-400" /> {t.settings.network?.concurrent_fragments}</span>
+                            <span className="flex items-center gap-2">{t.settings.network?.concurrent_fragments}</span>
                             <span className="text-primary font-mono bg-primary/10 px-2 py-0.5 rounded text-xs">{settings.concurrentFragments || 4} chunks</span>
                         </label>
 

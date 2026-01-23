@@ -34,7 +34,7 @@ export function DownloadItem({ task, t }: DownloadItemProps) {
             } catch (e: any) {
                 console.error('Failed to open file:', e);
                 const fileName = target.split(/[/\\]/).pop() || 'File';
-                const tErrors = translations[settings.language as keyof typeof translations].settings.advanced.errors;
+                const tErrors = translations[settings.language as keyof typeof translations].errors;
 
                 notify.error(`${fileName}`, {
                     description: tErrors.file_desc,
@@ -55,7 +55,7 @@ export function DownloadItem({ task, t }: DownloadItemProps) {
         try {
             await openPath(task.path);
         } catch (e) {
-            const tErrors = translations[settings.language as keyof typeof translations].settings.advanced.errors;
+            const tErrors = translations[settings.language as keyof typeof translations].errors;
             notify.error(tErrors.folder_not_found, {
                 description: tErrors.folder_desc,
                 duration: 4000
@@ -90,13 +90,13 @@ export function DownloadItem({ task, t }: DownloadItemProps) {
                             </span>
                         )}
                         {task.audioNormalization && (
-                            <span className="text-[10px] font-bold bg-pink-100 text-pink-700 px-2 py-0.5 rounded-md dark:bg-pink-500/20 dark:text-pink-400 font-mono border border-pink-200 dark:border-pink-500/30">
+                            <span className="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 rounded-md dark:bg-orange-500/20 dark:text-orange-400 font-mono border border-orange-200 dark:border-orange-500/30">
                                 ♪ Normalized
                             </span>
                         )}
                         {task.status === 'error' && task.log && (
                             <div className="flex items-center gap-2 max-w-full">
-                                <span className="text-[10px] font-bold bg-red-100 text-red-700 px-2 py-0.5 rounded-md dark:bg-red-500/20 dark:text-red-400 border border-red-200 dark:border-red-500/30 shrink-0">
+                                <span className="text-[10px] font-bold bg-red-100 text-red-800 px-2 py-0.5 rounded-md dark:bg-red-900/30 dark:text-red-500 border border-red-200 dark:border-red-500/30 shrink-0">
                                     ERROR
                                 </span>
                                 <span className="text-xs text-red-500 truncate" title={task.log}>
@@ -120,18 +120,18 @@ export function DownloadItem({ task, t }: DownloadItemProps) {
                             <div
                                 className={cn("h-full relative overflow-hidden",
                                     task.status === 'error' ? "bg-red-500" : "bg-primary",
-                                    !settings.lowPerformanceMode && "transition-all duration-300 ease-out"
+                                    "transition-all duration-300 ease-out"
                                 )}
                                 style={{
                                     width: `${task.progress}%`,
-                                    backgroundImage: !settings.lowPerformanceMode && (task.concurrentFragments || 1) > 1 && task.status === 'downloading'
+                                    backgroundImage: (task.concurrentFragments || 1) > 1 && task.status === 'downloading'
                                         ? 'linear-gradient(45deg,rgba(255,255,255,0.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,0.15) 50%,rgba(255,255,255,0.15) 75%,transparent 75%,transparent)'
                                         : 'none',
                                     backgroundSize: '1rem 1rem'
                                 }}
                             >
                                 {/* Active Shimmer */}
-                                {!settings.lowPerformanceMode && task.status === 'downloading' && (
+                                {task.status === 'downloading' && (
                                     <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite] -skew-x-12 translate-x-[-100%]"></div>
                                 )}
                             </div>
@@ -141,7 +141,7 @@ export function DownloadItem({ task, t }: DownloadItemProps) {
 
                     <div className="flex justify-between text-[11px] text-muted-foreground/80 mt-1.5 font-semibold uppercase tracking-wide items-center h-4">
                         {task.statusDetail ? (
-                            <span className={cn("text-orange-500/90 truncate", !settings.lowPerformanceMode && "animate-pulse")}>{task.statusDetail}</span>
+                            <span className={cn("text-orange-500/90 truncate", "animate-pulse")}>{task.statusDetail}</span>
                         ) : (
                             <div className="flex gap-3">
                                 <span className="font-mono">{task.speed || '0 B/s'}</span>
@@ -152,7 +152,7 @@ export function DownloadItem({ task, t }: DownloadItemProps) {
                             </div>
                         )}
                         {(task.concurrentFragments || 1) > 1 && (
-                            <span className={cn("flex items-center gap-1 text-yellow-500/80", !settings.lowPerformanceMode && "animate-pulse")} title={`Downloading with ${task.concurrentFragments} parallel fragments`}>
+                            <span className={cn("flex items-center gap-1 text-yellow-500/80", "animate-pulse")} title={`Downloading with ${task.concurrentFragments} parallel fragments`}>
                                 <Zap className="w-3 h-3" fill="currentColor" />
                             </span>
                         )}
@@ -165,7 +165,7 @@ export function DownloadItem({ task, t }: DownloadItemProps) {
                     {(settings.developerMode || task.status === 'error') && (
                         <button
                             onClick={() => setShowCommandModal(true)}
-                            className="p-2 hover:bg-purple-500/10 text-purple-500 rounded-lg transition-colors"
+                            className="p-2 hover:bg-orange-500/10 text-orange-500 rounded-lg transition-colors"
                             title="View Command Details"
                         >
                             <Terminal className="w-5 h-5 md:w-4 md:h-4" />
@@ -228,7 +228,7 @@ export function DownloadItem({ task, t }: DownloadItemProps) {
                     )}
                     {task.status === 'completed' && (
                         <>
-                            <button onClick={handleOpenFile} className="p-2 hover:bg-blue-500/10 text-blue-600 rounded-lg transition-colors" title={t.open_file}>
+                            <button onClick={handleOpenFile} className="p-2 hover:bg-red-500/10 text-red-600 rounded-lg transition-colors" title={t.open_file}>
                                 <Play className="w-5 h-5 md:w-4 md:h-4" />
                             </button>
                             <button onClick={handleOpenFolder} className="p-2 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-lg transition-colors" title={t.open_folder}>

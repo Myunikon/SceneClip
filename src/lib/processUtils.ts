@@ -7,6 +7,7 @@
 
 import { Child, Command } from '@tauri-apps/plugin-shell'
 import { type } from '@tauri-apps/plugin-os'
+import { formatBytes, parseTime } from './utils'
 
 // =============================================================================
 // Types
@@ -38,35 +39,12 @@ export const startingTaskIds = new Set<string>()
 // Helper Functions
 // =============================================================================
 
-/**
- * Format bytes to human-readable string
- */
-export function formatBytes(bytes: number, decimals = 2): string {
-  if (!+bytes) return '0 Bytes'
-  const k = 1024
-  const dm = decimals < 0 ? 0 : decimals
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
-}
+export { formatBytes }
 
 /**
  * Convert time string "HH:MM:SS.mm" or "MM:SS" or seconds to total seconds
  */
-export function timeToSeconds(timeStr: string): number {
-  if (!timeStr) return 0
-  // If just number
-  if (!timeStr.includes(':')) return parseFloat(timeStr) || 0
-
-  const parts = timeStr.split(':').map(parseFloat)
-  let seconds = 0
-  if (parts.length === 3) {
-    seconds = parts[0] * 3600 + parts[1] * 60 + parts[2]
-  } else if (parts.length === 2) {
-    seconds = parts[0] * 60 + parts[1]
-  }
-  return seconds
-}
+export const timeToSeconds = parseTime
 
 // =============================================================================
 // Process Tree Kill (Cross-Platform)

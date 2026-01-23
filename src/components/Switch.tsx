@@ -30,9 +30,9 @@ export function Switch({ checked, onCheckedChange, disabled, className }: Switch
             onKeyDown={handleKeyDown}
             className={cn(
                 "w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50 border-2 border-transparent cursor-pointer inline-flex items-center",
-                checked 
-                    ? "bg-blue-500 dark:bg-blue-400" 
-                    : "bg-neutral-300 dark:bg-neutral-600",
+                checked
+                    ? "bg-orange-500 dark:bg-orange-400"
+                    : "bg-secondary",
                 disabled && "opacity-50 cursor-not-allowed",
                 className
             )}

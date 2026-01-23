@@ -4,7 +4,6 @@ import { Terminal, X, Copy, Check } from 'lucide-react'
 import { writeText } from '@tauri-apps/plugin-clipboard-manager'
 import { motion, AnimatePresence } from 'framer-motion'
 import { DownloadTask } from '../store/slices/types'
-import { useAppStore } from '../store'
 
 interface CommandModalProps {
     task: DownloadTask
@@ -12,15 +11,13 @@ interface CommandModalProps {
     onClose: () => void
 }
 
-export function CommandModal({ 
-    task, 
-    isOpen, 
-    onClose 
+export function CommandModal({
+    task,
+    isOpen,
+    onClose
 }: CommandModalProps) {
     const [copiedYtdlp, setCopiedYtdlp] = useState(false)
     const [copiedFfmpeg, setCopiedFfmpeg] = useState(false)
-    const { settings } = useAppStore()
-    const isLowPerf = settings.lowPerformanceMode
 
     const copyCommand = async (cmd: string, type: 'ytdlp' | 'ffmpeg') => {
         try {
@@ -41,7 +38,12 @@ export function CommandModal({
         if (!cmd) return ''
         let result = cmd
         result = result.replace(/(--[\w-]+)/g, '<span class="text-green-400">$1</span>')
-        result = result.replace(/(https?:\/\/[^\s]+)/g, '<span class="text-blue-400">$1</span>')
+            .replace(/(https?:\/\/[^\s]+)/g, '<span class="text-blue-400">$1</span>')
+            // Match progress percentages
+            .replace(/(\d+(\.\d+)?%)/g, '<span class="text-emerald-400 font-bold">$1</span>')
+            // Match speed like 1.5MiB/s or 500KiB/s
+            .replace(/(\d+\.?\d*\s?[KMG]i?B\/s)/gi, '<span class="text-cyan-400">$1</span>')
+            .replace(/(ETA\s+[\d:]+|in\s+[\d:]+|\d+:\d{2}:\d{2}|\d{2}:\d{2})/g, '<span class="text-amber-400">$1</span>')
         result = result.replace(/("[^"]*")/g, '<span class="text-yellow-400">$1</span>')
         return result
     }
@@ -113,30 +115,18 @@ export function CommandModal({
         </>
     )
 
-    // Low-perf mode: No animations, no portal (simpler render)
-    if (isLowPerf) {
-        return (
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-                <div onClick={onClose} className="absolute inset-0 bg-black/60" />
-                <div className="bg-card border border-border w-full max-w-2xl rounded-xl shadow-2xl relative z-10 overflow-hidden">
-                    {modalContent}
-                </div>
-            </div>
-        )
-    }
-
-    // Normal mode: Using Portal to render at document.body level to ensure backdrop covers everything
+    // Using Portal to render at document.body level to ensure backdrop covers everything
     return createPortal(
         <AnimatePresence>
             <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-                <motion.div 
-                    initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }} 
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={onClose}
                     className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                 />
-                <motion.div 
+                <motion.div
                     initial={{ scale: 0.95, opacity: 0, y: 10 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.95, opacity: 0, y: 10 }}

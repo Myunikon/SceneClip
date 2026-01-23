@@ -24,9 +24,6 @@
       "identifier": "opener:allow-open-path",
       "allow": [
         {
-          "path": "$HOME/**"
-        },
-        {
           "path": "$DOWNLOAD/**"
         },
         {
@@ -34,6 +31,9 @@
         },
         {
           "path": "$APPDATA/**"
+        },
+        {
+          "path": "$TEMP/**"
         }
       ]
     },
@@ -43,46 +43,48 @@
     {
       "identifier": "fs:allow-exists",
       "allow": [
-        "$HOME/**",
         "$APP_DATA/**",
         "$APPDATA/**",
-        "$DOWNLOAD/**"
+        "$DOWNLOAD/**",
+        "$TEMP/**",
+        "$RESOURCE/**"
       ]
     },
     {
       "identifier": "fs:allow-mkdir",
       "allow": [
-        "$HOME/**",
         "$APP_DATA/**",
         "$APPDATA/**",
-        "$DOWNLOAD/**"
+        "$DOWNLOAD/**",
+        "$TEMP/**"
       ]
     },
     {
       "identifier": "fs:allow-read-file",
       "allow": [
-        "$HOME/**",
         "$APP_DATA/**",
         "$APPDATA/**",
-        "$DOWNLOAD/**"
+        "$DOWNLOAD/**",
+        "$TEMP/**",
+        "$RESOURCE/**"
       ]
     },
     {
       "identifier": "fs:allow-write-file",
       "allow": [
-        "$HOME/**",
         "$APP_DATA/**",
         "$APPDATA/**",
-        "$DOWNLOAD/**"
+        "$DOWNLOAD/**",
+        "$TEMP/**"
       ]
     },
     {
       "identifier": "fs:allow-remove",
       "allow": [
-        "$HOME/**",
         "$APP_DATA/**",
         "$APPDATA/**",
-        "$DOWNLOAD/**"
+        "$DOWNLOAD/**",
+        "$TEMP/**"
       ]
     },
     {
@@ -90,7 +92,9 @@
       "allow": [
         "$APP_DATA/**",
         "$APPDATA/**",
-        "$DOWNLOAD/**"
+        "$DOWNLOAD/**",
+        "$TEMP/**",
+        "$RESOURCE/**"
       ]
     },
     {
@@ -98,7 +102,9 @@
       "allow": [
         "$APP_DATA/**",
         "$APPDATA/**",
-        "$DOWNLOAD/**"
+        "$DOWNLOAD/**",
+        "$TEMP/**",
+        "$RESOURCE/**"
       ]
     },
     {
@@ -106,7 +112,8 @@
       "allow": [
         "$APP_DATA/**",
         "$APPDATA/**",
-        "$DOWNLOAD/**"
+        "$DOWNLOAD/**",
+        "$TEMP/**"
       ]
     },
     {
@@ -176,6 +183,7 @@
           "args": true
         }
       ]
-    }
+    },
+    "deep-link:default"
   ]
 }

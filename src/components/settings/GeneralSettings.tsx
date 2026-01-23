@@ -1,4 +1,4 @@
-import { Moon, Sun, Globe } from 'lucide-react'
+import { Moon, Sun } from 'lucide-react'
 import { Select } from '../Select'
 import { Switch } from '../Switch'
 import { AppSettings } from '../../store/slices/types'
@@ -31,12 +31,12 @@ export function GeneralSettings({ settings, setSetting, toggleTheme, t }: Genera
         <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
             <section className="p-5 border rounded-xl bg-card/30 space-y-4">
                 <h3 className="font-semibold text-lg flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-primary"/> {t.settings.general.language_theme}
+                    {t.settings.general.language_theme}
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <label className="text-xs font-semibold uppercase text-muted-foreground">{t.settings.general.language}</label>
-                        <Select 
+                        <Select
                             value={settings.language}
                             onChange={(val) => setSetting('language', val)}
                             options={[
@@ -51,14 +51,14 @@ export function GeneralSettings({ settings, setSetting, toggleTheme, t }: Genera
                         <label className="text-xs font-semibold uppercase text-muted-foreground">{t.settings.general.theme}</label>
                         <div className="flex items-center gap-2">
                             <button onClick={toggleTheme} className="flex-1 p-2 border rounded-md bg-background/50 hover:bg-secondary flex items-center justify-center gap-2 transition-colors">
-                                {settings.theme === 'dark' ? <Moon className="w-4 h-4"/> : <Sun className="w-4 h-4"/>}
+                                {settings.theme === 'dark' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
                                 <span className="capitalize">{settings.theme === 'dark' ? t.settings.general.theme_dark : t.settings.general.theme_light}</span>
                             </button>
                         </div>
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs font-semibold uppercase text-muted-foreground">{t.settings.general.font_size}</label>
-                        <Select 
+                        <Select
                             value={settings.frontendFontSize || 'medium'}
                             onChange={(val) => setSetting('frontendFontSize', val)}
                             options={[
@@ -68,16 +68,6 @@ export function GeneralSettings({ settings, setSetting, toggleTheme, t }: Genera
                             ]}
                         />
                     </div>
-                </div>
-
-                <div className="pt-2 border-t border-border/50">
-                    <label className="flex items-center justify-between cursor-pointer p-2 hover:bg-secondary/30 rounded-lg transition-colors">
-                        <div className="flex flex-col">
-                            <span className="text-sm font-medium">{t.settings.general.low_perf_mode}</span>
-                            <span className="text-xs text-muted-foreground">{t.settings.general.low_perf_desc}</span>
-                        </div>
-                        <Switch checked={settings.lowPerformanceMode} onCheckedChange={val => setSetting('lowPerformanceMode', val)} />
-                    </label>
                 </div>
             </section>
 
@@ -93,7 +83,7 @@ export function GeneralSettings({ settings, setSetting, toggleTheme, t }: Genera
                     <span>{t.settings.general.start_minimized}</span>
                     <Switch checked={settings.startMinimized} onCheckedChange={val => setSetting('startMinimized', val)} />
                 </label>
-                
+
                 <div className="space-y-3 pt-4 border-t border-border/50">
                     <label className="text-xs font-semibold uppercase text-muted-foreground">{t.settings.general.close_action}</label>
                     <div className="grid grid-cols-2 gap-3">
@@ -101,21 +91,21 @@ export function GeneralSettings({ settings, setSetting, toggleTheme, t }: Genera
                             { value: 'minimize', label: t.settings.general.minimize_tray, icon: <div className="w-4 h-4 border-b-2 border-current mb-1" /> },
                             { value: 'quit', label: t.settings.general.quit_app, icon: <X className="w-4 h-4" /> }
                         ].map((opt) => (
-                            <label 
+                            <label
                                 key={opt.value}
                                 className={cn(
                                     "flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition-all",
                                     settings.closeAction === opt.value
-                                        ? "bg-primary text-primary-foreground border-primary shadow-md" 
+                                        ? "bg-primary text-primary-foreground border-primary shadow-md"
                                         : "bg-card text-foreground hover:bg-secondary/80 border-input hover:border-primary/30"
                                 )}
                             >
-                                <input 
-                                    type="radio" 
-                                    name="closeAct" 
-                                    className="hidden" 
-                                    checked={settings.closeAction === opt.value} 
-                                    onChange={() => setSetting('closeAction', opt.value)} 
+                                <input
+                                    type="radio"
+                                    name="closeAct"
+                                    className="hidden"
+                                    checked={settings.closeAction === opt.value}
+                                    onChange={() => setSetting('closeAction', opt.value)}
                                 />
                                 <div className="flex items-center gap-2">
                                     {opt.icon}

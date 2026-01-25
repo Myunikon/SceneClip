@@ -102,6 +102,7 @@ jobs:
       # 2. Setup Sidecar Binaries (Skip if exists)
       # Uses scripts/setup-binaries.js. If custom binaries exist in src-tauri, it skips download.
       - name: Setup Sidecar Binaries
+        shell: bash
         run: |
             if [ "${{ matrix.platform }}" == "windows-latest" ]; then
                npm run setup-binaries -- --target win-x64

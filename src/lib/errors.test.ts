@@ -187,7 +187,7 @@ describe('getHumanReadableError', () => {
 
 describe('ytdlpErrorMap', () => {
     it('should have message and action for all entries', () => {
-        for (const [pattern, info] of Object.entries(ytdlpErrorMap)) {
+        for (const info of Object.values(ytdlpErrorMap)) {
             expect(info.message).toBeDefined()
             expect(info.message.length).toBeGreaterThan(0)
             expect(info.action).toBeDefined()

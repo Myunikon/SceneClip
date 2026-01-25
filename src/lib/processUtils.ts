@@ -71,6 +71,7 @@ export async function killProcessTree(pid: number, logFn: LogFunction): Promise<
       const output = await cmd.execute()
       if (output.code !== 0) {
         // Decode stderr if it's not a string
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const stderr = typeof output.stderr === 'string' ? output.stderr : new TextDecoder().decode(output.stderr as any)
         logFn({ message: `[Kill] Failed to terminate PID ${pid}: ${stderr.substring(0, 100)}`, type: 'warning' })
       } else {

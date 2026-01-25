@@ -34,10 +34,7 @@ export const en = {
         title: "Downloads",
         subtitle: "Manage your video downloads and clips.",
         new_download: "New Download",
-        open_file: "Open File",
-        open_folder: "Open Folder",
-        stop: "Stop",
-        clear: "Clear",
+
         empty: "No downloads yet",
         empty_description: "Paste a link or press Ctrl+N to start.",
         plus_more: "+1000 more",
@@ -48,7 +45,23 @@ export const en = {
             actions: "Actions",
             eta: "ETA",
             clip: "Clip"
-        }
+        },
+        fetching_info: "Fetching Info",
+        pause_download: "Pause",
+        resume_download: "Resume",
+        stop: "Stop",
+        restart: "Restart",
+        open_file: "Open File",
+        open_folder: "Open Folder",
+        clear: "Clear",
+        pause_clip_tooltip: "Pause clipped download (Resets to 0%)",
+        cancel_confirm_title: "Cancel Download?",
+        cancel_confirm_desc: "This will stop the download and you may need to restart from the beginning.",
+        confirm: "Yes, Cancel",
+        keep_downloading: "Keep Downloading",
+        clip_pause_title: "⚠️ Pause Clipped Download?",
+        clip_pause_desc: "This is a CLIPPED download. Due to technical limitations, resuming will RESTART from 0%.",
+        clip_pause_confirm: "Pause Anyway"
     },
     settings: {
         title: "Settings",
@@ -61,6 +74,7 @@ export const en = {
             quality: "Quality",
             network: "Network",
             advanced: "System",
+            logs: "Logs",
             guide: "Guide",
             about: "About"
         },
@@ -70,6 +84,7 @@ export const en = {
             theme: "Color Theme",
             theme_dark: "Dark Mode",
             theme_light: "Light Mode",
+            theme_system: "System Default",
             startup: "Startup Behavior",
             launch_startup: "Launch at Startup",
             start_minimized: "Start Minimized to Tray",
@@ -91,10 +106,14 @@ export const en = {
             resolution: "Default Resolution",
             container: "Default Format (Container)",
             best: "Best Available",
-            audio: "Audio Only"
+            audio: "Audio Only",
+            defaults: "Defaults & Template",
+            example_note: "* Example based on a sample video"
         },
         quality: {
             video: "Video Content",
+            resolution: "Resolution Limit",
+            container: "Container",
             audio: "Audio Processing",
             metadata: "Metadata & Tags",
             embed_metadata: "Embed Metadata",
@@ -103,7 +122,9 @@ export const en = {
             audio_normalization: "Loudness Normalization",
             sponsorblock: "SponsorBlock (Auto-Skip)",
             enable_sb: "Enable SponsorBlock",
-            disable_play_button: "Hide Play Button in History"
+            disable_play_button: "Hide Play Button in History",
+            metadata_warning_title: "Note:",
+            metadata_warning_desc: "These options are automatically disabled when using <1>Trim/Clip</1> to prevent incorrect video duration issues (e.g. 10s clip showing as 1hr)."
         },
         network: {
             connection: "Speed & Connection",
@@ -112,6 +133,7 @@ export const en = {
             speed_limit: "Global Speed Limit",
             proxy: "Proxy Configuration",
             concurrent_fragments: "Download Segments (Split)",
+            performance: "Performance Mode",
             perf_tuning: "Download Engine Power:",
             perf_safe_title: "1-4 (Safe)",
             perf_safe_desc: "Best for general usage and stable downloads.",
@@ -120,6 +142,13 @@ export const en = {
             perf_aggressive_title: "9-16 (Aggressive)",
             perf_aggressive_desc: "Maximum throughput. May cause temporary IP band (429 Too Many Requests) if abused.",
             perf_warning: "* Applies to all download modes (Full Video, Audio, & Trim).",
+
+            // New Network Keys
+            manual_config: "Manual configuration mode.",
+            chunks_label: "{n} chunks",
+            perf_profile: "Performance Profile",
+            custom: "Custom",
+
             placeholders: {
                 speed: "e.g. 5M, 500K",
                 proxy: "http://user:pass@host:port",
@@ -141,6 +170,9 @@ export const en = {
                 sleep: "Sleep",
                 shutdown: "Shutdown System"
             },
+
+
+
             danger_zone_proxy: "Danger Zone (Proxy)",
             danger_zone_binaries: "Danger Zone (Binaries)",
             danger_desc: "Changing these paths may break the application.",
@@ -164,8 +196,25 @@ export const en = {
                 import_success: "Successfully imported {n} tasks!",
                 import_fail: "Failed to import history: ",
                 invalid_backup: "Invalid backup file format",
-                confirm_reset: "Are you sure you want to reset all settings to defaults?"
+                confirm_reset: "Are you sure you want to reset all settings to defaults?",
+                reset_success_title: "App Reset Successfully",
+                reset_success_desc: "All settings have been restored to defaults.",
+                reset_confirm_desc: "This will clear all your preferences, download history, and saved paths. The app will be restored to its fresh install state. This action cannot be undone.",
+                reset_confirm_btn: "Yes, Reset Everything"
             },
+
+            // New Advanced Keys
+            source_disabled: "Disabled (Default)",
+            browser_type: "Browser Type",
+            no_file: "No file selected...",
+            clear_path: "Clear Path",
+            tech_paths: "Technical & Binary Paths",
+            detected_gpu: "Detected GPU:",
+            unknown_integrated: "Unknown / Integrated",
+            btn_replay_welcome: "Replay Welcome",
+            btn_reset_data: "Reset All Data",
+            btn_export_history: "Export History",
+            btn_import_history: "Import History",
             errors: {
                 open: "Open Folder"
             },
@@ -193,7 +242,8 @@ export const en = {
             unknown: "Unknown",
             update_available: "Update Available",
             up_to_date: "Up to date",
-            binary_bundled: "Binaries are bundled as sidecar. Manual update required if outdated."
+            binary_bundled: "Binaries are bundled as sidecar. Manual update required if outdated.",
+            latest_prefix: "Latest: "
         },
         setup: {
             title: "Additional Setup Required",
@@ -230,14 +280,21 @@ export const en = {
             secret_desc: "You unlocked the secret developer appreciation badge!",
             secret_sub: "(No hidden settings, just good vibes!)",
             awesome: "Awesome!"
-        }
+        },
+
+
+
     },
+
+
     dialog: {
         title: "Add Download",
         new_download: "New Download",
         customize_download: "Customize Download",
         download_all: "Download All",
         url_label: "Video URL",
+
+
         format_label: "Format",
         folder_label: "Save Folder",
         clip_label: "Clip Range",
@@ -277,6 +334,13 @@ export const en = {
         trim_desc: "Cut specific portion of the video",
         schedule_time: "Schedule Time",
         embed_subs: "Embed into video file",
+        clip_pause_title: "⚠️ Pause Clipped Download?",
+        clip_pause_desc: "This is a CLIPPED download. Due to technical limitations, resuming will RESTART from 0%.",
+        clip_pause_confirm: "Pause Anyway",
+        cancel_confirm_title: "Cancel Download?",
+        cancel_confirm_desc: "This will stop the download and you may need to restart from the beginning.",
+        confirm: "Yes, Cancel",
+        keep_downloading: "Keep Downloading",
         estimated_size: "Estimated Size",
         trimmed: "TRIMMED",
         pick_date: "Pick a date...",
@@ -398,11 +462,11 @@ export const en = {
             reencode_title: "Re-encoding",
             reencode_desc: "Conversion to {fmt} required."
         },
-        // Compression
+        // Export
         compress: {
-            title_video: "Compress Video",
-            title_audio: "Compress Audio",
-            title_image: "Compress Image/GIF",
+            title_video: "Export Video",
+            title_audio: "Export Audio",
+            title_image: "Export Image/GIF",
 
             preset_wa: "WhatsApp / Discord",
             preset_wa_desc: "Smallest Size",
@@ -427,18 +491,50 @@ export const en = {
             lbl_bitrate: "Audio Bitrate",
 
             btn_cancel: "Cancel",
-            btn_start: "Start Compression",
+            btn_start: "Export",
 
             // File validation
             file_missing: "File Not Found",
             file_missing_desc: "The original file has been moved or deleted.",
             browse_file: "Browse...",
             file_relocated: "File path updated successfully",
-            double_compression_warning: "This file appears to be already compressed. Compressing it again will significantly reduce quality."
+            double_compression_warning: "This file appears to be already compressed. Compressing it again will significantly reduce quality.",
+
+            // New UI states
+            checking_file: "Checking file...",
+            unknown: "Unknown",
+            auto: "Auto",
+
+            // Options
+            opt_voice: "Voice",
+            opt_low: "Low",
+            opt_standard: "Standard",
+            opt_good: "Good",
+            opt_high: "High",
+            opt_max: "Max",
+
+            opt_original_no_resize: "Original (No Resize)",
+
+            opt_auto_detect: "Auto (Detect)",
+            opt_cpu: "CPU (x264 software)",
+
+            opt_ultrafast: "Ultrafast (Low Quality)",
+            opt_veryfast: "Very Fast",
+            opt_medium: "Medium (Default)",
+            opt_slow: "Slow (Better Compression)",
+            opt_veryslow: "Very Slow (Best Compression)",
+
+            quality_original: "Original",
+            quality_standard: "Standard",
+            quality_low: "Low"
         },
         logic_warnings: {
             mov_reencode: "Format <strong>.MOV</strong> with <strong>{codec}</strong> requires re-encoding. This may take longer."
         },
+
+        not_available: "Not available",
+        inside_video: "Inside video file",
+        sequential_mode: "Sequential Mode: Will split after download",
 
         restart: "Restart",
         filename_label: "Filename",
@@ -486,7 +582,14 @@ export const en = {
         scan_healthy_files: "Scan Complete: All files are healthy",
         recover: "Recover File",
         find_on_disk: "Find on Disk",
-        redownload: "Redownload Content"
+        redownload: "Redownload Content",
+        untitled: "Untitled",
+        unknown_size: "Unknown Size",
+        open_url: "Open {{source}}",
+        view_command: "View Command",
+        folder: "Show in Folder",
+        compress: "Export",
+        delete: "Delete"
     },
     guide: {
         title: "User Manual",
@@ -494,8 +597,73 @@ export const en = {
         menu: {
             start: "Getting Started",
             clip: "Clipping & Edit",
-            advanced: "Advanced",
-            faq: "Common Errors"
+            faq: "Common Errors",
+        },
+        compress: {
+            title_video: "Compress Video",
+            title_audio: "Convert Audio",
+            title_image: "Optimize Image",
+
+            lbl_resolution: "Resolution",
+            lbl_quality: "Quality (CRF)",
+            lbl_speed: "Speed",
+            lbl_encoder: "Encoder",
+            lbl_bitrate: "Bitrate",
+
+            preset_wa: "WhatsApp Status",
+            preset_wa_desc: "Small size, good for mobile (720p)",
+            preset_wa_desc_audio: "Voice Note Quality (64k)",
+
+            preset_social: "Social Media",
+            preset_social_desc: "Balanced quality & size (1080p)",
+            preset_social_desc_audio: "Standard Music (128k)",
+
+            preset_archive: "Archive / Editing",
+            preset_archive_desc: "High quality, larger size",
+            preset_archive_desc_audio: "High Fidelity (320k)",
+
+            btn_cancel: "Cancel",
+            btn_start: "Start Compression",
+
+            advanced: "Advanced Settings",
+            file_missing: "File Not Found",
+            file_missing_desc: "The source file is missing.",
+            browse_file: "Browse File...",
+            checking_file: "Checking file...",
+            file_relocated: "File path updated",
+
+            original_size: "Original Size",
+            format: "Format",
+            unknown: "Unknown",
+            auto: "Auto",
+
+            double_compression_warning: "This file is already compressed. Re-compressing may reduce quality further.",
+
+            opt_voice: "Voice",
+            opt_low: "Low",
+            opt_standard: "Standard",
+            opt_good: "Good",
+            opt_high: "High",
+            opt_max: "Max",
+
+            opt_original_no_resize: "Original (No Resize)",
+
+            opt_auto_detect: "Auto (Detect)",
+            opt_cpu: "CPU (x264/Software)",
+
+            opt_ultrafast: "Ultrafast (Low Quality)",
+            opt_veryfast: "Very Fast",
+            opt_medium: "Medium (Default)",
+            opt_slow: "Slow (Better Compression)",
+            opt_veryslow: "Very Slow (Best Compression)",
+
+            quality_original: "Original",
+            quality_standard: "Standard",
+            quality_low: "Low",
+            est_size: "Est. Output",
+            drop_hint: "Drop new file to replace",
+            calculating: "Calculating...",
+            approx: "~"
         },
         steps: {
             smart: {
@@ -558,13 +726,18 @@ export const en = {
     },
     context_menu: {
         back: "Back",
-        refresh: "Refresh",
         home: "Home",
-        copy: "Copy",
-        paste: "Paste",
         copy_link: "Copy Link",
         screenshot: "Screenshot",
-        more_soon: "More coming soon..."
+        more_soon: "More coming soon...",
+        undo: "Undo",
+        redo: "Redo",
+        cut: "Cut",
+        copy: "Copy",
+        paste: "Paste",
+        paste_plain: "Paste as plain text",
+        select_all: "Select all",
+        refresh: "Refresh"
     },
     statusbar: {
         idle: "Idle",
@@ -576,6 +749,8 @@ export const en = {
         apple_gpu: "Apple GPU",
         cpu_mode: "CPU Mode",
         auto_cpu: "Auto (CPU)",
+
+
         forced: "Forced",
         cpu_usage: "CPU Usage",
         ram_usage: "RAM",
@@ -606,6 +781,112 @@ export const en = {
         file_desc: "File may have been moved or deleted.",
         open_folder: "Open Folder"
     },
+    // NEW KEYS (Moved to root)
+    shortcuts: {
+        title: "Keyboard Shortcuts",
+        close: "Close"
+    },
+
+    terminal: {
+        filter_all: "All",
+        filter_system: "System",
+        copy_all: "Copy All",
+        clear_all: "Clear All",
+        copied: "Copied!",
+        copy: "Copy",
+        copy_line: "Copy Line",
+        ready: "System ready. Waiting for tasks...",
+        no_logs: "No {filter} logs found."
+    },
+
+    empty_state: {
+        title: "No downloads yet",
+        description: "Paste a link or press <1>Ctrl+N</1> to start."
+    },
+
+    filename_preview: {
+        label: "Live Preview",
+        reset: "Reset",
+        example_title: "My Awesome Video",
+        example_uploader: "CoolCreator"
+    },
+
+    url_input: {
+        batch_switch: "Switch to Batch Mode",
+        single_switch: "Switch to Single URL",
+        batch_desc: "Paste multiple URLs, one per line.",
+        placeholder_single: "Paste video URL (YouTube, TikTok, Instagram, Twitter...)",
+        placeholder_batch: "https://youtube.com/watch?v=...\nhttps://tiktok.com/@user/video/...\nhttps://instagram.com/reel/...",
+        paste_clipboard: "Paste from Clipboard",
+        switch_tooltip_batch: "Switch to batch mode (multiple URLs)",
+        switch_tooltip_single: "Switch to single URL"
+    },
+
+    guide_content: {
+        help_center: "Help Center",
+        pro_tip_title: "Pro Tip: Drag & Drop",
+        pro_tip_desc: "Drag any .txt file containing links into the app to start a batch download instantly.",
+        how_to_use: "How to Use:",
+        clip_step1: "Toggle <strong>\"Clip Mode\"</strong> (Scissors icon).",
+        clip_step2: "Wait for metadata to load capability.",
+        clip_step3: "Drag the <strong>Range Slider</strong> to pick start/end points.",
+        clip_step4: "GIF format is available for short clips.",
+        term_logs_title: "Terminal Logs",
+        term_logs_desc: "View raw output from yt-dlp and FFmpeg. Essential for debugging errors.",
+        cookies_title: "Browser Cookies",
+        cookies_desc: "Download Age-Restricted content by using cookies from your browser (Chrome/Firefox).",
+
+        faq_1_q: "Download stuck at 100%?",
+        faq_1_a: "The app is likely merging video and audio streams. This can take a while for large files (4K/8K).",
+        faq_2_q: "Sign in to confirm your age?",
+        faq_2_a: "Go to Settings > Advanced > Source and select your browser to use its cookies.",
+        faq_3_q: "Slow download speed?",
+        faq_3_a: "Try changing 'Connection Type' in Network Settings to 'Aggressive'. Warning: May cause temporary IP bans."
+    },
+
+    dialog_status: {
+        trimmed: "TRIMMED",
+        disk_full: "Insufficient Disk Space",
+        est_size: "Estimated Size",
+        calculating: "Calculating..."
+    },
+
+    history_menu: {
+        redownload: "Redownload",
+        view_command: "View Command",
+        compress: "Compress",
+        locate_file: "Locate File",
+        recover: "Recover File",
+        selected: "Selected",
+        select_all: "Select All",
+        deselect_all: "Deselect All",
+        delete: "DELETE",
+        cancel: "Cancel",
+        toast_redownload: "Redownload Started",
+        toast_file_updated: "File path updated",
+        toast_deleted: "Deleted {{count}} items",
+        tooltip_missing: "File not found - Moved or Deleted",
+        select: "Select",
+        selected_count: "{{count}} Selected",
+        confirm_delete_msg: "Are you sure you want to delete {{count}} items?"
+    },
+
+    onboarding: {
+        step1_title: "Welcome to SceneClip",
+        step1_desc: "The ultimate video downloader with precision clipping and smart queue management.",
+        step2_title: "One-Click Downloads",
+        step2_desc: "Auto-detect links from your clipboard. Just copy and we handle the rest.",
+        step3_title: "Smart Queue",
+        step3_desc: "Track downloads in real-time and access history instantly.",
+        step4_title: "Precision Clipping",
+        step4_desc: "Download only what you need by setting exact timestamps.",
+        step5_title: "Ready to Go!",
+        step5_desc: "Customize your experience in Settings anytime.",
+        skip: "Skip",
+        continue: "Continue",
+        start: "Get Started"
+    },
+
     all: "All",
     video: "Video",
     audio: "Audio"

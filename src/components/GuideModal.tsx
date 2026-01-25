@@ -1,12 +1,11 @@
-
 import { useRef, forwardRef, useImperativeHandle, useState } from 'react'
 import {
     Rocket, Scissors, Terminal, AlertTriangle,
     BookOpen, MousePointerClick, CheckCircle2,
     Clipboard, Settings
 } from 'lucide-react'
-import { useAppStore } from '../store'
-import { translations } from '../lib/locales'
+
+import { useTranslation, Trans } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '../lib/utils'
 
@@ -17,10 +16,9 @@ export interface GuideModalRef {
 
 type GuideSection = 'start' | 'clipping' | 'advanced' | 'faq'
 
-export const GuideModal = forwardRef<GuideModalRef, {}>((_, ref) => {
+export const GuideModal = forwardRef<GuideModalRef, unknown>((_, ref) => {
     const dialogRef = useRef<HTMLDialogElement>(null)
-    const { settings } = useAppStore()
-    const t = translations[settings.language as keyof typeof translations] || translations.en
+    const { t } = useTranslation()
     const [activeSection, setActiveSection] = useState<GuideSection>('start')
 
     useImperativeHandle(ref, () => ({
@@ -30,10 +28,10 @@ export const GuideModal = forwardRef<GuideModalRef, {}>((_, ref) => {
 
     // Data Konten Panduan
     const sections = [
-        { id: 'start', label: t.guide.menu?.start || "Getting Started", icon: Rocket },
-        { id: 'clipping', label: t.guide.menu?.clip || "Clipping", icon: Scissors },
-        { id: 'advanced', label: t.guide.menu?.advanced || "Advanced", icon: Terminal },
-        { id: 'faq', label: t.guide.menu?.faq || "FAQ", icon: AlertTriangle },
+        { id: 'start', label: t('guide.menu.start') || "Getting Started", icon: Rocket },
+        { id: 'clipping', label: t('guide.menu.clip') || "Clipping", icon: Scissors },
+        { id: 'advanced', label: t('guide.menu.advanced') || "Advanced", icon: Terminal },
+        { id: 'faq', label: t('guide.menu.faq') || "FAQ", icon: AlertTriangle },
     ]
 
     return (
@@ -54,7 +52,7 @@ export const GuideModal = forwardRef<GuideModalRef, {}>((_, ref) => {
                                 <BookOpen className="w-5 h-5 text-primary" />
                             </div>
                             <div>
-                                <h2 className="font-bold text-sm">Help Center</h2>
+                                <h2 className="font-bold text-sm">{t('guide_content.help_center')}</h2>
                                 <p className="text-xs text-muted-foreground">SceneClip v1.0</p>
                             </div>
                         </div>
@@ -83,7 +81,7 @@ export const GuideModal = forwardRef<GuideModalRef, {}>((_, ref) => {
                             onClick={() => dialogRef.current?.close()}
                             className="w-full py-2 bg-secondary hover:bg-secondary/80 rounded-lg text-xs font-bold transition-colors"
                         >
-                            {t.guide.sections.got_it || "Close Guide"}
+                            {t('guide.sections.got_it') || "Close Guide"}
                         </button>
                     </div>
                 </div>
@@ -115,27 +113,28 @@ export const GuideModal = forwardRef<GuideModalRef, {}>((_, ref) => {
 GuideModal.displayName = "GuideModal"
 
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function GettingStartedContent({ t }: { t: any }) {
     return (
         <div className="space-y-6">
             <header className="space-y-2 border-b border-white/5 pb-4">
                 <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <Rocket className="w-6 h-6 text-orange-500" /> {t.guide.menu?.start}
+                    <Rocket className="w-6 h-6 text-orange-500" /> {t('guide.menu.start')}
                 </h1>
-                <p className="text-muted-foreground">{t.guide.subtitle}</p>
+                <p className="text-muted-foreground">{t('guide.subtitle')}</p>
             </header>
 
             <div className="grid gap-6">
                 <StepItem
                     num="1"
-                    title={t.guide.steps?.smart?.title || "Smart Detection"}
-                    desc={t.guide.steps?.smart?.desc}
+                    title={t('guide.steps.smart.title') || "Smart Detection"}
+                    desc={t('guide.steps.smart.desc')}
                     icon={<Clipboard className="w-5 h-5" />}
                 />
                 <StepItem
                     num="2"
-                    title={t.guide.steps?.format?.title || "Format Selection"}
-                    desc={t.guide.steps?.format?.desc}
+                    title={t('guide.steps.format.title') || "Format Selection"}
+                    desc={t('guide.steps.format.desc')}
                     icon={<Settings className="w-5 h-5" />}
                 />
             </div>
@@ -143,9 +142,9 @@ function GettingStartedContent({ t }: { t: any }) {
             <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-xl flex gap-3">
                 <MousePointerClick className="w-5 h-5 text-orange-400 shrink-0" />
                 <div>
-                    <h4 className="text-sm font-bold text-orange-400">Pro Tip: Drag & Drop</h4>
+                    <h4 className="text-sm font-bold text-orange-400">{t('guide_content.pro_tip_title')}</h4>
                     <p className="text-xs text-muted-foreground">
-                        Drag any .txt file containing links into the app to start a batch download instantly.
+                        {t('guide_content.pro_tip_desc')}
                     </p>
                 </div>
             </div>
@@ -153,24 +152,25 @@ function GettingStartedContent({ t }: { t: any }) {
     )
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ClippingContent({ t }: { t: any }) {
     return (
         <div className="space-y-6">
             <header className="space-y-2 border-b border-white/5 pb-4">
                 <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <Scissors className="w-6 h-6 text-orange-500" /> {t.guide.steps?.clip?.title}
+                    <Scissors className="w-6 h-6 text-orange-500" /> {t('guide.steps.clip.title')}
                 </h1>
-                <p className="text-muted-foreground">{t.guide.steps?.clip?.desc}</p>
+                <p className="text-muted-foreground">{t('guide.steps.clip.desc')}</p>
             </header>
 
             <div className="space-y-4">
                 <div className="p-4 bg-secondary/30 rounded-xl space-y-3">
-                    <h3 className="font-bold">How to Use:</h3>
+                    <h3 className="font-bold">{t('guide_content.how_to_use')}</h3>
                     <ul className="list-disc pl-5 text-sm space-y-2 text-muted-foreground">
-                        <li>Toggle <strong>"Clip Mode"</strong> (Scissors icon).</li>
-                        <li>Wait for metadata to load capability.</li>
-                        <li>Drag the <strong>Range Slider</strong> to pick start/end points.</li>
-                        <li>GIF format is available for short clips.</li>
+                        <li><Trans i18nKey="guide_content.clip_step1" components={{ strong: <strong /> }} /></li>
+                        <li>{t('guide_content.clip_step2')}</li>
+                        <li><Trans i18nKey="guide_content.clip_step3" components={{ strong: <strong /> }} /></li>
+                        <li>{t('guide_content.clip_step4')}</li>
                     </ul>
                 </div>
             </div>
@@ -179,52 +179,54 @@ function ClippingContent({ t }: { t: any }) {
 }
 
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function AdvancedContent({ t }: { t: any }) {
     return (
         <div className="space-y-6">
             <header className="space-y-2 border-b border-white/5 pb-4">
                 <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <Terminal className="w-6 h-6 text-red-500" /> {t.guide.steps?.terminal?.title}
+                    <Terminal className="w-6 h-6 text-red-500" /> {t('guide.steps.terminal.title')}
                 </h1>
-                <p className="text-muted-foreground">{t.guide.steps?.terminal?.desc}</p>
+                <p className="text-muted-foreground">{t('guide.steps.terminal.desc')}</p>
             </header>
 
             <ul className="space-y-4">
                 <FeatureRow
-                    title="Terminal Logs"
-                    desc="View raw output from yt-dlp and FFmpeg. Essential for debugging errors."
+                    title={t('guide_content.term_logs_title')}
+                    desc={t('guide_content.term_logs_desc')}
                 />
                 <FeatureRow
-                    title="Browser Cookies"
-                    desc="Download Age-Restricted content by using cookies from your browser (Chrome/Firefox)."
+                    title={t('guide_content.cookies_title')}
+                    desc={t('guide_content.cookies_desc')}
                 />
             </ul>
         </div>
     )
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function FaqContent({ t }: { t: any }) {
     return (
         <div className="space-y-6">
             <header className="space-y-2 border-b border-white/5 pb-4">
                 <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <AlertTriangle className="w-6 h-6 text-red-500" /> {t.guide.menu?.faq}
+                    <AlertTriangle className="w-6 h-6 text-red-500" /> {t('guide.menu.faq')}
                 </h1>
-                <p className="text-muted-foreground">{t.guide.sections?.troubleshoot}</p>
+                <p className="text-muted-foreground">{t('guide.sections.troubleshoot')}</p>
             </header>
 
             <div className="space-y-4">
                 <FaqItem
-                    q="Download stuck at 100%?"
-                    a="The app is likely merging video and audio streams. This can take a while for large files (4K/8K)."
+                    q={t('guide_content.faq_1_q')}
+                    a={t('guide_content.faq_1_a')}
                 />
                 <FaqItem
-                    q="Sign in to confirm your age?"
-                    a="Go to Settings > Advanced > Source and select your browser to use its cookies."
+                    q={t('guide_content.faq_2_q')}
+                    a={t('guide_content.faq_2_a')}
                 />
                 <FaqItem
-                    q="Slow download speed?"
-                    a="Try changing 'Connection Type' in Network Settings to 'Aggressive'. Warning: May cause temporary IP bans."
+                    q={t('guide_content.faq_3_q')}
+                    a={t('guide_content.faq_3_a')}
                 />
             </div>
         </div>
@@ -233,6 +235,7 @@ function FaqContent({ t }: { t: any }) {
 
 /* -------------------------- HELPER COMPONENTS -------------------------- */
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function StepItem({ num, title, desc, icon }: { num: string, title: string, desc: string, icon?: any }) {
     return (
         <div className="flex gap-4 p-4 rounded-xl border border-white/5 bg-secondary/10">

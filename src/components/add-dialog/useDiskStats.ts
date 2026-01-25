@@ -15,7 +15,7 @@ export function useDiskStats(path: string, isOpen: boolean) {
                 if (res) {
                     setDiskFreeSpace(res.disk_free)
                 }
-            } catch (e) {
+            } catch {
                 // Silent fail is fine, we just won't warn
             }
         }

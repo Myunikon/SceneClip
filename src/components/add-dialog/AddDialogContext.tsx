@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react'
-import { VideoMeta, DialogOptions, DialogOptionSetters, AppTranslations } from '../../types'
+import { VideoMeta, DialogOptions, DialogOptionSetters } from '../../types'
+import { LanguageOption } from '../../lib/mediaUtils'
 
 interface AddDialogContextType {
     url: string
@@ -20,10 +21,11 @@ interface AddDialogContextType {
     availableAudioBitrates?: number[]
     availableVideoCodecs?: string[]
     availableAudioCodecs?: string[]
-    availableLanguages?: any[]
+    availableLanguages?: LanguageOption[]
 
     // Utilities
-    t: AppTranslations['dialog']
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    t: any
     browse: () => void
     handlePaste: () => void
     formatFileSize: (bytes?: number) => string
@@ -34,6 +36,7 @@ interface AddDialogContextType {
 
 const AddDialogContext = createContext<AddDialogContextType | null>(null)
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAddDialogContext = () => {
     const context = useContext(AddDialogContext)
     if (!context) {

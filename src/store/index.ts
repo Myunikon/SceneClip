@@ -7,6 +7,7 @@ import { createLogSlice } from './slices/createLogSlice'
 import { createSettingsSlice } from './slices/createSettingsSlice'
 import { createSystemSlice } from './slices/createSystemSlice'
 import { createVideoSlice } from './slices/createVideoSlice'
+import { tauriStorage } from './storage'
 
 export type { DownloadTask, AppState, CompressionOptions } from './slices/types'
 
@@ -22,7 +23,7 @@ export const useAppStore = create<AppState>()(
       }),
       {
         name: 'app-storage-v2',
-        storage: createJSONStorage(() => localStorage),
+        storage: createJSONStorage(() => tauriStorage),
         partialize: (state) => ({
           tasks: state.tasks,
           settings: state.settings,

@@ -16,6 +16,8 @@
     "setup-binaries": "node scripts/setup-binaries.js"
   },
   "dependencies": {
+    "@tanstack/react-router": "^1.154.12",
+    "@tanstack/router-devtools": "^1.154.12",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-autostart": "^2.5.1",
     "@tauri-apps/plugin-clipboard-manager": "^2.3.2",
@@ -27,11 +29,15 @@
     "@tauri-apps/plugin-opener": "^2.5.2",
     "@tauri-apps/plugin-os": "^2.3.2",
     "@tauri-apps/plugin-shell": "^2.3.3",
+    "@tauri-apps/plugin-store": "^2.4.2",
     "clsx": "^2.1.1",
     "framer-motion": "^11.15.0",
+    "i18next": "^25.8.0",
+    "i18next-browser-languagedetector": "^8.2.0",
     "lucide-react": "^0.469.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-i18next": "^16.5.3",
     "sonner": "^2.0.7",
     "tailwind-merge": "^2.6.0",
     "uuid": "^9.0.1",
@@ -39,6 +45,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
+    "@tanstack/router-cli": "^1.154.13",
+    "@tanstack/router-plugin": "^1.154.12",
     "@tauri-apps/cli": "^2",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",

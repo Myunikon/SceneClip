@@ -1,44 +1,41 @@
+import { useTranslation, Trans } from 'react-i18next'
 import { Select } from '../Select'
 import { Switch } from '../Switch'
 import { AppSettings } from '../../store/slices/types'
+import { SettingItem, SettingSection } from './SettingItem'
 
 interface QualitySettingsProps {
     settings: AppSettings
-    setSetting: (key: string, val: any) => void
-    t: any
+    setSetting: <K extends keyof AppSettings>(key: K, val: AppSettings[K]) => void
 }
 
-export function QualitySettings({ settings, setSetting, t }: QualitySettingsProps) {
-    return (
-        <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
-            {/* Video Content Section */}
-            <section className="p-5 border rounded-xl bg-card/30 space-y-4">
-                <h3 className="font-semibold text-lg">
-                    {t.settings.quality?.video || "Video Content"}
-                </h3>
+export function QualitySettings({ settings, setSetting }: QualitySettingsProps) {
+    const { t } = useTranslation()
 
+    return (
+        <div className="space-y-4">
+            {/* Video Content Section */}
+            <SettingSection title={t('settings.quality.video')}>
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase text-muted-foreground">{t.settings.quality?.resolution || "Default Resolution"}</label>
+                    <SettingItem title={t('settings.quality.resolution')} layout="vertical">
                         <Select
                             value={settings.resolution}
                             onChange={(val) => setSetting('resolution', val)}
                             options={[
-                                { value: 'best', label: t.settings.quality?.best || "Best Available" },
+                                { value: 'best', label: t('settings.downloads.best') || "Best Available" },
                                 { value: '2160', label: '4K (2160p)' },
                                 { value: '1440', label: '2K (1440p)' },
                                 { value: '1080', label: 'Full HD (1080p)' },
                                 { value: '720', label: 'HD (720p)' },
                                 { value: '480', label: 'SD (480p)' },
-                                { value: 'audio', label: t.settings.quality?.audio || "Audio Only" }
+                                { value: 'audio', label: t('settings.quality.audio') || "Audio Only" }
                             ]}
                         />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase text-muted-foreground">{t.settings.quality?.container || "Container (Format)"}</label>
+                    </SettingItem>
+                    <SettingItem title={t('settings.quality.container')} layout="vertical">
                         <Select
                             value={settings.container}
-                            onChange={(val) => setSetting('container', val)}
+                            onChange={(val) => setSetting('container', val as AppSettings['container'])}
                             options={[
                                 { value: 'mp4', label: 'MP4 (Universal)' },
                                 { value: 'mkv', label: 'MKV (Advanced)' },
@@ -46,64 +43,75 @@ export function QualitySettings({ settings, setSetting, t }: QualitySettingsProp
                                 { value: 'mov', label: 'QuickTime (MOV)' }
                             ]}
                         />
-                    </div>
+                    </SettingItem>
                 </div>
 
-                <div className="pt-2 border-t border-border/50">
-                    <label className="flex items-center justify-between cursor-pointer p-2 hover:bg-muted/50 rounded-lg transition-colors">
-                        <div className="space-y-0.5">
-                            <span className="text-sm font-medium">{t.settings.quality?.sponsorblock || "SponsorBlock"}</span>
-                            <p className="text-xs text-muted-foreground">Auto-skip ads, intros, and outros</p>
-                        </div>
-                        <Switch
-                            checked={settings.useSponsorBlock}
-                            onCheckedChange={(val) => setSetting('useSponsorBlock', val)}
-                        />
-                    </label>
-                </div>
-            </section>
+                <SettingItem
+                    title={t('settings.quality.sponsorblock') || "SponsorBlock"}
+                    description="Auto-skip ads, intros, and outros"
+                    border
+                    className="hover:bg-muted/50 rounded-lg cursor-pointer transition-colors"
+                >
+                    <Switch
+                        checked={settings.useSponsorBlock}
+                        onCheckedChange={(val) => setSetting('useSponsorBlock', val)}
+                    />
+                </SettingItem>
+            </SettingSection>
 
             {/* Audio Section */}
-            <section className="p-5 border rounded-xl bg-card/30 space-y-4">
-                <h3 className="font-semibold text-lg">
-                    {t.settings.quality?.audio || "Audio Processing"}
-                </h3>
-                <label className="flex items-center justify-between cursor-pointer p-2 hover:bg-muted/50 rounded-lg transition-colors">
-                    <div className="space-y-0.5">
-                        <span className="text-sm font-medium">{t.settings.quality?.audio_normalization || "Loudness Normalization"}</span>
-                        <p className="text-xs text-muted-foreground">EBU R128 Standard</p>
-                    </div>
+            <SettingSection title={t('settings.quality.audio') || "Audio Processing"}>
+                <SettingItem
+                    title={t('settings.quality.audio_normalization') || "Loudness Normalization"}
+                    description="EBU R128 Standard"
+                    className="hover:bg-muted/50 rounded-lg cursor-pointer transition-colors"
+                >
                     <Switch
                         checked={settings.audioNormalization}
                         onCheckedChange={(val) => setSetting('audioNormalization', val)}
                     />
-                </label>
-            </section>
+                </SettingItem>
+            </SettingSection>
 
             {/* Metadata Section */}
-            <section className="p-5 border rounded-xl bg-card/30 space-y-4">
-                <h3 className="font-semibold text-lg">
-                    {t.settings.quality?.metadata || "Metadata & Tags"}
-                </h3>
+            <SettingSection title={t('settings.quality.metadata') || "Metadata & Tags"}>
                 <div className="grid grid-cols-1 gap-2">
-                    <label className="flex items-center justify-between cursor-pointer p-2 hover:bg-muted/50 rounded-lg transition-colors">
-                        <span className="text-sm">{t.settings.quality?.embed_metadata}</span>
+                    <SettingItem
+                        title={t('settings.quality.embed_metadata')}
+                        className="hover:bg-muted/50 rounded-lg cursor-pointer transition-colors"
+                    >
                         <Switch checked={settings.embedMetadata} onCheckedChange={(val) => setSetting('embedMetadata', val)} />
-                    </label>
-                    <label className="flex items-center justify-between cursor-pointer p-2 hover:bg-muted/50 rounded-lg transition-colors">
-                        <span className="text-sm">{t.settings.quality?.embed_thumbnail}</span>
+                    </SettingItem>
+                    <SettingItem
+                        title={t('settings.quality.embed_thumbnail')}
+                        className="hover:bg-muted/50 rounded-lg cursor-pointer transition-colors"
+                    >
                         <Switch checked={settings.embedThumbnail} onCheckedChange={(val) => setSetting('embedThumbnail', val)} />
-                    </label>
-                    <label className="flex items-center justify-between cursor-pointer p-2 hover:bg-muted/50 rounded-lg transition-colors">
-                        <span className="text-sm">{t.settings.quality?.embed_chapters}</span>
+                    </SettingItem>
+                    <SettingItem
+                        title={t('settings.quality.embed_chapters')}
+                        className="hover:bg-muted/50 rounded-lg cursor-pointer transition-colors"
+                    >
                         <Switch checked={settings.embedChapters} onCheckedChange={(val) => setSetting('embedChapters', val)} />
-                    </label>
-                    <label className="flex items-center justify-between cursor-pointer p-2 hover:bg-muted/50 rounded-lg transition-colors">
-                        <span className="text-sm">{t.settings.quality?.disable_play_button}</span>
+                    </SettingItem>
+                    <SettingItem
+                        title={t('settings.quality.disable_play_button')}
+                        className="hover:bg-muted/50 rounded-lg cursor-pointer transition-colors"
+                    >
                         <Switch checked={settings.disablePlayButton} onCheckedChange={(val) => setSetting('disablePlayButton', val)} />
-                    </label>
+                    </SettingItem>
                 </div>
-            </section>
+
+                <div className="mt-3 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex gap-3 items-start">
+                    <div className="text-yellow-500 shrink-0 mt-0.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                        <strong className="text-yellow-500 block mb-0.5">{t('settings.quality.metadata_warning_title')}</strong>
+                        <Trans i18nKey="settings.quality.metadata_warning_desc" components={{ 1: <strong /> }} />
+                    </div>
+                </div>
+            </SettingSection>
         </div>
     )
 }

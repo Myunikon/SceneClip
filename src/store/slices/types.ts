@@ -40,7 +40,7 @@ export interface DownloadTask {
   // History Metadata
   fileSize?: string
   completedAt?: number
-  chapters?: any[] // Store chapters for sequential splitting
+  chapters?: VideoChapter[] // Store chapters for sequential splitting
   audioNormalization?: boolean // Persisted for UI indicator (Loudness Normalization applied)
 }
 
@@ -72,8 +72,9 @@ export interface LogSlice {
 
 export interface SettingsSlice {
   settings: AppSettings
-  setSetting: (key: string, val: any) => void
+  setSetting: <K extends keyof AppSettings>(key: K, val: AppSettings[K]) => void
   updateSettings: (newSettings: Partial<AppSettings>) => void
+  resetSettings: () => void
 }
 
 export interface SystemSlice {

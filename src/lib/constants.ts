@@ -1,15 +1,16 @@
-/**
- * Application Constants
- * distinct source of truth for hardcoded values.
- */
 
 export const BINARIES = {
     FFMPEG: 'ffmpeg',
-    YTDLP: 'yt-dlp'
+    YTDLP: 'yt-dlp',
+    FFPROBE: 'ffprobe'
 }
 
 export const DEFAULTS = {
-    USER_AGENT: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    SOCKET_TIMEOUT: '30',
-    MAX_FILENAME_LENGTH: 200,
+    SOCKET_TIMEOUT: '15'
 }
+
+export const VIDEO_EXTS = ['mp4', 'mkv', 'webm', 'mov', 'avi']
+export const AUDIO_EXTS = ['mp3', 'm4a', 'wav', 'flac', 'opus', 'ogg']
+export const IMAGE_EXTS = ['png', 'jpg', 'jpeg', 'gif', 'webp']
+
+export const ALL_SUPPORTED_EXTS = [...VIDEO_EXTS, ...AUDIO_EXTS, ...IMAGE_EXTS]

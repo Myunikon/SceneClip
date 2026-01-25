@@ -1,19 +1,17 @@
-import { Moon, Sun } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Select } from '../Select'
 import { Switch } from '../Switch'
 import { AppSettings } from '../../store/slices/types'
-import { cn } from '../../lib/utils'
-import { X } from 'lucide-react'
 import { enable, disable } from '@tauri-apps/plugin-autostart'
+import { SettingItem, SettingSection } from './SettingItem'
 
 interface GeneralSettingsProps {
     settings: AppSettings
-    setSetting: (key: string, val: any) => void
-    toggleTheme: () => void
-    t: any
+    setSetting: <K extends keyof AppSettings>(key: K, val: AppSettings[K]) => void
 }
 
-export function GeneralSettings({ settings, setSetting, toggleTheme, t }: GeneralSettingsProps) {
+export function GeneralSettings({ settings, setSetting }: GeneralSettingsProps) {
+    const { t, i18n } = useTranslation()
     const handleAutostart = async (enabled: boolean) => {
         try {
             if (enabled) {
@@ -28,17 +26,17 @@ export function GeneralSettings({ settings, setSetting, toggleTheme, t }: Genera
     }
 
     return (
-        <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
-            <section className="p-5 border rounded-xl bg-card/30 space-y-4">
-                <h3 className="font-semibold text-lg flex items-center gap-2">
-                    {t.settings.general.language_theme}
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase text-muted-foreground">{t.settings.general.language}</label>
+        <div className="space-y-4">
+            <SettingSection title={t('settings.general.language_theme')}>
+                <div className="flex flex-col gap-5">
+                    {/* 1. Language */}
+                    <SettingItem title={t('settings.general.language')} layout="vertical">
                         <Select
                             value={settings.language}
-                            onChange={(val) => setSetting('language', val)}
+                            onChange={(val) => {
+                                setSetting('language', val as AppSettings['language']);
+                                i18n.changeLanguage(val);
+                            }}
                             options={[
                                 { value: "en", label: "English" },
                                 { value: "id", label: "Indonesia" },
@@ -46,76 +44,70 @@ export function GeneralSettings({ settings, setSetting, toggleTheme, t }: Genera
                                 { value: "zh", label: "Chinese" }
                             ]}
                         />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase text-muted-foreground">{t.settings.general.theme}</label>
-                        <div className="flex items-center gap-2">
-                            <button onClick={toggleTheme} className="flex-1 p-2 border rounded-md bg-background/50 hover:bg-secondary flex items-center justify-center gap-2 transition-colors">
-                                {settings.theme === 'dark' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-                                <span className="capitalize">{settings.theme === 'dark' ? t.settings.general.theme_dark : t.settings.general.theme_light}</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase text-muted-foreground">{t.settings.general.font_size}</label>
+                    </SettingItem>
+
+                    {/* 2. Theme */}
+                    <SettingItem title={t('settings.general.theme')} layout="vertical">
                         <Select
-                            value={settings.frontendFontSize || 'medium'}
-                            onChange={(val) => setSetting('frontendFontSize', val)}
+                            value={settings.theme}
+                            onChange={(val) => setSetting('theme', val as AppSettings['theme'])}
                             options={[
-                                { value: "small", label: t.settings.general.font_small },
-                                { value: "medium", label: t.settings.general.font_medium },
-                                { value: "large", label: t.settings.general.font_large }
+                                { value: "system", label: t('settings.general.theme_system') },
+                                { value: "light", label: t('settings.general.theme_light') },
+                                { value: "dark", label: t('settings.general.theme_dark') }
                             ]}
                         />
-                    </div>
-                </div>
-            </section>
+                    </SettingItem>
 
-            <section className="p-5 border rounded-xl bg-card/30 space-y-4">
-                <h3 className="font-semibold text-lg flex items-center gap-2">
-                    {t.settings.general.startup}
-                </h3>
-                <label className="flex items-center justify-between cursor-pointer p-2 hover:bg-secondary/30 rounded-lg">
-                    <span>{t.settings.general.launch_startup}</span>
-                    <Switch checked={settings.launchAtStartup} onCheckedChange={handleAutostart} />
-                </label>
-                <label className="flex items-center justify-between cursor-pointer p-2 hover:bg-secondary/30 rounded-lg">
-                    <span>{t.settings.general.start_minimized}</span>
-                    <Switch checked={settings.startMinimized} onCheckedChange={val => setSetting('startMinimized', val)} />
-                </label>
+                    {/* 3. Font Size */}
+                    <SettingItem title={t('settings.general.font_size')} layout="vertical">
+                        <Select
+                            value={settings.frontendFontSize || 'medium'}
+                            onChange={(val) => setSetting('frontendFontSize', val as AppSettings['frontendFontSize'])}
+                            options={[
+                                { value: "small", label: t('settings.general.font_small') },
+                                { value: "medium", label: t('settings.general.font_medium') },
+                                { value: "large", label: t('settings.general.font_large') }
+                            ]}
+                        />
+                    </SettingItem>
+                </div>
+            </SettingSection>
+
+            <SettingSection title={t('settings.general.startup')}>
+                <div className="flex flex-col gap-2">
+                    <SettingItem
+                        title={t('settings.general.launch_startup')}
+                        className="p-3 border rounded-xl hover:bg-secondary/30 transition-colors cursor-pointer"
+                    >
+                        <Switch checked={settings.launchAtStartup} onCheckedChange={handleAutostart} />
+                    </SettingItem>
+                    <SettingItem
+                        title={t('settings.general.start_minimized')}
+                        className="p-3 border rounded-xl hover:bg-secondary/30 transition-colors cursor-pointer"
+                    >
+                        <Switch checked={settings.startMinimized} onCheckedChange={val => setSetting('startMinimized', val)} />
+                    </SettingItem>
+                </div>
 
                 <div className="space-y-3 pt-4 border-t border-border/50">
-                    <label className="text-xs font-semibold uppercase text-muted-foreground">{t.settings.general.close_action}</label>
-                    <div className="grid grid-cols-2 gap-3">
-                        {[
-                            { value: 'minimize', label: t.settings.general.minimize_tray, icon: <div className="w-4 h-4 border-b-2 border-current mb-1" /> },
-                            { value: 'quit', label: t.settings.general.quit_app, icon: <X className="w-4 h-4" /> }
-                        ].map((opt) => (
-                            <label
-                                key={opt.value}
-                                className={cn(
-                                    "flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition-all",
-                                    settings.closeAction === opt.value
-                                        ? "bg-primary text-primary-foreground border-primary shadow-md"
-                                        : "bg-card text-foreground hover:bg-secondary/80 border-input hover:border-primary/30"
-                                )}
-                            >
-                                <input
-                                    type="radio"
-                                    name="closeAct"
-                                    className="hidden"
-                                    checked={settings.closeAction === opt.value}
-                                    onChange={() => setSetting('closeAction', opt.value)}
-                                />
-                                <div className="flex items-center gap-2">
-                                    {opt.icon}
-                                    <span className="font-medium text-sm">{opt.label}</span>
-                                </div>
-                            </label>
-                        ))}
-                    </div>
+                    <SettingItem title={t('settings.general.close_action')} layout="vertical">
+                        <Select
+                            value={settings.closeAction}
+                            onChange={(val) => setSetting('closeAction', val as AppSettings['closeAction'])}
+                            options={[
+                                { value: 'minimize', label: t('settings.general.minimize_tray') || "Minimize to Tray" },
+                                { value: 'quit', label: t('settings.general.quit_app') || "Quit Application" }
+                            ]}
+                        />
+                    </SettingItem>
+                    <p className="text-[10px] text-muted-foreground">
+                        {settings.closeAction === 'minimize'
+                            ? "App will keep running in background when closed."
+                            : "App will completely terminate when closed."}
+                    </p>
                 </div>
-            </section>
+            </SettingSection>
         </div>
     )
 }

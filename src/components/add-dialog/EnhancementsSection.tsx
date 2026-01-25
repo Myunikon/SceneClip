@@ -26,7 +26,7 @@ export function EnhancementsSection() {
                 className="w-full flex items-center justify-between group py-2"
             >
                 <h4 className="text-sm font-bold flex items-center gap-2 text-muted-foreground uppercase tracking-wider group-hover:text-foreground transition-colors">
-                    <Settings className="w-3 h-3" /> {t.enhancements_label}
+                    <Settings className="w-3 h-3" /> {t('dialog.enhancements_label')}
                 </h4>
                 <div className={cn("p-1 rounded-md transition-all", isOpen ? "bg-white/10 text-foreground rotate-180" : "text-muted-foreground group-hover:bg-white/5")}>
                     <ChevronDown className="w-4 h-4" />
@@ -46,13 +46,13 @@ export function EnhancementsSection() {
                             {options.format !== 'gif' && isYouTubeUrl(url) && (
                                 <SettingCard
                                     icon={<AlertCircle className="w-4 h-4" />}
-                                    title={t.remove_sponsors}
-                                    description={t.remove_sponsors_desc}
+                                    title={t('dialog.remove_sponsors')}
+                                    description={t('dialog.remove_sponsors_desc')}
                                     checked={options.sponsorBlock}
                                     onCheckedChange={setters.setSponsorBlock}
                                     activeColor="red"
                                     disabled={options.isClipping}
-                                    disabledReason={t.sponsor_clip_conflict}
+                                    disabledReason={t('dialog.sponsor_clip_conflict')}
                                 />
                             )}
 
@@ -60,8 +60,8 @@ export function EnhancementsSection() {
                             {options.format !== 'gif' && (
                                 <SettingCard
                                     icon={<Music className="w-4 h-4" />}
-                                    title={t.loudness_normalization || "Loudness Norm."}
-                                    description={t.loudness_desc || "EBU R128 Standard"}
+                                    title={t('dialog.loudness_normalization') || "Loudness Norm."}
+                                    description={t('dialog.loudness_desc') || "EBU R128 Standard"}
                                     checked={options.audioNormalization}
                                     onCheckedChange={setters.setAudioNormalization}
                                     activeColor="orange"
@@ -72,8 +72,8 @@ export function EnhancementsSection() {
                             {options.format !== 'gif' && isYouTubeUrl(url) && (meta?.chapters && meta.chapters.length > 0) && (
                                 <SettingCard
                                     icon={<List className="w-4 h-4" />}
-                                    title={t.split_chapters || 'Split Chapters'}
-                                    description={options.audioNormalization && options.splitChapters ? "Sequential Mode: Will split after download" : undefined}
+                                    title={t('dialog.split_chapters') || 'Split Chapters'}
+                                    description={options.audioNormalization && options.splitChapters ? (t('dialog.sequential_mode') || "Sequential Mode: Will split after download") : undefined}
                                     checked={options.splitChapters}
                                     onCheckedChange={setters.setSplitChapters}
                                     activeColor="red"
@@ -86,15 +86,15 @@ export function EnhancementsSection() {
                             {/* Schedule Download */}
                             <SettingCard
                                 icon={<Calendar className="w-4 h-4" />}
-                                title={t.schedule_download}
-                                description={t.schedule_desc || "Start task automatically at a later time"}
+                                title={t('dialog.schedule_download')}
+                                description={t('dialog.schedule_desc') || "Start task automatically at a later time"}
                                 checked={options.isScheduled}
                                 onCheckedChange={setters.setIsScheduled}
                                 activeColor="orange"
                                 expandableContent={
                                     <div className="p-3 space-y-3">
                                         <div className="flex items-center gap-2 text-xs font-bold uppercase text-orange-400">
-                                            <Clock className="w-3 h-3" /> {t.schedule_time}
+                                            <Clock className="w-3 h-3" /> {t('dialog.schedule_time')}
                                         </div>
                                         <CustomDateTimePicker
                                             value={options.scheduleTime}
@@ -109,8 +109,8 @@ export function EnhancementsSection() {
                             {options.format !== 'audio' && options.format !== 'gif' && (
                                 <SettingCard
                                     icon={<MessageSquare className="w-4 h-4" />}
-                                    title={t.subtitles_title}
-                                    description={meta?.hasSubtitles === false ? "Not available" : t.subtitles_desc || "Embed or download subtitles"}
+                                    title={t('dialog.subtitles_title')}
+                                    description={meta?.hasSubtitles === false ? (t('dialog.not_available') || "Not available") : t('dialog.subtitles_desc') || "Embed or download subtitles"}
                                     checked={options.subtitles}
                                     onCheckedChange={setters.setSubtitles}
                                     activeColor="red"
@@ -119,8 +119,8 @@ export function EnhancementsSection() {
                                         const newVal = !options.subtitles;
                                         if (newVal) {
                                             const { notify } = await import('../../lib/notify');
-                                            notify.info(t.subtitle_safe_mode_title || "Safe Mode Active", {
-                                                description: t.subtitle_safe_mode_desc || "Subtitle downloads are slowed down to prevent YouTube blocking (HTTP 429)."
+                                            notify.info(t('dialog.subtitle_safe_mode_title') || "Safe Mode Active", {
+                                                description: t('dialog.subtitle_safe_mode_desc') || "Subtitle downloads are slowed down to prevent YouTube blocking (HTTP 429)."
                                             });
                                         }
                                         setters.setSubtitles(newVal);
@@ -128,13 +128,14 @@ export function EnhancementsSection() {
                                     expandableContent={
                                         <div className="p-3 space-y-3">
                                             <div className="flex items-center gap-2 mb-2 text-xs font-bold uppercase text-red-400">
-                                                <MessageSquare className="w-3 h-3" /> {t.subtitle_settings}
+                                                <MessageSquare className="w-3 h-3" /> {t('dialog.subtitle_settings')}
                                             </div>
                                             <div className="space-y-4">
                                                 <ChoiceGroup
                                                     variant="scroll"
                                                     value={options.subtitleLang}
                                                     onChange={setters.setSubtitleLang}
+                                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                     options={(availableLanguages || []).map((lang: any) => ({
                                                         value: lang.id,
                                                         label: lang.label
@@ -151,8 +152,8 @@ export function EnhancementsSection() {
                                                             <Subtitles className="w-4 h-4" />
                                                         </div>
                                                         <div>
-                                                            <div className="text-sm font-bold leading-none">{t.embed_subs}</div>
-                                                            <div className="text-[10px] text-muted-foreground mt-1">Inside video file</div>
+                                                            <div className="text-sm font-bold leading-none">{t('dialog.embed_subs')}</div>
+                                                            <div className="text-[10px] text-muted-foreground mt-1">{t('dialog.inside_video') || "Inside video file"}</div>
                                                         </div>
                                                     </div>
                                                     <Switch checked={options.embedSubtitles} onCheckedChange={setters.setEmbedSubtitles} className="data-[state=checked]:bg-red-500 scale-90" />
@@ -160,7 +161,7 @@ export function EnhancementsSection() {
 
                                                 {!options.embedSubtitles && (
                                                     <div className="space-y-2 pt-1 border-t border-white/5">
-                                                        <div className="text-[10px] font-bold text-muted-foreground uppercase pl-1">Format:</div>
+                                                        <div className="text-[10px] font-bold text-muted-foreground uppercase pl-1">{t('dialog.labels.fmt') || "Format:"}</div>
                                                         <ChoiceGroup
                                                             value={options.subtitleFormat}
                                                             onChange={setters.setSubtitleFormat}

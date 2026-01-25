@@ -34,10 +34,7 @@ export const ms = {
         title: "Senarai Muat Turun",
         subtitle: "Urus muat turunan video dan klip anda.",
         new_download: "Muat Turun Baru",
-        open_file: "Buka Fail",
-        open_folder: "Buka Folder",
-        stop: "Berhenti",
-        clear: "Kosongkan",
+
         empty: "Tiada muat turun lagi",
         empty_description: "Tampal pautan atau tekan Ctrl+N untuk mula.",
         plus_more: "+1000 lagi",
@@ -48,7 +45,23 @@ export const ms = {
             actions: "Tindakan",
             eta: "ETA",
             clip: "Klip"
-        }
+        },
+        fetching_info: "Mengambil Maklumat",
+        pause_download: "Jeda",
+        resume_download: "Sambung",
+        stop: "Berhenti",
+        restart: "Mula Semula",
+        open_file: "Buka Fail",
+        open_folder: "Buka Folder",
+        clear: "Kosongkan",
+        pause_clip_tooltip: "Jeda klip (Akan bermula dari 0%)",
+        cancel_confirm_title: "Batal Muat Turun?",
+        cancel_confirm_desc: "Ini akan menghentikan muat turun dan anda mungkin perlu bermula dari awal.",
+        confirm: "Ya, Batal",
+        keep_downloading: "Kekal Muat Turun",
+        clip_pause_title: "⚠️ Jeda Muat Turun Klip?",
+        clip_pause_desc: "Ini adalah muat turun KLIP. Disebabkan had teknikal, menyambung semula akan BERMULA dari 0%.",
+        clip_pause_confirm: "Jeda Sahaja"
     },
     browser: {
         placeholder: "Masukkan URL...",
@@ -66,6 +79,7 @@ export const ms = {
             quality: "Kualiti",
             network: "Rangkaian",
             advanced: "Sistem",
+            logs: "Log",
             guide: "Panduan",
             about: "Tentang"
         },
@@ -75,6 +89,7 @@ export const ms = {
             theme: "Tema Warna",
             theme_dark: "Mod Gelap",
             theme_light: "Mod Terang",
+            theme_system: "Sistem Lalai",
             startup: "Kelakuan Permulaan",
             launch_startup: "Lancarkan semasa Mula",
             start_minimized: "Mula diminimimumkan ke Tray",
@@ -96,7 +111,8 @@ export const ms = {
             resolution: "Resolusi Lalai",
             container: "Kontainer (Format)",
             best: "Terbaik",
-            audio: "Audio Sahaja"
+            audio: "Audio Sahaja",
+            example_note: "* Contoh berdasarkan sampel video"
         },
         quality: {
             video: "Kandungan Video",
@@ -108,7 +124,9 @@ export const ms = {
             audio_normalization: "Penormalan Kelantangan (Loudness)",
             sponsorblock: "SponsorBlock (Langkau Iklan)",
             enable_sb: "Dayakan SponsorBlock",
-            disable_play_button: "Sembunyikan Butang Main di Sejarah"
+            disable_play_button: "Sembunyikan Butang Main di Sejarah",
+            metadata_warning_title: "Nota:",
+            metadata_warning_desc: "Pilihan ini dilumpuhkan secara automatik apabila menggunakan <1>Potong/Klip</1> untuk mengelakkan isu durasi video yang tidak betul (cth. klip 10s dipaparkan sebagai 1j)."
         },
         network: {
             connection: "Kelajuan & Sambungan",
@@ -123,8 +141,15 @@ export const ms = {
             perf_fast_title: "5-8 (Pantas)",
             perf_fast_desc: "Disyorkan untuk sambungan berkelajuan tinggi. Meningkatkan penggunaan CPU.",
             perf_aggressive_title: "9-16 (Agresif)",
+
             perf_aggressive_desc: "Daya pemprosesan maksimum. Boleh menyebabkan sekatan IP sementara (429) jika disalahgunakan.",
             perf_warning: "* Terpakai untuk semua mod muat turun (Video Penuh, Audio, & Potong).",
+
+            manual_config: "Mod konfigurasi manual.",
+            chunks_label: "{n} bahagian",
+            perf_profile: "Profil Prestasi",
+            custom: "Tersuai",
+
             placeholders: {
                 speed: "cth. 5M, 500K",
                 proxy: "http://user:pass@host:port",
@@ -169,7 +194,11 @@ export const ms = {
                 import_success: "Berjaya mengimport {n} tugasan!",
                 import_fail: "Gagal mengimport sejarah: ",
                 invalid_backup: "Format fail sandaran tidak sah",
-                confirm_reset: "Adakah anda pasti mahu menetapkan semula semua tetapan kepada lalai?"
+                confirm_reset: "Adakah anda pasti mahu menetapkan semula semua tetapan kepada lalai?",
+                reset_success_title: "Tetapan Semula Berjaya",
+                reset_success_desc: "Semua tetapan telah dipulihkan kepada lalai.",
+                reset_confirm_desc: "Ini akan mengosongkan semua pilihan, sejarah muat turun dan laluan yang disimpan. Apl akan dikembalikan kepada keadaan pemasangan baru. Tindakan ini tidak boleh dibuat asal.",
+                reset_confirm_btn: "Ya, Tetapkan Semula Semuanya"
             },
             errors: {
                 open: "Buka Folder"
@@ -181,7 +210,12 @@ export const ms = {
                 hw_gpu: "Paksa GPU (NVENC/AMF/QSV)",
                 hw_cpu: "Paksa CPU (Perlahan tapi Selamat)",
                 hw_desc: "Kawal penggunaan kad grafik untuk pengekodan video. 'Auto' akan kembali ke CPU jika GPU gagal."
-            }
+            },
+
+            btn_replay_welcome: "Main Semula Intro",
+            btn_reset_data: "Tetap Semula Data",
+            btn_export_history: "Eksport Sejarah",
+            btn_import_history: "Import Sejarah"
         },
         updater: {
             title: "Kemas Kini Perisian",
@@ -235,7 +269,9 @@ export const ms = {
             secret_desc: "Anda membuka lencana penghargaan pembangun rahsia!",
             secret_sub: "(Tiada tetapan tersembunyi, hanya suasana baik!)",
             awesome: "Hebat!"
-        }
+        },
+
+
     },
     dialog: {
         title: "Tambah Muat Turun",
@@ -243,6 +279,8 @@ export const ms = {
         customize_download: "Sesuaikan Muat Turun",
         download_all: "Muat Turun Semua",
         url_label: "URL Video",
+
+
         format_label: "Format",
         folder_label: "Folder Simpan",
         clip_label: "Potong Video (Klip)",
@@ -279,6 +317,13 @@ export const ms = {
         subtitle_settings: "Tetapan Sarikata",
         schedule_time: "Masa Jadual",
         embed_subs: "Benamkan ke dalam fail video",
+        clip_pause_title: "⚠️ Jeda Muat Turun Klip?",
+        clip_pause_desc: "Ini adalah muat turun KLIP. Disebabkan had teknikal, menyambung semula akan BERMULA dari 0%.",
+        clip_pause_confirm: "Jeda Sahaja",
+        cancel_confirm_title: "Batal Muat Turun?",
+        cancel_confirm_desc: "Ini akan menghentikan muat turun dan anda mungkin perlu bermula dari awal.",
+        confirm: "Ya, Batal",
+        keep_downloading: "Kekal Muat Turun",
         estimated_size: "Anggaran Saiz",
         trimmed: "DIPOTONG",
         pick_date: "Pilih tarikh...",
@@ -403,9 +448,9 @@ export const ms = {
             reencode_desc: "Penukaran ke {fmt} diperlukan."
         },
         compress: {
-            title_video: "Kompres Video",
-            title_audio: "Kompres Audio",
-            title_image: "Kompres Imej/GIF",
+            title_video: "Eksport Video",
+            title_audio: "Eksport Audio",
+            title_image: "Eksport Imej/GIF",
             preset_wa: "WhatsApp / Discord",
             preset_wa_desc: "Saiz Paling Kecil",
             preset_wa_desc_audio: "Suara (64kbps)",
@@ -424,14 +469,42 @@ export const ms = {
             lbl_speed: "Kelajuan Encode",
             lbl_bitrate: "Kadar Bit Audio",
             btn_cancel: "Batal",
-            btn_start: "Mulai Kompresi",
+            btn_start: "Mula Eksport",
 
             // File validation
             file_missing: "Fail Tidak Ditemui",
             file_missing_desc: "Fail asal telah dialihkan atau dipadam.",
             browse_file: "Layari...",
             file_relocated: "Laluan fail berjaya dikemas kini",
-            double_compression_warning: "Fail ini nampaknya sudah dimampatkan. Memampatkannya lagi akan mengurangkan kualiti secara ketara."
+            double_compression_warning: "Fail ini nampaknya sudah dimampatkan. Memampatkannya lagi akan mengurangkan kualiti secara ketara.",
+
+            // New UI states
+            checking_file: "Memeriksa fail...",
+            unknown: "Tidak Diketahui",
+            auto: "Auto",
+
+            // Options
+            opt_voice: "Suara",
+            opt_low: "Rendah",
+            opt_standard: "Standard",
+            opt_good: "Baik",
+            opt_high: "Tinggi",
+            opt_max: "Maks",
+
+            opt_original_no_resize: "Asal (Tiada Ubah Saiz)",
+
+            opt_auto_detect: "Auto (Kesan)",
+            opt_cpu: "CPU (x264 software)",
+
+            opt_ultrafast: "Sangat Pantas (Kualiti Rendah)",
+            opt_veryfast: "Sangat Pantas",
+            opt_medium: "Sederhana (Lalai)",
+            opt_slow: "Perlahan (Mampatan Lebih Baik)",
+            opt_veryslow: "Sangat Perlahan (Mampatan Terbaik)",
+
+            quality_original: "Asal",
+            quality_standard: "Standard",
+            quality_low: "Rendah"
         },
         logic_warnings: {
             mov_reencode: "Format <strong>.MOV</strong> dengan <strong>{codec}</strong> memerlukan pengekodan semula. Ini mungkin ambil masa lebih lama."
@@ -483,14 +556,21 @@ export const ms = {
         scan_healthy_files: "Imbasan Selesai: Semua fail dalam keadaan baik",
         recover: "Pulihkan Fail",
         find_on_disk: "Cari di Cakera",
-        redownload: "Muat Turun Semula Kandungan"
+        redownload: "Muat Turun Semula Kandungan",
+        untitled: "Tanpa Tajuk",
+        unknown_size: "Saiz Tidak Diketahui",
+        open_url: "Buka {{source}}",
+        view_command: "Lihat Arahan",
+        folder: "Buka Folder",
+        compress: "Mampatkan",
+        delete: "Padam"
     },
     guide: {
         title: "Manual Lengkap",
         subtitle: "Segala ilmu yang anda perlukan untuk menguasai SceneClip.",
         menu: {
             start: "Bermula",
-            clip: "Clipping & Edit",
+            clip: "Klip & Edit",
             advanced: "Lanjutan",
             faq: "Masalah Lazim"
         },
@@ -555,13 +635,18 @@ export const ms = {
     },
     context_menu: {
         back: "Kembali",
-        refresh: "Muat Semula",
         home: "Laman Utama",
-        copy: "Salin",
-        paste: "Tampal",
         copy_link: "Salin Pautan",
         screenshot: "Tangkap Skrin",
-        more_soon: "Lagi akan datang..."
+        more_soon: "Lagi akan datang...",
+        undo: "Buat Asal",
+        redo: "Buat Semula",
+        cut: "Potong",
+        copy: "Salin",
+        paste: "Tampal",
+        paste_plain: "Tampal teks biasa",
+        select_all: "Pilih Semua",
+        refresh: "Muat Semula"
     },
     statusbar: {
         idle: "Senyap",
@@ -605,5 +690,109 @@ export const ms = {
     },
     all: "Semua",
     video: "Video",
-    audio: "Audio"
+    audio: "Audio",
+
+    shortcuts: {
+        title: "Pintasan Papan Kekunci",
+        close: "Tutup"
+    },
+
+    onboarding: {
+        step1_title: "Selamat Datang ke SceneClip",
+        step1_desc: "Pemuat turun video terunggul dengan pemotongan tepat dan pengurusan barisan pintar.",
+        step2_title: "Muat Turun Satu Klik",
+        step2_desc: "Kesan pautan automatik dari papan keratan anda. Hanya salin dan kami uruskan selebihnya.",
+        step3_title: "Barisan Pintar",
+        step3_desc: "Jejak muat turun dalam masa nyata dan akses sejarah dengan serta-merta.",
+        step4_title: "Pemotongan Tepat",
+        step4_desc: "Muat turun hanya apa yang anda perlukan dengan menetapkan cap masa yang tepat.",
+        step5_title: "Sedia untuk Mula!",
+        step5_desc: "Sesuaikan pengalaman anda dalam Tetapan bila-bila masa.",
+        skip: "Langkau",
+        continue: "Teruskan",
+        start: "Mulakan Sekarang"
+    },
+
+    empty_state: {
+        title: "Belum ada muat turun",
+        description: "Tampal pautan atau tekan <1>Ctrl+N</1> untuk mula."
+    },
+
+    filename_preview: {
+        label: "Pratonton Langsung",
+        reset: "Tetap Semula",
+        example_title: "Video Hebat Saya",
+        example_uploader: "PenciptaKreatif"
+    },
+
+    url_input: {
+        batch_switch: "Tukar ke Mod Berkelompok (Batch)",
+        single_switch: "Tukar ke Satu URL",
+        batch_desc: "Tampal beberapa URL, satu setiap baris.",
+        placeholder_single: "Tampal URL video (YouTube, TikTok, Instagram, Twitter...)",
+        placeholder_batch: "https://youtube.com/watch?v=...\nhttps://tiktok.com/@user/video/...\nhttps://instagram.com/reel/...",
+        paste_clipboard: "Tampal dari Papan Keratan",
+        switch_tooltip_batch: "Tukar ke mod kelompok (berbilang URL)",
+        switch_tooltip_single: "Tukar ke satu URL"
+    },
+
+    guide_content: {
+        help_center: "Pusat Bantuan",
+        pro_tip_title: "Tip Pro: Seret & Lepas",
+        pro_tip_desc: "Seret fail .txt yang mengandungi pautan ke dalam apl untuk memulakan muat turun kelompok serta-merta.",
+        how_to_use: "Cara Penggunaan:",
+        clip_step1: "Tukar <strong>\"Mod Klip\"</strong> (Ikon Gunting).",
+        clip_step2: "Tunggu metadata dimuatkan.",
+        clip_step3: "Seret <strong>Peluncur Julat</strong> untuk memilih titik mula/tamat.",
+        clip_step4: "Format GIF tersedia untuk klip pendek.",
+        term_logs_title: "Log Terminal",
+        term_logs_desc: "Lihat output mentah daripada yt-dlp dan FFmpeg. Penting untuk menyahpepijat ralat.",
+        cookies_title: "Kuki Pelayar",
+        cookies_desc: "Muat turun kandungan Terhad Umur dengan menggunakan kuki daripada pelayar anda (Chrome/Firefox).",
+
+        faq_1_q: "Muat turun tersekat pada 100%?",
+        faq_1_a: "Apl mungkin sedang menggabungkan strim video dan audio. Ini boleh mengambil masa untuk fail besar (4K/8K).",
+        faq_2_q: "Log masuk untuk sahkan umur?",
+        faq_2_a: "Pergi ke Tetapan > Lanjutan > Sumber dan pilih pelayar anda untuk menggunakan kukinya.",
+        faq_3_q: "Kelajuan muat turun perlahan?",
+        faq_3_a: "Cuba tukar 'Jenis Sambungan' dalam Tetapan Rangkaian kepada 'Agresif'. Amaran: Boleh menyebabkan sekatan IP sementara."
+    },
+
+    dialog_status: {
+        trimmed: "TRIMMED",
+        disk_full: "Insufficient Disk Space",
+        est_size: "Estimated Size",
+        calculating: "Calculating..."
+    },
+
+    history_menu: {
+        redownload: "Redownload",
+        view_command: "View Command",
+        compress: "Export",
+        locate_file: "Locate File",
+        recover: "Recover File",
+        selected: "Selected",
+        select_all: "Select All",
+        deselect_all: "Deselect All",
+        delete: "DELETE",
+        cancel: "Cancel",
+        toast_redownload: "Muat Turun Semula Bermula",
+        toast_file_updated: "File path updated",
+        toast_deleted: "Berjaya memadam {{count}} item",
+        tooltip_missing: "File not found - Moved or Deleted",
+        selected_count: "{{count}} Dipilih",
+        confirm_delete_msg: "Adakah anda pasti mahu memadam {{count}} item?"
+    },
+
+    terminal: {
+        filter_all: "Semua",
+        filter_system: "Sistem",
+        copy_all: "Salin Semua",
+        clear_all: "Bersihkan Semua",
+        copied: "Disalin!",
+        copy: "Salin",
+        copy_line: "Salin Baris",
+        ready: "Sistem siap. Menunggu tugas...",
+        no_logs: "Tidak ada log {filter} ditemukan."
+    }
 }

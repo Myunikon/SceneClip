@@ -11,6 +11,7 @@ interface VideoPreviewProps {
         thumbnail: string
     } | null
     error: boolean
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     t: any
     url?: string
 }
@@ -30,6 +31,7 @@ export function VideoPreview({ loading, meta, error, t, url }: VideoPreviewProps
             focusedElementBeforePreview.focus()
             setFocusedElementBeforePreview(null)
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isPreviewOpen])
 
     const imageSrc = meta?.thumbnail
@@ -109,7 +111,7 @@ export function VideoPreview({ loading, meta, error, t, url }: VideoPreviewProps
                                     <ImageOff className="w-8 h-8 text-muted-foreground/50" />
                                 </div>
                                 <span className="text-xs font-medium text-muted-foreground/70 max-w-[200px] line-clamp-2 leading-relaxed">
-                                    {t.preview.no_thumbnail || meta.title}
+                                    {t('dialog.preview.no_thumbnail') || meta.title}
                                 </span>
                             </div>
                         )}
@@ -117,12 +119,12 @@ export function VideoPreview({ loading, meta, error, t, url }: VideoPreviewProps
                 ) : error ? (
                     <div className="text-red-500 flex flex-col items-center animate-in zoom-in opacity-80 px-4 z-10">
                         <AlertCircle className="w-8 h-8 mb-2 stroke-1" />
-                        <p className="text-xs font-semibold">{t.preview.failed}</p>
+                        <p className="text-xs font-semibold">{t('dialog.preview.failed')}</p>
                     </div>
                 ) : (
                     <div className="text-muted-foreground/40 flex flex-col items-center z-10">
                         <Plus className="w-12 h-12 mb-2 stroke-1 opacity-50" />
-                        <p className="text-xs font-medium">{t.preview.instruction}</p>
+                        <p className="text-xs font-medium">{t('dialog.preview.instruction')}</p>
                     </div>
                 )}
             </button>

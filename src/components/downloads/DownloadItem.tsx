@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Pause, Play, StopCircle, Trash2, FolderOpen, RefreshCcw, Terminal, Zap } from 'lucide-react'
 import { openPath } from '@tauri-apps/plugin-opener'
+import { useTranslation } from 'react-i18next'
 import { cn, formatRange } from '../../lib/utils'
 import { StatusBadge } from './StatusBadge'
 import { DownloadTask } from '../../store/slices/types'
@@ -8,16 +9,15 @@ import { useAppStore } from '../../store'
 import { CommandModal } from '../CommandModal'
 import { ConfirmDialog } from '../ConfirmDialog'
 import { notify } from '../../lib/notify'
-import { translations } from '../../lib/locales'
 
 interface DownloadItemProps {
     task: DownloadTask
-    t: any
 }
 
 // CommandModal removed, imported from ../CommandModal
 
-export function DownloadItem({ task, t }: DownloadItemProps) {
+export function DownloadItem({ task }: DownloadItemProps) {
+    const { t } = useTranslation()
     const { pauseTask, stopTask, resumeTask, retryTask, clearTask, settings } = useAppStore()
     const [showCommandModal, setShowCommandModal] = useState(false)
     const [showCancelConfirm, setShowCancelConfirm] = useState(false)
@@ -31,15 +31,14 @@ export function DownloadItem({ task, t }: DownloadItemProps) {
         if (target) {
             try {
                 await openPath(target);
-            } catch (e: any) {
+            } catch (e: unknown) {
                 console.error('Failed to open file:', e);
                 const fileName = target.split(/[/\\]/).pop() || 'File';
-                const tErrors = translations[settings.language as keyof typeof translations].errors;
 
                 notify.error(`${fileName}`, {
-                    description: tErrors.file_desc,
+                    description: t('errors.file_desc'),
                     action: task.path ? {
-                        label: tErrors.open_folder,
+                        label: t('errors.open_folder'),
                         onClick: () => openPath(task.path!).catch(() => { })
                     } : undefined,
                     duration: 5000
@@ -54,10 +53,9 @@ export function DownloadItem({ task, t }: DownloadItemProps) {
         if (!task.path) return;
         try {
             await openPath(task.path);
-        } catch (e) {
-            const tErrors = translations[settings.language as keyof typeof translations].errors;
-            notify.error(tErrors.folder_not_found, {
-                description: tErrors.folder_desc,
+        } catch {
+            notify.error(t('errors.folder_not_found'), {
+                description: t('errors.folder_desc'),
                 duration: 4000
             });
         }
@@ -79,19 +77,19 @@ export function DownloadItem({ task, t }: DownloadItemProps) {
                         title={task.title || task.url}
                         onClick={task.status === 'completed' ? handleOpenFile : undefined}
                     >
-                        {task.title || 'Fetching info...'}
+                        {task.title || t('downloads.fetching_info')}
                     </div>
                     <div className="text-xs text-muted-foreground truncate opacity-70 font-mono">{task.url}</div>
 
                     <div className="flex flex-wrap gap-2 mt-1.5">
                         {task.range && task.range !== 'Full' && (
                             <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md dark:bg-amber-500/20 dark:text-amber-400 font-mono border border-amber-200 dark:border-amber-500/30">
-                                ✂ Clip: {formatRange(task.range)}
+                                ✂ {t('dialog.clip_label')}: {formatRange(task.range)}
                             </span>
                         )}
                         {task.audioNormalization && (
                             <span className="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 rounded-md dark:bg-orange-500/20 dark:text-orange-400 font-mono border border-orange-200 dark:border-orange-500/30">
-                                ♪ Normalized
+                                ♪ {t('dialog.loudness_normalization')}
                             </span>
                         )}
                         {task.status === 'error' && task.log && (
@@ -109,7 +107,7 @@ export function DownloadItem({ task, t }: DownloadItemProps) {
 
                 {/* 2. Status Badge */}
                 <div className="flex md:block items-center justify-between z-10">
-                    <span className="md:hidden text-xs text-muted-foreground font-semibold uppercase">{t.headers.status}:</span>
+                    <span className="md:hidden text-xs text-muted-foreground font-semibold uppercase">{t('downloads.headers.status')}:</span>
                     <StatusBadge status={task.status} />
                 </div>
 
@@ -131,9 +129,7 @@ export function DownloadItem({ task, t }: DownloadItemProps) {
                                 }}
                             >
                                 {/* Active Shimmer */}
-                                {task.status === 'downloading' && (
-                                    <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite] -skew-x-12 translate-x-[-100%]"></div>
-                                )}
+
                             </div>
                         </div>
                         <span className="text-xs font-mono font-bold w-10 text-right tabular-nums text-muted-foreground">{task.progress.toFixed(0)}%</span>
@@ -141,7 +137,7 @@ export function DownloadItem({ task, t }: DownloadItemProps) {
 
                     <div className="flex justify-between text-[11px] text-muted-foreground/80 mt-1.5 font-semibold uppercase tracking-wide items-center h-4">
                         {task.statusDetail ? (
-                            <span className={cn("text-orange-500/90 truncate", "animate-pulse")}>{task.statusDetail}</span>
+                            <span className={cn("text-orange-500/90 truncate")}>{task.statusDetail}</span>
                         ) : (
                             <div className="flex gap-3">
                                 <span className="font-mono">{task.speed || '0 B/s'}</span>
@@ -152,7 +148,7 @@ export function DownloadItem({ task, t }: DownloadItemProps) {
                             </div>
                         )}
                         {(task.concurrentFragments || 1) > 1 && (
-                            <span className={cn("flex items-center gap-1 text-yellow-500/80", "animate-pulse")} title={`Downloading with ${task.concurrentFragments} parallel fragments`}>
+                            <span className={cn("flex items-center gap-1 text-yellow-500/80")} title={`Downloading with ${task.concurrentFragments} parallel fragments`}>
                                 <Zap className="w-3 h-3" fill="currentColor" />
                             </span>
                         )}
@@ -182,21 +178,21 @@ export function DownloadItem({ task, t }: DownloadItemProps) {
                                         ? "hover:bg-orange-500/10 text-orange-500"
                                         : "hover:bg-yellow-500/10 text-yellow-600"
                                 )}
-                                title={isClipped ? t.pause_clip_tooltip : t.pause_download}
+                                title={isClipped ? t('downloads.pause_clip_tooltip') : t('downloads.pause_download')}
                             >
                                 <Pause className="w-5 h-5 md:w-4 md:h-4" />
                             </button>
-                            <button onClick={() => setShowCancelConfirm(true)} className="p-2 hover:bg-red-500/10 text-red-600 rounded-lg transition-colors" title={t.stop}>
+                            <button onClick={() => setShowCancelConfirm(true)} className="p-2 hover:bg-red-500/10 text-red-600 rounded-lg transition-colors" title={t('downloads.stop')}>
                                 <StopCircle className="w-5 h-5 md:w-4 md:h-4" />
                             </button>
                         </>
                     )}
                     {task.status === 'paused' && (
                         <>
-                            <button onClick={() => resumeTask(task.id)} className="p-2 hover:bg-green-500/10 text-green-600 rounded-lg transition-colors" title={t.resume_download}>
+                            <button onClick={() => resumeTask(task.id)} className="p-2 hover:bg-green-500/10 text-green-600 rounded-lg transition-colors" title={t('downloads.resume_download')}>
                                 <Play className="w-5 h-5 md:w-4 md:h-4" />
                             </button>
-                            <button onClick={() => setShowCancelConfirm(true)} className="p-2 hover:bg-red-500/10 text-red-600 rounded-lg transition-colors" title={t.stop}>
+                            <button onClick={() => setShowCancelConfirm(true)} className="p-2 hover:bg-red-500/10 text-red-600 rounded-lg transition-colors" title={t('downloads.stop')}>
                                 <StopCircle className="w-5 h-5 md:w-4 md:h-4" />
                             </button>
                         </>
@@ -206,35 +202,35 @@ export function DownloadItem({ task, t }: DownloadItemProps) {
                             <button onClick={() => retryTask(task.id)} className="p-2 hover:bg-orange-500/10 text-orange-600 rounded-lg transition-colors" title="Retry">
                                 <RefreshCcw className="w-5 h-5 md:w-4 md:h-4" />
                             </button>
-                            <button onClick={() => clearTask(task.id)} className="p-2 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-lg transition-colors" title={t.clear}>
+                            <button onClick={() => clearTask(task.id)} className="p-2 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-lg transition-colors" title={t('downloads.clear')}>
                                 <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
                             </button>
                         </>
                     )}
                     {(task.status === 'pending') && (
-                        <button onClick={() => clearTask(task.id)} className="p-2 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-lg transition-colors" title={t.clear}>
+                        <button onClick={() => clearTask(task.id)} className="p-2 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-lg transition-colors" title={t('downloads.clear')}>
                             <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
                         </button>
                     )}
                     {task.status === 'stopped' && (
                         <>
-                            <button onClick={() => retryTask(task.id)} className="p-2 hover:bg-orange-500/10 text-orange-600 rounded-lg transition-colors" title={t.restart || "Restart"}>
+                            <button onClick={() => retryTask(task.id)} className="p-2 hover:bg-orange-500/10 text-orange-600 rounded-lg transition-colors" title={t('downloads.restart') || "Restart"}>
                                 <RefreshCcw className="w-5 h-5 md:w-4 md:h-4" />
                             </button>
-                            <button onClick={() => clearTask(task.id)} className="p-2 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-lg transition-colors" title={t.clear}>
+                            <button onClick={() => clearTask(task.id)} className="p-2 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-lg transition-colors" title={t('downloads.clear')}>
                                 <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
                             </button>
                         </>
                     )}
                     {task.status === 'completed' && (
                         <>
-                            <button onClick={handleOpenFile} className="p-2 hover:bg-red-500/10 text-red-600 rounded-lg transition-colors" title={t.open_file}>
+                            <button onClick={handleOpenFile} className="p-2 hover:bg-red-500/10 text-red-600 rounded-lg transition-colors" title={t('downloads.open_file')}>
                                 <Play className="w-5 h-5 md:w-4 md:h-4" />
                             </button>
-                            <button onClick={handleOpenFolder} className="p-2 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-lg transition-colors" title={t.open_folder}>
+                            <button onClick={handleOpenFolder} className="p-2 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-lg transition-colors" title={t('downloads.open_folder')}>
                                 <FolderOpen className="w-5 h-5 md:w-4 md:h-4" />
                             </button>
-                            <button onClick={() => clearTask(task.id)} className="p-2 hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-lg transition-colors" title={t.clear}>
+                            <button onClick={() => clearTask(task.id)} className="p-2 hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-lg transition-colors" title={t('downloads.clear')}>
                                 <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
                             </button>
                         </>
@@ -253,10 +249,10 @@ export function DownloadItem({ task, t }: DownloadItemProps) {
                 isOpen={showCancelConfirm}
                 onClose={() => setShowCancelConfirm(false)}
                 onConfirm={() => stopTask(task.id)}
-                title={t.cancel_confirm_title || 'Cancel Download?'}
-                description={t.cancel_confirm_desc || 'This will stop the download and you may need to restart from the beginning.'}
-                confirmLabel={t.confirm || 'Yes, Cancel'}
-                cancelLabel={t.keep_downloading || 'Keep Downloading'}
+                title={t('downloads.cancel_confirm_title') || 'Cancel Download?'}
+                description={t('downloads.cancel_confirm_desc') || 'This will stop the download and you may need to restart from the beginning.'}
+                confirmLabel={t('downloads.confirm') || 'Yes, Cancel'}
+                cancelLabel={t('downloads.keep_downloading') || 'Keep Downloading'}
             />
 
             {/* Clip Pause Warning Dialog */}
@@ -267,10 +263,10 @@ export function DownloadItem({ task, t }: DownloadItemProps) {
                     setShowClipPauseWarning(false)
                     pauseTask(task.id)
                 }}
-                title={t.clip_pause_title || "⚠️ Pause Clipped Download?"}
-                description={`${t.clip_pause_desc || "This is a CLIPPED download. Due to technical limitations, resuming will RESTART from 0%."} (${task.range})`}
-                confirmLabel={t.clip_pause_confirm || "Pause Anyway"}
-                cancelLabel={t.keep_downloading}
+                title={t('downloads.clip_pause_title') || "⚠️ Pause Clipped Download?"}
+                description={`${t('downloads.clip_pause_desc')} (${task.range})`}
+                confirmLabel={t('downloads.clip_pause_confirm')}
+                cancelLabel={t('downloads.keep_downloading')}
             />
 
             {/* Command Modal */}

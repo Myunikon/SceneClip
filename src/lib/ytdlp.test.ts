@@ -832,6 +832,7 @@ describe('buildYtDlpArgs Edge Cases & Bad Scenarios', () => {
     describe('Hardware Acceleration Edge Cases', () => {
         it('should handle unknown GPU type gracefully', async () => {
             // Pass an invalid GPU type - should not crash
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const args = await buildYtDlpArgs(url, {}, settings, 'test.mp4', 'unknown' as any)
             // Should not contain any encoder args since 'unknown' is not mapped
             expect(args.join(' ')).not.toContain('h264_nvenc')

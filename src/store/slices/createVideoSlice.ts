@@ -145,6 +145,9 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
 
                     // Trigger Compression if needed
                     get().processQueue()
+                },
+                onCommand: (taskId, command) => {
+                    updateTask(taskId, { ytdlpCommand: command })
                 }
             })
         },
@@ -209,7 +212,7 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
 
             try {
                 outputPath = await getUniqueFilePath(outputPath)
-            } catch { }
+            } catch { /* ignore */ }
 
             const args = buildCompressionArgs(originalTask.filePath, outputPath, options, fileType)
             const newId = uuidv4()
@@ -255,7 +258,7 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
                         try {
                             const s = await stat(outputPath)
                             sizeBytes = s.size
-                        } catch { }
+                        } catch { /* ignore */ }
                         updateTask(newId, {
                             status: 'completed',
                             progress: 100,

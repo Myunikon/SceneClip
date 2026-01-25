@@ -1,8 +1,8 @@
 import { useRef, useEffect } from 'react'
 import { Keyboard, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAppStore } from '../store'
-import { translations } from '../lib/locales'
+
+import { useTranslation } from 'react-i18next'
 
 interface ShortcutsPopoverProps {
     isOpen: boolean
@@ -21,8 +21,8 @@ const shortcuts = [
 ]
 
 export function ShortcutsPopover({ isOpen, onClose }: ShortcutsPopoverProps) {
-    const { settings } = useAppStore()
-    const t = translations[settings.language as keyof typeof translations] as any
+
+    const { t } = useTranslation()
     const popoverRef = useRef<HTMLDivElement>(null)
 
     // Close on click outside
@@ -51,13 +51,13 @@ export function ShortcutsPopover({ isOpen, onClose }: ShortcutsPopoverProps) {
 
     const getActionLabel = (action: string) => {
         switch (action) {
-            case 'new_download': return t.downloads.new_download
-            case 'settings': return t.nav.settings
-            case 'history': return t.history.title
-            case 'downloads': return t.nav.downloads
-            case 'fullscreen': return t.guide?.sections?.shortcuts_fullscreen || 'Fullscreen' // Fallback
+            case 'new_download': return t('downloads.new_download')
+            case 'settings': return t('nav.settings')
+            case 'history': return t('history.title')
+            case 'downloads': return t('nav.downloads')
+            case 'fullscreen': return t('guide.sections.shortcuts_fullscreen')
             case 'devtools': return 'DevTools'
-            case 'close_dialog': return t.dialog?.cancel || 'Close'
+            case 'close_dialog': return t('shortcuts.close')
             default: return action
         }
     }
@@ -76,19 +76,19 @@ export function ShortcutsPopover({ isOpen, onClose }: ShortcutsPopoverProps) {
                     <div className="flex items-center justify-between mb-3">
                         <h3 className="font-semibold text-sm flex items-center gap-2">
                             <Keyboard className="w-4 h-4 text-primary" />
-                            {t.guide?.sections?.shortcuts || 'Keyboard Shortcuts'}
+                            {t('shortcuts.title')}
                         </h3>
-                        <button 
+                        <button
                             onClick={onClose}
                             className="p-1 hover:bg-secondary rounded-full transition-colors"
                         >
                             <X className="w-3.5 h-3.5 text-muted-foreground" />
                         </button>
                     </div>
-                    
+
                     <div className="space-y-2">
                         {shortcuts.map((shortcut, i) => (
-                            <div 
+                            <div
                                 key={i}
                                 className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-secondary/50 transition-colors"
                             >
@@ -97,7 +97,7 @@ export function ShortcutsPopover({ isOpen, onClose }: ShortcutsPopoverProps) {
                                 </span>
                                 <div className="flex items-center gap-1">
                                     {shortcut.keys.map((key, j) => (
-                                        <kbd 
+                                        <kbd
                                             key={j}
                                             className="px-1.5 py-0.5 bg-secondary border border-border rounded text-xs font-mono font-medium"
                                         >

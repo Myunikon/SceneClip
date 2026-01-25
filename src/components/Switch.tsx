@@ -1,49 +1,43 @@
+import { ButtonHTMLAttributes } from 'react'
 import { cn } from '../lib/utils'
 
-interface SwitchProps {
+interface SwitchProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onChange' | 'value'> {
     checked: boolean
     onCheckedChange: (checked: boolean) => void
-    disabled?: boolean
-    className?: string
 }
 
-export function Switch({ checked, onCheckedChange, disabled, className }: SwitchProps) {
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (disabled) return
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            onCheckedChange(!checked)
-        }
-    }
-
+export function Switch({ checked, onCheckedChange, className, disabled, ...props }: SwitchProps) {
     return (
-        <div
+        <button
+            type="button"
             role="switch"
-            tabIndex={disabled ? -1 : 0}
             aria-checked={checked}
-            aria-disabled={disabled}
-            data-state={checked ? 'checked' : 'unchecked'}
-            onClick={(e) => {
-                e.stopPropagation()
-                if (!disabled) onCheckedChange(!checked)
-            }}
-            onKeyDown={handleKeyDown}
+            disabled={disabled}
+            onClick={() => onCheckedChange(!checked)}
             className={cn(
-                "w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50 border-2 border-transparent cursor-pointer inline-flex items-center",
+                "group w-11 h-6 p-0.5 rounded-full flex items-center transition-colors cursor-pointer border-2 border-transparent",
+
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+
                 checked
-                    ? "bg-orange-500 dark:bg-orange-400"
-                    : "bg-secondary",
+                    ? "bg-orange-500"
+                    : "bg-zinc-200 dark:bg-zinc-700/50 shadow-inner",
+
                 disabled && "opacity-50 cursor-not-allowed",
                 className
             )}
+            {...props}
         >
             <span
-                data-state={checked ? 'checked' : 'unchecked'}
+                style={{ transitionTimingFunction: "cubic-bezier(0.175, 0.885, 0.32, 1.275)" }}
                 className={cn(
-                    "block w-5 h-5 rounded-full bg-white shadow-lg ring-0 transition-transform pointer-events-none",
-                    checked ? "translate-x-5" : "translate-x-0"
+                    "block h-5 w-5 rounded-full bg-white shadow-sm ring-0 pointer-events-none transition-all duration-300", // Spring-like feel
+
+                    // Checked State:
+                    // translate-x-5 = 1.25rem. Matches (w-11 [2.75rem] - w-5 [1.25rem] - p-0.5*2 [0.25rem])
+                    checked ? "translate-x-5 shadow-lg" : "translate-x-0 shadow-sm"
                 )}
             />
-        </div>
+        </button>
     )
 }

@@ -14,11 +14,11 @@ interface ClipboardListenerProps {
 export function ClipboardListener({ onFound }: ClipboardListenerProps) {
     const { settings } = useAppStore()
     const t = translations[settings.language as keyof typeof translations].monitor
-    
+
     const [detectedUrl, setDetectedUrl] = useState<string | null>(null)
     const [isVisible, setIsVisible] = useState(false)
     const lastTextRef = useRef<string>('')
-    const intervalRef = useRef<any>(null)
+    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
     const detectedUrlRef = useRef<string | null>(null)
     const isVisibleRef = useRef(false)
 
@@ -37,23 +37,23 @@ export function ClipboardListener({ onFound }: ClipboardListenerProps) {
 
                 // Ignore if same as last check
                 if (text === lastTextRef.current) return
-                
+
                 lastTextRef.current = text
 
                 // Check if it's a video URL
                 if (isValidVideoUrl(text)) {
                     // Ignore if we just detected this specific URL and user closed it
                     if (detectedUrlRef.current === text && !isVisibleRef.current) return
-                    
+
                     setDetectedUrl(text)
                     setIsVisible(true)
-                    
+
                     // Auto-hide after 10 seconds if no action
                     setTimeout(() => {
                         setIsVisible(false)
                     }, 10000)
                 }
-            } catch (error) {
+            } catch {
                 // Clipboard permission denied or empty
             }
         }
@@ -81,7 +81,7 @@ export function ClipboardListener({ onFound }: ClipboardListenerProps) {
     return (
         <AnimatePresence>
             {isVisible && detectedUrl && (
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 50, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 50, scale: 0.9 }}
@@ -111,13 +111,13 @@ export function ClipboardListener({ onFound }: ClipboardListenerProps) {
                         </div>
 
                         <div className="flex gap-2 z-10">
-                            <button 
+                            <button
                                 onClick={handleIgnore}
                                 className="flex-1 px-3 py-2 text-xs font-semibold rounded-lg hover:bg-secondary text-muted-foreground transition-colors"
                             >
                                 {t.ignore}
                             </button>
-                            <button 
+                            <button
                                 onClick={handleDownload}
                                 className="flex-1 px-3 py-2 bg-primary text-primary-foreground text-xs font-bold rounded-lg hover:opacity-90 shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transition-transform active:scale-95"
                             >

@@ -167,29 +167,14 @@ export function ChoiceGroup<T extends string | number | undefined>({
         emerald: "text-emerald-400 ring-emerald-500/50"
     }
 
-    const bgClasses = {
-        primary: "bg-primary/20",
-        orange: "bg-orange-500/20",
-        red: "bg-red-500/20",
-        purple: "bg-purple-500/20",
-        emerald: "bg-emerald-500/20"
-    }
+
 
     const gridClasses = columns === 4 ? "grid-cols-4" : columns === 3 ? "grid-cols-3" : "grid-cols-2"
 
-    // VARIANT SEGMENT: Connected look with sliding background
+    // VARIANT SEGMENT: Native Apple Style (Sliding Pill)
     if (variant === 'segment') {
-        // Premium Gradients for Segment Variant
-        const segmentBgClasses = {
-            primary: "bg-gradient-to-r from-orange-500 via-red-500 to-purple-600 shadow-lg shadow-orange-500/20",
-            orange: "bg-gradient-to-r from-amber-500 to-orange-600 shadow-lg shadow-orange-500/20",
-            red: "bg-gradient-to-r from-red-500 to-rose-600 shadow-lg shadow-red-500/20",
-            purple: "bg-gradient-to-r from-purple-500 to-indigo-600 shadow-lg shadow-purple-500/20",
-            emerald: "bg-gradient-to-r from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/20"
-        }
-
         return (
-            <div className="flex p-1 bg-black/20 rounded-xl gap-1">
+            <div className="flex p-1 bg-secondary/80 rounded-lg gap-1 border border-transparent">
                 {options.map((opt) => {
                     const isSelected = value === opt.value
                     const Icon = opt.icon
@@ -201,19 +186,19 @@ export function ChoiceGroup<T extends string | number | undefined>({
                             onClick={() => !opt.disabled && onChange(opt.value)}
                             disabled={opt.disabled}
                             className={cn(
-                                "relative flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all z-0",
-                                isSelected ? "text-white" : "text-muted-foreground hover:text-foreground",
+                                "relative flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[13px] font-medium transition-all z-0",
+                                isSelected ? "text-foreground" : "text-muted-foreground hover:text-foreground/80",
                                 opt.disabled && "opacity-50 cursor-not-allowed"
                             )}
                         >
                             {isSelected && (
                                 <motion.div
                                     layoutId="segment-active"
-                                    className={cn("absolute inset-0 rounded-lg shadow-sm z-[-1]", segmentBgClasses[activeColor] || bgClasses[activeColor])}
-                                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                    className="absolute inset-0 bg-background rounded-md shadow-[0_1px_2px_rgba(0,0,0,0.1)] z-[-1] border border-black/5"
+                                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
                                 />
                             )}
-                            {Icon && <Icon className="w-4 h-4" />}
+                            {Icon && <Icon className="w-3.5 h-3.5" />}
                             <span>{opt.label}</span>
                         </button>
                     )

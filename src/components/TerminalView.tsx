@@ -43,24 +43,26 @@ export function TerminalView() {
     }, [logs, filter])
 
     const handleCopyAll = async () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const t = (translations[settings.language as keyof typeof translations] as any)?.errors || translations.en.errors
         try {
             await writeText(filteredLogs.map(l => `[${new Date(l.timestamp).toLocaleTimeString()}] ${l.message || ''}`).join('\n'))
             setCopied(true)
             setTimeout(() => setCopied(false), 2000)
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error('Failed to copy:', e)
-            const t = translations[settings.language as keyof typeof translations]?.errors || translations.en.errors
-            notify.error(t.copy_logs, { description: e?.message })
+            notify.error(t.copy_logs, { description: e instanceof Error ? e.message : undefined })
         }
     }
 
     const handleCopyLine = async (log: { message?: string, timestamp: number }) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const t = (translations[settings.language as keyof typeof translations] as any)?.errors || translations.en.errors
         try {
             await writeText(`[${new Date(log.timestamp).toLocaleTimeString()}] ${log.message || ''}`)
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error('Failed to copy line:', e)
-            const t = translations[settings.language as keyof typeof translations]?.errors || translations.en.errors
-            notify.error(t.copy_line, { description: e?.message })
+            notify.error(t.copy_line, { description: e instanceof Error ? e.message : undefined })
         }
     }
 
@@ -104,15 +106,18 @@ export function TerminalView() {
                     <button
                         onClick={handleCopyAll}
                         className="p-1.5 hover:bg-white/10 rounded flex items-center gap-1 text-gray-400 hover:text-white transition-colors"
-                        title="Copy All"
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        title={(translations[settings.language as keyof typeof translations] as any)?.terminal?.copy_all || "Copy All"}
                     >
                         {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span className="text-xs">{copied ? 'Copied!' : 'Copy'}</span>
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        <span className="text-xs">{copied ? ((translations[settings.language as keyof typeof translations] as any)?.terminal?.copied || "Copied!") : ((translations[settings.language as keyof typeof translations] as any)?.terminal?.copy || "Copy")}</span>
                     </button>
                     <button
                         onClick={clearLogs}
                         className="p-1.5 hover:bg-red-500/20 rounded text-gray-400 hover:text-red-400 transition-colors"
-                        title="Clear All"
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        title={(translations[settings.language as keyof typeof translations] as any)?.terminal?.clear_all || "Clear All"}
                     >
                         <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -124,8 +129,10 @@ export function TerminalView() {
                 {filteredLogs.length === 0 && (
                     <div className="text-gray-500 italic text-center py-8">
                         {filter === 'all'
-                            ? 'System ready. Waiting for tasks...'
-                            : `No ${filter} logs found.`}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            ? ((translations[settings.language as keyof typeof translations] as any)?.terminal?.ready || (translations.en as any).terminal?.ready)
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            : (((translations[settings.language as keyof typeof translations] as any)?.terminal?.no_logs || (translations.en as any).terminal?.no_logs) || "").replace('{filter}', filter)}
                     </div>
                 )}
                 {filteredLogs.slice(-500).map((log) => (
@@ -142,6 +149,7 @@ export function TerminalView() {
 }
 
 // Memoized Log Item to prevent unnecessary re-renders
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const MemoizedLogItem = React.memo(({ log, onCopy }: { log: any, onCopy: () => void }) => {
     // Syntax highlighting logic
     const highlightedMessage = useMemo(() => {

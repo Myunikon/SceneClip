@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
-import { DialogOptions, DialogOptionSetters } from '../../types'
+import { DialogOptions, DialogOptionSetters, AppSettings } from '../../types'
 
 interface UseDialogToProps {
     initialStart?: number
     initialEnd?: number
-    settings: any // Using specific type if possible, or inference from store
+    settings: AppSettings
 }
 
 export function useDialogForm({ initialStart, initialEnd, settings }: UseDialogToProps) {
@@ -30,7 +30,7 @@ export function useDialogForm({ initialStart, initialEnd, settings }: UseDialogT
     const [embedSubtitles, setEmbedSubtitles] = useState(true)
     const [isScheduled, setIsScheduled] = useState(false)
     const [scheduleTime, setScheduleTime] = useState('')
-    const [videoCodec, setVideoCodec] = useState<'auto' | 'av1' | 'h264'>('auto')
+    const [videoCodec, setVideoCodec] = useState<'auto' | 'av1' | 'h264' | 'hevc' | 'vp9'>('auto')
     const [splitChapters, setSplitChapters] = useState(false)
     const [container, setContainer] = useState<string>(
         settings.lastDownloadOptions?.container ||

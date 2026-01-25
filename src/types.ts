@@ -1,4 +1,5 @@
 import { translations } from './lib/locales'
+import { VideoChapter } from './store/slices/types'
 
 // Standard yt-dlp Format Object
 export interface YtFormat {
@@ -39,7 +40,7 @@ export interface VideoMeta {
     automatic_captions?: Record<string, YtSubtitle[]>
     hasSubtitles?: boolean
     filesize_approx?: number
-    chapters?: any[]
+    chapters?: VideoChapter[]
     is_live?: boolean
 }
 
@@ -96,7 +97,7 @@ export interface DialogOptionSetters {
     setAudioBitrate: (v: string) => void
     setAudioFormat: (v: string) => void
     setAudioNormalization: (v: boolean) => void
-    setVideoCodec: (v: any) => void
+    setVideoCodec: (v: 'auto' | 'av1' | 'h264' | 'hevc' | 'vp9') => void
     setSponsorBlock: (v: boolean) => void
     setSplitChapters: (v: boolean) => void
     setSubtitles: (v: boolean) => void
@@ -138,6 +139,10 @@ export interface DownloadOptions {
     forceTranscode?: boolean // Force re-encoding if native codec unavailable
     cookies?: string // Netscape formatted cookies content (or path)
     userAgent?: string // Custom User Agent
+    // GIF Options
+    gifFps?: number
+    gifScale?: number
+    gifQuality?: 'high' | 'fast'
 }
 
 export interface AppSettings {

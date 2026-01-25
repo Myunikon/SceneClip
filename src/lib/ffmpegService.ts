@@ -40,7 +40,7 @@ export const ffmpegTimeRegex = /time=\s*(\d{2,}:\d{2}:\d{2}\.\d{2}|\d+\.\d+)/
 const durationRegex = /Duration: (\d{2}:\d{2}:\d{2}\.\d{2})/
 
 /** Regex for FFmpeg speed: speed=1.5x */
-const speedRegex = /speed=\s*([\d\.]+)x/
+const speedRegex = /speed=\s*([\d.]+)x/
 
 // =============================================================================
 // Progress Parsing
@@ -230,14 +230,14 @@ export async function splitVideoByChapters(
       const cmd = Command.sidecar(BINARIES.FFMPEG, args)
 
       // Wait for completion (promisified)
-      await new Promise<void>(async (resolve, reject) => {
+      await new Promise<void>((resolve, reject) => {
         cmd.on('close', (data) => {
           if (data.code === 0) resolve()
           else reject(new Error(`FFmpeg exited with ${data.code}`))
         })
         cmd.on('error', reject)
 
-        await cmd.spawn()
+        cmd.spawn().then(() => { }).catch(reject)
       })
 
       // Update Progress

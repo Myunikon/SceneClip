@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { ChevronDown, Check } from 'lucide-react'
 import { cn } from '../lib/utils'
 
@@ -22,17 +23,49 @@ export function Select({ value, onChange, options, placeholder, className, disab
     const containerRef = useRef<HTMLDivElement>(null)
     const listRef = useRef<HTMLDivElement>(null)
 
+    // Portal state
+    const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 })
+
+    // Update coordinates when opening
+    useEffect(() => {
+        if (isOpen && containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect()
+            setCoords({
+                top: rect.bottom + window.scrollY + 4, // 4px gap
+                left: rect.left + window.scrollX,
+                width: rect.width
+            })
+        }
+    }, [isOpen])
+
+    // Handle Resize & Scroll (Close dropdown to be safe/simple)
+    useEffect(() => {
+        const handleResizeOrScroll = () => setIsOpen(false)
+        window.addEventListener('resize', handleResizeOrScroll)
+        window.addEventListener('scroll', handleResizeOrScroll, true) // Capture for all elements
+        return () => {
+            window.removeEventListener('resize', handleResizeOrScroll)
+            window.removeEventListener('scroll', handleResizeOrScroll, true)
+        }
+    }, [])
+
     // Click outside handler
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+            // Check if click is inside container OR list
+            if (
+                containerRef.current &&
+                !containerRef.current.contains(event.target as Node) &&
+                listRef.current &&
+                !listRef.current.contains(event.target as Node)
+            ) {
                 setIsOpen(false)
                 setFocusedIndex(-1)
             }
         }
-        document.addEventListener('mousedown', handleClickOutside)
+        if (isOpen) document.addEventListener('mousedown', handleClickOutside)
         return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [])
+    }, [isOpen])
 
     // Scroll focused item into view
     useEffect(() => {
@@ -111,7 +144,7 @@ export function Select({ value, onChange, options, placeholder, className, disab
                 onKeyDown={handleKeyDown}
                 className={cn(
                     "w-full flex items-center justify-between px-3 h-10 text-sm rounded-lg border focus:outline-none transition-all focus:ring-2 focus:ring-primary/50",
-                    "bg-secondary/20 hover:bg-secondary/40 border-border/50 hover:border-primary/30",
+                    "bg-white hover:bg-secondary/40 border-neutral-300 dark:border-white/10 hover:border-primary/30",
                     "dark:bg-secondary/50 dark:hover:bg-secondary/70 dark:border-white/10",
                     disabled && "opacity-50 cursor-not-allowed",
                     isOpen && "ring-2 ring-primary/20 border-primary/50 bg-secondary/40 dark:bg-secondary/80",
@@ -122,9 +155,18 @@ export function Select({ value, onChange, options, placeholder, className, disab
                 <ChevronDown className={cn("w-4 h-4 opacity-50", isOpen && "rotate-180")} />
             </button>
 
-            {isOpen && (
-                <div className="absolute z-50 w-full mt-1 overflow-hidden rounded-xl border border-border/50 bg-popover shadow-xl">
-                    <div ref={listRef} className="max-h-60 overflow-y-auto p-1 custom-scrollbar">
+            {isOpen && createPortal(
+                <div
+                    ref={listRef}
+                    className="fixed z-[9999] mt-1 overflow-hidden rounded-xl border border-border/50 bg-popover shadow-xl"
+                    style={{
+                        top: coords.top,
+                        left: coords.left,
+                        width: coords.width,
+                        maxHeight: '260px' // fallback
+                    }}
+                >
+                    <div className="max-h-60 overflow-y-auto p-1 custom-scrollbar">
                         {options.map((option, index) => (
                             <button
                                 key={option.value}
@@ -149,7 +191,8 @@ export function Select({ value, onChange, options, placeholder, className, disab
                             </button>
                         ))}
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     )

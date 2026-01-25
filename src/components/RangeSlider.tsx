@@ -36,8 +36,8 @@ export function RangeSlider({ duration, start, end, onChange, disabled }: RangeS
                 // Ensure we don't push past the end
                 onChange(Math.min(newStart, safeEnd), safeEnd)
             } else {
-                 const newEnd = Math.max(val, safeStart + 1)
-                 onChange(safeStart, Math.max(newEnd, safeStart))
+                const newEnd = Math.max(val, safeStart + 1)
+                onChange(safeStart, Math.max(newEnd, safeStart))
             }
         }
 
@@ -65,17 +65,17 @@ export function RangeSlider({ duration, start, end, onChange, disabled }: RangeS
 
     return (
         <div className={cn("w-full py-6 select-none relative", disabled && "opacity-50 pointer-events-none")}>
-            <div ref={trackRef} className="h-1.5 bg-white/10 rounded-full relative w-full touch-none">
+            <div ref={trackRef} className="h-1.5 bg-secondary/50 dark:bg-white/10 rounded-full relative w-full touch-none hover:bg-secondary/80 transition-colors">
                 {/* Active Range Bar */}
-                <div 
-                    className="absolute h-full bg-primary rounded-full opacity-50"
+                <div
+                    className="absolute h-full bg-primary rounded-full opacity-80"
                     style={{ left: `${startPct}%`, width: `${Math.max(0, endPct - startPct)}%` }}
                 />
 
                 {/* Thumb Start */}
                 <div
                     className={cn(
-                        "absolute top-1/2 -translate-y-1/2 -ml-2.5 w-5 h-5 bg-white rounded-full shadow-lg cursor-grab active:cursor-grabbing z-20 flex items-center justify-center transition-transform hover:scale-110",
+                        "absolute top-1/2 -translate-y-1/2 -ml-2.5 w-5 h-5 bg-background border-2 border-primary rounded-full shadow-lg cursor-grab active:cursor-grabbing z-20 flex items-center justify-center transition-transform hover:scale-110",
                         dragging === 'start' && "scale-110 ring-4 ring-primary/20"
                     )}
                     style={{ left: `${startPct}%` }}
@@ -85,8 +85,8 @@ export function RangeSlider({ duration, start, end, onChange, disabled }: RangeS
                     }}
                 >
                     <div className={cn(
-                        "absolute -top-8 text-xs font-mono font-bold bg-white text-black px-1.5 py-0.5 rounded shadow whitespace-nowrap transition-opacity",
-                        dragging === 'start' ? "opacity-100" : "opacity-0 hover:opacity-100"
+                        "absolute -top-8 text-[10px] font-mono font-bold bg-foreground text-background px-2 py-1 rounded-md shadow-lg whitespace-nowrap transition-all pointer-events-none",
+                        dragging === 'start' ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1 group-hover:opacity-100"
                     )}>
                         {formatTime(start)}
                     </div>
@@ -95,7 +95,7 @@ export function RangeSlider({ duration, start, end, onChange, disabled }: RangeS
                 {/* Thumb End */}
                 <div
                     className={cn(
-                        "absolute top-1/2 -translate-y-1/2 -ml-2.5 w-5 h-5 bg-white rounded-full shadow-lg cursor-grab active:cursor-grabbing z-20 flex items-center justify-center transition-transform hover:scale-110",
+                        "absolute top-1/2 -translate-y-1/2 -ml-2.5 w-5 h-5 bg-background border-2 border-primary rounded-full shadow-lg cursor-grab active:cursor-grabbing z-20 flex items-center justify-center transition-transform hover:scale-110",
                         dragging === 'end' && "scale-110 ring-4 ring-primary/20"
                     )}
                     style={{ left: `${endPct}%` }}
@@ -105,8 +105,8 @@ export function RangeSlider({ duration, start, end, onChange, disabled }: RangeS
                     }}
                 >
                     <div className={cn(
-                        "absolute -top-8 text-xs font-mono font-bold bg-white text-black px-1.5 py-0.5 rounded shadow whitespace-nowrap transition-opacity",
-                        dragging === 'end' ? "opacity-100" : "opacity-0 hover:opacity-100"
+                        "absolute -top-8 text-[10px] font-mono font-bold bg-foreground text-background px-2 py-1 rounded-md shadow-lg whitespace-nowrap transition-all pointer-events-none",
+                        dragging === 'end' ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1 group-hover:opacity-100"
                     )}>
                         {formatTime(end)}
                     </div>

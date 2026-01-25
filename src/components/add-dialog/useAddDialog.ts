@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { readText } from '@tauri-apps/plugin-clipboard-manager'
 import { downloadDir } from '@tauri-apps/api/path'
+import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../store'
-import { translations } from '../../lib/locales'
 import { notify } from '../../lib/notify'
 import { formatBytes } from '../../lib/utils'
 import {
@@ -18,21 +18,22 @@ import {
 import { useVideoMeta } from './useVideoMeta'
 import { useDiskStats } from './useDiskStats'
 import { useDialogForm } from './useDialogForm'
+import { DownloadOptions } from '../../types'
 
 interface UseAddDialogProps {
-    addTask: (url: string, opts: any) => any
+    addTask: (url: string, opts: DownloadOptions) => Promise<void>
     initialUrl?: string
     initialCookies?: string
     initialUserAgent?: string
     initialStart?: number
     initialEnd?: number
-    previewLang?: string | null
+
     isOffline?: boolean
 }
 
-export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserAgent, initialStart, initialEnd, previewLang }: UseAddDialogProps) {
+export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserAgent, initialStart, initialEnd }: UseAddDialogProps) {
     const { settings } = useAppStore()
-    const t = translations[(previewLang ?? settings.language) as keyof typeof translations].dialog
+    const { t } = useTranslation()
 
     const [isOpen, setIsOpen] = useState(false)
     const [url, setUrl] = useState('')
@@ -112,9 +113,9 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
                 rangeStart: options.isClipping ? start : undefined,
                 rangeEnd: options.isClipping ? end : undefined,
                 audioBitrate: options.audioBitrate,
-                audioFormat: options.audioFormat,
+                audioFormat: options.audioFormat as DownloadOptions['audioFormat'],
 
-                removeSponsors: options.sponsorBlock,
+                sponsorBlock: options.sponsorBlock,
                 subtitles: options.subtitles,
                 subtitleLang: options.subtitles ? options.subtitleLang : undefined,
                 subtitleFormat: options.subtitles ? options.subtitleFormat : undefined,
@@ -122,7 +123,7 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
                 videoCodec: options.videoCodec,
                 forceTranscode: options.videoCodec !== 'auto' && availableVideoCodecs && !availableVideoCodecs.includes(options.videoCodec),
                 splitChapters: options.splitChapters,
-                scheduledTime: options.isScheduled && options.scheduleTime ? new Date(options.scheduleTime).toISOString() : undefined,
+                scheduledTime: options.isScheduled && options.scheduleTime ? new Date(options.scheduleTime).getTime() : undefined,
                 audioNormalization: options.audioNormalization,
                 gifFps: options.format === 'gif' ? options.gifFps : undefined,
                 gifScale: options.format === 'gif' ? options.gifScale : undefined,
@@ -140,7 +141,7 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
                 format: options.format,
                 container: options.container,
                 audioBitrate: options.audioBitrate,
-                removeSponsors: options.sponsorBlock,
+                sponsorBlock: options.sponsorBlock,
                 subtitles: options.subtitles,
                 subtitleLang: options.subtitles ? options.subtitleLang : undefined,
                 embedSubtitles: options.subtitles ? options.embedSubtitles : false,
@@ -206,7 +207,7 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
         availableResolutions, availableAudioBitrates, availableVideoCodecs, availableAudioCodecs, availableLanguages,
         handleSubmit, resetForm, browse, handlePaste, quickDownload,
         t,
-        formatFileSize: formatBytes,
+        formatFileSize: (bytes?: number) => formatBytes(bytes || 0),
         estimatedSize, // Return calculated size
         settings,
         isDiskFull,

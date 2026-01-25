@@ -18,7 +18,7 @@ export async function runBinaryValidation(addLog: (entry: { message: string, typ
         try {
             const cmd = Command.sidecar(BINARIES.FFMPEG, ['-version'])
             const out = await cmd.execute()
-            
+
             if (out.code === 0 && out.stdout.toLowerCase().includes('ffmpeg')) {
                 addLog({ message: "[Security] FFmpeg sidecar check passed (valid version output).", type: 'success' })
             } else {
@@ -34,7 +34,7 @@ export async function runBinaryValidation(addLog: (entry: { message: string, typ
         try {
             const cmd = Command.sidecar(BINARIES.YTDLP, ['--version'])
             const out = await cmd.execute()
-            
+
             // yt-dlp version format: YYYY.MM.DD or YYYY.MM.DD.patch
             if (out.code === 0 && /^\d{4}\.\d{2}\.\d{2}/.test(out.stdout.trim())) {
                 addLog({ message: `[Security] yt-dlp sidecar check passed (version: ${out.stdout.trim()}).`, type: 'success' })
@@ -47,10 +47,10 @@ export async function runBinaryValidation(addLog: (entry: { message: string, typ
             notify.warning("yt-dlp sidecar failed to execute", { duration: 5000 })
         }
 
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error("Binary validation failed", e)
         const t = translations[language as keyof typeof translations]?.errors || translations.en.errors
-        notify.error(t.binary_crash, { description: e?.message })
-        addLog({ message: `[Security] Binary validation failed: ${e?.message || e}`, type: 'error' })
+        notify.error(t.binary_crash, { description: e instanceof Error ? e.message : undefined })
+        addLog({ message: `[Security] Binary validation failed: ${e instanceof Error ? e.message : e}`, type: 'error' })
     }
 }

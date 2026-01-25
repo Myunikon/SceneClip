@@ -1,12 +1,17 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import { useRef, useEffect, useState } from 'react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { exists } from '@tauri-apps/plugin-fs'
 import { downloadDir } from '@tauri-apps/api/path'
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion'
 import { Toaster } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { notify } from './lib/notify'
 import { useAppStore } from './store'
-import { translations } from './lib/locales'
+import { useTheme } from './hooks/useTheme'
+import { useNetworkStatus } from './hooks/useNetworkStatus'
+import { useDeepLinks } from './hooks/useDeepLinks'
+import { useGlobalShortcuts } from './hooks/useGlobalShortcuts'
 import { AddDialog } from './components/AddDialog'
 import { HistoryView } from './components/HistoryView'
 import { Onboarding } from './components/Onboarding'
@@ -18,26 +23,33 @@ import { ShortcutsPopover } from './components/ShortcutsPopover'
 import { AppHeader } from './components/layout/AppHeader'
 import { AppLayout } from './components/layout/AppLayout'
 import { ContextMenu } from './components/ContextMenu'
-import { StatusBar } from './components/StatusBar'
+import { StatusFooter } from './components/StatusFooter'
 
 type ViewState = 'downloads' | 'settings' | 'history'
 
 function App() {
     const { settings } = useAppStore()
+    const { i18n } = useTranslation()
+
+    // Sync Language with Store
+    useEffect(() => {
+        if (settings.language && i18n.language !== settings.language) {
+            i18n.changeLanguage(settings.language)
+        }
+    }, [settings.language, i18n])
+
     const [activeTab, setActiveTab] = useState<ViewState>('downloads')
     const [clipboardUrl, setClipboardUrl] = useState('')
-    const [previewLang, setPreviewLang] = useState<string | null>(null)
     const [showShortcuts, setShowShortcuts] = useState(false)
 
     // Dialog Refs
     const addDialogRef = useRef<any>(null)
     const guideModalRef = useRef<GuideModalRef>(null)
 
-    const t = translations[(previewLang ?? settings.language) as keyof typeof translations]
+    // Custom Hooks Integration
     const theme = settings.theme
-
-    // Online/Offline status
-    const [isOffline, setIsOffline] = useState(!navigator.onLine)
+    useTheme(settings.theme)
+    const isOffline = useNetworkStatus()
 
     /* -------------------------------------------------------------------------- */
     /* QUICK DOWNLOAD HANDLER                                                     */
@@ -149,12 +161,7 @@ function App() {
         }
     }, [])
 
-    // Initial Theme Application
-    useEffect(() => {
-        const root = window.document.documentElement
-        root.classList.remove('light', 'dark')
-        root.classList.add(settings.theme)
-    }, [settings.theme])
+
 
 
 
@@ -242,57 +249,15 @@ function App() {
         return () => clearInterval(interval)
     }, [])
 
-    useEffect(() => {
-        const handleOnline = () => setIsOffline(false)
-        const handleOffline = () => setIsOffline(true)
 
-        window.addEventListener('online', handleOnline)
-        window.addEventListener('offline', handleOffline)
 
-        // Global Key Bindings
-        const handleKeyDown = async (e: KeyboardEvent) => {
-            if (e.ctrlKey && e.key === 'q') return // Let toggle sidebar work (if exists)
-
-            // Open Add Dialog
-            if (e.ctrlKey && e.key === 'n') {
-                e.preventDefault()
-                handleNewTask()
-            }
-
-            // Settings
-            if (e.ctrlKey && e.key === ',') {
-                e.preventDefault()
-                setActiveTab('settings')
-            }
-
-            // History
-            if (e.ctrlKey && e.key === 'h') {
-                e.preventDefault()
-                setActiveTab('history')
-            }
-
-            // Downloads (Home)
-            if (e.ctrlKey && e.key === 'd') {
-                e.preventDefault()
-                setActiveTab('downloads')
-            }
-
-            // F11 Fullscreen
-            if (e.key === 'F11') {
-                e.preventDefault()
-                const win = getCurrentWindow()
-                const isFull = await win.isFullscreen()
-                await win.setFullscreen(!isFull)
-            }
-        }
-        window.addEventListener('keydown', handleKeyDown)
-
-        return () => {
-            window.removeEventListener('online', handleOnline)
-            window.removeEventListener('offline', handleOffline)
-            window.removeEventListener('keydown', handleKeyDown)
-        }
-    }, [settings.theme])
+    // Global Shortcuts
+    useGlobalShortcuts({
+        onNewTask: () => handleNewTask(),
+        onSettings: () => setActiveTab('settings'),
+        onHistory: () => setActiveTab('history'),
+        onDownloads: () => setActiveTab('downloads')
+    })
 
 
     // Custom Context Menu State
@@ -377,41 +342,14 @@ function App() {
         checkStartMinimized()
     }, [])
 
-    useEffect(() => {
-        let unlisten: Promise<() => void> | undefined;
-
-        const setupListener = async () => {
-            try {
-                const { onOpenUrl } = await import('@tauri-apps/plugin-deep-link')
-
-                unlisten = onOpenUrl(async (urls) => {
-                    console.log('Deep link received:', urls)
-                    for (const url of urls) {
-                        try {
-                            // Support both clipscene://download?url=... and just raw clipscene://...
-                            const urlObj = new URL(url)
-                            const targetUrl = urlObj.searchParams.get('url')
-
-                            if (targetUrl) {
-                                // Standardized handler for all tasks (Deep Link, Clipboard, Shortcuts)
-                                handleNewTask(targetUrl)
-                            }
-                        } catch (e) {
-                            console.error('Failed to parse deep link:', e)
-                        }
-                    }
-                })
-            } catch (e) {
-                console.error('Deep link plugin not initialized', e)
-            }
+    // Deep Links
+    useDeepLinks(
+        (url) => handleNewTask(url),
+        (path) => {
+            if (path.includes('settings')) setActiveTab('settings')
+            if (path.includes('history')) setActiveTab('history')
         }
-
-        setupListener()
-
-        return () => {
-            if (unlisten) unlisten.then(f => f())
-        }
-    }, [])
+    )
 
     /* -------------------------------------------------------------------------- */
     /* LOCAL SERVER LISTENER (Browser Extension v2)                               */
@@ -462,41 +400,10 @@ function App() {
         return () => clearTimeout(timer)
     }, [])
 
-    /* -------------------------------------------------------------------------- */
-    /* THEME TOGGLE (With View Transition)                                        */
-    /* -------------------------------------------------------------------------- */
-    const toggleTheme = async () => {
-        const newTheme = settings.theme === 'dark' ? 'light' : 'dark'
-        const update = () => {
-            useAppStore.getState().updateSettings({ ...settings, theme: newTheme })
-        }
-
-        if (!document.startViewTransition) {
-            update()
-            return
-        }
-
-        const transition = document.startViewTransition(async () => {
-            update()
-        })
-
-        try {
-            await transition.ready
-            const clipPath = [`circle(0px at top left)`, `circle(250% at top left)`]
-            document.documentElement.animate(
-                { clipPath: theme === 'dark' ? [...clipPath].reverse() : clipPath },
-                { duration: 500, easing: "ease-in-out", pseudoElement: theme === 'dark' ? "::view-transition-old(root)" : "::view-transition-new(root)" }
-            )
-        } catch (e) { console.error(e) }
-    }
-
     return (
         <MotionConfig>
-            <AppLayout isOffline={isOffline} language={settings.language}>
+            <AppLayout isOffline={isOffline}>
                 <AppHeader
-                    activeTab={activeTab}
-                    setActiveTab={setActiveTab}
-                    t={t as any}
                     openDialog={openDialog}
                     onOpenGuide={() => guideModalRef.current?.showModal()}
                     onOpenShortcuts={() => setShowShortcuts(true)}
@@ -548,12 +455,13 @@ function App() {
                                     transition={{ duration: 0.25, ease: "easeOut" }}
                                     className="w-full h-full col-start-1 row-start-1 bg-card/60 backdrop-blur-md rounded-xl border border-white/10 shadow-xl overflow-hidden"
                                 >
-                                    <SettingsView toggleTheme={toggleTheme} setPreviewLang={setPreviewLang} />
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                </div>
+                                    <SettingsView />
+                                </motion.div >
+                            )
+                            }
+                        </AnimatePresence >
+                    </div >
+                </div >
 
                 <ClipboardListener onFound={(url) => handleNewTask(url)} />
 
@@ -565,7 +473,6 @@ function App() {
                     initialUserAgent={clipboardUA}
                     initialStart={clipboardStart}
                     initialEnd={clipboardEnd}
-                    previewLang={previewLang}
                     isOffline={isOffline}
                 />
                 <GuideModal ref={guideModalRef} />
@@ -578,10 +485,10 @@ function App() {
                     onClose={() => setContextMenu(c => ({ ...c, visible: false }))}
                 />
 
-                <StatusBar />
+                <StatusFooter />
                 <Toaster position="bottom-right" theme={theme as any} richColors expand={true} className="!z-[9999]" toastOptions={{ style: { marginBottom: '28px', marginRight: '2px' } }} />
-            </AppLayout>
-        </MotionConfig>
+            </AppLayout >
+        </MotionConfig >
     )
 }
 

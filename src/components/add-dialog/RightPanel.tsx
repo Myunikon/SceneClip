@@ -7,6 +7,7 @@ import { ChoiceGroup } from '../CommonSettings'
 import { useAddDialogContext } from './AddDialogContext'
 
 // --- 1. KOMPONEN TAB TYPE ---
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function DownloadTypeTabs({ mode, onChange, t }: { mode: 'video' | 'audio' | 'gif', onChange: (m: 'video' | 'audio' | 'gif') => void, t: any }) {
 
     // Dynamic color based on mode
@@ -20,8 +21,8 @@ function DownloadTypeTabs({ mode, onChange, t }: { mode: 'video' | 'audio' | 'gi
                 value={mode}
                 onChange={onChange}
                 options={[
-                    { value: 'video', label: t.tabs.video, icon: Monitor },
-                    { value: 'audio', label: t.tabs.audio, icon: Music },
+                    { value: 'video', label: t('dialog.tabs.video'), icon: Monitor },
+                    { value: 'audio', label: t('dialog.tabs.audio'), icon: Music },
                     { value: 'gif', label: 'GIF', icon: Film }
                 ]}
             />
@@ -74,8 +75,8 @@ export function RightPanel() {
                                     <div className="flex items-start gap-2 text-xs text-orange-600 dark:text-orange-400 bg-orange-500/5 p-3 rounded-lg border border-orange-500/10">
                                         <Scissors className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                                         <div className="space-y-1">
-                                            <p className="font-bold uppercase tracking-wider text-[10px]">{t.gif_maker?.trim_required || "Trim Required"}</p>
-                                            <p className="opacity-90">{t.gif_maker?.trim_desc || "GIF format requires trimming. Select a short clip (max 30 seconds)."}</p>
+                                            <p className="font-bold uppercase tracking-wider text-[10px]">{t('dialog.gif_maker.trim_required') || "Trim Required"}</p>
+                                            <p className="opacity-90">{t('dialog.gif_maker.trim_desc') || "GIF format requires trimming. Select a short clip (max 30 seconds)."}</p>
                                         </div>
                                     </div>
                                 )}

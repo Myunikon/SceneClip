@@ -43,7 +43,7 @@ export const parseTime = (str: string) => {
 
 export const formatRange = (range: string) => {
     if (!range || range === 'Full') return range
-    const [start, end] = range.split('-').map(s => parseInt(s.trim()))
+    const [start, end] = range.split('-').map(s => parseTime(s.trim()))
     if (isNaN(start) || isNaN(end)) return range
     return `${formatTime(start)} - ${formatTime(end)}`
 }

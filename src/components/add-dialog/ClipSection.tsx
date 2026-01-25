@@ -62,8 +62,8 @@ export function ClipSection({ maxDuration }: ClipSectionProps) {
             {isMandatory ? (
                 <OptionCard
                     icon={<Scissors className="w-4 h-4" />}
-                    title={format === 'audio' ? (t.trim_audio || "Trim Audio") : t.trim_video}
-                    description={t.trim_desc || "Cut specific portion of the video"}
+                    title={format === 'audio' ? (t('dialog.trim_audio') || "Trim Audio") : t('dialog.trim_video')}
+                    description={t('dialog.trim_desc') || "Cut specific portion of the video"}
                     activeColor="orange"
                     className="!bg-card dark:!bg-black/20 !border-border dark:!border-white/10"
                 >
@@ -72,8 +72,8 @@ export function ClipSection({ maxDuration }: ClipSectionProps) {
             ) : (
                 <SettingCard
                     icon={<Scissors className="w-4 h-4" />}
-                    title={format === 'audio' ? (t.trim_audio || "Trim Audio") : t.trim_video}
-                    description={t.trim_desc || "Cut specific portion of the video"}
+                    title={format === 'audio' ? (t('dialog.trim_audio') || "Trim Audio") : t('dialog.trim_video')}
+                    description={t('dialog.trim_desc') || "Cut specific portion of the video"}
                     checked={isClipping}
                     onCheckedChange={setIsClipping}
                     activeColor="orange"
@@ -101,7 +101,7 @@ export function ClipSection({ maxDuration }: ClipSectionProps) {
                     </div>
                 ) : (
                     <div className="text-xs text-muted-foreground text-center py-1.5 bg-muted/50 dark:bg-secondary/20 rounded-lg border border-border/50">
-                        {t.metadata_required}
+                        {t('dialog.metadata_required')}
                     </div>
                 )}
 
@@ -148,12 +148,12 @@ export function ClipSection({ maxDuration }: ClipSectionProps) {
 
                 {(rangeStart && rangeEnd && parseTime(rangeStart) >= parseTime(rangeEnd)) && (
                     <p className="text-xs text-red-500 font-bold mt-2 text-center animate-in slide-in-from-top-1">
-                        {t.time_error}
+                        {t('dialog.time_error')}
                     </p>
                 )}
                 {maxDuration && rangeStart && rangeEnd && (parseTime(rangeEnd) - parseTime(rangeStart)) > maxDuration && (
                     <p className="text-xs text-orange-600 dark:text-orange-400 font-bold mt-2 text-center animate-in slide-in-from-top-1">
-                        ⚠️ {t.gif_maker?.too_long?.replace('{max}', String(maxDuration)).replace('{current}', String(Math.round(parseTime(rangeEnd) - parseTime(rangeStart)))) || `Clip is too long! Max ${maxDuration}s for GIF. Current: ${Math.round(parseTime(rangeEnd) - parseTime(rangeStart))}s`}
+                        ⚠️ {t('dialog.gif_maker.too_long', { max: maxDuration, current: Math.round(parseTime(rangeEnd) - parseTime(rangeStart)) }) || `Clip is too long! Max ${maxDuration}s for GIF. Current: ${Math.round(parseTime(rangeEnd) - parseTime(rangeStart))}s`}
                     </p>
                 )}
             </div>

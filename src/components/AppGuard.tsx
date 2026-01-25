@@ -2,47 +2,56 @@ import { useEffect, useState, useRef } from 'react'
 import { AlertCircle } from 'lucide-react'
 import { useAppStore } from '../store'
 import { CoolLoader } from './CoolLoader'
+import i18n from '../lib/i18n'
 
 export function AppGuard({ children }: { children: React.ReactNode }) {
-    const { 
-        initListeners, 
+    const {
+        initListeners,
         binariesReady
     } = useAppStore()
-    
+
     const [loading, setLoading] = useState(true)
     const [initError, setInitError] = useState<string | null>(null)
-    
+
     // Prevent double initialization race condition
     const initStartedRef = useRef(false)
 
     useEffect(() => {
-         const init = async () => {
-             if (initStartedRef.current) return
-             initStartedRef.current = true
-             
-             setLoading(true)
-             
-             // Minimum loading time for smooth UX (1 second)
-             const minLoad = new Promise(resolve => setTimeout(resolve, 1000))
-             
-             try {
-                 await Promise.all([initListeners(), minLoad])
-                 setLoading(false)
-             } catch (e: any) {
-                 console.error("AppGuard Init Error:", e)
-                 setInitError(e.message || "Failed to initialize application")
-                 setLoading(false)
-             }
-         }
-         
-         init()
+        const init = async () => {
+            if (initStartedRef.current) return
+            initStartedRef.current = true
+
+            setLoading(true)
+
+            // Minimum loading time for smooth UX (1 second)
+            const minLoad = new Promise(resolve => setTimeout(resolve, 1000))
+
+            try {
+                // Sync Language from Store to i18n
+                // This ensures persistence works on restart
+                const storedLang = useAppStore.getState().settings.language
+                if (storedLang && i18n.language !== storedLang) {
+                    i18n.changeLanguage(storedLang)
+                }
+
+                await Promise.all([initListeners(), minLoad])
+                setLoading(false)
+            } catch (e: unknown) {
+                console.error("AppGuard Init Error:", e)
+                setInitError(e instanceof Error ? e.message : "Failed to initialize application")
+                setLoading(false)
+            }
+        }
+
+        init()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     if (initError || (!loading && !binariesReady)) {
         return (
             <div className="h-screen w-full flex flex-col items-center justify-center bg-background text-foreground space-y-6 animate-in fade-in">
                 <div className="bg-destructive/10 p-4 rounded-full">
-                     <AlertCircle className="w-12 h-12 text-destructive" />
+                    <AlertCircle className="w-12 h-12 text-destructive" />
                 </div>
                 <div className="text-center space-y-2 max-w-md px-6">
                     <h2 className="text-xl font-bold">Initialization Failed</h2>
@@ -53,7 +62,7 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
                         Please verify that the binaries are correctly placed in the application folder.
                     </p>
                 </div>
-                <button 
+                <button
                     onClick={() => window.location.reload()}
                     className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
                 >
@@ -64,7 +73,7 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
     }
 
     if (loading) {
-         return (
+        return (
             <div className="h-screen w-full flex flex-col items-center justify-center bg-background text-foreground space-y-4">
                 <CoolLoader text="Initializing System..." />
             </div>

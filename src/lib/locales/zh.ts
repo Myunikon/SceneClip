@@ -34,10 +34,7 @@ export const zh = {
         title: "下载列表",
         subtitle: "管理您的视频下载和剪辑。",
         new_download: "新建下载",
-        open_file: "打开文件",
-        open_folder: "打开文件夹",
-        stop: "停止",
-        clear: "清除",
+
         empty: "暂无下载。",
         headers: {
             title_url: "标题 / URL",
@@ -46,7 +43,23 @@ export const zh = {
             actions: "操作",
             eta: "剩余时间",
             clip: "片段"
-        }
+        },
+        fetching_info: "获取信息",
+        pause_download: "暂停",
+        resume_download: "继续",
+        stop: "停止",
+        restart: "重新开始",
+        open_file: "打开文件",
+        open_folder: "打开文件夹",
+        clear: "清除",
+        pause_clip_tooltip: "暂停剪辑 (需从 0% 重新开始)",
+        cancel_confirm_title: "取消下载?",
+        cancel_confirm_desc: "这将停止下载，您可能需要从头开始。",
+        confirm: "是的，取消",
+        keep_downloading: "继续下载",
+        clip_pause_title: "⚠️ 暂停剪辑下载?",
+        clip_pause_desc: "这是一个剪辑下载。由于技术限制，继续下载将从 0% 开始。",
+        clip_pause_confirm: "仍然暂停"
     },
     browser: {
         placeholder: "输入网址...",
@@ -64,6 +77,7 @@ export const zh = {
             quality: "质量",
             network: "网络",
             advanced: "系统",
+            logs: "日志",
             guide: "指南",
             about: "关于"
         },
@@ -73,6 +87,7 @@ export const zh = {
             theme: "颜色主题",
             theme_dark: "深色模式",
             theme_light: "浅色模式",
+            theme_system: "跟随系统",
             startup: "启动行为",
             launch_startup: "开机启动",
             start_minimized: "启动时最小化到托盘",
@@ -94,7 +109,8 @@ export const zh = {
             resolution: "默认分辨率",
             container: "默认格式 (容器)",
             best: "最佳可用",
-            audio: "仅音频"
+            audio: "仅音频",
+            example_note: "* 基于示例视频的演示"
         },
         quality: {
             video: "视频内容",
@@ -106,7 +122,9 @@ export const zh = {
             audio_normalization: "音量标准化 (Loudness)",
             sponsorblock: "SponsorBlock (自动跳过)",
             enable_sb: "启用 SponsorBlock",
-            disable_play_button: "在历史记录中隐藏播放按钮"
+            disable_play_button: "在历史记录中隐藏播放按钮",
+            metadata_warning_title: "注意:",
+            metadata_warning_desc: "当使用 <1>剪辑/Trim</1> 功能时，这些选项会自动禁用，以防止出现视频时长错误（例如 10 秒的片段显示为 1 小时）。"
         },
         network: {
             connection: "速度与连接",
@@ -121,8 +139,15 @@ export const zh = {
             perf_fast_title: "5-8 (快速)",
             perf_fast_desc: "推荐用于高速连接。增加 CPU 使用率。",
             perf_aggressive_title: "9-16 (激进)",
+
             perf_aggressive_desc: "最大吞吐量。如果滥用可能会导致暂时性 IP 封禁 (429 Too Many Requests)。",
             perf_warning: "* 适用于所有下载模式（完整视频、音频和剪辑）。",
+
+            manual_config: "手动配置模式",
+            chunks_label: "{n} 分段",
+            perf_profile: "性能配置文件",
+            custom: "自定义",
+
             placeholders: {
                 speed: "例如 5M, 500K",
                 proxy: "http://user:pass@host:port",
@@ -165,9 +190,13 @@ export const zh = {
                 export_success: "历史记录导出成功！",
                 export_fail: "导出历史记录失败：",
                 import_success: "成功导入 {n} 个任务！",
-                import_fail: "导入历史记录失败：",
+
                 invalid_backup: "无效的备份文件格式",
-                confirm_reset: "您确定要将所有设置重置为默认值吗？"
+                confirm_reset: "您确定要将所有设置重置为默认值吗？",
+                reset_success_title: "应用重置成功",
+                reset_success_desc: "所有设置已恢复为默认值。",
+                reset_confirm_desc: "这将清除您的所有偏好设置、下载历史记录和保存的路径。应用程序将恢复到全新安装状态。此操作无法撤消。",
+                reset_confirm_btn: "是的，重置所有内容"
             },
             errors: {
                 open: "打开文件夹"
@@ -178,8 +207,13 @@ export const zh = {
                 hw_auto: "自动 (推荐)",
                 hw_gpu: "强制 GPU (NVENC/AMF/QSV)",
                 hw_cpu: "强制 CPU (慢但安全)",
-                hw_desc: "控制是否使用显卡进行视频编码。如果 GPU 失败，'自动' 将回退到 CPU。"
-            }
+                hw_desc: "控制是否使用显卡进行视频编码。如果 GPU 失败，'自动' 将回退到 CPU。",
+            },
+
+            btn_replay_welcome: "重播欢迎页",
+            btn_reset_data: "重置所有数据",
+            btn_export_history: "导出历史",
+            btn_import_history: "导入历史"
         },
         updater: {
             title: "软件更新",
@@ -233,7 +267,9 @@ export const zh = {
             secret_desc: "您解锁了秘密开发者感谢徽章！",
             secret_sub: "（没有隐藏设置，纯粹为了好玩！）",
             awesome: "太棒了！"
-        }
+        },
+
+
     },
     notifications: {
         title: "通知",
@@ -252,6 +288,8 @@ export const zh = {
         customize_download: "自定义下载",
         download_all: "全部下载",
         url_label: "视频链接",
+
+
         format_label: "格式",
         folder_label: "保存路径",
         clip_label: "视频剪辑 (时间段)",
@@ -288,6 +326,13 @@ export const zh = {
         subtitle_settings: "字幕设置",
         schedule_time: "计划时间",
         embed_subs: "嵌入到视频文件",
+        clip_pause_title: "⚠️ 暂停剪辑下载?",
+        clip_pause_desc: "这是一个剪辑下载。由于技术限制，继续下载将从 0% 开始。",
+        clip_pause_confirm: "仍然暂停",
+        cancel_confirm_title: "取消下载?",
+        cancel_confirm_desc: "这将停止下载，您可能需要从头开始。",
+        confirm: "是的，取消",
+        keep_downloading: "继续下载",
         estimated_size: "预计大小",
         trimmed: "已剪辑",
         pick_date: "选择日期...",
@@ -412,9 +457,9 @@ export const zh = {
             reencode_desc: "需要转换为 {fmt}。"
         },
         compress: {
-            title_video: "压缩影片",
-            title_audio: "压缩音讯",
-            title_image: "压缩图片/GIF",
+            title_video: "导出视频",
+            title_audio: "导出音频",
+            title_image: "导出图片/GIF",
             preset_wa: "WhatsApp / Discord",
             preset_wa_desc: "最小体积",
             preset_wa_desc_audio: "语音 (64kbps)",
@@ -433,14 +478,42 @@ export const zh = {
             lbl_speed: "编码速度",
             lbl_bitrate: "音讯位元率",
             btn_cancel: "取消",
-            btn_start: "开始压缩",
+            btn_start: "开始导出",
 
             // File validation
             file_missing: "文件未找到",
             file_missing_desc: "原始文件已被移动或删除。",
             browse_file: "浏览...",
             file_relocated: "文件路径更新成功",
-            double_compression_warning: "此文件似乎已被压缩。再次压缩将显著降低质量。"
+            double_compression_warning: "此文件似乎已被压缩。再次压缩将显著降低质量。",
+
+            // New UI states
+            checking_file: "正在检查文件...",
+            unknown: "未知",
+            auto: "自动",
+
+            // Options
+            opt_voice: "语音",
+            opt_low: "低",
+            opt_standard: "标准",
+            opt_good: "好",
+            opt_high: "高",
+            opt_max: "最大",
+
+            opt_original_no_resize: "原始 (无调整大小)",
+
+            opt_auto_detect: "自动 (检测)",
+            opt_cpu: "CPU (x264 软件)",
+
+            opt_ultrafast: "极快 (低质量)",
+            opt_veryfast: "非常快",
+            opt_medium: "中等 (默认)",
+            opt_slow: "慢 (更好压缩)",
+            opt_veryslow: "非常慢 (最佳压缩)",
+
+            quality_original: "原始",
+            quality_standard: "标准",
+            quality_low: "低"
         },
         logic_warnings: {
             mov_reencode: "使用 <strong>{codec}</strong> 的 <strong>.MOV</strong> 格式需要重新编码。这可能需要更长的时间。"
@@ -492,7 +565,14 @@ export const zh = {
         scan_healthy_files: "扫描完成: 所有文件完好",
         recover: "恢复文件",
         find_on_disk: "在磁盘上查找",
-        redownload: "重新下载内容"
+        redownload: "重新下载内容",
+        untitled: "无标题",
+        unknown_size: "未知大小",
+        open_url: "打开 {{source}}",
+        view_command: "查看命令",
+        folder: "打开文件夹",
+        compress: "导出",
+        delete: "删除"
     },
     guide: {
         title: "完整用户手册",
@@ -553,13 +633,18 @@ export const zh = {
     },
     context_menu: {
         back: "返回",
-        refresh: "刷新",
         home: "主页",
-        copy: "复制",
-        paste: "粘贴",
         copy_link: "复制链接",
         screenshot: "截图",
-        more_soon: "更多功能即将推出..."
+        more_soon: "更多功能即将推出...",
+        undo: "撤销",
+        redo: "重做",
+        cut: "剪切",
+        copy: "复制",
+        paste: "粘贴",
+        paste_plain: "粘贴为纯文本",
+        select_all: "全选",
+        refresh: "刷新"
     },
     statusbar: {
         idle: "空闲",
@@ -603,5 +688,109 @@ export const zh = {
     },
     all: "全部",
     video: "视频",
-    audio: "音频"
+    audio: "音频",
+
+    shortcuts: {
+        title: "键盘快捷键",
+        close: "关闭"
+    },
+
+    onboarding: {
+        step1_title: "欢迎使用 SceneClip",
+        step1_desc: "具有精确剪辑和智能队列管理的终极视频下载器。",
+        step2_title: "一键下载",
+        step2_desc: "自动检测剪贴板中的链接。只需复制，剩下的交给我们。",
+        step3_title: "智能队列",
+        step3_desc: "实时跟踪下载并即时访问历史记录。",
+        step4_title: "精确剪辑",
+        step4_desc: "通过设置精确的时间戳仅下载您需要的内容。",
+        step5_title: "准备就绪！",
+        step5_desc: "随时在设置中自定义您的体验。",
+        skip: "跳过",
+        continue: "继续",
+        start: "开始使用"
+    },
+
+    empty_state: {
+        title: "暂无下载",
+        description: "贴上链接或按 <1>Ctrl+N</1> 开始。"
+    },
+
+    filename_preview: {
+        label: "实时预览",
+        reset: "重置",
+        example_title: "我的精彩视频",
+        example_uploader: "知名创作者"
+    },
+
+    url_input: {
+        batch_switch: "切换到批量模式",
+        single_switch: "切换到单链接模式",
+        batch_desc: "粘贴多个链接，每行一个。",
+        placeholder_single: "粘贴视频链接 (YouTube, TikTok, Instagram, Twitter...)",
+        placeholder_batch: "https://youtube.com/watch?v=...\nhttps://tiktok.com/@user/video/...\nhttps://instagram.com/reel/...",
+        paste_clipboard: "从剪贴板粘贴",
+        switch_tooltip_batch: "切换到批量模式 (多个链接)",
+        switch_tooltip_single: "切换到单链接模式"
+    },
+
+    guide_content: {
+        help_center: "帮助中心",
+        pro_tip_title: "专业提示：拖放",
+        pro_tip_desc: "将包含链接的任何 .txt 文件拖入应用即可立即开始批量下载。",
+        how_to_use: "使用方法：",
+        clip_step1: "切换 <strong>\"剪辑模式\"</strong> (剪刀图标)。",
+        clip_step2: "等待元数据加载完成。",
+        clip_step3: "拖动 <strong>范围滑块</strong> 选择开始/结束点。",
+        clip_step4: "短片段使用 GIF 格式。",
+        term_logs_title: "终端日志",
+        term_logs_desc: "查看 yt-dlp 和 FFmpeg 的原始输出。调试错误时必不可少。",
+        cookies_title: "浏览器 Cookie",
+        cookies_desc: "使用浏览器 (Chrome/Firefox) 的 Cookie 下载受年龄限制的内容。",
+
+        faq_1_q: "下载卡在 100%？",
+        faq_1_a: "应用可能正在合并视频和音频流。对于大文件 (4K/8K)，这可能需要一些时间。",
+        faq_2_q: "登录以确认年龄？",
+        faq_2_a: "转到 设置 > 高级 > 来源，选择您的浏览器以使用其 Cookie。",
+        faq_3_q: "下载速度慢？",
+        faq_3_a: "尝试在网络设置中将“-连接类型”更改为“激进”。警告：可能会导致暂时性的 IP 封禁。"
+    },
+
+    dialog_status: {
+        trimmed: "TRIMMED",
+        disk_full: "Insufficient Disk Space",
+        est_size: "Estimated Size",
+        calculating: "Calculating..."
+    },
+
+    history_menu: {
+        redownload: "Redownload",
+        view_command: "View Command",
+        compress: "Export",
+        locate_file: "Locate File",
+        recover: "Recover File",
+        selected: "Selected",
+        select_all: "Select All",
+        deselect_all: "Deselect All",
+        delete: "DELETE",
+        cancel: "Cancel",
+        toast_redownload: "重新下载已开始",
+        toast_file_updated: "File path updated",
+        toast_deleted: "已删除 {{count}} 项",
+        tooltip_missing: "File not found - Moved or Deleted",
+        selected_count: "已选择 {{count}} 项",
+        confirm_delete_msg: "确定要删除这 {{count}} 项吗？"
+    },
+
+    terminal: {
+        filter_all: "全部",
+        filter_system: "系统",
+        copy_all: "复制全部",
+        clear_all: "清空",
+        copied: "已复制!",
+        copy: "复制",
+        copy_line: "复制行",
+        ready: "系统就绪。等待任务...",
+        no_logs: "未找到 {filter} 日志。"
+    }
 }

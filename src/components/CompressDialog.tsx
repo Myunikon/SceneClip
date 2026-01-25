@@ -1,18 +1,22 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useMemo, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Video, Smartphone, HardDrive, Settings, Check, ChevronDown, ChevronUp, Cpu, Zap, Music, AlertTriangle, FolderOpen } from 'lucide-react'
+import { AlertTriangle, RefreshCw, FileVideo, Music, Image as ImageIcon } from 'lucide-react'
 import { DownloadTask, CompressionOptions, useAppStore } from '../store'
-import { en } from '../lib/locales/en'
-import { id } from '../lib/locales/id'
-import { ms } from '../lib/locales/ms'
-import { zh } from '../lib/locales/zh'
 import { exists } from '@tauri-apps/plugin-fs'
 import { open as openFileDialog } from '@tauri-apps/plugin-dialog'
 import { notify } from '../lib/notify'
 import { Select } from './Select'
+import { SegmentedControl } from './ui/SegmentedControl'
+import { Switch } from './Switch'
+import { useFileDrop } from '../hooks/useFileDrop'
+import { VIDEO_EXTS, AUDIO_EXTS, IMAGE_EXTS } from '../lib/constants'
+import { useTranslation } from 'react-i18next'
 
-const LOCALES = { en, id, ms, zh }
+// Hooks
+import { useExportForm } from '../hooks/useExportForm'
+import { useExportEstimator } from '../hooks/useExportEstimator'
 
 interface CompressDialogProps {
     isOpen: boolean
@@ -21,45 +25,69 @@ interface CompressDialogProps {
     onCompress: (taskId: string, options: CompressionOptions) => void
 }
 
-type PresetKey = 'wa' | 'social' | 'archive'
-
-const PRESETS: Record<PresetKey, Partial<CompressionOptions>> = {
-    wa: { crf: 28, resolution: '720', speedPreset: 'veryfast' },
-    social: { crf: 23, resolution: '1080', speedPreset: 'medium' },
-    archive: { crf: 18, resolution: 'original', speedPreset: 'slow' }
-}
-
 export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDialogProps) {
-    const { settings, updateTask } = useAppStore()
-    const t = (LOCALES as any)[(settings.language || 'en')]?.dialog?.compress || (en as any).dialog?.compress || {}
+    const { updateTask } = useAppStore()
+    const { t: rawT } = useTranslation()
+    const tc = (key: string, defaultVal: string = '') => rawT(`dialog.compress.${key}`, defaultVal)
 
-    // File validation state
+    // --- File Validation & Drag/Drop State ---
     const [fileMissing, setFileMissing] = useState(false)
     const [resolvedPath, setResolvedPath] = useState<string | null>(null)
-    const [isChecking, setIsChecking] = useState(true)
 
-    // Check if file exists when dialog opens
+    // --- Media Type Logic ---
+    const mediaType = useMemo<'video' | 'audio' | 'image'>(() => {
+        const pathToCheck = resolvedPath || task?.filePath
+        if (!pathToCheck) return 'video'
+        const lower = pathToCheck.toLowerCase()
+        const ext = lower.split('.').pop() || ''
+        if (AUDIO_EXTS.includes(ext)) return 'audio'
+        if (IMAGE_EXTS.includes(ext)) return 'image'
+        return 'video'
+    }, [task, resolvedPath])
+
+    // --- Hooks ---
+    const form = useExportForm(mediaType)
+    const estimatedSize = useExportEstimator({
+        originalSizeStr: task?.fileSize,
+        mediaType,
+        preset: form.preset,
+        crf: form.crf,
+        audioBitrate: form.audioBitrate
+    })
+
+    // --- Drag & Drop Handler ---
+    const handleDrop = (files: string[]) => {
+        const droppedFile = files[0]
+        const ext = droppedFile.split('.').pop()?.toLowerCase()
+        const allowed = [...VIDEO_EXTS, ...AUDIO_EXTS, ...IMAGE_EXTS]
+
+        if (ext && allowed.includes(ext)) {
+            setResolvedPath(droppedFile)
+            setFileMissing(false)
+            if (task) {
+                updateTask(task.id, { filePath: droppedFile })
+                notify.success(tc('file_relocated', 'File path updated'))
+            }
+        } else {
+            notify.error("Invalid file type")
+        }
+    }
+
+    const { isDragging } = useFileDrop({ isOpen, onDrop: handleDrop })
+
+    // --- Effects ---
+    // Check file existence when opening
     useEffect(() => {
         if (isOpen && task?.filePath) {
-            setIsChecking(true)
             exists(task.filePath).then(ok => {
                 setFileMissing(!ok)
                 setResolvedPath(ok ? task.filePath ?? null : null)
-                setIsChecking(false)
             }).catch(() => {
                 setFileMissing(true)
                 setResolvedPath(null)
-                setIsChecking(false)
             })
         }
     }, [isOpen, task?.filePath])
-
-    // Handle file browse
-    // Check for double compression
-    const isAlreadyCompressed = useMemo(() => {
-        if (!task) return false
-        return task.title.includes('_compress') || (task.filePath && task.filePath.includes('_compress'))
-    }, [task])
 
     const handleBrowseFile = async () => {
         if (!task) return
@@ -72,358 +100,238 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
             if (newPath) {
                 setResolvedPath(newPath)
                 setFileMissing(false)
-                // Update task path in store
                 updateTask(task.id, { filePath: newPath })
-                notify.success(t.file_relocated || 'File path updated')
+                notify.success(tc('file_relocated', 'File path updated'))
             }
         }
     }
 
-    // Determine Type: Video, Audio, or Image (GIF)
-    const mediaType = useMemo<'video' | 'audio' | 'image'>(() => {
-        const pathToCheck = resolvedPath || task?.filePath
-        if (!pathToCheck) return 'video'
-        const lower = pathToCheck.toLowerCase()
-        if (lower.endsWith('.mp3') || lower.endsWith('.m4a') || lower.endsWith('.wav') || lower.endsWith('.opus') || lower.endsWith('.ogg')) return 'audio'
-        if (lower.endsWith('.gif') || lower.endsWith('.webp') || lower.endsWith('.png') || lower.endsWith('.jpg')) return 'image'
-        return 'video'
-    }, [task, resolvedPath])
-
-    // State
-    const [selectedPreset, setSelectedPreset] = useState<PresetKey>('social')
-    const [isAdvanced, setIsAdvanced] = useState(false)
-
-    // Custom settings
-    const [crf, setCrf] = useState(23)
-    const [resolution, setResolution] = useState('1080')
-    const [encoder, setEncoder] = useState<'auto' | 'cpu' | 'nvenc' | 'amf' | 'qsv'>('auto')
-    const [speedPreset, setSpeedPreset] = useState<string>('medium')
-    const [audioBitrate, setAudioBitrate] = useState('128k') // New state
-
-    // Helper to switch presets based on media type
-    useEffect(() => {
-        if (mediaType === 'audio') {
-            // Audio Defaults
-            if (selectedPreset === 'wa') setAudioBitrate('64k')      // Voice
-            if (selectedPreset === 'social') setAudioBitrate('128k') // Standard
-            if (selectedPreset === 'archive') setAudioBitrate('320k') // High
-        } else {
-            // Video Defaults
-            const p = PRESETS[selectedPreset]
-            if (p) {
-                setCrf(p.crf!)
-                setResolution(p.resolution!)
-                setSpeedPreset(p.speedPreset!)
-            }
-        }
-    }, [selectedPreset, mediaType])
-
-    const handleCompress = () => {
+    const handleInteract = () => {
         if (!task || fileMissing) return
         onCompress(task.id, {
-            preset: isAdvanced ? 'custom' : selectedPreset,
-            crf,
-            resolution,
-            encoder,
-            speedPreset: speedPreset as any,
-            audioBitrate
+            preset: form.preset === 'custom' ? 'custom' : form.preset,
+            crf: form.crf,
+            resolution: form.resolution,
+            encoder: form.encoder,
+            speedPreset: form.speedPreset as any,
+            audioBitrate: form.audioBitrate
         })
         onClose()
     }
 
-    const renderPresets = () => {
-        if (mediaType === 'audio') {
-            return (
-                <>
-                    {/* Double Compression Warning */}
-                    {isAlreadyCompressed && (
-                        <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-start gap-3">
-                            <div className="mt-0.5 min-w-[16px]">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
-                            </div>
-                            <p className="text-xs text-yellow-500/90 leading-relaxed font-medium">
-                                {t.double_compression_warning}
-                            </p>
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <PresetCard
-                            id="wa" title={t.preset_wa} desc={t.preset_wa_desc_audio} icon={Smartphone} color="text-green-500"
-                            active={selectedPreset === 'wa'} onClick={() => setSelectedPreset('wa')}
-                        />
-                        <PresetCard
-                            id="social" title={t.preset_social} desc={t.preset_social_desc_audio} icon={Music} color="text-orange-500"
-                            active={selectedPreset === 'social'} onClick={() => setSelectedPreset('social')}
-                        />
-                        <PresetCard
-                            id="archive" title={t.preset_archive} desc={t.preset_archive_desc_audio} icon={HardDrive} color="text-red-500"
-                            active={selectedPreset === 'archive'} onClick={() => setSelectedPreset('archive')}
-                        />
-                    </div>
-                </>
-            )
-        }
-        // Video/Image Presets
-        return (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <PresetCard
-                    id="wa"
-                    title={t.preset_wa}
-                    desc={mediaType === 'image' ? "Small (480p)" : t.preset_wa_desc}
-                    icon={Smartphone}
-                    color="text-green-500"
-                    active={selectedPreset === 'wa'}
-                    onClick={() => setSelectedPreset('wa')}
-                />
-                <PresetCard
-                    id="social"
-                    title={t.preset_social}
-                    desc={mediaType === 'image' ? "Balanced (720p)" : t.preset_social_desc}
-                    icon={Zap}
-                    color="text-orange-500"
-                    active={selectedPreset === 'social'}
-                    onClick={() => setSelectedPreset('social')}
-                />
-                <PresetCard
-                    id="archive"
-                    title={t.preset_archive}
-                    desc={t.preset_archive_desc}
-                    icon={HardDrive}
-                    color="text-red-500"
-                    active={selectedPreset === 'archive'}
-                    onClick={() => setSelectedPreset('archive')}
-                />
-            </div>
-        )
-    }
-
     if (!isOpen || !task) return null
+
+    const presetOptions = [
+        { value: 'wa', label: tc('preset_wa', 'WhatsApp') },
+        { value: 'social', label: tc('preset_social', 'Social') },
+        { value: 'archive', label: tc('preset_archive', 'Archive') },
+    ]
+
+    // Icon helper
+    const FileIcon = mediaType === 'audio' ? Music : mediaType === 'image' ? ImageIcon : FileVideo
 
     return createPortal(
         <AnimatePresence>
-            <motion.div
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-                onClick={onClose}
-            >
-                <motion.div
-                    initial={{ scale: 0.95, opacity: 0, y: 10 }}
-                    animate={{ scale: 1, opacity: 1, y: 0 }}
-                    exit={{ scale: 0.95, opacity: 0, y: 10 }}
-                    onClick={(e) => e.stopPropagation()}
-                    className="w-full max-w-lg bg-background border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-                >
-                    {/* Header: Dynamic Icon */}
-                    <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
-                        <div>
-                            <h2 className="text-lg font-bold flex items-center gap-2">
-                                {mediaType === 'audio' ? <Music className="w-5 h-5 text-red-500" /> : <Video className="w-5 h-5 text-primary" />}
-                                {mediaType === 'audio' ? t.title_audio : mediaType === 'image' ? t.title_image : t.title_video}
-                            </h2>
-                            <p className="text-xs text-muted-foreground truncate max-w-[300px]">{task.title}</p>
-                        </div>
-                        <button onClick={onClose} className="p-2 hover:bg-muted rounded-lg transition-colors">
-                            <X className="w-5 h-5" />
-                        </button>
-                    </div>
+            {isOpen && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                        onClick={onClose}
+                    />
 
-                    {/* Body */}
-                    <div className="p-5 overflow-y-auto space-y-6">
+                    {/* Sheet / Dialog */}
+                    <motion.div
+                        initial={{ opacity: 0, y: -20, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                        transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                        className="relative w-full max-w-[500px] bg-[#F5F5F7] dark:bg-[#1E1E1E] rounded-xl shadow-2xl overflow-hidden border border-white/20 dark:border-white/10 flex flex-col max-h-[90vh]"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Drag Overlay */}
+                        {isDragging && (
+                            <div className="absolute inset-0 z-50 bg-primary/90 flex flex-col items-center justify-center text-white backdrop-blur-md">
+                                <RefreshCw className="w-12 h-12 mb-2 animate-spin" />
+                                <span className="text-lg font-semibold">{tc('drop_hint', 'Drop to replace file')}</span>
+                            </div>
+                        )}
 
-                        {/* File Missing Warning */}
-                        {fileMissing && (
-                            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 flex items-start gap-3">
-                                <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
-                                <div className="flex-1">
-                                    <p className="font-medium text-destructive">{t.file_missing || 'File Not Found'}</p>
-                                    <p className="text-sm text-muted-foreground mt-1">{t.file_missing_desc || 'The original file has been moved or deleted.'}</p>
-                                    <button
-                                        onClick={handleBrowseFile}
-                                        className="mt-3 flex items-center gap-2 px-3 py-1.5 text-sm bg-secondary hover:bg-secondary/80 rounded-lg transition-colors"
-                                    >
-                                        <FolderOpen className="w-4 h-4" />
-                                        {t.browse_file || 'Browse...'}
-                                    </button>
+                        {/* --- Header --- */}
+                        <div className="flex items-start p-5 pb-4 gap-3">
+                            <div className="h-10 w-10 shrink-0 bg-white/50 dark:bg-white/10 rounded-lg flex items-center justify-center shadow-sm border border-black/5">
+                                <FileIcon className="w-5 h-5 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0 flex flex-col justify-center min-h-[40px]">
+                                <h3 className="text-[17px] font-semibold text-foreground leading-snug">
+                                    {tc('title', 'Export Media')}
+                                </h3>
+                                <div className="flex flex-wrap items-center text-[13px] text-muted-foreground gap-1.5 leading-normal" title={task.filePath}>
+                                    <span className="truncate max-w-full">{task.title}</span>
+                                    <span className="opacity-50 hidden sm:inline">•</span>
+                                    <span className="font-mono text-[11px] bg-black/5 dark:bg-white/10 px-1 rounded whitespace-nowrap">{task.fileSize}</span>
                                 </div>
                             </div>
-                        )}
+                            <button
+                                onClick={handleBrowseFile}
+                                className="shrink-0 text-xs font-medium text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-full transition-colors mt-1"
+                            >
+                                {tc('change_file', 'Change')}
+                            </button>
+                        </div>
 
-                        {/* Loading State */}
-                        {isChecking && (
-                            <div className="text-center text-sm text-muted-foreground py-2">
-                                Checking file...
+                        {fileMissing && (
+                            <div className="mx-5 mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-3 text-red-600 dark:text-red-400">
+                                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                                <span className="text-xs font-semibold leading-relaxed">{tc('file_missing_error', 'Original file not found on disk.')}</span>
                             </div>
                         )}
 
-                        {/* Render Dynamic Presets */}
-                        {renderPresets()}
+                        {/* --- Body --- */}
+                        <div className="px-5 pb-6 space-y-5 overflow-y-auto">
+                            {/* Preset Selector */}
+                            <div className="space-y-2">
+                                <label className="text-[13px] font-medium text-muted-foreground ml-1">
+                                    {tc('preset_label', 'Preset')}
+                                </label>
+                                <div className="w-full overflow-x-auto pb-1">
+                                    <SegmentedControl
+                                        options={presetOptions}
+                                        value={form.preset}
+                                        onChange={(v) => form.setPreset(v as any)}
+                                    />
+                                </div>
+                            </div>
 
-                        {/* File Info */}
-                        <div className="bg-secondary/30 rounded-lg p-3 text-sm flex justify-between items-center text-muted-foreground">
-                            <span>{t.original_size}: <span className="text-foreground font-mono">{task.fileSize || 'Unknown'}</span></span>
-                            <span>{t.format}: <span className="uppercase text-foreground">{task.format || 'Auto'}</span></span>
-                        </div>
+                            {/* Info Card: Estimation */}
+                            <div className="bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-xl p-3 flex flex-wrap justify-between items-center gap-2 shadow-sm">
+                                <span className="text-sm font-medium text-muted-foreground pl-1">
+                                    {tc('est_output', 'Estimated Size')}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                    {estimatedSize ? (
+                                        <span className="font-bold text-foreground font-mono text-sm bg-green-500/10 text-green-600 dark:text-green-400 px-2 py-0.5 rounded">
+                                            ~{estimatedSize}
+                                        </span>
+                                    ) : (
+                                        <span className="text-xs text-muted-foreground italic">Calculating...</span>
+                                    )}
+                                </div>
+                            </div>
 
-                        {/* Advanced Settings */}
-                        <div className="border border-border rounded-xl overflow-hidden">
-                            {/* Toggle Button */}
-                            <button
-                                onClick={() => setIsAdvanced(!isAdvanced)}
-                                className="w-full flex items-center justify-between px-4 py-3 bg-secondary/10 hover:bg-secondary/20 transition-colors text-sm font-medium"
-                            >
-                                <span className="flex items-center gap-2"><Settings className="w-4 h-4" /> {t.advanced}</span>
-                                {isAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                            </button>
+                            {/* Advanced Section */}
+                            <div className="bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-xl overflow-hidden shadow-sm">
+                                <div className="flex items-center justify-between p-3 pl-4">
+                                    <span className="text-sm font-medium">{tc('advanced', 'Advanced Settings')}</span>
+                                    <Switch checked={form.isAdvanced} onCheckedChange={form.setIsAdvanced} />
+                                </div>
 
-                            <AnimatePresence>
-                                {isAdvanced && (
-                                    <motion.div
-                                        initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
-                                        className="overflow-hidden"
-                                    >
-                                        <div className="p-4 space-y-4 bg-muted/10 border-t border-border/50">
+                                <AnimatePresence>
+                                    {form.isAdvanced && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: 'auto', opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            className="border-t border-black/5 dark:border-white/5 bg-muted/30"
+                                        >
+                                            <div className="p-4 space-y-4">
+                                                {/* Video Options */}
+                                                {mediaType === 'video' && (
+                                                    <>
+                                                        <div className="space-y-1.5">
+                                                            <div className="flex justify-between">
+                                                                <span className="text-xs font-medium text-muted-foreground">{tc('lbl_resolution', 'Resolution')}</span>
+                                                            </div>
+                                                            <Select
+                                                                value={form.resolution}
+                                                                onChange={form.setResolution}
+                                                                options={[
+                                                                    { value: 'original', label: 'Original' },
+                                                                    { value: '1080', label: '1080p' },
+                                                                    { value: '720', label: '720p' },
+                                                                    { value: '480', label: '480p' }
+                                                                ]}
+                                                                className="w-full text-sm min-h-[36px] bg-white dark:bg-black/20"
+                                                            />
+                                                        </div>
 
-                                            {/* AUDIO ONLY SETTINGS */}
-                                            {mediaType === 'audio' && (
-                                                <div className="space-y-1.5">
-                                                    <label className="text-xs font-medium text-muted-foreground">{t.lbl_bitrate}</label>
-                                                    <Select
-                                                        value={audioBitrate}
-                                                        onChange={(v) => { setAudioBitrate(v); setSelectedPreset('custom' as any) }}
-                                                        options={[
-                                                            { value: '64k', label: '64 kbps (Voice)' },
-                                                            { value: '96k', label: '96 kbps (Low)' },
-                                                            { value: '128k', label: '128 kbps (Standard)' },
-                                                            { value: '192k', label: '192 kbps (Good)' },
-                                                            { value: '256k', label: '256 kbps (High)' },
-                                                            { value: '320k', label: '320 kbps (Max)' }
-                                                        ]}
-                                                    />
-                                                </div>
-                                            )}
+                                                        <div className="space-y-3 pt-1">
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="text-xs font-medium text-muted-foreground">{tc('lbl_quality', 'Quality (CRF)')}</span>
+                                                                <span className="text-xs font-mono font-bold">{form.crf}</span>
+                                                            </div>
+                                                            <input
+                                                                type="range" min="15" max="45" step="1"
+                                                                value={form.crf}
+                                                                onChange={(e) => form.setCrf(Number(e.target.value))}
+                                                                className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary"
+                                                            />
+                                                            <div className="flex justify-between text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+                                                                <span>Better Quality</span>
+                                                                <span>Smaller Size</span>
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                )}
 
-                                            {/* VIDEO/IMAGE ONLY SETTINGS */}
-                                            {mediaType !== 'audio' && (
-                                                <>
+                                                {/* Audio Options */}
+                                                {mediaType === 'audio' && (
                                                     <div className="space-y-1.5">
-                                                        <label className="text-xs font-medium text-muted-foreground">{t.lbl_resolution}</label>
+                                                        <span className="text-xs font-medium text-muted-foreground">{tc('lbl_bitrate', 'Bitrate')}</span>
                                                         <Select
-                                                            value={resolution}
-                                                            onChange={(v) => { setResolution(v); setSelectedPreset('custom' as any) }}
+                                                            value={form.audioBitrate}
+                                                            onChange={form.setAudioBitrate}
                                                             options={[
-                                                                { value: 'original', label: 'Original (No Resize)' },
-                                                                { value: '1080', label: '1080p (FHD)' },
-                                                                { value: '720', label: '720p (HD)' },
-                                                                { value: '480', label: '480p (SD)' }
+                                                                { value: '320k', label: '320 kbps (High)' },
+                                                                { value: '192k', label: '192 kbps' },
+                                                                { value: '128k', label: '128 kbps (Standard)' },
+                                                                { value: '64k', label: '64 kbps (Voice)' },
                                                             ]}
+                                                            className="w-full text-sm min-h-[36px] bg-white dark:bg-black/20"
                                                         />
                                                     </div>
+                                                )}
 
-                                                    {/* Video-Only Settings (Hidden for Image) */}
-                                                    {mediaType === 'video' && (
-                                                        <>
-                                                            {/* CRF Slider */}
-                                                            <div className="space-y-1.5">
-                                                                <div className="flex justify-between">
-                                                                    <label className="text-xs font-medium text-muted-foreground">{t.lbl_quality}</label>
-                                                                    <span className="text-xs font-mono bg-secondary px-1.5 rounded">{crf}</span>
-                                                                </div>
-                                                                <input
-                                                                    type="range" min="0" max="51" step="1"
-                                                                    value={crf}
-                                                                    onChange={(e) => { setCrf(Number(e.target.value)); setSelectedPreset('custom' as any) }}
-                                                                    className="w-full transition-all accent-primary"
-                                                                />
-                                                                <div className="flex justify-between text-[10px] text-muted-foreground">
-                                                                    <span>Original (0)</span>
-                                                                    <span>Standard (23)</span>
-                                                                    <span>Low (51)</span>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Encoder */}
-                                                            <div className="space-y-1.5">
-                                                                <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                                                                    <Cpu className="w-3 h-3" /> {t.lbl_encoder}
-                                                                </label>
-                                                                <Select
-                                                                    value={encoder}
-                                                                    onChange={(v) => { setEncoder(v as any); setSelectedPreset('custom' as any) }}
-                                                                    options={[
-                                                                        { value: 'auto', label: 'Auto (Detect)' },
-                                                                        { value: 'cpu', label: 'CPU (x264 software)' },
-                                                                        { value: 'nvenc', label: 'NVIDIA (NVENC)' },
-                                                                        { value: 'amf', label: 'AMD (AMF)' },
-                                                                        { value: 'qsv', label: 'Intel (QSV)' }
-                                                                    ]}
-                                                                />
-                                                            </div>
-
-                                                            {/* Speed Preset */}
-                                                            <div className="space-y-1.5">
-                                                                <label className="text-xs font-medium text-muted-foreground">{t.lbl_speed}</label>
-                                                                <Select
-                                                                    value={speedPreset}
-                                                                    onChange={(v) => { setSpeedPreset(v); setSelectedPreset('custom' as any) }}
-                                                                    options={[
-                                                                        { value: 'ultrafast', label: 'Ultrafast (Low Quality)' },
-                                                                        { value: 'veryfast', label: 'Very Fast' },
-                                                                        { value: 'medium', label: 'Medium (Default)' },
-                                                                        { value: 'slow', label: 'Slow (Better Compression)' },
-                                                                        { value: 'veryslow', label: 'Very Slow (Best Compression)' }
-                                                                    ]}
-                                                                />
-                                                            </div>
-                                                        </>
-                                                    )}
-                                                </>
-                                            )}
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+                                                {/* Image Options */}
+                                                {mediaType === 'image' && (
+                                                    <div className="text-sm text-muted-foreground text-center py-2 italic">
+                                                        No advanced options for images yet.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
                         </div>
-                    </div>
 
-                    {/* Footer */}
-                    <div className="p-5 pt-2 flex justify-end gap-3 pb-6">
-                        <button onClick={onClose} className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-lg transition-colors">
-                            {t.btn_cancel}
-                        </button>
-                        <button
-                            onClick={handleCompress}
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2 rounded-lg text-sm font-medium shadow-lg shadow-primary/25 transition-all active:scale-95 flex items-center gap-2"
-                        >
-                            <Check className="w-4 h-4" /> {t.btn_start}
-                        </button>
-                    </div>
-                </motion.div>
-            </motion.div>
-        </AnimatePresence>,
-        document.body
-    )
-}
-
-function PresetCard({ title, desc, icon: Icon, color, active, onClick }: any) {
-    return (
-        <button
-            onClick={onClick}
-            className={`relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200 ${active
-                    ? 'border-primary bg-primary/5 shadow-md scale-[1.02]'
-                    : 'border-border hover:border-border/80 hover:bg-secondary/50'
-                }`}
-        >
-            <div className={`p-2.5 rounded-full mb-3 ${active ? 'bg-primary/10' : 'bg-secondary'}`}>
-                <Icon className={`w-6 h-6 ${color}`} />
-            </div>
-            <h3 className="font-bold text-sm">{title}</h3>
-            <p className="text-xs text-muted-foreground text-center mt-1">{desc}</p>
-            {active && (
-                <div className="absolute top-2 right-2 text-primary">
-                    <Check className="w-3.5 h-3.5" />
+                        {/* --- Footer --- */}
+                        <div className="p-4 pt-3 flex flex-wrap items-center justify-end gap-3 border-t border-black/5 dark:border-white/5 bg-gray-50/50 dark:bg-white/5 shrink-0">
+                            <button
+                                onClick={onClose}
+                                className="px-5 py-2 text-[13px] font-semibold text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors whitespace-nowrap"
+                            >
+                                {tc('btn_cancel', 'Cancel')}
+                            </button>
+                            <button
+                                onClick={handleInteract}
+                                disabled={fileMissing}
+                                className={`px-6 py-2 text-[13px] font-semibold text-white rounded-lg shadow-sm transition-all whitespace-nowrap
+                                    ${fileMissing
+                                        ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed opacity-70'
+                                        : 'bg-primary hover:bg-primary/90 active:scale-95 shadow-primary/25'
+                                    }`}
+                            >
+                                {tc('btn_export', 'Export')}
+                            </button>
+                        </div>
+                    </motion.div>
                 </div>
             )}
-        </button>
+        </AnimatePresence>,
+        document.body
     )
 }

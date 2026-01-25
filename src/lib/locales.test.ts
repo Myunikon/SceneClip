@@ -3,7 +3,12 @@
  * Tests translation completeness and structure
  */
 import { describe, it, expect } from 'vitest'
-import { translations } from './locales'
+import { en } from './locales/en'
+import { id } from './locales/id'
+import { ms } from './locales/ms'
+import { zh } from './locales/zh'
+
+const translations = { en, id, ms, zh }
 
 describe('translations', () => {
     const languages = Object.keys(translations) as Array<keyof typeof translations>

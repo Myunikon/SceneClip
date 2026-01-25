@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { RefreshCw } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 interface ContextMenuProps {
     x: number
@@ -14,17 +15,18 @@ export function ContextMenu({ x, y, visible, onClose }: ContextMenuProps) {
     const [hasSelection, setHasSelection] = useState(false)
     const [canPaste, setCanPaste] = useState(true)
     const [isInputFocused, setIsInputFocused] = useState(false)
+    const { t } = useTranslation()
 
     // Check states when menu opens
     useEffect(() => {
         if (visible) {
             const selection = window.getSelection()?.toString()
             setHasSelection(!!selection && selection.length > 0)
-            
+
             const activeEl = document.activeElement
             const isInput = activeEl instanceof HTMLInputElement || activeEl instanceof HTMLTextAreaElement
             setIsInputFocused(isInput)
-            
+
             // Check clipboard
             navigator.clipboard.readText()
                 .then(text => setCanPaste(!!text))
@@ -110,7 +112,7 @@ export function ContextMenu({ x, y, visible, onClose }: ContextMenuProps) {
             adjustedY = window.innerHeight - rect.height - 8
         }
     }
-    
+
     return (
         <AnimatePresence>
             {visible && (
@@ -123,57 +125,57 @@ export function ContextMenu({ x, y, visible, onClose }: ContextMenuProps) {
                     style={{ top: adjustedY, left: adjustedX }}
                     className="fixed z-[9999] min-w-[200px] py-1.5 rounded-lg border border-border bg-popover shadow-2xl flex flex-col overflow-hidden"
                 >
-                    <MenuItem 
-                        label="Undo" 
-                        shortcut="Ctrl+Z" 
+                    <MenuItem
+                        label={t('context_menu.undo')}
+                        shortcut="Ctrl+Z"
                         onClick={handleUndo}
                         disabled={!isInputFocused}
                     />
-                    <MenuItem 
-                        label="Redo" 
-                        shortcut="Ctrl+Shift+Z" 
+                    <MenuItem
+                        label={t('context_menu.redo')}
+                        shortcut="Ctrl+Shift+Z"
                         onClick={handleRedo}
                         disabled={!isInputFocused}
                     />
-                    <MenuItem 
-                        label="Refresh" 
-                        shortcut="F5" 
+                    <MenuItem
+                        label={t('context_menu.refresh')}
+                        shortcut="F5"
                         onClick={handleRefresh}
                         icon={<RefreshCw className="w-3.5 h-3.5" />}
                     />
-                    
+
                     <div className="h-px bg-border my-1.5" />
 
-                    <MenuItem 
-                        label="Cut" 
-                        shortcut="Ctrl+X" 
+                    <MenuItem
+                        label={t('context_menu.cut')}
+                        shortcut="Ctrl+X"
                         onClick={handleCut}
                         disabled={!hasSelection}
                     />
-                    <MenuItem 
-                        label="Copy" 
-                        shortcut="Ctrl+C" 
+                    <MenuItem
+                        label={t('context_menu.copy')}
+                        shortcut="Ctrl+C"
                         onClick={handleCopy}
                         disabled={!hasSelection}
                     />
-                    <MenuItem 
-                        label="Paste" 
-                        shortcut="Ctrl+V" 
+                    <MenuItem
+                        label={t('context_menu.paste')}
+                        shortcut="Ctrl+V"
                         onClick={handlePaste}
                         disabled={!canPaste}
                     />
-                    <MenuItem 
-                        label="Paste as plain text" 
-                        shortcut="Ctrl+Shift+V" 
+                    <MenuItem
+                        label={t('context_menu.paste_plain')}
+                        shortcut="Ctrl+Shift+V"
                         onClick={handlePastePlainText}
                         disabled={!canPaste}
                     />
 
                     <div className="h-px bg-border my-1.5" />
 
-                    <MenuItem 
-                        label="Select all" 
-                        shortcut="Ctrl+A" 
+                    <MenuItem
+                        label={t('context_menu.select_all')}
+                        shortcut="Ctrl+A"
                         onClick={handleSelectAll}
                     />
                 </motion.div>
@@ -182,28 +184,28 @@ export function ContextMenu({ x, y, visible, onClose }: ContextMenuProps) {
     )
 }
 
-function MenuItem({ 
-    label, 
-    onClick, 
+function MenuItem({
+    label,
+    onClick,
     shortcut,
     disabled = false,
     icon
-}: { 
+}: {
     label: string
     onClick: () => void
     shortcut?: string
     disabled?: boolean
-    icon?: React.ReactNode 
+    icon?: React.ReactNode
 }) {
     return (
-        <button 
+        <button
             onClick={onClick}
             disabled={disabled}
             className={`
                 flex items-center justify-between gap-4 px-3 py-1.5 text-sm w-full text-left
                 transition-colors duration-75
-                ${disabled 
-                    ? 'text-muted-foreground/40 cursor-default' 
+                ${disabled
+                    ? 'text-muted-foreground/40 cursor-default'
                     : 'text-foreground hover:bg-accent'
                 }
             `}

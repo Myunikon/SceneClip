@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
-import { Settings, Globe, Zap, Database, Terminal as TerminalIcon } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Settings, Globe, Zap, Database, Cpu, ScrollText } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { cn } from '../lib/utils'
 import { useAppStore } from '../store'
-import { translations } from '../lib/locales'
 import { TerminalView } from './TerminalView'
+import { AppSettings } from '../store/slices/types'
 
 // NEW HEADER IMPORTS
 import { GeneralSettings } from './settings/GeneralSettings'
@@ -14,44 +15,59 @@ import { NetworkSettings } from './settings/NetworkSettings'
 import { AdvancedSettings } from './settings/AdvancedSettings'
 import { AboutSettings } from './settings/AboutSettings'
 
-interface SettingsViewProps {
-    toggleTheme: () => void
-    setPreviewLang: (lang: string | null) => void
+
+
+export interface SettingsViewProps {
+    initialTab?: 'general' | 'downloads' | 'quality' | 'network' | 'advanced' | 'about' | 'logs'
 }
 
-export function SettingsView({ toggleTheme, setPreviewLang }: SettingsViewProps) {
+export function SettingsView({ initialTab }: SettingsViewProps) {
     const { settings, updateSettings, addLog } = useAppStore()
+    const { t } = useTranslation()
     const [showEasterEgg, setShowEasterEgg] = useState(false)
 
-    // Auto-Save: Direct Store Updates
-    const setSetting = (key: string, val: string | boolean | number | string[]) => {
+    // Auto-Save: Direct Store Updates with Type Safety
+    const setSetting = <K extends keyof AppSettings>(key: K, val: AppSettings[K]) => {
         updateSettings({ ...settings, [key]: val })
     }
 
-    // Derived computations (Language Preview)
-    const t = translations[settings.language]
-
-    // Sync language preview to Global App
-    useEffect(() => {
-        setPreviewLang(settings.language)
-        return () => setPreviewLang(null)
-    }, [settings.language])
-
     const [activeTab, setActiveTab] = useState<'general' | 'downloads' | 'quality' | 'network' | 'advanced' | 'about' | 'logs'>('general')
+
+    // Sync prop changes (Deep Linking)
+    useState(() => {
+        if (initialTab) setActiveTab(initialTab)
+    })
+    // Also watch for changes if user navigates while mounted
+    const [prevInitialTab, setPrevInitialTab] = useState(initialTab)
+    if (initialTab !== prevInitialTab) {
+        setPrevInitialTab(initialTab)
+        if (initialTab) setActiveTab(initialTab)
+    }
 
     type TabId = 'general' | 'downloads' | 'quality' | 'network' | 'advanced' | 'about' | 'logs'
     const tabs = [
-        { id: 'general' as TabId, label: t.settings.tabs.general, icon: Settings },
-        { id: 'downloads' as TabId, label: t.settings.tabs.downloads, icon: Database },
-        { id: 'quality' as TabId, label: t.settings.tabs.quality, icon: Zap },
-        { id: 'network' as TabId, label: t.settings.tabs.network, icon: Globe },
-        { id: 'advanced' as TabId, label: t.settings.tabs.advanced, icon: TerminalIcon },
-        ...(settings.developerMode ? [{ id: 'logs' as TabId, label: (t.settings.tabs as any).logs || "Logs", icon: TerminalIcon }] : []),
-        { id: 'about' as TabId, label: t.settings.tabs.about, icon: Database },
+        { id: 'general' as TabId, label: t('settings.tabs.general'), icon: Settings },
+        { id: 'downloads' as TabId, label: t('settings.tabs.downloads'), icon: Database },
+        { id: 'quality' as TabId, label: t('settings.tabs.quality'), icon: Zap },
+        { id: 'network' as TabId, label: t('settings.tabs.network'), icon: Globe },
+        { id: 'advanced' as TabId, label: t('settings.tabs.advanced'), icon: Cpu },
+        ...(settings.developerMode ? [{ id: 'logs' as TabId, label: t('settings.tabs.logs') || "Logs", icon: ScrollText }] : []),
+        { id: 'about' as TabId, label: t('settings.tabs.about'), icon: Database },
     ]
 
+    // Scroll Logic for Large Title Collapse
+    const scrollRef = useRef<HTMLDivElement>(null)
+    const [isScrolled, setIsScrolled] = useState(false)
+
+    const handleScroll = () => {
+        if (!scrollRef.current) return
+        setIsScrolled(scrollRef.current.scrollTop > 20)
+    }
+
+    const activeTabLabel = tabs.find(t => t.id === activeTab)?.label
+
     return (
-        <div className={cn("p-6 h-full flex gap-6", "animate-in fade-in slide-in-from-bottom-4")}>
+        <div className="h-full flex flex-col md:flex-row overflow-hidden bg-background">
             {/* Easter Egg Modal Overlay */}
             {showEasterEgg && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 text-center">
@@ -76,17 +92,17 @@ export function SettingsView({ toggleTheme, setPreviewLang }: SettingsViewProps)
                             🐣
                         </motion.div>
                         <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-400 mb-2">
-                            {t.settings.about_page.secret_found}
+                            {t('settings.about_page.secret_found')}
                         </h3>
                         <p className="text-muted-foreground mb-6">
-                            {t.settings.about_page.secret_desc} <br />
-                            <span className="text-xs opacity-50">{t.settings.about_page.secret_sub}</span>
+                            {t('settings.about_page.secret_desc')} <br />
+                            <span className="text-xs opacity-50">{t('settings.about_page.secret_sub')}</span>
                         </p>
                         <button
                             onClick={() => setShowEasterEgg(false)}
                             className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-full transition-all hover:scale-105 active:scale-95 shadow-lg shadow-orange-500/25"
                         >
-                            {t.settings.about_page.awesome}
+                            {t('settings.about_page.awesome')}
                         </button>
                     </motion.div>
                     {/* Confetti Particles */}
@@ -110,16 +126,37 @@ export function SettingsView({ toggleTheme, setPreviewLang }: SettingsViewProps)
                 </div>
             )}
 
-            {/* Sidebar Navigation */}
-            <div className="flex flex-col p-2 rounded-2xl shrink-0 border shadow-xl w-52 glass border-white/10 shadow-black/5">
+            {/* MOBILE: Horizontal Scroll Navigation */}
+            <div className="md:hidden flex overflow-x-auto pb-2 gap-2 scrollbar-hide p-2 snap-x border-b border-border/40 bg-secondary/10 shrink-0">
+                {tabs.map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={cn(
+                            "relative flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full z-10 whitespace-nowrap snap-start transition-all",
+                            activeTab === tab.id
+                                ? "text-background font-bold shadow-sm"
+                                : "bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        )}
+                    >
+                        {activeTab === tab.id && (
+                            <motion.div
+                                layoutId="settings-pill-mobile"
+                                className="absolute inset-0 bg-foreground rounded-full -z-10 shadow-md"
+                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                            />
+                        )}
+                        <tab.icon className={cn("w-4 h-4 relative z-10 shrink-0", activeTab === tab.id ? "text-background" : "")} />
+                        <span className="relative z-10">{tab.label}</span>
+                    </button>
+                ))}
+            </div>
+
+            {/* DESKTOP: Native Sidebar */}
+            <div className="hidden md:flex flex-col w-64 bg-secondary/10 border-r border-border/40 shrink-0 backdrop-blur-xl pt-6 px-3">
                 {/* Settings Header in Sidebar */}
-                <div className="flex items-center gap-3 p-3 mb-2">
-                    <div className="p-2 bg-white/10 rounded-xl">
-                        <Settings className="w-5 h-5 text-white" />
-                    </div>
-                    <span className="text-lg font-bold text-foreground">
-                        {t.settings.title}
-                    </span>
+                <div className="px-3 mb-4">
+                    <h2 className="text-xl font-bold tracking-tight text-foreground/80">{t('settings.title')}</h2>
                 </div>
 
                 {/* Tab Buttons */}
@@ -129,85 +166,96 @@ export function SettingsView({ toggleTheme, setPreviewLang }: SettingsViewProps)
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={cn(
-                                "relative flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-2xl z-10 text-left transition-colors duration-200",
+                                "relative flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-left transition-colors duration-200",
                                 activeTab === tab.id
-                                    ? "text-background font-bold shadow-sm"
-                                    : "text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10"
+                                    ? "bg-primary/10 text-primary"
+                                    : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground"
                             )}
                         >
-                            {/* Motion pill for active tab */}
-                            {activeTab === tab.id && (
-                                <motion.div
-                                    layoutId="settings-pill"
-                                    className="absolute inset-0 bg-foreground rounded-2xl -z-10 shadow-md shadow-black/10 dark:shadow-black/20"
-                                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                                />
-                            )}
-                            <tab.icon className={cn("w-4 h-4 relative z-10 shrink-0", activeTab === tab.id ? "text-background" : "")} />
-                            <span className="relative z-10">{tab.label}</span>
+                            <tab.icon className={cn("w-4 h-4 shrink-0 opacity-70", activeTab === tab.id ? "opacity-100" : "")} />
+                            <span>{tab.label}</span>
                         </button>
                     ))}
                 </div>
             </div>
 
             {/* Main Content Area */}
-            <div className="flex-1 overflow-y-auto pr-2 pb-20 scrollbar-hide">
-                {activeTab === 'general' && (
-                    <GeneralSettings
-                        settings={settings}
-                        setSetting={setSetting}
-                        toggleTheme={toggleTheme}
-                        t={t}
-                    />
-                )}
+            <div className="flex-1 flex flex-col h-full overflow-hidden relative">
 
-                {activeTab === 'downloads' && (
-                    <DownloadSettings
-                        settings={settings}
-                        setSetting={setSetting}
-                        t={t}
-                    />
-                )}
+                {/* Collapsible Header (Desktop) - Mimics macOS Toolbar/Title separation */}
+                <div className={cn(
+                    "hidden md:flex items-center px-8 py-4 border-b transition-all duration-300 z-10 bg-background/80 backdrop-blur-md sticky top-0",
+                    isScrolled ? "border-border/40 h-14" : "border-transparent h-0 opacity-0 pointer-events-none"
+                )}>
+                    <span className="font-semibold">{activeTabLabel}</span>
+                </div>
 
-                {activeTab === 'quality' && (
-                    <QualitySettings
-                        settings={settings}
-                        setSetting={setSetting}
-                        t={t}
-                    />
-                )}
+                <div
+                    ref={scrollRef}
+                    onScroll={handleScroll}
+                    className="flex-1 overflow-y-auto px-4 md:px-8 pb-20 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20"
+                >
+                    <div className="max-w-4xl mx-auto w-full">
+                        {/* Large Title */}
+                        <div className="pt-8 pb-6 md:pt-10 md:pb-8">
+                            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                {activeTabLabel}
+                            </h1>
+                        </div>
 
-                {activeTab === 'network' && (
-                    <NetworkSettings
-                        settings={settings}
-                        setSetting={setSetting}
-                        t={t}
-                    />
-                )}
+                        <div className="space-y-6 pb-12">
+                            {activeTab === 'general' && (
+                                <GeneralSettings
+                                    settings={settings}
+                                    setSetting={setSetting}
+                                />
+                            )}
 
+                            {activeTab === 'downloads' && (
+                                <DownloadSettings
+                                    settings={settings}
+                                    setSetting={setSetting}
+                                />
+                            )}
 
-                {activeTab === 'advanced' && (
-                    <AdvancedSettings
-                        settings={settings}
-                        setSetting={setSetting}
-                        updateSettings={updateSettings}
-                        t={t}
-                    />
-                )}
+                            {activeTab === 'quality' && (
+                                <QualitySettings
+                                    settings={settings}
+                                    setSetting={setSetting}
+                                />
+                            )}
 
-                {activeTab === 'logs' && (
-                    <div className="h-[calc(100vh-200px)] min-h-[400px] animate-in fade-in slide-in-from-bottom-2">
-                        <TerminalView />
+                            {activeTab === 'network' && (
+                                <NetworkSettings
+                                    settings={settings}
+                                    setSetting={setSetting}
+                                />
+                            )}
+
+                            {activeTab === 'advanced' && (
+                                <AdvancedSettings
+                                    settings={settings}
+                                    setSetting={setSetting}
+                                    updateSettings={updateSettings}
+                                />
+                            )}
+
+                            {/* Logs are heavy, lets keep them conditional or check performance. 
+                                Actually, logs should definitely stick around to not lose history if it was just an in-memory buffer.
+                                But typically TerminalView might have its own internal state. Let's persist it too. */}
+                            <div className={cn("h-[calc(100vh-200px)] min-h-[400px] animate-in fade-in slide-in-from-bottom-2", activeTab === 'logs' ? 'block' : 'hidden')}>
+                                <TerminalView />
+                            </div>
+
+                            {activeTab === 'about' && (
+                                <AboutSettings
+                                    addLog={addLog}
+                                    setShowEasterEgg={setShowEasterEgg}
+                                />
+                            )}
+                        </div>
                     </div>
-                )}
-
-                {activeTab === 'about' && (
-                    <AboutSettings
-                        t={t}
-                        addLog={addLog}
-                        setShowEasterEgg={setShowEasterEgg}
-                    />
-                )}
+                </div>
             </div>
         </div>
     )

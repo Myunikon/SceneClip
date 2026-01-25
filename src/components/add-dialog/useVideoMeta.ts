@@ -34,9 +34,9 @@ export function useVideoMeta(url: string) {
                 } else {
                     throw new Error(output.stderr)
                 }
-            } catch (e: any) {
+            } catch (e: unknown) {
                 console.error("Metadata fetch failed", e)
-                notify.error("Failed to fetch video info", { description: e?.message || "Check URL and connection" })
+                notify.error("Failed to fetch video info", { description: e instanceof Error ? e.message : "Check URL and connection" })
                 setError(true)
                 setMeta(null)
             } finally {

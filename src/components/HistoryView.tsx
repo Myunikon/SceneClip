@@ -1,394 +1,149 @@
-import { memo, useCallback, useMemo, useState, useEffect, useRef } from 'react'
+import { useCallback, useMemo, useState, useRef, useEffect } from 'react'
 import { notify } from '../lib/notify'
 import { useAppStore, DownloadTask } from '../store'
-import { translations } from '../lib/locales'
+import { useTranslation } from 'react-i18next'
 import {
-    FolderOpen,
-    Trash2,
-    Play,
-    Globe,
-    AlertCircle,
-    FileVideo,
-    Terminal,
-    Minimize2,
-    RefreshCw,
     Search,
-    ListChecks,
+    Filter,
+    CheckCircle2,
+    Music,
+    FileVideo,
     ArrowUp,
     ArrowDown,
-    ChevronDown,
-    Filter,
-    CheckCircle2
+    LayoutGrid,
+    RefreshCw,
+    Trash2,
+    ListChecks
 } from 'lucide-react'
 import { openPath } from '@tauri-apps/plugin-opener'
 import { exists } from '@tauri-apps/plugin-fs'
-import { open as openFileDialog } from '@tauri-apps/plugin-dialog'
+
 import { CommandModal } from './CommandModal'
 import { CompressDialog } from './CompressDialog'
-import { Select } from './Select'
-import { parseSize, formatRange, cn } from '../lib/utils'
+import { parseSize, cn } from '../lib/utils'
+import { SegmentedControl } from './ui/SegmentedControl'
+import { HistoryItem } from './history/HistoryItem'
 
-import youtubeIcon from '../assets/platforms/youtube.png'
-import instagramIcon from '../assets/platforms/instagram.png'
-import tiktokIcon from '../assets/platforms/tiktok.png'
-import facebookIcon from '../assets/platforms/facebook.png'
-import xIcon from '../assets/platforms/x.png'
-
-interface HistoryRowProps {
-    task: DownloadTask
-    language: string
-    onOpenFolder: (path: string) => void
-    onPlayFile: (path: string) => void
-    onRemove: (id: string) => void
-    onRetry: (id: string) => void
-    onRefreshPath: (id: string) => void // Relocate file
-    onCompress: (task: DownloadTask) => void // NEW: Compress file
-    onViewCommand: (task: DownloadTask) => void
-    style: React.CSSProperties
-    showPlayButton: boolean
-    showCommandButton: boolean
-    isMissing?: boolean
-    index: number
-
-    // Selection Mode Props
-    isSelectionMode: boolean
-    isSelected: boolean
-    onToggleSelect: (id: string) => void
-}
-
-const HistoryRow = memo(({ style, task, language, onOpenFolder, onPlayFile, onRemove, onRetry, onRefreshPath, onCompress, onViewCommand, showPlayButton, showCommandButton, isMissing, index, isSelectionMode, isSelected, onToggleSelect }: HistoryRowProps) => {
-    const [showMenu, setShowMenu] = useState(false)
-    const [showRecoverMenu, setShowRecoverMenu] = useState(false)
-    const menuRef = useRef<HTMLDivElement>(null)
-    const recoverRef = useRef<HTMLDivElement>(null)
-
-    // Close menu on click outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-                setShowMenu(false)
-            }
-            if (recoverRef.current && !recoverRef.current.contains(event.target as Node)) {
-                setShowRecoverMenu(false)
-            }
-        }
-        if (showMenu || showRecoverMenu) document.addEventListener('mousedown', handleClickOutside)
-        return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [showMenu, showRecoverMenu])
-
-    if (!task) return null
-
-    const t = translations[language as keyof typeof translations]?.history || translations.en.history
-    const isFileAvailable = !!task.filePath && !isMissing
-    const displayTitle = task.title || 'Unknown Title'
-
-    // Extract source domain - colors work for both light and dark mode
-    const getSourceInfo = (url: string) => {
-        try {
-            const hostname = new URL(url).hostname.replace('www.', '')
-            if (hostname.includes('youtube') || hostname.includes('youtu.be')) return { icon: youtubeIcon, isImage: true, name: 'YouTube', color: 'text-red-600 dark:text-red-400' }
-            if (hostname.includes('tiktok')) return { icon: tiktokIcon, isImage: true, name: 'TikTok', color: 'text-red-500 dark:text-red-400' }
-            if (hostname.includes('instagram')) return { icon: instagramIcon, isImage: true, name: 'Instagram', color: 'text-orange-600 dark:text-orange-400' }
-            if (hostname.includes('twitter') || hostname.includes('x.com')) return { icon: xIcon, isImage: true, name: 'X', color: 'text-orange-500 dark:text-orange-400' }
-            if (hostname.includes('facebook') || hostname.includes('fb.watch')) return { icon: facebookIcon, isImage: true, name: 'Facebook', color: 'text-red-600 dark:text-red-400' }
-            return { icon: Globe, isImage: false, name: hostname.split('.')[0], color: 'text-gray-500 dark:text-gray-400' }
-        } catch { return { icon: Globe, isImage: false, name: 'Web', color: 'text-gray-500 dark:text-gray-400' } }
+// --- Dummy Data (Preserve for Demo) ---
+const DUMMY_TASKS: Partial<DownloadTask>[] = [
+    {
+        id: 'dummy-1',
+        title: 'Amazing Nature 4K - Forest Sounds & River Relaxation',
+        url: 'https://www.youtube.com/watch?v=nature1',
+        status: 'completed',
+        completedAt: Date.now() - 1000 * 60 * 30, // 30 mins ago
+        fileSize: '1.2 GB',
+        format: 'Video',
+        _options: { videoCodec: 'av1', container: 'mp4' },
+        filePath: 'C:\\Downloads\\Nature_4K.mp4'
+    },
+    {
+        id: 'dummy-2',
+        title: 'Lofi Girl - Hip Hop Radio 24/7 (Beats to Relax/Study to)',
+        url: 'https://www.youtube.com/watch?v=lofi1',
+        status: 'completed',
+        completedAt: Date.now() - 1000 * 60 * 60 * 2, // 2 hours ago
+        fileSize: '150 MB',
+        format: 'Audio',
+        _options: { container: 'mp3', audioBitrate: '320' },
+        filePath: 'C:\\Downloads\\Music\\Lofi_Girl.mp3'
+    },
+    {
+        id: 'dummy-3',
+        title: 'Funny 24 - Best Memes Compilation 2024',
+        url: 'https://www.instagram.com/reel/meme1',
+        status: 'completed',
+        completedAt: Date.now() - 1000 * 60 * 60 * 5,
+        fileSize: '45 MB',
+        format: 'Video',
+        _options: { videoCodec: 'h264', container: 'mp4' },
+        filePath: 'C:\\Downloads\\Shorts\\Memes_2024.mp4'
+    },
+    {
+        id: 'dummy-4',
+        title: 'Tech Review: iPhone 16 Pro Max Unboxing',
+        url: 'https://www.tiktok.com/@techreviewer/video/123456',
+        status: 'completed',
+        completedAt: Date.now() - 1000 * 60 * 60 * 12,
+        fileSize: '85 MB',
+        format: 'Video',
+        _options: { videoCodec: 'h264', container: 'mp4' },
+        filePath: 'C:\\Downloads\\TikTok\\iPhone16Review.mp4'
+    },
+    {
+        id: 'dummy-5',
+        title: 'Missing File Example - This file has been deleted',
+        url: 'https://www.youtube.com/watch?v=deleted',
+        status: 'completed',
+        completedAt: Date.now() - 1000 * 60 * 60 * 24, // 1 day ago
+        fileSize: '250 MB',
+        format: 'Video',
+        _options: { videoCodec: 'vp9', container: 'webm' },
+        filePath: 'C:\\Downloads\\Deleted_Video.webm'
+    },
+    {
+        id: 'dummy-6',
+        title: 'Coding Tutorial - React Hooks Explained in 100s',
+        url: 'https://www.youtube.com/watch?v=coding1',
+        status: 'completed',
+        completedAt: Date.now() - 1000 * 60 * 60 * 25,
+        fileSize: '12 MB',
+        format: 'Video',
+        range: '00:00 - 01:40',
+        _options: { videoCodec: 'av1', container: 'mp4', rangeStart: '00:00', rangeEnd: '01:40' },
+        filePath: 'C:\\Downloads\\Tutorials\\React_Hooks_Clip.mp4'
+    },
+    {
+        id: 'dummy-7',
+        title: 'Podcast: The Future of AI (Episode 42)',
+        url: 'https://www.youtube.com/watch?v=podcast1',
+        status: 'completed',
+        completedAt: Date.now() - 1000 * 60 * 60 * 48, // 2 days ago
+        fileSize: '85 MB',
+        format: 'Audio',
+        _options: { container: 'm4a', audioBitrate: '192' },
+        filePath: 'C:\\Downloads\\Podcasts\\AI_Future_Ep42.m4a'
+    },
+    {
+        id: 'dummy-8',
+        title: 'Twitter/X Clip: SpaceX Starship Launch',
+        url: 'https://x.com/SpaceX/status/123456789',
+        status: 'completed',
+        completedAt: Date.now() - 1000 * 60 * 60 * 50,
+        fileSize: '55 MB',
+        format: 'Video',
+        _options: { videoCodec: 'h264', container: 'mp4' },
+        filePath: 'C:\\Downloads\\SpaceX\\Launch.mp4'
+    },
+    {
+        id: 'dummy-9',
+        title: 'Clipped: Funny Moment from Live Stream',
+        url: 'https://www.facebook.com/watch/?v=123',
+        status: 'completed',
+        completedAt: Date.now() - 1000 * 60 * 60 * 72, // 3 days ago
+        fileSize: '8.5 MB',
+        format: 'Video',
+        range: '10:05 - 10:25',
+        _options: { videoCodec: 'h264', container: 'mp4', rangeStart: '10:05', rangeEnd: '10:25' },
+        filePath: 'C:\\Downloads\\Clips\\Funny_Stream_Clip.mp4'
+    },
+    {
+        id: 'dummy-10',
+        title: 'Old Archived Video - File Missing',
+        url: 'https://www.youtube.com/watch?v=old1',
+        status: 'completed',
+        completedAt: Date.now() - 1000 * 60 * 60 * 24 * 7, // 1 week ago
+        fileSize: '1.5 GB',
+        format: 'Video',
+        _options: { videoCodec: 'av1', container: 'mkv' },
+        filePath: 'C:\\Downloads\\Archived\\Old_Video.mkv'
     }
-    const source = getSourceInfo(task.url)
-
-    // Folder path (last 3 folders for better context)
-    const folderPath = task.path ? task.path.split(/[/\\]/).slice(-3).join('/') : ''
-
-    // Date formatter
-    const completedDate = task.completedAt ? new Date(task.completedAt).toLocaleDateString(language === 'id' ? 'id-ID' : 'en-US', {
-        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
-    }) : null
-
-    return (
-        <div
-            style={{ ...style, animationDelay: `${index * 30}ms` }}
-            className={`flex sm:grid sm:grid-cols-[1fr_200px_160px] items-center justify-between border-b border-border hover:bg-muted/50 transition-colors px-4 py-3 group gap-2 sm:gap-0 relative animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-backwards ${isSelected ? 'bg-primary/5 hover:bg-primary/10' : ''}`}
-            onClick={() => isSelectionMode && onToggleSelect(task.id)}
-        >
-            {/* Checkbox for Selection Mode */}
-            {isSelectionMode && (
-                <div className="absolute left-2 top-1/2 -translate-y-1/2 sm:static sm:mr-3 sm:translate-y-0 flex items-center justify-center">
-                    <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => onToggleSelect(task.id)}
-                        className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
-                    />
-                </div>
-            )}
-
-            {/* Column 1: Title & Meta */}
-            <div className={`overflow-hidden pr-2 sm:pr-4 flex-1 min-w-0 ${isSelectionMode ? 'pl-6 sm:pl-0' : ''}`}>
-                <div className="font-medium truncate text-sm text-foreground" title={displayTitle}>
-                    {displayTitle}
-                </div>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mt-1">
-                    {source && (
-                        <span className={`${source.color} font-medium shrink-0 flex items-center gap-1.5`}>
-                            {source.isImage ? (
-                                <img src={source.icon as string} alt={source.name} className="w-3.5 h-3.5 object-contain" />
-                            ) : (
-                                <source.icon className="w-3.5 h-3.5" />
-                            )}
-                            <span className="hidden xs:inline">{source.name}</span>
-                        </span>
-                    )}
-
-                    {/* File Size */}
-                    {task.fileSize && (
-                        <span className="shrink-0" title="File Size">
-                            {task.fileSize}
-                        </span>
-                    )}
-
-                    {/* Date */}
-                    {completedDate && (
-                        <span className="shrink-0" title="Completed">
-                            <span className="hidden sm:inline">{completedDate}</span>
-                        </span>
-                    )}
-
-                    {folderPath && (
-                        <span className="text-gray-500 dark:text-gray-400 truncate max-w-[120px] sm:max-w-[200px] font-mono text-xs hidden sm:flex items-center gap-1.5" title={task.path}>
-                            {folderPath}
-                        </span>
-                    )}
-                    {task.range && task.range !== 'Full' && (
-                        <span className="text-purple-600 dark:text-purple-400 font-mono text-xs bg-purple-100 dark:bg-purple-500/20 px-1.5 py-0.5 rounded border border-purple-300 dark:border-purple-500/30">
-                            ✂ {formatRange(task.range)}
-                        </span>
-                    )}
-
-                    {/* File Missing Indicator */}
-                    {!isFileAvailable && (
-                        <span className="flex items-center gap-1.5 text-red-500 font-medium animate-pulse" title="File not found - Moved or Deleted">
-                            <AlertCircle className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Missing</span>
-                        </span>
-                    )}
-                </div>
-            </div>
-
-            {/* Column 2: Format Badge */}
-            <div className="hidden sm:flex flex-col items-center justify-center shrink-0">
-                {task.format && (
-                    <div className="flex flex-col items-center gap-1">
-                        {/* Primary Badge (Resolution) */}
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-md border ${task.format.toLowerCase().includes('audio')
-                            ? 'bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-500/30'
-                            : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/30'
-                            }`}>
-                            {task.format.toUpperCase()}
-                        </span>
-
-                        {/* Secondary Info (Codec + Container) */}
-                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono uppercase tracking-tight">
-                            {/* Codec */}
-                            {task._options?.videoCodec && (
-                                <span title="Video Codec">{task._options.videoCodec.split('.')[0].replace('avc1', 'H.264').replace('vp9', 'VP9').replace('av01', 'AV1')}</span>
-                            )}
-
-                            {/* Separator if both exist */}
-                            {task._options?.videoCodec && (task._options?.container || (task.filePath && task.filePath.split('.').pop())) && (
-                                <span className="opacity-50">•</span>
-                            )}
-
-                            {/* Container */}
-                            <span title="Container">
-                                {task._options?.container?.toUpperCase() || (task.filePath ? task.filePath.split('.').pop()?.toUpperCase() : 'MP4')}
-                            </span>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Column 3: Actions */}
-            <div className="flex justify-end gap-1 shrink-0 relative">
-                {/* Desktop Actions */}
-                <div className="hidden sm:flex items-center gap-1">
-                    <button
-                        onClick={() => task.path && onOpenFolder(task.path)}
-                        className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                        title={t.open_folder}
-                    >
-                        <FolderOpen className="w-4 h-4" />
-                    </button>
-                    {/* Compress Button - only for files that exist */}
-                    {!isMissing && task.filePath && (
-                        <>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); useAppStore.getState().compressTask(task.id, { preset: 'wa', crf: 28, resolution: 'keep', encoder: 'auto', speedPreset: 'veryfast' }) }}
-                                className="p-2 text-muted-foreground hover:text-orange-400 hover:bg-orange-500/10 rounded-lg transition-colors"
-                                title="Quick Compress (WhatsApp Size)"
-                            >
-                                <Minimize2 className="w-5 h-5" />
-                            </button>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); useAppStore.getState().updateTask(task.id, { status: 'pending' }); useAppStore.getState().processQueue() }}
-                                className="p-2 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                                title="Redownload"
-                            >
-                                <RefreshCw className="w-5 h-5" />
-                            </button>
-                        </>
-                    )}
-                    {showCommandButton && (
-                        <button
-                            onClick={() => onViewCommand(task)}
-                            className="p-2 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                            title="View Command"
-                        >
-                            <Terminal className="w-4 h-4" />
-                        </button>
-                    )}
-                </div>
-
-                {/* Common: Play or Retry */}
-                {showPlayButton && isFileAvailable ? (
-                    <button
-                        onClick={() => task.filePath && onPlayFile(task.filePath)}
-                        className="p-2 text-muted-foreground hover:text-green-400 hover:bg-green-500/10 rounded-lg transition-colors"
-                        title={t.play}
-                    >
-                        <Play className="w-4 h-4" />
-                    </button>
-                ) : (
-                    <div className="relative" ref={recoverRef}>
-                        <button
-                            onClick={() => setShowRecoverMenu(!showRecoverMenu)}
-                            className="flex items-center gap-1.5 px-3 py-2 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 rounded-lg transition-colors border border-amber-500/30 text-xs font-bold"
-                            title={t.recover}
-                        >
-                            <AlertCircle className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">{t.recover}</span>
-                            <ChevronDown className={cn("w-3 h-3 opacity-50 transition-transform", showRecoverMenu && "rotate-180")} />
-                        </button>
-
-                        {showRecoverMenu && (
-                            <div className="absolute right-0 top-full mt-1 w-48 bg-background border border-border rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                                <div className="p-1 flex flex-col gap-0.5">
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); onRefreshPath(task.id); setShowRecoverMenu(false) }}
-                                        className="flex items-center gap-2.5 w-full px-3 py-2.5 text-xs font-medium text-foreground hover:bg-white/5 rounded-lg transition-colors text-left"
-                                    >
-                                        <Search className="w-3.5 h-3.5 text-amber-500" /> {t.find_on_disk}
-                                    </button>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); onRetry(task.id); setShowRecoverMenu(false) }}
-                                        className="flex items-center gap-2.5 w-full px-3 py-2.5 text-xs font-medium text-foreground hover:bg-white/5 rounded-lg transition-colors text-left"
-                                    >
-                                        <RefreshCw className="w-3.5 h-3.5 text-blue-500" /> {t.redownload}
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Desktop Delete */}
-                <button
-                    onClick={() => onRemove(task.id)}
-                    className="p-2 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors hidden sm:block"
-                    title={t.clear}
-                >
-                    <Trash2 className="w-4 h-4" />
-                </button>
-
-                {/* Mobile More Menu */}
-                <div className="sm:hidden relative" ref={menuRef}>
-                    <button
-                        onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu) }}
-                        className="p-2 text-muted-foreground hover:text-foreground rounded-lg transition-colors"
-                    >
-                        <ChevronDown className={cn("w-4 h-4 transition-transform", showMenu && "rotate-180")} />
-                    </button>
-
-                    {showMenu && (
-                        <div className="absolute right-0 top-full mt-1 w-48 bg-background border border-border rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                            <div className="p-1 flex flex-col gap-0.5">
-                                {!isFileAvailable && (
-                                    <button
-                                        onClick={() => onRetry(task.id)}
-                                        className="flex items-center gap-3 w-full px-3 py-2.5 text-xs font-medium text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors text-left"
-                                    >
-                                        <RefreshCw className="w-3.5 h-3.5" /> Redownload
-                                    </button>
-                                )}
-
-                                <button
-                                    onClick={() => { task.path && onOpenFolder(task.path); setShowMenu(false) }}
-                                    className="flex items-center gap-3 w-full px-3 py-2.5 text-xs font-medium text-foreground hover:bg-white/5 rounded-lg transition-colors text-left"
-                                >
-                                    <FolderOpen className="w-3.5 h-3.5 text-orange-400" /> {t.open_folder}
-                                </button>
-
-                                {showCommandButton && (
-                                    <button
-                                        onClick={() => { onViewCommand(task); setShowMenu(false) }}
-                                        className="flex items-center gap-3 w-full px-3 py-2.5 text-xs font-medium text-foreground hover:bg-white/5 rounded-lg transition-colors text-left"
-                                    >
-                                        <Terminal className="w-3.5 h-3.5 text-red-400" /> View Command
-                                    </button>
-                                )}
-
-                                {/* Compress - only if file exists */}
-                                {isFileAvailable && task.filePath && (
-                                    <button
-                                        onClick={() => { onCompress(task); setShowMenu(false) }}
-                                        className="flex items-center gap-3 w-full px-3 py-2.5 text-xs font-medium text-foreground hover:bg-white/5 rounded-lg transition-colors text-left"
-                                    >
-                                        <Minimize2 className="w-3.5 h-3.5 text-orange-400" /> Compress
-                                    </button>
-                                )}
-
-                                <div className="h-px bg-white/5 my-0.5" />
-
-                                <button
-                                    onClick={() => onRemove(task.id)}
-                                    className="flex items-center gap-3 w-full px-3 py-2.5 text-xs font-medium text-red-400 hover:bg-white/5 hover:text-red-300 rounded-lg transition-colors text-left"
-                                >
-                                    <Trash2 className="w-3.5 h-3.5" /> {t.clear}
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    )
-}, (prev, next) => {
-    return (
-        prev.task.id === next.task.id &&
-        prev.task.title === next.task.title &&
-        prev.task.status === next.task.status &&
-        prev.style.top === next.style.top &&
-        prev.language === next.language &&
-        prev.task.fileSize === next.task.fileSize &&
-        prev.task.completedAt === next.task.completedAt &&
-        prev.onRetry === next.onRetry &&
-        prev.isMissing === next.isMissing &&
-        prev.index === next.index &&
-
-        prev.isSelectionMode === next.isSelectionMode &&
-        prev.isSelected === next.isSelected
-    )
-})
-
-HistoryRow.displayName = 'HistoryRow'
-
-// --- Main Component ---
+]
 
 export function HistoryView() {
-    const { tasks, deleteHistory, clearTask, retryTask, updateTask, settings } = useAppStore()
+    const { tasks, deleteHistory, clearTask, retryTask, settings } = useAppStore()
     const language = settings.language
-    // Safely fallback to English if key missing
-    const rootT = translations[language as keyof typeof translations] || translations.en
-    const t = rootT.history
+    const { t } = useTranslation()
 
     // --- Filtering & Sorting State ---
     const [searchQuery, setSearchQuery] = useState('')
@@ -420,7 +175,7 @@ export function HistoryView() {
 
     const toggleSelectionMode = () => {
         setIsSelectionMode(!isSelectionMode)
-        setSelectedIds(new Set()) // Clear on toggle
+        setSelectedIds(new Set())
     }
 
     const toggleSelect = useCallback((id: string) => {
@@ -441,16 +196,19 @@ export function HistoryView() {
     }
 
     const deleteSelected = useCallback(() => {
-        if (confirm(`Are you sure you want to delete ${selectedIds.size} items?`)) {
+        if (confirm(t('history_menu.confirm_delete_msg', { count: selectedIds.size }) || `Are you sure you want to delete ${selectedIds.size} items?`)) {
             selectedIds.forEach(id => clearTask(id))
             setIsSelectionMode(false)
             setSelectedIds(new Set())
-            notify.success(`Deleted ${selectedIds.size} items`)
+            notify.success(t('history_menu.toast_deleted', { count: selectedIds.size }) || `Deleted ${selectedIds.size} items`)
         }
-    }, [selectedIds, clearTask])
+    }, [selectedIds, clearTask, t])
 
     const historyTasks = useMemo(() => {
-        let filtered = tasks.filter(t => t.status === 'completed' || t.status === 'stopped')
+        const realTasks = tasks.filter(t => t.status === 'completed' || t.status === 'stopped')
+        const allTasks = [...realTasks, ...(DUMMY_TASKS as DownloadTask[])]
+
+        let filtered = allTasks
 
         if (searchQuery) {
             const query = searchQuery.toLowerCase()
@@ -511,6 +269,11 @@ export function HistoryView() {
 
         for (const chunk of chunks) {
             await Promise.all(chunk.map(async (task) => {
+                if (task.id.startsWith('dummy-')) {
+                    if (task.filePath?.includes("Deleted")) missing.add(task.id)
+                    return
+                }
+
                 if (task.filePath) {
                     try {
                         const fileExists = await exists(task.filePath)
@@ -523,72 +286,30 @@ export function HistoryView() {
         }
         setMissingFileIds(missing)
         setIsVerifying(false)
-        if (missing.size > 0) notify.warning(t.scan_missing_files.replace('{count}', missing.size.toString()), { duration: 4000 })
-        else notify.success(t.scan_healthy_files, { duration: 3000 })
+        if (missing.size > 0) notify.warning(t('history.scan_missing_files', { count: missing.size }), { duration: 4000 })
+        else notify.success(t('history.scan_healthy_files'), { duration: 3000 })
     }
 
     const handleOpenFolder = useCallback(async (path: string) => {
-        try {
-            await openPath(path);
-        } catch (e) {
-            notify.error(rootT.errors.folder_not_found, {
-                description: rootT.errors.folder_desc,
-                duration: 4000
-            });
+        try { await openPath(path); } catch {
+            notify.error(t('errors.folder_not_found'));
         }
-    }, [settings.language])
+    }, [t])
 
     const handlePlayFile = useCallback(async (path: string) => {
-        if (!path) {
-            notify.warning(rootT.history?.file_not_found || "Path empty")
-            return
+        if (!path) return notify.warning(t('history.file_not_found'))
+        try { await openPath(path); } catch {
+            notify.error(t('errors.file_desc'));
         }
-        try {
-            await openPath(path);
-        } catch (e) {
-            notify.error(rootT.errors.file_desc, {
-                action: {
-                    label: rootT.errors.open_folder,
-                    onClick: () => handleOpenFolder(path.substring(0, path.lastIndexOf('\\')))
-                },
-                duration: 5000
-            });
-        }
-    }, [settings.language])
+    }, [t])
 
     const handleRemove = useCallback((id: string) => clearTask(id), [clearTask])
     const handleRetry = useCallback((id: string) => { retryTask(id); notify.success("Redownload Started") }, [retryTask])
     const handleViewCommand = useCallback((task: DownloadTask) => { setSelectedTask(task); setIsCommandOpen(true) }, [])
 
-    // NEW: Handle file relocation via file picker
-    const handleRefreshPath = useCallback(async (id: string) => {
-        const task = tasks.find(t => t.id === id)
-        if (!task) return
-
-        const selected = await openFileDialog({
-            title: 'Locate File',
-            filters: [{ name: 'Media', extensions: ['mp4', 'mkv', 'webm', 'mp3', 'm4a', 'gif', 'jpg', 'png'] }]
-        })
-
-        if (selected) {
-            const newPath = selected as string
-            if (newPath) {
-                updateTask(id, { filePath: newPath })
-                // Trigger re-check of missing files via state update
-                setMissingFileIds(prev => {
-                    const next = new Set(prev)
-                    next.delete(id)
-                    return next
-                })
-                notify.success("File path updated")
-            }
-        }
-    }, [tasks, updateTask])
-
+    // NEW: Compress dialog state
     const [selectedTask, setSelectedTask] = useState<DownloadTask | null>(null)
     const [isCommandOpen, setIsCommandOpen] = useState(false)
-
-    // NEW: Compress dialog state
     const [compressTask, setCompressTask] = useState<DownloadTask | null>(null)
     const [isCompressOpen, setIsCompressOpen] = useState(false)
     const handleCompress = useCallback((task: DownloadTask) => {
@@ -596,243 +317,195 @@ export function HistoryView() {
         setIsCompressOpen(true)
     }, [])
 
-    const emptyState = tasks.filter(t => t.status === 'completed' || t.status === 'stopped').length === 0
-
-    if (emptyState) {
-        return (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4 animate-in fade-in zoom-in duration-300">
-                <div className="p-4 bg-secondary/30 rounded-full">
-                    <FileVideo className="w-12 h-12 opacity-40" />
-                </div>
-                <p>{t.empty}</p>
-            </div>
-        )
-    }
-
     return (
-        <div className="space-y-4 h-full flex flex-col">
-            {/* Header Bar with Animation */}
-            <div className="flex flex-col gap-3 shrink-0 animate-in fade-in slide-in-from-top-4 duration-300">
-                {/* Row 1: Title */}
-                <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-bold flex items-center gap-2">
-                        {t.title} <span className="text-xs font-normal text-muted-foreground bg-secondary px-2.5 py-0.5 rounded-full border border-border/50">{historyTasks.length}</span>
-                    </h2>
-                </div>
+        <div className="flex flex-col h-full bg-background/50">
+            {/* Header: Translucent Glass Effect */}
+            <div className="shrink-0 z-30 bg-background/80 backdrop-blur-xl border-b border-white/10 supports-[backdrop-filter]:bg-background/60">
+                <div className="px-6 py-4 space-y-4 max-w-7xl mx-auto">
+                    {/* Top Row: Title & Actions */}
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-2xl font-semibold tracking-tight text-foreground/90">
+                            {t('history.title')}
+                        </h2>
 
-                {/* Row 2: Controls Stack */}
-                <div className="flex flex-col gap-2 relative">
-                    {/* Selection Mode Header Overlay - NOW COMPACT */}
-                    {isSelectionMode ? (
-                        <div className="flex items-center gap-3 bg-primary/10 p-2 pl-3 rounded-xl border border-primary/20 animate-in fade-in slide-in-from-top-2 shadow-sm">
-                            <div className="flex items-center gap-2 flex-1">
-                                <CheckCircle2 className="w-4 h-4 text-primary animate-pulse" />
-                                <span className="text-sm font-bold text-primary">
-                                    {selectedIds.size} <span className="opacity-70 font-medium">Selected</span>
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <button
-                                    onClick={selectAll}
-                                    className="text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors border border-primary/20"
-                                >
-                                    {selectedIds.size === historyTasks.length ? "Deselect All" : "Select All"}
-                                </button>
-                                <button
-                                    onClick={deleteSelected}
-                                    disabled={selectedIds.size === 0}
-                                    className="bg-red-500 hover:bg-red-600 text-white text-[11px] px-3 py-1.5 rounded-lg font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-lg shadow-red-500/20"
-                                >
-                                    <Trash2 className="w-3.5 h-3.5" /> DELETE
-                                </button>
-                                <button
-                                    onClick={toggleSelectionMode}
-                                    className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground hover:bg-black/10 dark:hover:bg-white/10 px-3 py-1.5 rounded-lg transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
+                        {/* Spacer or additional header actions if needed */}
+                        <div />
+                    </div>
+
+                    {/* Controls Row */}
+                    <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-4 justify-between flex-wrap">
+                        {/* Segmented Control */}
+                        <div className="w-full sm:w-auto overflow-x-auto">
+                            <SegmentedControl
+                                value={filterFormat}
+                                onChange={setFilterFormat}
+                                options={[
+                                    { value: 'all', label: t('all') || "All" },
+                                    { value: 'video', label: t('video') || "Video", icon: FileVideo },
+                                    { value: 'audio', label: t('audio') || "Audio", icon: Music }
+                                ]}
+                            />
                         </div>
-                    ) : (
-                        <div className="flex items-center gap-2">
-                            {/* Search */}
-                            <div className="flex-1 relative group">
-                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
+
+                        {/* Search & Sort & Select */}
+                        <div className="flex gap-2 flex-1 sm:flex-none items-center">
+                            <div className="relative group flex-1 sm:w-60 max-w-md">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 transition-colors" />
                                 <input
                                     type="text"
-                                    placeholder={t.search_placeholder || "Search history..."}
+                                    placeholder={t('history.search_placeholder') || "Search history..."}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full bg-secondary/30 hover:bg-secondary/50 border border-border/40 rounded-xl pl-11 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all outline-none"
+                                    className="w-full h-9 bg-secondary/50 hover:bg-secondary/70 focus:bg-background rounded-lg pl-9 pr-4 text-sm transition-all outline-none placeholder:text-muted-foreground/50"
                                 />
                             </div>
 
-                            {/* Streamlined "Manage" Menu */}
-                            <div className="relative" ref={menuRef}>
+                            {/* Select Mode Toggle */}
+                            <button
+                                onClick={toggleSelectionMode}
+                                className={cn(
+                                    "h-9 w-9 flex items-center justify-center rounded-lg transition-all border outline-none",
+                                    isSelectionMode
+                                        ? "bg-primary text-primary-foreground border-transparent shadow-sm"
+                                        : "bg-secondary/50 border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary"
+                                )}
+                                title={isSelectionMode ? t('history_menu.cancel') : t('history_menu.select')}
+                            >
+                                <ListChecks className="w-5 h-5" />
+                            </button>
+
+                            {/* Sort Dropdown */}
+                            <div className="relative shrink-0" ref={menuRef}>
                                 <button
                                     onClick={() => setShowMenu(!showMenu)}
                                     className={cn(
-                                        "h-[42px] px-4 flex items-center gap-2 rounded-xl border text-sm font-semibold transition-all",
-                                        showMenu || filterFormat !== 'all' || filterType !== 'date'
-                                            ? "bg-primary/10 border-primary/30 text-primary shadow-sm"
-                                            : "bg-secondary/30 border-border/40 text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                                        "p-2 rounded-lg border transition-all text-muted-foreground hover:text-foreground",
+                                        showMenu ? "bg-secondary text-foreground border-border/50" : "border-transparent hover:bg-secondary/50"
                                     )}
                                 >
                                     <Filter className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Manage</span>
-                                    <ChevronDown className={cn("w-3.5 h-3.5 opacity-50 transition-transform duration-200", showMenu && "rotate-180")} />
                                 </button>
-
                                 {showMenu && (
-                                    <div className="absolute right-0 top-full mt-2 w-64 bg-card border border-border/50 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200 p-1.5 space-y-1">
-                                        <div className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border/20 mb-1">Filters & Sorting</div>
-
-                                        <div className="space-y-2 p-1.5">
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] font-bold text-muted-foreground pl-1">CONTENT TYPE</label>
-                                                <Select
-                                                    value={filterFormat}
-                                                    onChange={setFilterFormat}
-                                                    options={[
-                                                        { value: 'all', label: rootT.all },
-                                                        { value: 'video', label: rootT.video },
-                                                        { value: 'audio', label: rootT.audio }
-                                                    ]}
-                                                    className="w-full h-8 text-xs"
-                                                />
-                                            </div>
-
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] font-bold text-muted-foreground pl-1">ORDER BY</label>
-                                                <div className="flex gap-1">
-                                                    <Select
-                                                        value={filterType}
-                                                        onChange={setFilterType}
-                                                        options={[
-                                                            { value: 'date', label: t.filter_date || 'Date' },
-                                                            { value: 'size', label: t.filter_size || 'Size' },
-                                                            { value: 'source', label: t.filter_source || 'Source' }
-                                                        ]}
-                                                        className="flex-1 h-8 text-xs"
-                                                    />
-                                                    <button
-                                                        onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                                                        className="h-8 w-8 flex items-center justify-center bg-secondary/50 hover:bg-secondary rounded-lg border border-border/20 text-muted-foreground transition-all"
-                                                    >
-                                                        {sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
-                                                    </button>
+                                    <div className="absolute right-0 top-full mt-2 w-56 bg-card/95 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 p-1.5">
+                                        <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">Sort By</div>
+                                        {['date', 'size'].map(type => (
+                                            <button
+                                                key={type}
+                                                onClick={() => {
+                                                    if (filterType === type) setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+                                                    else setFilterType(type)
+                                                }}
+                                                className={cn("flex w-full items-center justify-between px-2 py-1.5 text-xs rounded-lg transition-colors capitalize", filterType === type ? "bg-primary/10 text-primary font-bold" : "hover:bg-muted")}
+                                            >
+                                                {type}
+                                                <div className="flex items-center">
+                                                    {filterType === type && sortOrder === 'asc' && <ArrowUp className="w-3 h-3 mr-1" />}
+                                                    {filterType === type && sortOrder === 'desc' && <ArrowDown className="w-3 h-3 mr-1" />}
+                                                    {filterType === type && <CheckCircle2 className="w-3 h-3" />}
                                                 </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border/20 border-t mt-1 mb-1">Tools</div>
-
-                                        <button
-                                            onClick={() => { toggleSelectionMode(); setShowMenu(false) }}
-                                            className="flex items-center gap-3 w-full px-3 py-2.5 text-xs font-semibold hover:bg-primary/10 hover:text-primary rounded-xl transition-all text-left"
-                                        >
-                                            <ListChecks className="w-4 h-4" /> Bulk Select
+                                            </button>
+                                        ))}
+                                        <div className="h-px bg-border/50 my-1" />
+                                        <button onClick={handleVerifyFiles} className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium hover:bg-muted rounded-lg">
+                                            <RefreshCw className={cn("w-3.5 h-3.5", isVerifying && "animate-spin")} /> Verify Integrity
                                         </button>
-
-                                        <button
-                                            onClick={() => { handleVerifyFiles(); setShowMenu(false) }}
-                                            className="flex items-center gap-3 w-full px-3 py-2.5 text-xs font-semibold hover:bg-amber-500/10 hover:text-amber-500 rounded-xl transition-all text-left"
-                                            disabled={isVerifying}
-                                        >
-                                            <RefreshCw className={cn("w-4 h-4", isVerifying ? "animate-spin" : "")} /> {t.scan_files || "Scan Integrity"}
-                                        </button>
-
-                                        <button
-                                            onClick={() => {
-                                                if (confirm("Are you sure you want to delete ALL history?")) deleteHistory()
-                                                setShowMenu(false)
-                                            }}
-                                            className="flex items-center gap-3 w-full px-3 py-2.5 text-xs font-semibold hover:bg-red-500/10 text-red-500 rounded-xl transition-all text-left"
-                                        >
-                                            <Trash2 className="w-4 h-4" /> {t.delete_all || "Delete All"}
+                                        <button onClick={() => { if (confirm("Delete all?")) deleteHistory() }} className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium text-red-500 hover:bg-red-500/10 rounded-lg">
+                                            <Trash2 className="w-3.5 h-3.5" /> Delete History
                                         </button>
                                     </div>
                                 )}
                             </div>
                         </div>
-                    )}
-                </div>
-            </div>
+                    </div>
 
-            <div className="flex-1 border rounded-xl bg-card/50 overflow-hidden min-h-[400px] shadow-sm backdrop-blur-md flex flex-col">
-                {/* Table Header */}
-                <div className="flex justify-between items-center sm:grid sm:grid-cols-[1fr_200px_160px] px-4 py-3 bg-secondary/50 text-xs text-muted-foreground uppercase tracking-wider font-semibold border-b border-border/50 shrink-0">
-                    <div>{t.file_details}</div>
-                    <div className="hidden sm:block text-center">{t.format}</div>
-                    <div className="text-right">{t.actions}</div>
-                </div>
-
-                {/* Scrollable List */}
-                <div className="flex-1 overflow-auto">
-                    {historyTasks.length > 0 ? (
-                        <>
-                            {historyTasks.slice(0, visibleCount).map((task, idx) => (
-                                <HistoryRow
-                                    key={task.id}
-                                    style={{}}
-                                    index={idx}
-                                    task={task}
-                                    language={language}
-                                    onOpenFolder={handleOpenFolder}
-                                    onPlayFile={handlePlayFile}
-                                    onRemove={handleRemove}
-                                    onRetry={handleRetry}
-                                    onRefreshPath={handleRefreshPath}
-                                    onCompress={handleCompress}
-                                    onViewCommand={handleViewCommand}
-                                    showPlayButton={!isSelectionMode}
-                                    showCommandButton={settings.developerMode}
-                                    isMissing={missingFileIds.has(task.id)}
-
-                                    isSelectionMode={isSelectionMode}
-                                    isSelected={selectedIds.has(task.id)}
-                                    onToggleSelect={toggleSelect}
-                                />
-                            ))}
-
-                            {/* Load More Button */}
-                            {historyTasks.length > visibleCount && (
-                                <div className="p-4 flex justify-center">
-                                    <button
-                                        onClick={() => setVisibleCount(prev => prev + 20)}
-                                        className="px-6 py-2 bg-secondary/50 hover:bg-secondary text-sm font-medium rounded-full transition-colors"
-                                    >
-                                        Load More ({historyTasks.length - visibleCount} remaining)
-                                    </button>
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center h-40 text-muted-foreground animate-in fade-in duration-300">
-                            <p>{t.empty ? t.empty : 'No results found'}</p>
+                    {/* Selection Toolbar */}
+                    {isSelectionMode && (
+                        <div className="flex items-center justify-between bg-blue-500/10 border border-blue-500/20 px-4 py-2 rounded-lg animate-in slide-in-from-top-2">
+                            <span className="text-xs font-medium text-blue-500">
+                                {t('history_menu.selected_count', { count: selectedIds.size }) || `${selectedIds.size} Selected`}
+                            </span>
+                            <div className="flex gap-2">
+                                <button onClick={selectAll} className="text-xs font-medium px-3 py-1 hover:bg-blue-500/10 rounded text-blue-600 transition-colors">
+                                    {selectedIds.size === historyTasks.length ? t('history_menu.deselect_all') : t('history_menu.select_all')}
+                                </button>
+                                <button
+                                    onClick={deleteSelected}
+                                    disabled={selectedIds.size === 0}
+                                    className="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1 rounded font-bold shadow-sm disabled:opacity-50 transition-colors"
+                                >
+                                    {t('history_menu.delete')}
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
-
-                {/* Command Modal */}
-                {selectedTask && (
-                    <CommandModal
-                        task={selectedTask}
-                        isOpen={isCommandOpen}
-                        onClose={() => setIsCommandOpen(false)}
-                    />
-                )}
-
-                {/* Compress Dialog */}
-                <CompressDialog
-                    isOpen={isCompressOpen}
-                    onClose={() => setIsCompressOpen(false)}
-                    task={compressTask}
-                    onCompress={(taskId, options) => {
-                        compressTask && useAppStore.getState().compressTask(taskId, options)
-                    }}
-                />
             </div>
+
+            {/* Content Area */}
+            <div className="flex-1 overflow-y-auto min-h-0 bg-background/30">
+                <div className="pb-10 max-w-7xl mx-auto">
+                    {historyTasks.length > 0 ? (
+                        <div className="divide-y divide-border/50 border-t border-border/50">
+                            {historyTasks.slice(0, visibleCount).map((task, idx) => (
+                                <HistoryItem
+                                    key={task.id}
+                                    task={task}
+                                    index={idx}
+                                    isSelectionMode={isSelectionMode}
+                                    isSelected={selectedIds.has(task.id)}
+                                    isMissing={missingFileIds.has(task.id)}
+                                    onToggleSelect={toggleSelect}
+                                    onPlay={handlePlayFile}
+                                    onOpenFolder={handleOpenFolder}
+                                    onRemove={handleRemove}
+                                    onRetry={handleRetry}
+                                    onCompress={handleCompress}
+                                    onViewCommand={handleViewCommand}
+                                    language={language}
+                                    t={t}
+                                    developerMode={settings.developerMode}
+                                />
+                            ))}
+
+                            {/* Load More */}
+                            {historyTasks.length > visibleCount && (
+                                <div className="p-8 flex justify-center">
+                                    <button
+                                        onClick={() => setVisibleCount(prev => prev + 20)}
+                                        className="px-6 py-2 bg-secondary/50 hover:bg-secondary text-sm font-medium rounded-full transition-colors backdrop-blur-md"
+                                    >
+                                        Load More ({historyTasks.length - visibleCount})
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-[50vh] text-muted-foreground animate-in fade-in duration-500">
+                            <div className="w-16 h-16 rounded-full bg-secondary/30 flex items-center justify-center mb-4">
+                                <LayoutGrid className="w-8 h-8 opacity-20" />
+                            </div>
+                            <p className="text-lg font-medium opacity-50">{t('history.empty')}</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Modals */}
+            {selectedTask && (
+                <CommandModal
+                    task={selectedTask}
+                    isOpen={isCommandOpen}
+                    onClose={() => setIsCommandOpen(false)}
+                />
+            )}
+            <CompressDialog
+                isOpen={isCompressOpen}
+                onClose={() => setIsCompressOpen(false)}
+                task={compressTask}
+                onCompress={(taskId, options) => {
+                    if (compressTask) useAppStore.getState().compressTask(taskId, options)
+                }}
+            />
         </div>
     )
 }

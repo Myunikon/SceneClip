@@ -1,4 +1,4 @@
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Child } from '@tauri-apps/plugin-shell';
 import { AppSettings, DownloadTask } from '../store/slices/types';
 import { buildYtDlpArgs, parseYtDlpProgress, isErrorLine, getPostProcessStatusText, sanitizeFilename, parseYtDlpJson, getYtDlpCommand } from './ytdlp';
@@ -8,6 +8,7 @@ import { getUniqueFilePath, saveTempCookieFile } from './fileUtils';
 export interface DownloadCallbacks {
     onProgress: (id: string, progress: Partial<DownloadTask>) => void;
     onLog: (id: string, message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
+    onCommand?: (id: string, command: string) => void;
     onComplete: (id: string, result: any) => void;
     onError: (id: string, error: string) => void;
 }
@@ -66,21 +67,58 @@ export class DownloadService {
                 const infoCmd = await getYtDlpCommand(['--dump-json', url]);
                 const infoOutput = await infoCmd.execute();
                 meta = parseYtDlpJson(infoOutput.stdout);
-            } catch (e) {
+                if (meta?.title) {
+                    callbacks.onProgress(id, { title: meta.title });
+                }
+            } catch {
                 callbacks.onLog(id, 'Metadata fetch failed, trying generic info...', 'warning');
                 meta = { title: 'Unknown Video', ext: 'mp4', id: 'unknown' };
             }
 
             // 2. Prepare Filename
-            let template = options?.customFilename || settings.filenameTemplate || '{title}';
-            let finalName = sanitizeFilename(template, meta);
+            const template = options?.customFilename || settings.filenameTemplate || '{title}';
+            const finalName = sanitizeFilename(template, meta);
 
             if (!settings.downloadPath) {
                 throw new Error("Download path not set in settings.");
             }
             const { join } = await import('@tauri-apps/api/path');
             const fullOutputPathRaw = await join(settings.downloadPath, finalName);
-            const fullOutputPath = await getUniqueFilePath(fullOutputPathRaw);
+
+            // FIX: Windows MAX_PATH Safety Check
+            // We implement a "soft" limit of 250 to allow room for extension and potential temp suffixes
+            let fullOutputPath = await getUniqueFilePath(fullOutputPathRaw);
+
+            // Only enforce this strict limit on Windows
+            const { type } = await import('@tauri-apps/plugin-os');
+            const platform = await type();
+
+            if (platform === 'windows' && fullOutputPath.length > 250) {
+                callbacks.onLog(id, 'Filename too long for Windows, truncating...', 'warning');
+                // Calculate how much we need to shave off
+                const excess = fullOutputPath.length - 250;
+                // We truncate from the filename, preserving extension
+                // Logic: dirname + separator + filenameWithExt
+                // We need to find the filename part again.
+                // Since finalName was used, we can assume fullOutputPath ~= settings.downloadPath + finalName
+                // But getUniqueFilePath might have added " (1)".
+
+                // Simple heuristic: Take the last segment
+                const lastSep = Math.max(fullOutputPath.lastIndexOf('/'), fullOutputPath.lastIndexOf('\\'));
+                if (lastSep !== -1) {
+                    const dir = fullOutputPath.substring(0, lastSep);
+                    const name = fullOutputPath.substring(lastSep + 1);
+                    const extIndex = name.lastIndexOf('.');
+                    const ext = extIndex !== -1 ? name.substring(extIndex) : '';
+                    const base = extIndex !== -1 ? name.substring(0, extIndex) : name;
+
+                    if (base.length > excess) {
+                        const newBase = base.substring(0, base.length - excess - 5); // Extra buffer
+                        const newName = `${newBase}${ext}`;
+                        fullOutputPath = await join(dir, newName);
+                    }
+                }
+            }
 
             // 3. Handle Cookies
             let cookiePath = undefined;
@@ -92,7 +130,11 @@ export class DownloadService {
             const ytDlpOptions = { ...options, cookies: cookiePath };
             const args = await buildYtDlpArgs(url, ytDlpOptions, settings, fullOutputPath, 'cpu'); // GPU Type should ideally be passed in or detected
 
-            callbacks.onLog(id, `Executing: yt-dlp ${args.join(' ')}`, 'info');
+            const commandStr = `yt-dlp ${args.join(' ')}`;
+            callbacks.onLog(id, `Executing: ${commandStr}`, 'info');
+            if (callbacks.onCommand) {
+                callbacks.onCommand(id, commandStr);
+            }
 
             // 5. Setup Command & Events
             const cmd = await getYtDlpCommand(args);
@@ -100,6 +142,22 @@ export class DownloadService {
 
             cmd.stdout.on('data', (line) => {
                 const str = typeof line === 'string' ? line : new TextDecoder().decode(line);
+
+                // NEW: Capture actual filename from yt-dlp output
+                // This ensures we have the correct path even if yt-dlp changes extension or appends IDs
+                if (str.includes('[Merger] Merging formats into')) {
+                    const match = str.match(/"([^"]+)"/);
+                    if (match && match[1]) {
+                        fullOutputPath = match[1];
+                        // callbacks.onLog(id, `Trace: Merged to ${fullOutputPath}`, 'info');
+                    }
+                } else if (str.includes('[download] Destination:')) {
+                    const match = str.match(/Destination:\s+(.*)/);
+                    if (match && match[1]) {
+                        fullOutputPath = match[1].trim();
+                    }
+                }
+
                 const progress = parseYtDlpProgress(str);
                 if (progress) {
                     callbacks.onProgress(id, {
@@ -123,6 +181,9 @@ export class DownloadService {
             });
 
             cmd.on('close', (data) => {
+                // If it was removed from the map, it was likely stopped intentionally
+                if (!this.activeProcessMap.has(id)) return;
+
                 this.activeProcessMap.delete(id);
                 this.activePidMap.delete(id);
 
@@ -134,6 +195,9 @@ export class DownloadService {
             });
 
             cmd.on('error', (err) => {
+                // If it was removed from the map, it was likely stopped intentionally
+                if (!this.activeProcessMap.has(id)) return;
+
                 this.activeProcessMap.delete(id);
                 this.activePidMap.delete(id);
                 callbacks.onError(id, `Spawn error: ${err}`);

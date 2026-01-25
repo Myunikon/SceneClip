@@ -16,6 +16,9 @@
     "os:default",
     "dialog:default",
     "clipboard-manager:default",
+    "autostart:allow-enable",
+    "autostart:allow-disable",
+    "autostart:allow-is-enabled",
     "clipboard-manager:allow-read-text",
     "clipboard-manager:allow-write-text",
     "notification:default",
@@ -24,13 +27,25 @@
       "identifier": "opener:allow-open-path",
       "allow": [
         {
+          "path": "$DOWNLOAD"
+        },
+        {
           "path": "$DOWNLOAD/**"
+        },
+        {
+          "path": "$APP_DATA"
         },
         {
           "path": "$APP_DATA/**"
         },
         {
+          "path": "$APPDATA"
+        },
+        {
           "path": "$APPDATA/**"
+        },
+        {
+          "path": "$TEMP"
         },
         {
           "path": "$TEMP/**"
@@ -184,6 +199,7 @@
         }
       ]
     },
-    "deep-link:default"
+    "deep-link:default",
+    "store:default"
   ]
 }

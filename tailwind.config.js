@@ -75,11 +75,16 @@ export default {
         shine: {
           "0%": { transform: "translateX(-100%)" },
           "100%": { transform: "translateX(100%)" }
+        },
+        shimmer: {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(100%)" },
         }
       },
       animation: {
         blob: "blob 30s infinite",
         shine: "shine 1.5s infinite",
+        shimmer: "shimmer 0.7s ease-out forwards",
       },
     },
   },

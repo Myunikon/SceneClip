@@ -17,6 +17,7 @@ export function NotificationCenter() {
     const [isOpen, setIsOpen] = useState(false)
     const { logs, clearLogs, settings } = useAppStore()
     const popoverRef = useRef<HTMLDivElement>(null)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const t = (translations[settings.language as keyof typeof translations] || translations['en']) as any
 
     // Only show last 50 logs, most recent first

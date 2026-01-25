@@ -52,11 +52,11 @@ export function ConfirmDialog({
                     <div className="p-4">
                         <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
                     </div>
-                    <div className="flex gap-3 p-4 pt-0">
-                        <button onClick={onClose} className="flex-1 px-4 py-2.5 bg-secondary hover:bg-secondary/80 rounded-lg font-medium transition-colors">
+                    <div className="flex flex-col sm:flex-row gap-3 p-4 pt-0">
+                        <button onClick={onClose} className="flex-1 px-4 py-2.5 bg-secondary hover:bg-secondary/80 rounded-lg font-medium transition-colors text-sm">
                             {cancelLabel}
                         </button>
-                        <button onClick={() => { onConfirm(); onClose() }} className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors">
+                        <button onClick={() => { onConfirm(); onClose() }} className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors text-sm whitespace-nowrap">
                             {confirmLabel}
                         </button>
                     </div>

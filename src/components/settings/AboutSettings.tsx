@@ -1,24 +1,27 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { motion, AnimatePresence } from 'framer-motion'
 import { Download, Terminal as TerminalIcon, Scissors, Zap, Globe, AlertCircle, X, ExternalLink } from 'lucide-react'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Updater } from '../Updater'
+import { SettingSection } from './SettingItem'
 
 interface AboutSettingsProps {
-    t: any
     addLog: (entry: any) => void
     setShowEasterEgg: (show: boolean) => void
 }
 
-export function AboutSettings({ t, addLog, setShowEasterEgg }: AboutSettingsProps) {
+export function AboutSettings({ addLog, setShowEasterEgg }: AboutSettingsProps) {
+    const { t } = useTranslation()
     const [selectedTech, setSelectedTech] = useState<any>(null)
 
     const techItems = [
-        { id: 'yt-dlp', name: 'yt-dlp', role: t.settings.about_page.role_core, Icon: TerminalIcon, desc: t.settings.about_page.yt_desc, link: 'https://github.com/yt-dlp/yt-dlp', color: 'text-foreground', bg: 'bg-black/10 dark:bg-white/10' },
-        { id: 'ffmpeg', name: 'FFmpeg', role: t.settings.about_page.role_media, Icon: Scissors, desc: t.settings.about_page.ff_desc, link: 'https://ffmpeg.org', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-500/10' },
-        { id: 'tauri', name: 'Tauri', role: t.settings.about_page.role_framework, Icon: Zap, desc: t.settings.about_page.tauri_desc, link: 'https://tauri.app', color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-500/10' },
+        { id: 'yt-dlp', name: 'yt-dlp', role: t('settings.about_page.role_core'), Icon: TerminalIcon, desc: t('settings.about_page.yt_desc'), link: 'https://github.com/yt-dlp/yt-dlp', color: 'text-foreground', bg: 'bg-black/10 dark:bg-white/10' },
+        { id: 'ffmpeg', name: 'FFmpeg', role: t('settings.about_page.role_media'), Icon: Scissors, desc: t('settings.about_page.ff_desc'), link: 'https://ffmpeg.org', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-500/10' },
+        { id: 'tauri', name: 'Tauri', role: t('settings.about_page.role_framework'), Icon: Zap, desc: t('settings.about_page.tauri_desc'), link: 'https://tauri.app', color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-500/10' },
         {
-            id: 'react', name: 'React', role: t.settings.about_page.role_ui, Icon: (props: any) => (
+            id: 'react', name: 'React', role: t('settings.about_page.role_ui'), Icon: (props: any) => (
                 <svg className={`w-6 h-6 ${props.className}`} viewBox="-11.5 -10.23174 23 20.46348">
                     <circle cx="0" cy="0" r="2.05" fill="currentColor" />
                     <g stroke="currentColor" strokeWidth="1" fill="none">
@@ -27,14 +30,14 @@ export function AboutSettings({ t, addLog, setShowEasterEgg }: AboutSettingsProp
                         <ellipse rx="11" ry="4.2" transform="rotate(120)" />
                     </g>
                 </svg>
-            ), desc: t.settings.about_page.react_desc, link: 'https://react.dev', color: 'text-cyan-500', bg: 'bg-cyan-500/10'
+            ), desc: t('settings.about_page.react_desc'), link: 'https://react.dev', color: 'text-cyan-500', bg: 'bg-cyan-500/10'
         },
-        { id: 'lucide', name: 'Lucide', role: t.settings.about_page.role_icon, Icon: Globe, desc: t.settings.about_page.lucide_desc, link: 'https://lucide.dev', color: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-500/10' },
-        { id: 'sponsorblock', name: 'SponsorBlock', role: t.settings.about_page.role_api, Icon: AlertCircle, desc: t.settings.about_page.sb_desc, link: 'https://sponsor.ajay.app', color: 'text-red-600 dark:text-red-400', bg: 'bg-red-500/10' },
+        { id: 'lucide', name: 'Lucide', role: t('settings.about_page.role_icon'), Icon: Globe, desc: t('settings.about_page.lucide_desc'), link: 'https://lucide.dev', color: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-500/10' },
+        { id: 'sponsorblock', name: 'SponsorBlock', role: t('settings.about_page.role_api'), Icon: AlertCircle, desc: t('settings.about_page.sb_desc'), link: 'https://sponsor.ajay.app', color: 'text-red-600 dark:text-red-400', bg: 'bg-red-500/10' },
     ]
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
+        <div className="space-y-8">
             {/* Hero */}
             <div className="text-center space-y-4 py-8 relative">
                 <motion.div
@@ -63,24 +66,28 @@ export function AboutSettings({ t, addLog, setShowEasterEgg }: AboutSettingsProp
                 </div>
 
                 <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
-                    {t.settings.about_page.desc}
+                    {t('settings.about_page.desc')}
                 </p>
             </div>
 
             <Updater />
 
             {/* Tech Grid */}
-            <section className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2 px-1">
-                    <span className="w-1 h-4 bg-primary rounded-full" />
-                    {t.settings.about_page.core}
-                </h3>
-
+            <SettingSection
+                title={t('settings.about_page.core')}
+                className="bg-transparent border-none p-0 space-y-4"
+            >
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {techItems.map((item) => (
+                    {techItems.map((item, index) => (
                         <motion.div
                             key={item.id}
                             layoutId={item.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{
+                                delay: index * 0.05,
+                                duration: 0.2
+                            }}
                             onClick={() => setSelectedTech(item)}
                             className="p-4 border rounded-xl bg-card/50 hover:bg-card transition-all group cursor-pointer relative overflow-hidden"
                             whileHover={{ scale: 1.02, y: -2 }}
@@ -94,7 +101,7 @@ export function AboutSettings({ t, addLog, setShowEasterEgg }: AboutSettingsProp
                         </motion.div>
                     ))}
                 </div>
-            </section>
+            </SettingSection>
 
             {/* Modal */}
             <AnimatePresence>
@@ -132,7 +139,7 @@ export function AboutSettings({ t, addLog, setShowEasterEgg }: AboutSettingsProp
                                     className="w-full bg-primary text-primary-foreground font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 text-sm mt-2"
                                 >
                                     <ExternalLink className="w-4 h-4" />
-                                    {t.settings.about_page.visit_website}
+                                    {t('settings.about_page.visit_website')}
                                 </button>
                             </div>
                         </motion.div>
@@ -161,7 +168,7 @@ export function AboutSettings({ t, addLog, setShowEasterEgg }: AboutSettingsProp
                 </div>
 
                 <div className="max-w-xs mx-auto text-xs text-muted-foreground/50 text-center leading-tight">
-                    {t.settings.about_page.legal_text}
+                    {t('settings.about_page.legal_text')}
                 </div>
             </section>
         </div>

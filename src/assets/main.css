@@ -5,13 +5,6 @@
 
 @layer base {
   :root {
-    /* ========================================================================
-       LIGHT MODE: Paper Metaphor Design System
-       - Canvas: Off-white (#F9FAFB) to reduce eye strain
-       - Surface: Pure white (#FFFFFF) for elevated content
-       - Text: Soft black to avoid halation
-       - Borders: Cool-gray tinted for visual harmony
-       ======================================================================== */
 
     /* Backgrounds (Canvas → Surface hierarchy) */
     --background: 210 20% 98%;
@@ -58,8 +51,8 @@
     --radius: 0.75rem;
     /* 12px for G2-like smoothness */
 
-    /* === Shadow System (HSL-based, Blue-Gray tint) === */
-    --shadow-color: 220 10% 15%;
+    /* === Shadow System (Neutral Black - Professional) === */
+    --shadow-color: 0 0% 0%;
     --shadow-sm:
       0 1px 2px 0 hsl(var(--shadow-color) / 0.05);
     --shadow-md:
@@ -79,59 +72,53 @@
   }
 
   .dark {
-    /* ========================================================================
-       DARK MODE: Deep Contrast Design
-       ======================================================================== */
-    --background: 222 47% 6%;
-    /* Deep blue-black: #0A0E14 */
-    --foreground: 210 40% 98%;
-    /* Near white: #F8FAFC */
-
-    --card: 222 47% 8%;
-    /* Slightly elevated: #0D1219 */
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222 47% 10%;
-    --popover-foreground: 210 40% 98%;
-
-    /* Primary (Light foreground in dark mode) */
-    --primary: 210 40% 98%;
+    --background: 240 3% 8%;
+    /* #131314 */
+    --foreground: 210 20% 98%;
     /* Near white */
-    --primary-foreground: 222 47% 11%;
 
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
+    --card: 210 3% 12%;
+    /* #1e1f20 */
+    --card-foreground: 210 20% 98%;
 
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
+    --popover: 210 3% 12%;
+    /* #1e1f20 */
+    --popover-foreground: 210 20% 98%;
 
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
+    /* Primary (Keep white/bright for contrast) */
+    --primary: 210 20% 98%;
+    --primary-foreground: 240 3% 8%;
+
+    /* Secondary areas - slightly lighter than surface for hierarchy */
+    --secondary: 210 3% 16%;
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 210 3% 12%;
+    /* Match card */
+    --muted-foreground: 210 5% 60%;
+
+    --accent: 210 3% 16%;
+    --accent-foreground: 210 20% 98%;
 
     --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 210 20% 98%;
 
-    --border: 217 33% 17%;
-    --input: 217 33% 20%;
-    --ring: 213 27% 84%;
+    --border: 210 3% 20%;
+    /* Visible border definition */
+    --input: 210 3% 16%;
+    /* Slightly distinct form fields */
+    --ring: 210 3% 84%;
 
-    /* === Shadow System (Deep shadows for dark mode) === */
-    --shadow-color: 222 50% 3%;
-    --shadow-sm:
-      0 1px 2px 0 hsl(var(--shadow-color) / 0.3);
-    --shadow-md:
-      0 4px 6px -1px hsl(var(--shadow-color) / 0.4),
-      0 2px 4px -2px hsl(var(--shadow-color) / 0.2);
-    --shadow-lg:
-      0 10px 15px -3px hsl(var(--shadow-color) / 0.5),
-      0 4px 6px -4px hsl(var(--shadow-color) / 0.3);
-    --shadow-xl:
-      0 20px 25px -5px hsl(var(--shadow-color) / 0.6),
-      0 8px 10px -6px hsl(var(--shadow-color) / 0.3);
+    /* === Shadow System (Deep black shadows) === */
+    --shadow-color: 0 0% 0%;
+    --shadow-sm: 0 1px 2px 0 hsl(var(--shadow-color) / 0.5);
+    --shadow-md: 0 4px 6px -1px hsl(var(--shadow-color) / 0.5), 0 2px 4px -2px hsl(var(--shadow-color) / 0.3);
+    --shadow-lg: 0 10px 15px -3px hsl(var(--shadow-color) / 0.6), 0 4px 6px -4px hsl(var(--shadow-color) / 0.4);
+    --shadow-xl: 0 20px 25px -5px hsl(var(--shadow-color) / 0.7), 0 8px 10px -6px hsl(var(--shadow-color) / 0.4);
 
     /* Dark Mode Glass Variables */
-    --glass-opacity: 0.5;
-    --glass-border: 1px solid hsl(217 33% 25% / 0.5);
+    --glass-opacity: 0.7;
+    --glass-border: 1px solid hsl(210 3% 25% / 0.3);
     --glass-shadow: var(--shadow-lg);
   }
 }

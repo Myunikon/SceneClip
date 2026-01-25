@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AppSettings } from '../store/slices/types'
 import { Command } from '@tauri-apps/plugin-shell'
 import { BINARIES, DEFAULTS } from './constants'
@@ -42,6 +43,14 @@ export async function buildYtDlpArgs(
     finalFilename: string,
     gpuType: 'cpu' | 'nvidia' | 'amd' | 'intel' | 'apple' = 'cpu'
 ): Promise<string[]> {
+    const fmt = options.format || settings.resolution
+    const container = options.container || settings.container || 'mp4'
+    const isClipping = !!(options.rangeStart || options.rangeEnd)
+    const isGif = fmt === 'gif'
+
+    // Force single thread & no-part for clips/gifs to prevent fragmentation/locking issues (WinError 32)
+    const concurrentFragments = (isClipping || isGif) ? '1' : String(Math.max(1, settings.concurrentFragments || 4))
+
     const args: string[] = [
         '-o', finalFilename, // Full path included in finalFilename
         '--newline',
@@ -49,13 +58,14 @@ export async function buildYtDlpArgs(
         '--no-playlist',
         '--encoding', 'utf-8', // Force UTF-8 output to prevent Tauri shell encoding errors
         // CONCURRENT FRAGMENTS (Speed Boost)
-        '-N', String(Math.max(1, settings.concurrentFragments || 4)),
+        '-N', concurrentFragments,
         '--continue', // Force resume support
         '--socket-timeout', DEFAULTS.SOCKET_TIMEOUT, // Refresh link if connection hangs/throttles
     ]
 
-    const fmt = options.format || settings.resolution
-    const container = options.container || settings.container || 'mp4'
+    if (isClipping || isGif) {
+        args.push('--no-part')
+    }
 
     // GPU Detection Logic
     let activeGpuType = gpuType
@@ -80,6 +90,8 @@ export async function buildYtDlpArgs(
         args.push('--audio-quality', qualityMap[bitrate] || '2')
 
         // AUDIO NORMALIZATION (Loudness)
+        // Handled via consolidated block below? No, this is inside fmt === 'audio'.
+        // We keep it here as audio extraction forces re-encode anyway.
         if (options.audioNormalization) {
             args.push('--postprocessor-args', 'ffmpeg:-af loudnorm=I=-16:TP=-1.5:LRA=11')
         }
@@ -107,7 +119,7 @@ export async function buildYtDlpArgs(
         }
 
         args.push('--recode-video', 'gif')
-        args.push('--postprocessor-args', `VideoConvertor:-vf "${gifFilter}" -loop 0`)
+        args.push('--postprocessor-args', `VideoConvertor:-vf ${gifFilter} -loop 0`)
 
 
     } else {
@@ -153,28 +165,34 @@ export async function buildYtDlpArgs(
 
             if (codec === 'h264') {
                 const enc = getEncoder('libx264', 'h264_nvenc', 'h264_amf', 'h264_qsv', 'h264_videotoolbox')
-                // Apply GPU-specific quality settings if using GPU
+                // Audio Encoding Logic
+                const audioParams = options.audioNormalization ? '-c:a aac -b:a 192k' : '-c:a copy'
+
                 if (activeGpuType !== 'cpu') {
-                    if (activeGpuType === 'nvidia') transcodeArgs = `-c:v ${enc} -rc:v vbr -cq:v 19 -preset p4 -c:a copy`
-                    else if (activeGpuType === 'amd') transcodeArgs = `-c:v ${enc} -rc cqp -qp_i 22 -qp_p 22 -c:a copy`
-                    else if (activeGpuType === 'intel') transcodeArgs = `-c:v ${enc} -global_quality 20 -c:a copy`
-                    else if (activeGpuType === 'apple') transcodeArgs = `-c:v ${enc} -q:v 65 -c:a copy`
+                    if (activeGpuType === 'nvidia') transcodeArgs = `-c:v ${enc} -rc:v vbr -cq:v 19 -preset p4 ${audioParams}`
+                    else if (activeGpuType === 'amd') transcodeArgs = `-c:v ${enc} -rc cqp -qp_i 22 -qp_p 22 ${audioParams}`
+                    else if (activeGpuType === 'intel') transcodeArgs = `-c:v ${enc} -global_quality 20 ${audioParams}`
+                    else if (activeGpuType === 'apple') transcodeArgs = `-c:v ${enc} -q:v 65 ${audioParams}`
                 } else {
-                    transcodeArgs = `-c:v ${enc} -crf 23 -preset medium -c:a copy`
+                    transcodeArgs = `-c:v ${enc} -crf 23 -preset medium ${audioParams}`
                 }
             } else if (codec === 'av1') {
-                transcodeArgs = '-c:v libsvtav1 -crf 30 -preset 8 -c:a copy'
+                const audioParams = options.audioNormalization ? '-c:a libopus -b:a 128k' : '-c:a copy'
+                transcodeArgs = `-c:v libsvtav1 -crf 30 -preset 8 ${audioParams}`
             } else if (codec === 'vp9') {
-                transcodeArgs = '-c:v libvpx-vp9 -crf 30 -b:v 0 -c:a copy'
+                const audioParams = options.audioNormalization ? '-c:a libopus -b:a 128k' : '-c:a copy'
+                transcodeArgs = `-c:v libvpx-vp9 -crf 30 -b:v 0 ${audioParams}`
             } else if (codec === 'hevc') {
                 const enc = getEncoder('libx265', 'hevc_nvenc', 'hevc_amf', 'hevc_qsv', 'hevc_videotoolbox')
+                const audioParams = options.audioNormalization ? '-c:a aac -b:a 192k' : '-c:a copy'
+
                 if (activeGpuType !== 'cpu') {
-                    if (activeGpuType === 'nvidia') transcodeArgs = `-c:v ${enc} -rc:v vbr -cq:v 26 -preset p4 -c:a copy`
-                    else if (activeGpuType === 'amd') transcodeArgs = `-c:v ${enc} -rc cqp -qp_i 26 -qp_p 26 -c:a copy`
-                    else if (activeGpuType === 'intel') transcodeArgs = `-c:v ${enc} -global_quality 26 -c:a copy`
-                    else if (activeGpuType === 'apple') transcodeArgs = `-c:v ${enc} -q:v 60 -c:a copy`
+                    if (activeGpuType === 'nvidia') transcodeArgs = `-c:v ${enc} -rc:v vbr -cq:v 26 -preset p4 ${audioParams}`
+                    else if (activeGpuType === 'amd') transcodeArgs = `-c:v ${enc} -rc cqp -qp_i 26 -qp_p 26 ${audioParams}`
+                    else if (activeGpuType === 'intel') transcodeArgs = `-c:v ${enc} -global_quality 26 ${audioParams}`
+                    else if (activeGpuType === 'apple') transcodeArgs = `-c:v ${enc} -q:v 60 ${audioParams}`
                 } else {
-                    transcodeArgs = `-c:v ${enc} -crf 26 -preset medium -c:a copy`
+                    transcodeArgs = `-c:v ${enc} -crf 26 -preset medium ${audioParams}`
                 }
             }
 
@@ -185,11 +203,6 @@ export async function buildYtDlpArgs(
 
         // MAGIC REMUX: Ensure output is always the desired container (mp4/mkv)
         args.push('--merge-output-format', container)
-
-        // Apply Audio Normalization to Video too if requested
-        if (options.audioNormalization) {
-            args.push('--postprocessor-args', 'ffmpeg:-af loudnorm=I=-16:TP=-1.5:LRA=11')
-        }
     }
 
     // Clipping support using yt-dlp's native download-sections
@@ -201,55 +214,85 @@ export async function buildYtDlpArgs(
 
         args.push('--download-sections', `*${start}-${end}`)
         args.push('--force-keyframes-at-cuts') // Clean cuts
+    }
+    // isClipping moved to top
 
-        if (fmt !== 'gif') {
-            args.push('--postprocessor-args', 'ffmpeg:-movflags +faststart -avoid_negative_ts make_zero')
-        } else {
-            args.push('--postprocessor-args', 'ffmpeg:-avoid_negative_ts make_zero -map_metadata 0')
-        }
+    // --- CONSOLIDATED FFMPEG ARGS ---
+    const ffmpegArgs: string[] = []
+
+    // 1. Audio Normalization (Loudness)
+    // Must trigger RE-ENCODING for audio. Conflicting with -c:a copy will crash ffmpeg.
+    if (options.audioNormalization && fmt !== 'gif') {
+        ffmpegArgs.push('-af loudnorm=I=-16:TP=-1.5:LRA=11')
+        // Force AAC encoding if not already specified by HW logic
+        // We will deduplicate or handle precedence in the final join
     }
 
-    const isClipping = !!(options.rangeStart || options.rangeEnd)
-    // activeGpuType calculated earlier
-
-    if (activeGpuType !== 'cpu' && fmt !== 'audio' && fmt !== 'gif' && !(options.forceTranscode && isClipping)) {
+    // 2. Hardware Acceleration & Codec Logic
+    // FIX: Strictly disable generic HW args if we are already forcing a transcode (VideoConvertor)
+    // This prevents "Double Transcode" conflicts.
+    if (activeGpuType !== 'cpu' && fmt !== 'audio' && fmt !== 'gif' && !options.forceTranscode) {
         const encoderMap: Record<string, string> = {
             'nvidia': 'h264_nvenc',
             'amd': 'h264_amf',
             'intel': 'h264_qsv',
-            'apple': 'h264_videotoolbox'  // macOS hardware encoding
+            'apple': 'h264_videotoolbox'
         }
         const encoder = encoderMap[activeGpuType]
 
         if (encoder) {
-            let hwArgs = `ffmpeg:-c:v ${encoder}`
-
+            let hwArgs = `-c:v ${encoder}`
 
             if (isClipping) {
-
-
                 if (activeGpuType === 'nvidia') {
-
                     hwArgs += ` -rc:v vbr -cq:v 19 -preset p4 -forced-idr 1`
                 } else if (activeGpuType === 'amd') {
-                    // AMF: Use -rc cqp -qp_i 22. AMD usually needs slightly higher QP for same size
                     hwArgs += ` -rc cqp -qp_i 22 -qp_p 22`
                 } else if (activeGpuType === 'intel') {
-                    // QSV: Use -global_quality (ICQ). Scale 1-51? ICQ 20 is around CRF 23.
                     hwArgs += ` -global_quality 20`
                 } else if (activeGpuType === 'apple') {
-                    // VideoToolbox: -q:v 60 (Scale 1-100, 100 best)
                     hwArgs += ` -q:v 65`
                 } else {
-                    // Unknown/Software Fallback (shouldn't happen here due to outer check, but safe fallback)
-                    // Force high bitrate for safety if encoder specific flags unknown
                     hwArgs += ` -b:v 10M`
                 }
             }
 
-            // FIX: Use --postprocessor-args for ffmpeg hardware encoding, NOT --downloader-args
-            args.push('--postprocessor-args', `ffmpeg:${hwArgs.replace('ffmpeg:', '')}`)
+            ffmpegArgs.push(hwArgs)
         }
+    }
+
+    // 3. Clipping Consistency
+    if (isClipping) {
+        if (fmt !== 'gif') {
+            ffmpegArgs.push('-movflags +faststart -avoid_negative_ts make_zero')
+        } else {
+            ffmpegArgs.push('-avoid_negative_ts make_zero -map_metadata 0')
+        }
+    }
+
+    // 4. Force Audio Codec if Normalization is Active
+    // This is the CRITICAL FIX for the "copy with filter" crash.
+    // If we have loudnorm, we CANNOT use "copy". behavior.
+    if (options.audioNormalization && fmt !== 'gif') {
+        const hasCustomAudioCodec = ffmpegArgs.some(a => a.includes('-c:a '))
+        if (!hasCustomAudioCodec) {
+            // Default to AAC 192k for best compatibility and quality retention vs re-encode
+            ffmpegArgs.push('-c:a aac -b:a 192k')
+        }
+    } else if (activeGpuType !== 'cpu' && fmt !== 'audio' && fmt !== 'gif' && !isClipping && !options.forceTranscode) {
+        // HW Accel default: Copy audio (fastest) IF compression implies it or we are just effectively remuxing video
+        // Valid only if NOT normalizing.
+        // Actually, previous logic was strict about copying.
+        // If we are transcoding video (HW), we usually want to copy audio.
+        const hasCustomAudioCodec = ffmpegArgs.some(a => a.includes('-c:a '))
+        if (!hasCustomAudioCodec) {
+            ffmpegArgs.push('-c:a copy')
+        }
+    }
+
+    // Push Consolidated Args
+    if (ffmpegArgs.length > 0) {
+        args.push('--postprocessor-args', `ffmpeg:${ffmpegArgs.join(' ')}`)
     }
 
     // Subtitle download support
@@ -433,7 +476,7 @@ export function parseMetadata(lines: string[]) {
 
             // Extract Metadata using the best available object
             if (json.title && json.id) meta = json
-        } catch (e) {
+        } catch {
             // Non-JSON lines are expected (progress output), only log actual parse errors for JSON-like lines
             if (line.trim().startsWith('{')) {
                 console.debug('[parseMetadata] Failed to parse JSON line:', line.substring(0, 100))
@@ -450,12 +493,12 @@ export function sanitizeFilename(template: string, meta: any): string {
     const sanitize = (s: string) => s.replace(/[\\/:*?"<>|]/g, '_').replace(/\.\./g, '').trim()
 
     let finalName = template
-    finalName = finalName.replace(/{title}/g, meta.title || '')
-    finalName = finalName.replace(/{ext}/g, meta.ext || 'mp4')
-    finalName = finalName.replace(/{id}/g, meta.id || '')
-    finalName = finalName.replace(/{uploader}/g, meta.uploader || 'Unknown')
-    finalName = finalName.replace(/{width}/g, meta.width ? String(meta.width) : '')
-    finalName = finalName.replace(/{height}/g, meta.height ? String(meta.height) : '')
+    finalName = finalName.replace(/{title}/gi, meta.title || '')
+    finalName = finalName.replace(/{ext}/gi, meta.ext || 'mp4')
+    finalName = finalName.replace(/{id}/gi, meta.id || '')
+    finalName = finalName.replace(/{uploader}/gi, meta.uploader || 'Unknown')
+    finalName = finalName.replace(/{width}/gi, meta.width ? String(meta.width) : '')
+    finalName = finalName.replace(/{height}/gi, meta.height ? String(meta.height) : '')
 
     finalName = sanitize(finalName)
     // Defense: Windows MAX_PATH limit (approx 260). Truncate to 200 to allow room for path + extension
@@ -503,7 +546,7 @@ export function parseYtDlpJson(stdout: string) {
         try {
             parsedData = JSON.parse(line)
             if (parsedData.title) break // Found it
-        } catch (e) {
+        } catch {
             // Not valid JSON
         }
     }
@@ -560,7 +603,7 @@ export function parseYtDlpJson(stdout: string) {
             data.hasSubtitles = hasManualSubs || hasAutoSubs
 
             return data
-        } catch (e) { /* ignore */ }
+        } catch { /* ignore */ }
     }
 
     // Fallback 2: Regex Extraction for critical fields if JSON fails completely
@@ -585,14 +628,10 @@ export function parseYtDlpJson(stdout: string) {
 }
 // Clear local cache command
 export async function clearCache() {
-    try {
-        const cmd = await getYtDlpCommand(['--rm-cache-dir'])
-        const output = await cmd.execute()
-        if (output.code !== 0) throw new Error(output.stderr)
-        return true
-    } catch (e) {
-        throw e
-    }
+    const cmd = await getYtDlpCommand(['--rm-cache-dir'])
+    const output = await cmd.execute()
+    if (output.code !== 0) throw new Error(output.stderr)
+    return true
 }
 
 

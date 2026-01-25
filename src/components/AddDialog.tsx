@@ -1,20 +1,20 @@
 import { forwardRef, useImperativeHandle, useState, useEffect } from 'react'
-import { Download, HardDrive, X } from 'lucide-react'
+import { Download, HardDrive } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { LeftPanel } from './add-dialog/LeftPanel'
 import { RightPanel } from './add-dialog/RightPanel'
 import { useAddDialog } from './add-dialog/useAddDialog'
 import { AddDialogProvider } from './add-dialog/AddDialogContext'
 import { parseTime, cn } from '../lib/utils'
+import { DownloadOptions } from '../types'
 
 interface AddDialogProps {
-    addTask: (url: string, opts: any) => any
+    addTask: (url: string, opts: DownloadOptions) => Promise<void>
     initialUrl?: string
     initialCookies?: string
     initialUserAgent?: string
     initialStart?: number
     initialEnd?: number
-    previewLang?: string | null
     isOffline?: boolean
 }
 
@@ -115,26 +115,24 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
                     >
                         <form onSubmit={handleSubmit} className={formClass}>
 
-                            {/* --- HEADER --- */}
-                            <div className="flex items-center justify-between p-4 border-b border-border dark:border-white/5 bg-background dark:bg-black/20">
-                                <h2 className="text-xl font-bold tracking-tight text-foreground">
-                                    {meta ? t.customize_download : t.new_download}
-                                </h2>
+                            {/* --- HEADER (Apple Sheet Style) --- */}
+                            <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-background/80 backdrop-blur-md shrink-0 z-20">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        resetForm()
+                                        setIsOpen(false)
+                                    }}
+                                    className="text-primary hover:text-primary/80 text-[15px] font-medium transition-colors"
+                                >
+                                    {t('dialog.cancel')}
+                                </button>
 
-                                <div className="flex items-center gap-2">
-
-
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            resetForm()
-                                            setIsOpen(false)
-                                        }}
-                                        className="p-2 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground transition-all"
-                                    >
-                                        <X className="w-5 h-5" />
-                                    </button>
+                                <div className="absolute left-1/2 -translate-x-1/2 font-semibold text-[15px] text-foreground">
+                                    {meta ? t('dialog.customize_download') : t('dialog.new_download')}
                                 </div>
+
+                                <div className="w-[40px]" /> {/* Spacer for centering */}
                             </div>
 
                             {/* Main Split Layout */}
@@ -153,20 +151,20 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
                                 </AddDialogProvider>
                             </div>
 
-                            <div className="flex justify-between items-center p-6 border-t border-border dark:border-white/10 bg-muted/50 dark:bg-card/95 shrink-0 gap-4 z-20">
+                            <div className="flex justify-between items-center p-4 border-t border-border/40 bg-background/80 backdrop-blur-md shrink-0 gap-4 z-20">
                                 <div className="flex-1 min-w-0">
                                     {(estimatedSize || (meta?.formats)) && hasMeta && (
                                         <div className="flex flex-col animate-in fade-in slide-in-from-bottom-2">
-                                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Estimated Size</span>
+                                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">{t('dialog_status.est_size')}</span>
                                             <div className="flex items-center gap-2 text-sm font-mono font-medium text-foreground overflow-hidden h-5">
                                                 <HardDrive className={cn("w-3.5 h-3.5", isDiskFull ? "text-red-500" : "text-primary")} />
                                                 <span className={cn("block min-w-[3ch]", isDiskFull ? "text-red-500" : "")}>
                                                     {formattedSize}
                                                 </span>
-                                                {options.isClipping && <span className="text-orange-500 text-xs font-bold px-1.5 py-0.5 bg-orange-500/10 rounded-full border border-orange-500/20">TRIMMED</span>}
+                                                {options.isClipping && <span className="text-orange-500 text-[10px] font-bold px-1.5 py-0.5 bg-orange-500/10 rounded-full border border-orange-500/20">{t('dialog_status.trimmed')}</span>}
                                                 {isDiskFull && (
-                                                    <span className="text-red-500 text-xs flex items-center gap-1 animate-pulse ml-2">
-                                                        <span className="font-bold">⚠️ Insufficient Disk Space</span>
+                                                    <span className="text-red-500 text-xs flex items-center gap-1 ml-2">
+                                                        <span className="font-bold">⚠️ {t('dialog_status.disk_full')}</span>
                                                         <span className="opacity-70">({formatFileSize(diskFreeSpace || 0)} free)</span>
                                                     </span>
                                                 )}
@@ -176,24 +174,24 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
                                 </div>
 
                                 <div className="flex gap-3">
-                                    <button type="button" onClick={() => {
-                                        resetForm()
-                                        setIsOpen(false)
-                                    }} className="px-6 py-3 hover:bg-secondary/50 rounded-xl font-medium transition-colors text-sm text-muted-foreground hover:text-foreground">{t.cancel}</button>
                                     <button
                                         type="button"
                                         onClick={() => handleSubmit()}
-                                        disabled={!hasMeta || props.isOffline || (options.isClipping && !!options.rangeStart && !!options.rangeEnd && parseTime(options.rangeStart) >= parseTime(options.rangeEnd)) || isDiskFull}
+                                        disabled={
+                                            !hasMeta ||
+                                            props.isOffline ||
+                                            isDiskFull ||
+                                            (options.isClipping && !!options.rangeStart && !!options.rangeEnd && (parseTime(options.rangeEnd) - parseTime(options.rangeStart) < 1))
+                                        }
                                         className={cn(
-                                            "relative isolate overflow-hidden group px-8 py-3.5 rounded-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center gap-2.5 transform active:scale-95",
+                                            "px-8 py-2.5 rounded-full font-semibold text-sm transition-all focus:ring-4 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2",
                                             isDiskFull
-                                                ? "bg-red-500/20 text-red-500"
-                                                : "bg-gradient-to-r from-orange-500 via-red-500 to-purple-600 text-white shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 hover:brightness-110"
+                                                ? "bg-red-500 text-white"
+                                                : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20"
                                         )}
                                     >
-                                        <div className="absolute inset-0 -translate-x-full group-hover:animate-[shine_1.5s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-white/25 to-transparent z-10" />
                                         <Download className="w-4 h-4" />
-                                        <span className="relative tracking-wide">{options.batchMode ? t.download_all : t.download}</span>
+                                        <span>{options.batchMode ? t('dialog.download_all') : t('dialog.download')}</span>
                                     </button>
                                 </div>
                             </div>

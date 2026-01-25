@@ -19,4 +19,5 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any)

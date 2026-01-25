@@ -1,37 +1,84 @@
-name: Build Custom FFmpeg (Minimal)
+name: Build Custom FFmpeg (Native Matrix)
+# "Diet Custom Build" - Built natively on each OS to ensure valid dependencies.
 
 on:
-  workflow_dispatch: # Run manually when you want to update the binary
+  workflow_dispatch:
   schedule:
-    - cron: '0 0 1 * *' # Run once a month to keep fresh
+    - cron: '0 0 1 * *' # Monthly update
 
 jobs:
-  build-minimal-ffmpeg:
-    name: Build Minimal FFmpeg
+  build-ffmpeg:
+    name: Build FFmpeg
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         include:
+          # --- Windows (Native MSYS2) ---
+          - os: windows-latest
+            platform_name: win-x64
+            # Tauri sidecar name (Windows uses MSVC target by default in Tauri, but MinGW exe is compatible)
+            target_filename: ffmpeg-x86_64-pc-windows-msvc.exe 
+            # Use MSYS2 shell
+            shell_type: "msys2 {0}"
+            # Install MinGW versions of libraries
+            install_cmd: >-
+              pacman -S --noconfirm --needed 
+              base-devel 
+              mingw-w64-x86_64-toolchain 
+              mingw-w64-x86_64-nasm 
+              mingw-w64-x86_64-yasm 
+              mingw-w64-x86_64-x264 
+              mingw-w64-x86_64-x265 
+              mingw-w64-x86_64-libvpx 
+              mingw-w64-x86_64-lame 
+              mingw-w64-x86_64-opus 
+              mingw-w64-x86_64-svt-av1 
+              mingw-w64-x86_64-zlib 
+              mingw-w64-x86_64-openssl 
+              upx
+            configure_flags: >-
+              --target-os=mingw32
+              --arch=x86_64
+
+          # --- macOS (Native Apple Silicon) ---
+          - os: macos-latest
+            platform_name: mac-arm64
+            target_filename: ffmpeg-aarch64-apple-darwin
+            shell_type: bash
+            install_cmd: |
+              brew install nasm yasm pkg-config x264 x265 libvpx lame opus svt-av1 openssl@3 upx
+              export PKG_CONFIG_PATH="/opt/homebrew/opt/openssl@3/lib/pkgconfig:$PKG_CONFIG_PATH"
+            configure_flags: >-
+              --enable-videotoolbox
+              --enable-neon
+
+          # --- Linux (Native Ubuntu) ---
           - os: ubuntu-22.04
-            target_name: ffmpeg-x86_64-unknown-linux-gnu
+            platform_name: linux-x64
+            target_filename: ffmpeg-x86_64-unknown-linux-gnu
+            shell_type: bash
             install_cmd: |
               sudo apt-get update
               sudo apt-get install -y build-essential nasm yasm pkg-config libx264-dev libx265-dev libnuma-dev libvpx-dev libmp3lame-dev libopus-dev libsvtav1-dev libssl-dev zlib1g-dev upx
+            configure_flags: ""
 
-          - os: macos-13
-            target_name: ffmpeg-x86_64-apple-darwin
-            install_cmd: |
-              brew install nasm yasm pkg-config x264 x265 libvpx lame opus svt-av1 openssl@3 upx
-
-          - os: ubuntu-22.04
-            target_name: ffmpeg-x86_64-pc-windows-msvc.exe
-            cross_compile: true
-            install_cmd: |
-              sudo apt-get update
-              sudo apt-get install -y build-essential nasm yasm pkg-config mingw-w64 upx zip
+    defaults:
+      run:
+        shell: ${{ matrix.shell_type }}
 
     steps:
       - uses: actions/checkout@v4
+
+      # --- Setup MSYS2 (Windows Only) ---
+      - name: Setup MSYS2 (Windows)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          path-type: inherit
+          install: git
 
       - name: Install Dependencies
         run: ${{ matrix.install_cmd }}
@@ -39,23 +86,17 @@ jobs:
       - name: Download FFmpeg Source (v6.1)
         run: |
           git clone --depth 1 --branch release/6.1 https://github.com/FFmpeg/FFmpeg.git ffmpeg-src
-
-      - name: Configure Minimal Build
+      
+      - name: Configure (Diet Build)
         working-directory: ffmpeg-src
         run: |
+          # Set PKG_CONFIG_PATH for macOS (Homebrew)
           if [ "$RUNNER_OS" == "macOS" ]; then
-            export PKG_CONFIG_PATH="/usr/local/opt/openssl@3/lib/pkgconfig:$PKG_CONFIG_PATH"
+             export PKG_CONFIG_PATH="/opt/homebrew/opt/openssl@3/lib/pkgconfig:$PKG_CONFIG_PATH"
           fi
 
-          # Cross-Compile Setup
-          EXTRA_FLAGS=""
-          if [[ "${{ matrix.target_name }}" == *"windows"* ]]; then
-            EXTRA_FLAGS="--arch=x86_64 --target-os=mingw32 --cross-prefix=x86_64-w64-mingw32-"
-          fi
-
-          # configuration flags for minimal size
           ./configure \
-            $EXTRA_FLAGS \
+            ${{ matrix.configure_flags }} \
             --pkg-config-flags="--static" \
             --extra-cflags="-Os" \
             --extra-ldflags="-static" \
@@ -75,34 +116,45 @@ jobs:
             --enable-filter=scale,fps,palettegen,paletteuse,crop,split \
             --enable-zlib \
             --disable-autodetect \
-            $( [ "$RUNNER_OS" == "macOS" ] && echo "--enable-videotoolbox" ) \
-             || (cat ffbuild/config.log && exit 1)
+            || (cat ffbuild/config.log && exit 1)
 
       - name: Compile
         working-directory: ffmpeg-src
         run: make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
 
-      - name: Strip & Compress (UPX)
+      - name: Strip & Compress
         working-directory: ffmpeg-src
         run: |
           echo "Original Size:"
-          ls -lh ffmpeg
-          strip ffmpeg
-          upx --best -k ffmpeg
+          ls -rhS ffmpeg*
+          
+          # Strip
+          strip ffmpeg* || true
+          
+          # UPX (Try best compression, fallback if fails)
+          upx --best -k ffmpeg* || echo "UPX failed or skipped"
+          
           echo "Compressed Size:"
-          ls -lh ffmpeg
+          ls -rhS ffmpeg*
 
-      - name: Rename Output
-        run: mv ffmpeg-src/ffmpeg ${{ matrix.target_name }}
+      - name: Rename to Tauri Target
+        working-directory: ffmpeg-src
+        run: |
+          # Find the binary (ffmpeg or ffmpeg.exe) and move it to the target name
+          if [ -f "ffmpeg.exe" ]; then
+             mv ffmpeg.exe ../${{ matrix.target_filename }}
+          else
+             mv ffmpeg ../${{ matrix.target_filename }}
+          fi
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: binaries-${{ matrix.os }}
-          path: ${{ matrix.target_name }}
+          name: binaries-${{ matrix.platform_name }}
+          path: ${{ matrix.target_filename }}
 
   release-binaries:
-    needs: build-minimal-ffmpeg
+    needs: build-ffmpeg
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -115,7 +167,10 @@ jobs:
           path: binaries
           merge-multiple: true
 
-      - name: Create 'binaries' Tag Release
+      - name: Display Downloaded Files
+        run: ls -R binaries/
+
+      - name: Update 'binaries' Tag Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: binaries

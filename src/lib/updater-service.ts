@@ -118,3 +118,101 @@ export async function checkForUpdates(): Promise<{
         }
     }
 }
+
+/**
+ * Update a binary
+ */
+export async function updateBinary(binaryName: 'yt-dlp' | 'ffmpeg'): Promise<string> {
+    const { fetch } = await import('@tauri-apps/plugin-http')
+    const { writeFile, BaseDirectory } = await import('@tauri-apps/plugin-fs')
+    const { join } = await import('@tauri-apps/api/path')
+    const { type } = await import('@tauri-apps/plugin-os')
+
+    const platform = await type()
+    const isWin = platform === 'windows'
+
+    // 1. Get Latest Release Asset URL
+    const repoMap = {
+        'yt-dlp': 'yt-dlp/yt-dlp',
+        'ffmpeg': 'BtbN/FFmpeg-Builds' // Note: FFmpeg builds are complex zip files, skipping for now
+    }
+
+    if (binaryName === 'ffmpeg') {
+        throw new Error("FFmpeg auto-update not yet supported (requires zip extraction)")
+    }
+
+    const repo = repoMap[binaryName]
+    const releasesUrl = `https://api.github.com/repos/${repo}/releases/latest`
+
+    console.log(`[Updater] Fetching release info from ${releasesUrl}`)
+    const response = await fetch(releasesUrl, {
+        headers: { 'User-Agent': 'SceneClip' }
+    })
+
+    if (!response.ok) throw new Error(`Failed to fetch release info: ${response.statusText}`)
+
+    const data: any = await response.json()
+    const assets = data.assets || []
+
+    // Find correct asset
+    // yt-dlp.exe (Windows), yt-dlp (Linux/Mac with chmod)
+    // yt-dlp_macos (Mac)
+    let assetName = 'yt-dlp'
+    if (isWin) assetName = 'yt-dlp.exe'
+    else if (platform === 'macos') assetName = 'yt-dlp_macos'
+
+    const asset = assets.find((a: any) => a.name === assetName)
+    if (!asset) {
+        // Fallback checks
+        if (isWin) {
+            const exeAsset = assets.find((a: any) => a.name.endsWith('.exe') && !a.name.includes('x86'))
+            if (exeAsset) assetName = exeAsset.name
+        }
+    }
+
+    const targetAsset = assets.find((a: any) => a.name === assetName)
+    if (!targetAsset) throw new Error(`No compatible binary found for ${platform}`)
+
+    const downloadUrl = targetAsset.browser_download_url
+    console.log(`[Updater] Downloading from ${downloadUrl}`)
+
+    // 2. Download File
+    const downloadRes = await fetch(downloadUrl)
+    if (!downloadRes.ok) throw new Error("Failed to download binary")
+
+    const buffer = await downloadRes.arrayBuffer()
+    const binaryData = new Uint8Array(buffer)
+
+    // 3. Save to AppLocalData (writable)
+    // We cannot write to Resource path.
+    const fileName = isWin ? 'yt-dlp.exe' : 'yt-dlp'
+
+    // Write directly.
+    await writeFile(fileName, binaryData, { baseDir: BaseDirectory.AppLocalData })
+
+    // 4. Resolve Absolute Path (Moved up for permissions)
+    const { appLocalDataDir } = await import('@tauri-apps/api/path')
+    const appData = await appLocalDataDir()
+    const fullSavedPath = await join(appData, fileName)
+
+    console.log(`[Updater] Binary saved to: ${fullSavedPath}`)
+
+    // 5. Set Permissions (Unix)
+    if (!isWin) {
+        try {
+            // Need to set executable capability
+            console.log(`[Updater] Setting executable permissions for ${fullSavedPath}`)
+            const chmod = Command.create('chmod', ['+x', fullSavedPath])
+            const out = await chmod.execute()
+            if (out.code !== 0) {
+                console.warn(`[Updater] chmod failed: ${out.stderr}`)
+                throw new Error(`Failed to set executable permissions: ${out.stderr}`)
+            }
+        } catch (e) {
+            console.error(`[Updater] Permission Error: ${e}`)
+            throw e
+        }
+    }
+
+    return fullSavedPath
+}

@@ -64,7 +64,7 @@ export class DownloadService {
             let meta: any = null;
             try {
                 callbacks.onLog(id, 'Fetching metadata...', 'info');
-                const infoCmd = await getYtDlpCommand(['--dump-json', url]);
+                const infoCmd = await getYtDlpCommand(['--dump-json', url], settings.binaryPathYtDlp);
                 const infoOutput = await infoCmd.execute();
                 meta = parseYtDlpJson(infoOutput.stdout);
                 if (meta?.title) {
@@ -79,11 +79,15 @@ export class DownloadService {
             const template = options?.customFilename || settings.filenameTemplate || '{title}';
             const finalName = sanitizeFilename(template, meta);
 
-            if (!settings.downloadPath) {
-                throw new Error("Download path not set in settings.");
+            // Determine Base Download Directory
+            // Priority: Task-specific path > Settings path
+            const downloadBaseDir = options?.path || settings.downloadPath;
+
+            if (!downloadBaseDir) {
+                throw new Error("Download path not set in settings or options.");
             }
             const { join } = await import('@tauri-apps/api/path');
-            const fullOutputPathRaw = await join(settings.downloadPath, finalName);
+            const fullOutputPathRaw = await join(downloadBaseDir, finalName);
 
             // FIX: Windows MAX_PATH Safety Check
             // We implement a "soft" limit of 250 to allow room for extension and potential temp suffixes
@@ -137,7 +141,7 @@ export class DownloadService {
             }
 
             // 5. Setup Command & Events
-            const cmd = await getYtDlpCommand(args);
+            const cmd = await getYtDlpCommand(args, settings.binaryPathYtDlp);
             const stderrBuffer: string[] = [];
 
             cmd.stdout.on('data', (line) => {

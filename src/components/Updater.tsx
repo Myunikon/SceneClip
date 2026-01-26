@@ -6,7 +6,7 @@ export function Updater() {
     const {
         ytdlpVersion, ytdlpLatestVersion, ytdlpNeedsUpdate,
         ffmpegVersion, ffmpegLatestVersion, ffmpegNeedsUpdate,
-        checkBinaryUpdates, isCheckingUpdates
+        checkBinaryUpdates, isCheckingUpdates, updateBinary
     } = useAppStore()
 
     const { t } = useTranslation()
@@ -55,6 +55,14 @@ export function Updater() {
                             {t('settings.updater.latest_prefix')}{ytdlpLatestVersion}
                         </div>
                     )}
+                    {ytdlpNeedsUpdate && (
+                        <button
+                            onClick={() => updateBinary('yt-dlp')}
+                            className="w-full mt-1 px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 text-xs rounded border border-amber-500/20 transition-colors flex items-center justify-center gap-1"
+                        >
+                            <RefreshCw className="w-3 h-3" /> Update Now
+                        </button>
+                    )}
                 </div>
 
                 <div className="p-3 bg-secondary/30 rounded-lg space-y-2 border border-border/50">
@@ -70,11 +78,11 @@ export function Updater() {
                             {t('settings.updater.latest_prefix')}{ffmpegLatestVersion}
                         </div>
                     )}
+                    {/* FFmpeg update disable for now as per logic */}
                 </div>
             </div>
 
             {/* Hardware Acceleration Status - Only show if GPU is detected (Active) */}
-
 
             <p className="text-xs text-muted-foreground/60 text-center">
                 {t('settings.updater.binary_bundled')}

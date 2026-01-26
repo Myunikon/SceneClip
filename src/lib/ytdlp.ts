@@ -490,9 +490,11 @@ export function parseMetadata(lines: string[]) {
 }
 
 export function sanitizeFilename(template: string, meta: any): string {
-    const sanitize = (s: string) => s.replace(/[\\/:*?"<>|]/g, '_').replace(/\.\./g, '').trim()
+    // Helper to sanitize individual path segments (folders/filenames)
+    const sanitizeSegment = (s: string) => s.replace(/[\\/:*?"<>|]/g, '_').replace(/\.\./g, '').trim()
 
     let finalName = template
+    // Replace template variables first (so their content can be sanitized later)
     finalName = finalName.replace(/{title}/gi, meta.title || '')
     finalName = finalName.replace(/{ext}/gi, meta.ext || 'mp4')
     finalName = finalName.replace(/{id}/gi, meta.id || '')
@@ -500,36 +502,53 @@ export function sanitizeFilename(template: string, meta: any): string {
     finalName = finalName.replace(/{width}/gi, meta.width ? String(meta.width) : '')
     finalName = finalName.replace(/{height}/gi, meta.height ? String(meta.height) : '')
 
-    finalName = sanitize(finalName)
+    // Handle Directory Structure:
+    // Split by / or \ to preserve user-intended subfolders (e.g. "Series/Title")
+    // Sanitize each segment individually to remove illegal chars
+    const segments = finalName.split(/[/\\]/)
+    finalName = segments.map(seg => sanitizeSegment(seg)).join('/')
+
     // Defense: Windows MAX_PATH limit (approx 260). Truncate to 200 to allow room for path + extension
+    // Fix: We should check length AFTER joining, but apply truncation carefully not to break path structure?
+    // For now, simpler safety: check total length. If too long, truncate LAST segment (filename).
     if (finalName.length > 200) {
-        finalName = finalName.substring(0, 200)
+        const parts = finalName.split('/')
+        const lastPart = parts.pop() || ''
+        const dirPart = parts.join('/')
+        // Truncate filename part, preserving extension logic below will handle the rest
+        const allowedLen = 200 - dirPart.length - 1
+        if (allowedLen > 10) {
+            parts.push(lastPart.substring(0, allowedLen))
+            finalName = parts.join('/')
+        } else {
+            // Edge case: path too long, just truncate blindly
+            finalName = finalName.substring(0, 200)
+        }
     }
 
     // STRICT EXTENSION ENFORCEMENT
-    // Ensure the filename actually ends with the expected extension.
-    // This fixes issues where templates like "{title}{ext}" result in "VideoNamemp4" (no dot),
-    // causing ffmpeg "Invalid Argument" errors because it can't detect the format.
     const expectedExt = `.${meta.ext || 'mp4'}`
 
-    // Case-insensitive check for extension
+    // Case-insensitive check for extension (only on the last segment/filename)
     if (!finalName.toLowerCase().endsWith(expectedExt.toLowerCase())) {
-        // Warning: This might duplicate extension if file is "Video.mp4" and ext is "MP4" 
-        // but sanitization above usually handles case. 
-        // We'll trust the meta.ext is correct source of truth.
         finalName = `${finalName}${expectedExt}`
     }
 
     // Fallback for completely empty names
-    if (finalName === expectedExt) {
-        finalName = sanitize(meta.title || 'Untitled').substring(0, 200) + expectedExt
+    if (finalName === expectedExt || finalName.trim() === expectedExt) {
+        finalName = sanitizeSegment(meta.title || 'Untitled').substring(0, 200) + expectedExt
     }
 
     return finalName
 }
 
 // Sidecar-based Command Factory
-export async function getYtDlpCommand(args: string[]) {
+export async function getYtDlpCommand(args: string[], binaryPath?: string) {
+    if (binaryPath && binaryPath.trim().length > 0) {
+        // Use custom binary path (e.g. updated version in AppData)
+        // Note: This requires the path to be allowed in tauri.conf.json shell capabilities
+        return Command.create(binaryPath, args)
+    }
     return Command.sidecar(BINARIES.YTDLP, args)
 }
 

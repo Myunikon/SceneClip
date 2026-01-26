@@ -180,4 +180,33 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
             set({ isCheckingUpdates: false })
         }
     },
+
+    updateBinary: async (name) => {
+        try {
+            get().addLog({ message: `Starting update for ${name}...`, type: 'info' })
+            const { updateBinary } = await import('../../lib/updater-service')
+            const newPath = await updateBinary(name)
+
+            // Save path to settings
+            if (name === 'yt-dlp') {
+                get().setSetting('binaryPathYtDlp', newPath)
+                // Optimistic update
+                set({ ytdlpNeedsUpdate: false })
+            } else {
+                get().setSetting('binaryPathFfmpeg', newPath)
+                set({ ffmpegNeedsUpdate: false })
+            }
+
+            notify.success(`${name} updated successfully!`)
+            get().addLog({ message: `${name} updated to ${newPath}`, type: 'success' })
+
+            // Re-check to confirm version
+            get().checkBinaryUpdates()
+
+        } catch (e) {
+            console.error("Update failed:", e)
+            notify.error(`Update failed: ${e}`)
+            get().addLog({ message: `Update failed: ${e}`, type: 'error' })
+        }
+    },
 })

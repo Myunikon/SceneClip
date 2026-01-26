@@ -103,6 +103,7 @@ export interface SystemSlice {
   detectHardwareAccel: () => Promise<void>
   initListeners: () => void
   checkBinaryUpdates: () => Promise<void> // Check for updates (replaces checkYtDlpUpdate + updateYtDlp)
+  updateBinary: (name: 'yt-dlp' | 'ffmpeg') => Promise<void> // Perform the update
   validateBinaries: () => Promise<void>
 }
 

@@ -168,7 +168,7 @@
           "args": true
         },
         {
-          "name": "ffmpeg",
+          "name": "aria2c",
           "sidecar": true,
           "args": true
         },
@@ -189,6 +189,11 @@
         },
         {
           "name": "ffmpeg",
+          "sidecar": true,
+          "args": true
+        },
+        {
+          "name": "aria2c",
           "sidecar": true,
           "args": true
         },

@@ -48,7 +48,7 @@ function App() {
 
     // Custom Hooks Integration
     const theme = settings.theme
-    useTheme(settings.theme)
+    useTheme({ theme: settings.theme, frontendFontSize: settings.frontendFontSize })
     const isOffline = useNetworkStatus()
 
     /* -------------------------------------------------------------------------- */
@@ -60,58 +60,20 @@ function App() {
     const [clipboardEnd, setClipboardEnd] = useState<number | undefined>(undefined)
 
     const handleNewTask = async (url?: string, cookies?: string, userAgent?: string, start?: number, end?: number) => {
-        const { settings } = useAppStore.getState()
-        const { readText } = await import('@tauri-apps/plugin-clipboard-manager')
-        const { notify } = await import('./lib/notify')
-
-        // 1. Get Target URL (Argument or Clipboard)
-        let targetUrl = url
-        if (!targetUrl && settings.quickDownloadEnabled) {
-            try {
-                const clipText = await readText()
-                // Basic URL validation
-                if (clipText && (clipText.startsWith('http') || clipText.startsWith('www'))) {
-                    targetUrl = clipText
-                }
-            } catch (e) { console.warn('Clipboard read failed', e) }
-        }
-
-        // 2. Try Quick Download
-        if (targetUrl && settings.quickDownloadEnabled) {
-            // For quick download, we pass cookies directly if available
-            // But wait, quickDownload in AddDialog uses last options.
-            // We need to inject these new options.
-            // Since quickDownload is on the ref, we might need to modify it or just open dialog if cookies present.
-            // Safety: If cookies are crucial (e.g. Premium), we should probably show dialog or ensure they are used.
-            // Let's Force Dialog if cookies are provided to be safe, OR update quickDownload to accept overrides.
-            // For now, let's open dialog if cookies/UA are present to let user confirm.
-            if (!cookies) {
-                const quickUsed = await addDialogRef.current?.quickDownload(targetUrl)
-                if (quickUsed) {
-                    notify.success('Quick Download Started', {
-                        description: targetUrl.substring(0, 50) + '...',
-                        duration: 3000
-                    })
-                    return // Done! Skip dialog
-                }
-            }
-        }
-
-        // 3. Fallback: Open Dialog
-        if (targetUrl) {
-            setClipboardUrl(targetUrl)
+        // 1. Set State and Open Dialog
+        if (url) {
+            setClipboardUrl(url)
             setClipboardCookies(cookies)
             setClipboardUA(userAgent)
             setClipboardStart(start)
             setClipboardEnd(end)
         } else {
-            setClipboardUrl('') // Clear stale clipboard data to ensure fresh dialog
+            setClipboardUrl('')
             setClipboardCookies(undefined)
             setClipboardUA(undefined)
             setClipboardStart(undefined)
             setClipboardEnd(undefined)
         }
-        // Small timeout to ensure state updates propagate if needed
         setTimeout(() => addDialogRef.current?.showModal(), 50)
     }
 

@@ -13,7 +13,6 @@ export function useDialogForm({ initialStart, initialEnd, settings }: UseDialogT
     // ----------------------------------------------------
     const [format, setFormat] = useState('Best')
     const [path, setPath] = useState(
-        settings.lastDownloadOptions?.path ||
         settings.downloadPath ||
         ''
     )
@@ -33,17 +32,22 @@ export function useDialogForm({ initialStart, initialEnd, settings }: UseDialogT
     const [videoCodec, setVideoCodec] = useState<'auto' | 'av1' | 'h264' | 'hevc' | 'vp9'>('auto')
     const [splitChapters, setSplitChapters] = useState(false)
     const [container, setContainer] = useState<string>(
-        settings.lastDownloadOptions?.container ||
         settings.container ||
         'mp4'
     )
     const [audioNormalization, setAudioNormalization] = useState(settings.audioNormalization)
     const [isClipping, setIsClipping] = useState(!!(initialStart || initialEnd))
+    const [proxy, setProxy] = useState('')
 
     // GIF Options State
     const [gifFps, setGifFps] = useState(15)
     const [gifScale, setGifScale] = useState(480)
     const [gifQuality, setGifQuality] = useState<'high' | 'fast'>('fast')
+
+    // Feature 5
+    const [postProcessorArgs, setPostProcessorArgs] = useState('')
+
+
 
     // ----------------------------------------------------
     // Effects / Side Logic
@@ -84,6 +88,8 @@ export function useDialogForm({ initialStart, initialEnd, settings }: UseDialogT
         setGifFps(15)
         setGifScale(480)
         setGifQuality('fast')
+        setProxy('')
+        setPostProcessorArgs('')
     }
 
     // ----------------------------------------------------
@@ -96,9 +102,11 @@ export function useDialogForm({ initialStart, initialEnd, settings }: UseDialogT
         sponsorBlock, splitChapters,
         subtitles, subtitleLang, subtitleFormat, embedSubtitles,
         isScheduled, scheduleTime,
+        proxy,
         batchMode,
         isClipping, rangeStart, rangeEnd,
-        gifFps, gifScale, gifQuality
+        gifFps, gifScale, gifQuality,
+        postProcessorArgs
     }
 
     const setters: DialogOptionSetters = {
@@ -108,9 +116,11 @@ export function useDialogForm({ initialStart, initialEnd, settings }: UseDialogT
         setSponsorBlock, setSplitChapters,
         setSubtitles, setSubtitleLang, setSubtitleFormat, setEmbedSubtitles,
         setIsScheduled, setScheduleTime,
+        setProxy,
         setBatchMode,
         setIsClipping, setRangeStart, setRangeEnd,
-        setGifFps, setGifScale, setGifQuality
+        setGifFps, setGifScale, setGifQuality,
+        setPostProcessorArgs
     }
 
     return {

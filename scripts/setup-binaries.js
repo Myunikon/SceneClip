@@ -23,6 +23,7 @@ const TARGETS = {
         arch: 'x64',
         ffmpegUrl: 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip',
         ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe',
+        aria2Url: 'https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0-win-64bit-build1.zip',
         ext: '.exe'
     },
     'mac-x64': {
@@ -31,6 +32,8 @@ const TARGETS = {
         arch: 'x64',
         ffmpegUrl: 'https://evermeet.cx/ffmpeg/getrelease/zip',
         ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos',
+        // Official Mac build (Intel). Runs via Rosetta on ARM.
+        aria2Url: 'https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0-osx-darwin.tar.bz2',
         ext: ''
     },
     'mac-arm64': {
@@ -41,6 +44,8 @@ const TARGETS = {
         ffmpegUrl: 'https://evermeet.cx/ffmpeg/getrelease/zip',
         // Strategy: Use Universal Binary (Native support for both)
         ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos',
+        // Use Intel build via Rosetta
+        aria2Url: 'https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0-osx-darwin.tar.bz2',
         ext: ''
     },
     'linux-x64': {
@@ -49,6 +54,7 @@ const TARGETS = {
         arch: 'x64',
         ffmpegUrl: 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz',
         ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp',
+        aria2Url: 'https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0-linux-gnu-64bit-build1.tar.bz2',
         ext: ''
     }
 };
@@ -114,6 +120,8 @@ async function extractArchive(filePath, destDir) {
             }
         } else if (filePath.endsWith('.tar.xz')) {
             // Use tar. On Windows 10+, tar.exe is usually available.
+            await execAsync(`tar -xf "${filePath}" -C "${destDir}"`);
+        } else if (filePath.endsWith('.tar.bz2')) {
             await execAsync(`tar -xf "${filePath}" -C "${destDir}"`);
         } else {
             throw new Error(`Unsupported archive format: ${ext}`);
@@ -190,6 +198,49 @@ async function setupTarget(key, config) {
             }
         } else {
             console.log(`[SKIP] ${ffmpegName} exists`);
+        }
+
+        // 3. Setup Aria2c
+        const aria2Name = `aria2c-${config.triple}${config.ext}`;
+        const aria2Path = path.join(BIN_DIR, aria2Name);
+
+        if (!fs.existsSync(aria2Path)) {
+            let archiveName = 'aria2_archive';
+            if (config.aria2Url.endsWith('.zip')) archiveName += '.zip';
+            else if (config.aria2Url.endsWith('.tar.bz2')) archiveName += '.tar.bz2';
+
+            const archivePath = path.join(tempDir, archiveName);
+            console.log(`[DOWNLOAD] aria2c from ${config.aria2Url}...`);
+            await downloadFile(config.aria2Url, archivePath);
+            await extractArchive(archivePath, tempDir);
+
+            // Find binary
+            const findFile = (dir, filename) => {
+                const entries = fs.readdirSync(dir, { withFileTypes: true });
+                for (const entry of entries) {
+                    const fullPath = path.join(dir, entry.name);
+                    if (entry.isDirectory()) {
+                        const found = findFile(fullPath, filename);
+                        if (found) return found;
+                    } else if (entry.name === filename) {
+                        return fullPath;
+                    }
+                }
+                return null;
+            };
+
+            const targetBinaryName = config.platform === 'win32' ? 'aria2c.exe' : 'aria2c';
+            const foundBinary = findFile(tempDir, targetBinaryName);
+
+            if (foundBinary) {
+                fs.copyFileSync(foundBinary, aria2Path);
+                fs.chmodSync(aria2Path, 0o755);
+                console.log(`[OK] Saved ${aria2Name}`);
+            } else {
+                console.error(`[ERROR] Could not find ${targetBinaryName} in extracted archive for ${key}`);
+            }
+        } else {
+            console.log(`[SKIP] ${aria2Name} exists`);
         }
 
     } catch (e) {

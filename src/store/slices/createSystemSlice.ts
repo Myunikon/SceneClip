@@ -1,5 +1,4 @@
 import { StateCreator } from 'zustand'
-// No change needed here, just context.
 import { AppState, SystemSlice } from './types'
 import { downloadDir } from '@tauri-apps/api/path'
 import { notify } from '../../lib/notify'
@@ -27,6 +26,9 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
 
     // Loading state
     isCheckingUpdates: false,
+
+    // Keyring
+    savedCredentials: [],
 
     setBinariesReady: (ready) => set({ binariesReady: ready }),
 
@@ -69,7 +71,6 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
                     }
                     get().addLog({ message: logMsg, type: 'info' })
                     get().addLog({ message: `[GPU DETECT DIAGNOSTIC]\n${gpuInfo.debug_info}`, type: 'info' })
-
 
 
                     // Validate against known types

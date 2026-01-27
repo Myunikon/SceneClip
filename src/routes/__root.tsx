@@ -23,6 +23,7 @@ import { AppHeader } from '../components/layout/AppHeader'
 import { AppLayout } from '../components/layout/AppLayout'
 import { ContextMenu } from '../components/ContextMenu'
 import { StatusFooter } from '../components/StatusFooter'
+import { usePowerManagement } from '../hooks/usePowerManagement'
 
 export const Route = createRootRoute({
     component: RootComponent,
@@ -49,7 +50,8 @@ function RootComponent() {
     const guideModalRef = useRef<GuideModalRef>(null)
 
     // Custom Hooks Integration
-    useTheme(settings.theme)
+    useTheme({ theme: settings.theme, frontendFontSize: settings.frontendFontSize })
+    usePowerManagement() // Prevent system sleep during active downloads
     const isOffline = useNetworkStatus()
 
     /* -------------------------------------------------------------------------- */
@@ -61,39 +63,9 @@ function RootComponent() {
     const [clipboardEnd, setClipboardEnd] = useState<number | undefined>(undefined)
 
     const handleNewTask = async (url?: string, cookies?: string, userAgent?: string, start?: number, end?: number) => {
-        const { settings } = useAppStore.getState()
-        const { readText } = await import('@tauri-apps/plugin-clipboard-manager')
-        const { notify } = await import('../lib/notify')
-
-        // 1. Get Target URL (Argument or Clipboard)
-        let targetUrl = url
-        if (!targetUrl && settings.quickDownloadEnabled) {
-            try {
-                const clipText = await readText()
-                // Basic URL validation
-                if (clipText && (clipText.startsWith('http') || clipText.startsWith('www'))) {
-                    targetUrl = clipText
-                }
-            } catch (e) { console.warn('Clipboard read failed', e) }
-        }
-
-        // 2. Try Quick Download
-        if (targetUrl && settings.quickDownloadEnabled) {
-            if (!cookies) {
-                const quickUsed = await addDialogRef.current?.quickDownload(targetUrl)
-                if (quickUsed) {
-                    notify.success('Quick Download Started', {
-                        description: targetUrl.substring(0, 50) + '...',
-                        duration: 3000
-                    })
-                    return // Done! Skip dialog
-                }
-            }
-        }
-
-        // 3. Fallback: Open Dialog
-        if (targetUrl) {
-            setClipboardUrl(targetUrl)
+        // 1. Set State and Open Dialog
+        if (url) {
+            setClipboardUrl(url)
             setClipboardCookies(cookies)
             setClipboardUA(userAgent)
             setClipboardStart(start)

@@ -132,6 +132,7 @@ jobs:
           
           cp yt-dlp-x86_64-apple-darwin yt-dlp-universal-apple-darwin
           cp ffmpeg-x86_64-apple-darwin ffmpeg-universal-apple-darwin
+          cp aria2c-x86_64-apple-darwin aria2c-universal-apple-darwin
           
           chmod +x *-universal-apple-darwin
           ls -la *-universal-apple-darwin
@@ -173,6 +174,12 @@ jobs:
             Copy-Item "$nsisDir/yt-dlp-x86_64-pc-windows-msvc.exe" "$portableDir/yt-dlp-x86_64-pc-windows-msvc.exe"
           } elseif (Test-Path "src-tauri/yt-dlp-x86_64-pc-windows-msvc.exe") {
              Copy-Item "src-tauri/yt-dlp-x86_64-pc-windows-msvc.exe" "$portableDir/yt-dlp-x86_64-pc-windows-msvc.exe"
+          }
+
+          if (Test-Path "$nsisDir/aria2c-x86_64-pc-windows-msvc.exe") {
+            Copy-Item "$nsisDir/aria2c-x86_64-pc-windows-msvc.exe" "$portableDir/aria2c-x86_64-pc-windows-msvc.exe"
+          } elseif (Test-Path "src-tauri/aria2c-x86_64-pc-windows-msvc.exe") {
+             Copy-Item "src-tauri/aria2c-x86_64-pc-windows-msvc.exe" "$portableDir/aria2c-x86_64-pc-windows-msvc.exe"
           }
           
           Compress-Archive -Path "$portableDir/*" -DestinationPath "SceneClip_${version}_x64_portable.zip"

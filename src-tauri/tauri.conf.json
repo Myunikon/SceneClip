@@ -45,7 +45,8 @@
     ],
     "externalBin": [
       "yt-dlp",
-      "ffmpeg"
+      "ffmpeg",
+      "aria2c"
     ]
   }
 }

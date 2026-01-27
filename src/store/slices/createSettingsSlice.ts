@@ -17,8 +17,8 @@ const DEFAULT_SETTINGS: AppSettings = {
     hardwareDecoding: true,
 
     concurrentDownloads: 2,
-    concurrentFragments: 4,
     speedLimit: '',
+    useAria2c: false,
     proxy: '',
     userAgent: '',
     frontendFontSize: 'medium',
@@ -27,7 +27,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     browserType: 'chrome',
     cookiePath: '',
     useSponsorBlock: false,
-    sponsorSegments: [],
+    sponsorSegments: ['sponsor', 'selfpromo', 'interaction'],
     binaryPathYtDlp: '',
     binaryPathFfmpeg: '',
     embedMetadata: true,
@@ -35,11 +35,33 @@ const DEFAULT_SETTINGS: AppSettings = {
     embedChapters: true,
     postDownloadAction: 'none',
     developerMode: false,
-    quickDownloadEnabled: false,
-    showQuickModeButton: true,
-    lastDownloadOptions: null,
     audioNormalization: false,
-    disablePlayButton: false
+    savedCredentials: [],
+    historyRetentionDays: 30, // Default: keep 30 days of history
+    maxHistoryItems: 100, // Default: keep up to 100 completed tasks (-1 = unlimited)
+
+    // Parabolic Features
+    enableDesktopNotifications: true, // Default: enabled
+    preventSuspendDuringDownload: true, // Default: prevent sleep during downloads
+    postProcessorPresets: [
+        // Built-in presets
+        {
+            id: 'high-quality-audio',
+            name: 'High Quality Audio',
+            description: 'Extract audio at 320kbps',
+            type: 'audio',
+            args: '-acodec libmp3lame -ab 320k',
+            isDefault: false
+        },
+        {
+            id: 'compress-video',
+            name: 'Compress Video',
+            description: 'Reduce file size with CRF 28',
+            type: 'video',
+            args: '-crf 28 -preset fast',
+            isDefault: false
+        }
+    ]
 }
 
 export const createSettingsSlice: StateCreator<

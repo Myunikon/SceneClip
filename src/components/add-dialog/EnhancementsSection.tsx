@@ -105,6 +105,28 @@ export function EnhancementsSection() {
                                 }
                             />
 
+                            {/* Proxy */}
+                            <SettingCard
+                                icon={<Settings className="w-4 h-4" />}
+                                title={t('dialog.proxy') || 'Network Proxy'}
+                                description={options.proxy || t('dialog.proxy_desc') || "Use specific proxy for this download"}
+                                checked={!!options.proxy}
+                                onCheckedChange={(v) => !v && setters.setProxy('')}
+                                activeColor="blue"
+                                onClick={() => !options.proxy && setters.setProxy('http://')}
+                                expandableContent={
+                                    <div className="p-3">
+                                        <input
+                                            type="text"
+                                            className="w-full bg-black/20 border border-white/10 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-white/30"
+                                            placeholder="http://user:pass@host:port"
+                                            value={options.proxy}
+                                            onChange={(e) => setters.setProxy(e.target.value)}
+                                        />
+                                    </div>
+                                }
+                            />
+
                             {/* Subtitles */}
                             {options.format !== 'audio' && options.format !== 'gif' && (
                                 <SettingCard

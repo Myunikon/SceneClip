@@ -4,7 +4,8 @@ export const id = {
         browser: "Browser",
         settings: "Pengaturan",
         tools: "Alat",
-        terminal: "Terminal"
+        terminal: "Terminal",
+        keyring: "Sandi"
     },
     error_boundary: {
         title: "Ada yang salah nih.",
@@ -34,6 +35,23 @@ export const id = {
         title: "Daftar Unduhan",
         subtitle: "Kelola unduhan video dan klip Anda.",
         new_download: "Tambah Unduhan",
+        storage: "Penyimpanan & Tata Letak",
+        path_select_label: "Simpan ke",
+        change_folder: "Pilih Folder...",
+        always_ask: "Selalu tanya lokasi penyimpanan",
+        defaults: "Penamaan & Format",
+        filename_template: "Format Nama File",
+        insert_token: "Tambah Variabel...",
+        tokens: {
+            title: "Judul Video",
+            uploader: "Nama Pengunggah",
+            ext: "Ekstensi File",
+            id: "ID Video",
+            width: "Lebar",
+            height: "Tinggi",
+            date: "Tanggal Upload"
+        },
+        example_note: "* Pratinjau video sampel",
 
         empty: "Belum ada unduhan",
         empty_description: "Tempel link atau tekan Ctrl+N untuk mulai.",
@@ -99,7 +117,14 @@ export const id = {
             font_size: "Ukuran Teks",
             font_small: "Kecil",
             font_medium: "Sedang",
-            font_large: "Besar"
+            font_large: "Besar",
+            system_behavior: "Jendela & Sistem",
+            minimize_desc: "Aplikasi tetap berjalan di latar belakang",
+            quit_desc: "Aplikasi berhenti sepenuhnya",
+            desktop_notifications: "Notifikasi Desktop",
+            desktop_notifications_desc: "Tampilkan notifikasi sistem saat aplikasi di latar belakang",
+            prevent_suspend: "Cegah Mode Tidur",
+            prevent_suspend_desc: "Jaga sistem tetap aktif saat unduhan berjalan"
         },
         downloads: {
             storage: "Lokasi & File",
@@ -125,8 +150,39 @@ export const id = {
             sponsorblock: "SponsorBlock (Lewati Iklan)",
             enable_sb: "Aktifkan SponsorBlock",
             disable_play_button: "Sembunyikan Tombol Play di Riwayat",
+            sponsorblock_desc: "Lewati iklan, intro, dan segmen lainnya secara otomatis",
+            skip_segments: "Segmen untuk Dilewati",
+            audio_normalization_desc: "Standar EBU R128 (-14 LUFS)",
             metadata_warning_title: "Catatan:",
-            metadata_warning_desc: "Opsi ini dinonaktifkan secara otomatis saat menggunakan <1>Potong Video</1> untuk mencegah kesalahan durasi video (contoh: klip 10 detik terbaca 1 jam)."
+            metadata_warning_desc: "Opsi ini dinonaktifkan secara otomatis saat menggunakan <1>Potong Video</1> untuk mencegah kesalahan durasi video (contoh: klip 10 detik terbaca 1 jam).",
+            presets: {
+                title: "Preset Pasca-Pemrosesan",
+                desc: "Kelola preset argumen FFmpeg kustom",
+                empty: "Belum ada preset",
+                add_new: "Tambah Preset Baru",
+                name_label: "Nama",
+                type_label: "Tipe",
+                args_label: "Argumen FFmpeg",
+                desc_label: "Deskripsi (Opsional)",
+                placeholder_name: "Preset Saya",
+                placeholder_args: "-c:v libx265 -crf 28",
+                placeholder_desc: "Encoding HEVC efisiensi tinggi...",
+                save_btn: "Simpan Preset",
+                delete_tooltip: "Hapus Preset",
+                add_tooltip: "Tambah Preset",
+                types: {
+                    video: "Video",
+                    audio: "Audio",
+                    metadata: "Metadata",
+                    general: "Umum"
+                }
+            }
+        },
+        filename_preview: {
+            label: "Pratinjau",
+            example_title: "Video Keren Saya",
+            example_uploader: "KreatorHebat",
+            reset: "Reset"
         },
         network: {
             connection: "Kecepatan & Koneksi",
@@ -143,6 +199,12 @@ export const id = {
             perf_aggressive_title: "9-16 (Agresif)",
             perf_aggressive_desc: "Throughput maksimum. Dapat menyebabkan ban IP sementara (429) jika disalahgunakan.",
             perf_warning: "* Berlaku untuk semua mode unduhan (Video Penuh, Audio, & Potong).",
+
+            // Aria2c
+            aria2c_section: "Mesin Pengunduh",
+            aria2c_title: "Gunakan Aria2c (Unduhan Eksternal)",
+            aria2c_desc: "Pengunduh multi-koneksi (16x). Lebih cepat dari standar.",
+            aria2c_active: "Aria2c aktif. Pengaturan 'Segmen Unduhan' bawaan dinonaktifkan untuk mencegah konflik.",
 
             // New Network Keys
             manual_config: "Mode konfigurasi manual.",
@@ -171,6 +233,8 @@ export const id = {
                 sleep: "Tidur (Sleep)",
                 shutdown: "Matikan Sistem"
             },
+            post_download_action_desc: "Pilih tindakan setelah semua unduhan selesai.",
+            shutdown_warning: "Komputer akan dimatikan paksa setelah unduhan. Simpan pekerjaan Anda!",
 
 
 
@@ -223,11 +287,52 @@ export const id = {
                 hw_cpu: "Paksa CPU (Lambat tapi Aman)",
                 hw_desc: "Kontrol pemakaian kartu grafis untuk encode video. 'Otomatis' akan kembali ke CPU jika GPU gagal."
             },
+            history_retention: "Retensi Riwayat",
+            history_retention_desc: "Otomatis hapus tugas selesai dari riwayat setelah periode tertentu.",
+            retention_days: "Hapus setelah {{count}} Hari",
+            retention_forever: "Selamanya (Simpan Semua)",
+            retention_zero: "Jangan Simpan Riwayat",
+            history_max_items: "Batas Jumlah Riwayat",
+
 
             btn_replay_welcome: "Putar Intro",
             btn_reset_data: "Reset Semua Data",
             btn_export_history: "Ekspor Riwayat",
             btn_import_history: "Impor Riwayat"
+        },
+        security: {
+            keyring_title: "Keyring Aman",
+            keyring_desc: "Kelola kata sandi tersimpan untuk situs premium",
+            saved_passwords: "Kata Sandi Tersimpan",
+            add_new: "Tambah Baru",
+            add_first: "Tambah Akun Pertama",
+            no_passwords: "Tidak Ada Kata Sandi",
+            no_passwords_desc: "Tambahkan kredensial akun premium Anda untuk mengunduh dari situs yang butuh login.",
+            edit_credential: "Edit Kredensial",
+            new_credential: "Kredensial Baru",
+            service_domain: "Domain Layanan",
+            service_placeholder: "mis. crunchyroll.com",
+            username: "Username",
+            username_placeholder: "user@contoh.com",
+            password: "Kata Sandi",
+            password_placeholder: "Masukkan kata sandi aman",
+            save_btn: "Simpan Kredensial",
+            saving_btn: "Menyimpan...",
+            confirm_delete: "Yakin ingin menghapus kredensial untuk {{service}}?",
+            copy_success: "Username disalin",
+            save_success: "Kredensial disimpan untuk {{service}}",
+            save_error: "Gagal menyimpan: {{error}}",
+            delete_success: "Menghapus kredensial untuk {{service}}",
+            delete_error: "Gagal menghapus: {{error}}",
+            missing_vault: "Kata sandi hilang dari Vault. Silakan atur baru.",
+            auth_failed: "Otentikasi gagal: {{error}}",
+            delete_title: "Hapus",
+            delete_warning_detail: "Kata sandi ini akan dihapus permanen dari {{storage}}. Tindakan ini tidak bisa dibatalkan.",
+            delete_confirm_desc: "Yakin ingin menghapus kata sandi tersimpan untuk <1>{{service}}</1>?",
+            delete_warning: "Ini akan menghapusnya dari <1>{{storage}}</1> secara permanen.",
+            cancel: "Batal",
+            delete: "Hapus",
+            secure_storage_hint: "Disimpan dengan aman di {{storage}}"
         },
         updater: {
             title: "Pembaruan Perangkat Lunak",
@@ -260,7 +365,7 @@ export const id = {
         },
         about_page: {
             desc: "Pengunduh & Pemotong YouTube Paling Canggih di Kelasnya.",
-            core: "Mesin Inti & Kredit",
+            core: "Kredit",
             yt_desc: "Kekuatan utama di balik layar. yt-dlp adalah standar industri global untuk mengunduh media dari ribuan situs.",
             ff_desc: "Swiss Army Knife untuk multimedia. Menangani konversi, penggabungan audio/video, dan pemotongan presisi.",
             aria_desc: "Akselerator unduhan. Memungkinkan koneksi multi-utas (Turbo Mode) untuk kecepatan maksimal.",
@@ -273,10 +378,15 @@ export const id = {
             role_media: "Pemrosesan Media",
             role_framework: "Kerangka Kerja",
             role_ui: "Pustaka UI",
+            role_state: "Manajemen State",
+            role_routing: "Routing",
+            role_i18n: "Internasionalisasi",
+            role_lang: "Bahasa",
             role_icon: "Ikonografi",
             role_api: "API skipSegments",
             visit_website: "Kunjungi Situs",
             legal: "Penafian Hukum",
+            made_with: "Dibuat dengan <0>❤️</0> oleh <1>Myunikon</1>",
             legal_text: "SceneClip adalah alat untuk penggunaan pribadi (pengarsipan, edukasi). Pengembang tidak berafiliasi dengan YouTube/Google. Segala risiko penggunaan, termasuk pelanggaran hak cipta atau ToS platform, adalah tanggung jawab penuh pengguna.",
             secret_found: "Rahasia Ditemukan!",
             secret_desc: "Anda membuka lencana apresiasi pengembang rahasia!",

@@ -1,4 +1,4 @@
-import { Download, FolderOpen, Settings, HelpCircle, Plus, Keyboard } from 'lucide-react'
+import { Download, FolderOpen, Settings, HelpCircle, Plus, Keyboard, Lock } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from '@tanstack/react-router'
@@ -17,8 +17,9 @@ export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeade
 
     const activeTab = location.pathname === '/' ? 'downloads'
         : location.pathname.includes('history') ? 'history'
-            : location.pathname.includes('settings') ? 'settings'
-                : 'downloads';
+            : location.pathname.includes('keyring') ? 'keyring'
+                : location.pathname.includes('settings') ? 'settings'
+                    : 'downloads';
 
     return (
         <header data-tauri-drag-region className="relative h-16 border-b border-border/50 bg-background/80 backdrop-blur-xl shrink-0 flex items-center justify-between px-4 sm:px-6 z-50 gap-4">
@@ -34,6 +35,7 @@ export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeade
             <nav className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:flex items-center bg-secondary/50 rounded-full p-1 border overflow-hidden">
                 {[
                     { id: 'downloads', path: '/', label: t('nav.downloads'), icon: Download },
+                    { id: 'keyring', path: '/keyring', label: t('nav.keyring') || "Keyring", icon: Lock },
                     { id: 'history', path: '/history', label: t('history.title'), icon: FolderOpen },
                     { id: 'settings', path: '/settings', label: t('nav.settings'), icon: Settings }
                 ].map((tab) => (
@@ -65,6 +67,7 @@ export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeade
             <nav className="md:hidden flex items-center bg-secondary/50 rounded-full p-1 border mx-auto">
                 {[
                     { id: 'downloads', path: '/', label: t('nav.downloads'), icon: Download },
+                    { id: 'keyring', path: '/keyring', label: t('nav.keyring') || "Keyring", icon: Lock },
                     { id: 'history', path: '/history', label: t('history.title'), icon: FolderOpen },
                     { id: 'settings', path: '/settings', label: t('nav.settings'), icon: Settings }
                 ].map((tab) => (
@@ -104,6 +107,28 @@ export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeade
                     title={t('guide.title')}
                 >
                     <HelpCircle className="w-5 h-5" />
+                </button>
+                <button
+                    onClick={async () => {
+                        const { importBatchFile } = await import('../../lib/batchImport')
+                        const result = await importBatchFile()
+                        if (result.urls.length > 0) {
+                            openDialog()
+
+                            const { writeText } = await import('@tauri-apps/plugin-clipboard-manager')
+                            await writeText(result.urls.join('\n'))
+
+                            const { notify } = await import('../../lib/notify')
+                            notify.success(t('dialog.batch_imported_title'), { description: t('dialog.batch_imported_desc', { count: result.urls.length }) })
+                        } else if (result.error) {
+                            const { notify } = await import('../../lib/notify')
+                            notify.error(t('dialog.import_failed'), { description: result.error })
+                        }
+                    }}
+                    className="p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground"
+                    title={t('dialog.batch_import_btn')}
+                >
+                    <FolderOpen className="w-5 h-5" />
                 </button>
                 <button
                     onClick={openDialog}

@@ -4,7 +4,8 @@ export const en = {
         browser: "Browser",
         settings: "Settings",
         tools: "Tools",
-        terminal: "Terminal"
+        terminal: "Terminal",
+        keyring: "Keyring"
     },
     error_boundary: {
         title: "Something went wrong.",
@@ -34,6 +35,23 @@ export const en = {
         title: "Downloads",
         subtitle: "Manage your video downloads and clips.",
         new_download: "New Download",
+        storage: "Storage & Layout",
+        path_select_label: "Save to",
+        change_folder: "Choose Folder...",
+        always_ask: "Always ask for download location",
+        defaults: "Naming & Format",
+        filename_template: "Filename Format",
+        insert_token: "Insert Variable...",
+        tokens: {
+            title: "Video Title",
+            uploader: "Uploader Name",
+            ext: "File Extension",
+            id: "Video ID",
+            width: "Width",
+            height: "Height",
+            date: "Upload Date"
+        },
+        example_note: "* Preview based on sample video",
 
         empty: "No downloads yet",
         empty_description: "Paste a link or press Ctrl+N to start.",
@@ -94,7 +112,14 @@ export const en = {
             font_size: "Font Size",
             font_small: "Small",
             font_medium: "Medium",
-            font_large: "Large"
+            font_large: "Large",
+            system_behavior: "Window & System",
+            minimize_desc: "App keeps running in background",
+            quit_desc: "App terminates completely",
+            desktop_notifications: "Desktop Notifications",
+            desktop_notifications_desc: "Show system notifications when app is in background",
+            prevent_suspend: "Prevent Sleep",
+            prevent_suspend_desc: "Keep system awake during downloads"
         },
         downloads: {
             storage: "Storage & Path",
@@ -123,12 +148,43 @@ export const en = {
             sponsorblock: "SponsorBlock (Auto-Skip)",
             enable_sb: "Enable SponsorBlock",
             disable_play_button: "Hide Play Button in History",
+            sponsorblock_desc: "Auto-skip ads, intros, and other segments",
+            skip_segments: "Segments to Skip",
+            audio_normalization_desc: "EBU R128 Standard (-14 LUFS)",
             metadata_warning_title: "Note:",
-            metadata_warning_desc: "These options are automatically disabled when using <1>Trim/Clip</1> to prevent incorrect video duration issues (e.g. 10s clip showing as 1hr)."
+            metadata_warning_desc: "These options are automatically disabled when using <1>Trim/Clip</1> to prevent incorrect video duration issues (e.g. 10s clip showing as 1hr).",
+            presets: {
+                title: "Post-Processing Presets",
+                desc: "Manage custom FFmpeg argument presets",
+                empty: "No presets defined",
+                add_new: "Add New Preset",
+                name_label: "Name",
+                type_label: "Type",
+                args_label: "FFmpeg Arguments",
+                desc_label: "Description (Optional)",
+                placeholder_name: "My Custom Preset",
+                placeholder_args: "-c:v libx265 -crf 28",
+                placeholder_desc: "High efficiency HEVC encoding...",
+                save_btn: "Save Preset",
+                delete_tooltip: "Delete Preset",
+                add_tooltip: "Add Preset",
+                types: {
+                    video: "Video",
+                    audio: "Audio",
+                    metadata: "Metadata",
+                    general: "General"
+                }
+            }
+        },
+        filename_preview: {
+            label: "Preview",
+            example_title: "My Awesome Video",
+            example_uploader: "CoolCreator",
+            reset: "Reset"
         },
         network: {
             connection: "Speed & Connection",
-            concurrent: "Simultaneous Downloads",
+            concurrent: "Max Simultaneous Downloads (Queue)",
             warning_ip: "Warning: Too many downloads may trigger IP protection.",
             speed_limit: "Global Speed Limit",
             proxy: "Proxy Configuration",
@@ -142,6 +198,13 @@ export const en = {
             perf_aggressive_title: "9-16 (Aggressive)",
             perf_aggressive_desc: "Maximum throughput. May cause temporary IP band (429 Too Many Requests) if abused.",
             perf_warning: "* Applies to all download modes (Full Video, Audio, & Trim).",
+            user_agent: "User Agent",
+
+            // Aria2c
+            aria2c_section: "Downloader Engine",
+            aria2c_title: "Use Aria2c (External Downloader)",
+            aria2c_desc: "Multi-connection downloader (16x). Faster than standard.",
+            aria2c_active: "Aria2c is active. Native 'Concurrent Fragments' settings are disabled to prevent conflicts.",
 
             // New Network Keys
             manual_config: "Manual configuration mode.",
@@ -170,6 +233,8 @@ export const en = {
                 sleep: "Sleep",
                 shutdown: "Shutdown System"
             },
+            post_download_action_desc: "Choose what happens after all downloads finish.",
+            shutdown_warning: "Your computer will force shutdown after downloads. Unsaved work may be lost!",
 
 
 
@@ -225,7 +290,47 @@ export const en = {
                 hw_gpu: "Force GPU (NVENC/AMF/QSV)",
                 hw_cpu: "Force CPU (Slow but Safe)",
                 hw_desc: "Controls whether to use your graphics card for video encoding. 'Auto' falls back to CPU if GPU fails."
-            }
+            },
+            history_retention: "History Retention",
+            history_retention_desc: "Automatically remove completed tasks from history after a period.",
+            retention_days: "Delete after {{count}} Days",
+            retention_forever: "Forever (Keep All)",
+            retention_zero: "Don't Save History",
+            history_max_items: "Max History Items"
+        },
+        security: {
+            keyring_title: "Secure Keyring",
+            keyring_desc: "Manage saved passwords for premium sites",
+            saved_passwords: "Saved Passwords",
+            add_new: "Add New",
+            add_first: "Add First Account",
+            no_passwords: "No Passwords Saved",
+            no_passwords_desc: "Add your premium account credentials to enable downloading from requires-login sites.",
+            edit_credential: "Edit Credential",
+            new_credential: "New Credential",
+            service_domain: "Service Domain",
+            service_placeholder: "e.g. crunchyroll.com",
+            username: "Username",
+            username_placeholder: "user@example.com",
+            password: "Password",
+            password_placeholder: "Enter secure password",
+            save_btn: "Save Credential",
+            saving_btn: "Saving...",
+            confirm_delete: "Are you sure you want to remove credentials for {{service}}?",
+            copy_success: "Username copied",
+            save_success: "Saved credentials for {{service}}",
+            save_error: "Failed to save credential: {{error}}",
+            delete_success: "Removed credentials for {{service}}",
+            delete_error: "Failed to delete: {{error}}",
+            missing_vault: "Password missing from Vault. Please set a new one.",
+            auth_failed: "Authentication failed: {{error}}",
+            delete_title: "Delete",
+            delete_warning_detail: "This password will be permanently deleted from {{storage}}. This action cannot be undone.",
+            delete_confirm_desc: "Are you sure you want to delete the saved password for <1>{{service}}</1>?",
+            delete_warning: "This will remove it from the <1>{{storage}}</1> permanently.",
+            cancel: "Cancel",
+            delete: "Delete",
+            secure_storage_hint: "Securely stored in {{storage}}"
         },
         updater: {
             title: "Software Update",
@@ -258,7 +363,7 @@ export const en = {
         },
         about_page: {
             desc: "The Most Advanced YouTube Downloader & Clipper in its Class.",
-            core: "Core Engines & Credits",
+            core: "Credits",
             yt_desc: "The powerhouse behind the scenes. yt-dlp is the global industry standard for media downloading from thousands of sites.",
             ff_desc: "The Swiss Army Knife of multimedia. Handles conversion, audio/video muxing, and precision clipping.",
             aria_desc: "Download accelerator. Enables multi-threaded connections (Turbo Mode) for maximum speed.",
@@ -271,10 +376,15 @@ export const en = {
             role_media: "Media Processing",
             role_framework: "Framework",
             role_ui: "UI Library",
+            role_state: "State Management",
+            role_routing: "Routing",
+            role_i18n: "Internationalization",
+            role_lang: "Language",
             role_icon: "Iconography",
             role_api: "skipSegments API",
             visit_website: "Visit Website",
             legal: "Legal Disclaimer",
+            made_with: "Made with <0>❤️</0> by <1>Myunikon</1>",
             legal_text: "SceneClip is for personal use (archiving, education). The developer is not affiliated with YouTube/Google. All usage risks, including copyright infringement or platform ToS violations, are the user's responsibility.",
             secret_found: "Secret Found!",
             secret_desc: "You unlocked the secret developer appreciation badge!",
@@ -538,7 +648,11 @@ export const en = {
 
         restart: "Restart",
         filename_label: "Filename",
-        filename_placeholder: "Custom filename (optional)"
+        filename_placeholder: "Custom filename (optional)",
+        batch_import_btn: "Batch Import from File",
+        batch_imported_title: "Batch Imported",
+        batch_imported_desc: "{{count}} URLs copied to clipboard. Paste in generic dialog.",
+        import_failed: "Import Failed"
     },
     updater_banner: {
         update_available: "yt-dlp update available:",

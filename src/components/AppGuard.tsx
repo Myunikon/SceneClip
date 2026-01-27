@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { AlertCircle } from 'lucide-react'
 import { useAppStore } from '../store'
 import { CoolLoader } from './CoolLoader'
+import { useRecovery } from '../hooks/useRecovery'
 import i18n from '../lib/i18n'
 
 export function AppGuard({ children }: { children: React.ReactNode }) {
@@ -9,6 +10,9 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
         initListeners,
         binariesReady
     } = useAppStore()
+
+    // Parabolic feature: Check for interrupted downloads on startup
+    useRecovery()
 
     const [loading, setLoading] = useState(true)
     const [initError, setInitError] = useState<string | null>(null)

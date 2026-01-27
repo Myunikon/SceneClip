@@ -27,7 +27,7 @@ export const useAppStore = create<AppState>()(
         partialize: (state) => ({
           tasks: state.tasks,
           settings: state.settings,
-          gpuType: state.gpuType
+          gpuType: state.gpuType,
         }),
       }
     )

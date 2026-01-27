@@ -4,7 +4,8 @@ export const ms = {
         browser: "Pelayar",
         settings: "Tetapan",
         tools: "Alatan",
-        terminal: "Terminal"
+        terminal: "Terminal",
+        keyring: "Sandi"
     },
     error_boundary: {
         title: "Ada masalah berlaku.",
@@ -34,6 +35,23 @@ export const ms = {
         title: "Senarai Muat Turun",
         subtitle: "Urus muat turunan video dan klip anda.",
         new_download: "Muat Turun Baru",
+        storage: "Penyimpanan & Susun Atur",
+        path_select_label: "Simpan ke",
+        change_folder: "Pilih Folder...",
+        always_ask: "Sentiasa tanya lokasi simpanan",
+        defaults: "Penamaan & Format",
+        filename_template: "Format Nama Fail",
+        insert_token: "Tambah Pembolehubah...",
+        tokens: {
+            title: "Tajuk Video",
+            uploader: "Nama Pemuat Naik",
+            ext: "Lencungan Fail",
+            id: "ID Video",
+            width: "Lebar",
+            height: "Tinggi",
+            date: "Tarikh Muat Naik"
+        },
+        example_note: "* Pratonton video sampel",
 
         empty: "Tiada muat turun lagi",
         empty_description: "Tampal pautan atau tekan Ctrl+N untuk mula.",
@@ -99,7 +117,14 @@ export const ms = {
             font_size: "Saiz Teks",
             font_small: "Kecil",
             font_medium: "Sederhana",
-            font_large: "Besar"
+            font_large: "Besar",
+            system_behavior: "Tetingkap & Sistem",
+            minimize_desc: "Aplikasi kekal berjalan di latar belakang",
+            quit_desc: "Aplikasi ditamatkan sepenuhnya",
+            desktop_notifications: "Notifikasi Desktop",
+            desktop_notifications_desc: "Tunjukkan notifikasi sistem apabila aplikasi di latar belakang",
+            prevent_suspend: "Elak Mod Tidur",
+            prevent_suspend_desc: "Pastikan sistem kekal aktif semasa muat turun berjalan"
         },
         downloads: {
             storage: "Lokasi & Fail",
@@ -125,8 +150,39 @@ export const ms = {
             sponsorblock: "SponsorBlock (Langkau Iklan)",
             enable_sb: "Dayakan SponsorBlock",
             disable_play_button: "Sembunyikan Butang Main di Sejarah",
+            sponsorblock_desc: "Langkau iklan, intro, dan segmen lain secara automatik",
+            skip_segments: "Segmen untuk Dilangkau",
+            audio_normalization_desc: "Piawaian EBU R128 (-14 LUFS)",
             metadata_warning_title: "Nota:",
-            metadata_warning_desc: "Pilihan ini dilumpuhkan secara automatik apabila menggunakan <1>Potong/Klip</1> untuk mengelakkan isu durasi video yang tidak betul (cth. klip 10s dipaparkan sebagai 1j)."
+            metadata_warning_desc: "Pilihan ini dilumpuhkan secara automatik apabila menggunakan <1>Potong/Klip</1> untuk mengelakkan isu durasi video yang tidak betul (cth. klip 10s dipaparkan sebagai 1j).",
+            presets: {
+                title: "Pratetap Pasca-Pemprosesan",
+                desc: "Urus pratetap argumen FFmpeg tersuai",
+                empty: "Tiada pratetap ditakrifkan",
+                add_new: "Tambah Pratetap Baru",
+                name_label: "Nama",
+                type_label: "Jenis",
+                args_label: "Argumen FFmpeg",
+                desc_label: "Penerangan (Pilihan)",
+                placeholder_name: "Pratetap Saya",
+                placeholder_args: "-c:v libx265 -crf 28",
+                placeholder_desc: "Pengekodan HEVC kecekapan tinggi...",
+                save_btn: "Simpan Pratetap",
+                delete_tooltip: "Padam Pratetap",
+                add_tooltip: "Tambah Pratetap",
+                types: {
+                    video: "Video",
+                    audio: "Audio",
+                    metadata: "Metadata",
+                    general: "Umum"
+                }
+            }
+        },
+        filename_preview: {
+            label: "Pratonton",
+            example_title: "Video Hebat Saya",
+            example_uploader: "PenciptaHebat",
+            reset: "Tetap Semula"
         },
         network: {
             connection: "Kelajuan & Sambungan",
@@ -144,6 +200,12 @@ export const ms = {
 
             perf_aggressive_desc: "Daya pemprosesan maksimum. Boleh menyebabkan sekatan IP sementara (429) jika disalahgunakan.",
             perf_warning: "* Terpakai untuk semua mod muat turun (Video Penuh, Audio, & Potong).",
+
+            // Aria2c
+            aria2c_section: "Enjin Pemuat Turun",
+            aria2c_title: "Gunakan Aria2c (Pemuat Turun Luaran)",
+            aria2c_desc: "Pemuat turun berbilang sambungan (16x). Lebih pantas daripada standard.",
+            aria2c_active: "Aria2c aktif. Tetapan 'Segmen Muat Turun' asal dilumpuhkan untuk mengelakkan konflik.",
 
             manual_config: "Mod konfigurasi manual.",
             chunks_label: "{n} bahagian",
@@ -171,6 +233,8 @@ export const ms = {
                 sleep: "Tidur",
                 shutdown: "Matikan Sistem"
             },
+            post_download_action_desc: "Pilih tindakan selepas semua muat turun selesai.",
+            shutdown_warning: "Komputer akan ditutup secara paksa selepas muat turun. Simpan kerja anda!",
             danger_zone_proxy: "Zon Bahaya (Proxy)",
             danger_zone_binaries: "Zon Bahaya (Binari)",
             danger_desc: "Menukar laluan ini boleh merosakkan aplikasi.",
@@ -211,11 +275,48 @@ export const ms = {
                 hw_cpu: "Paksa CPU (Perlahan tapi Selamat)",
                 hw_desc: "Kawal penggunaan kad grafik untuk pengekodan video. 'Auto' akan kembali ke CPU jika GPU gagal."
             },
-
+            history_retention: "Retensi Sejarah",
+            history_retention_desc: "Alih keluar tugasan lama dari sejarah secara automatik.",
+            retention_days: "Padam selepas {{count}} Hari",
+            retention_forever: "Selamanya (Simpan Semua)",
+            retention_zero: "Jangan Simpan Sejarah",
+            history_max_items: "Maks Item Sejarah",
             btn_replay_welcome: "Main Semula Intro",
             btn_reset_data: "Tetap Semula Data",
             btn_export_history: "Eksport Sejarah",
             btn_import_history: "Import Sejarah"
+        },
+        security: {
+            keyring_title: "Keyring Selamat",
+            keyring_desc: "Urus kata laluan disimpan untuk laman premium",
+            saved_passwords: "Kata Laluan Disimpan",
+            add_new: "Tambah Baru",
+            add_first: "Tambah Akaun Pertama",
+            no_passwords: "Tiada Kata Laluan Disimpan",
+            no_passwords_desc: "Tambah kelayakan akaun premium anda untuk memuat turun dari laman yang memerlukan log masuk.",
+            edit_credential: "Edit Kelayakan",
+            new_credential: "Kelayakan Baru",
+            service_domain: "Domain Perkhidmatan",
+            service_placeholder: "cth. crunchyroll.com",
+            username: "Nama Pengguna",
+            username_placeholder: "user@contoh.com",
+            password: "Kata Laluan",
+            password_placeholder: "Masukkan kata laluan selamat",
+            save_btn: "Simpan Kelayakan",
+            saving_btn: "Menyimpan...",
+            confirm_delete: "Adakah anda pasti mahu membuang kelayakan untuk {{service}}?",
+            copy_success: "Nama pengguna disalin",
+            save_success: "Kelayakan disimpan untuk {{service}}",
+            save_error: "Gagal menyimpan: {{error}}",
+            delete_success: "Membuang kelayakan untuk {{service}}",
+            delete_error: "Gagal membuang: {{error}}",
+            missing_vault: "Kata laluan hilang dari Vault. Sila tetapkan baru.",
+            auth_failed: "Pengesahan gagal: {{error}}",
+            delete_title: "Padam",
+            delete_warning_detail: "Kata laluan ini akan dipadam secara kekal daripada {{storage}}. Tindakan ini tidak boleh dibuat asal.",
+            cancel: "Batal",
+            delete: "Buang",
+            secure_storage_hint: "Disimpan dengan selamat di {{storage}}"
         },
         updater: {
             title: "Kemas Kini Perisian",
@@ -247,7 +348,7 @@ export const ms = {
         },
         about_page: {
             desc: "Pemuat Turun & Pemotong YouTube Prestasi Tinggi Moden",
-            core: "Enjin Teras & Binari",
+            core: "Kredit",
             yt_desc: "Program baris perintah untuk memuat turun video dari YouTube.",
             ff_desc: "Penyelesaian rentas platform lengkap untuk merakam, menukar dan menstrim audio dan video.",
             aria_desc: "Utiliti muat turun baris perintah pelbagai protokol & pelbagai sumber yang ringan.",
@@ -259,11 +360,16 @@ export const ms = {
             role_core: "Enjin Teras",
             role_media: "Pemprosesan Media",
             role_framework: "Rangka Kerja",
-            role_ui: "UI Library",
+            role_ui: "Pustaka UI",
+            role_state: "Pengurusan Keadaan",
+            role_routing: "Penghalaan",
+            role_i18n: "Pengantarabangsaan",
+            role_lang: "Bahasa",
             role_icon: "Ikonografi",
             role_api: "API skipSegments",
             visit_website: "Lawati Laman Web",
             legal: "Penafian Undang-undang",
+            made_with: "Dibuat dengan <0>❤️</0> oleh <1>Myunikon</1>",
             legal_text: "SceneClip bertujuan untuk kegunaan peribadi sahaja (cth., mengarkib kandungan sendiri, penggunaan adil pendidikan, atau kandungan creative commons). Pembangun tidak bertanggungjawab atas sebarang penyalahgunaan perisian ini atau pelanggaran hak cipta yang dilakukan oleh pengguna. Memuat turun bahan berhak cipta tanpa kebenaran adalah melanggar Syarat Perkhidmatan YouTube.",
             secret_found: "Rahsia Ditemui!",
             secret_desc: "Anda membuka lencana penghargaan pembangun rahsia!",

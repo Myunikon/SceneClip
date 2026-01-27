@@ -84,6 +84,57 @@ export function RightPanel() {
                         )}
 
                         <EnhancementsSection />
+
+                        {/* Feature 5: Post-Processor Preset Selector */}
+                        <div className="pt-4 border-t border-border dark:border-white/5 space-y-3">
+                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                {t('settings.general.post_processing') || "Post-Processing"}
+                            </p>
+                            <div className="bg-secondary/20 p-3 rounded-xl border border-border/50">
+                                <label className="text-xs text-muted-foreground block mb-2">Apply Preset (FFmpeg)</label>
+                                <select
+                                    className="w-full bg-background border border-border/50 rounded-md px-2 py-1.5 text-sm focus:ring-1 focus:ring-primary outline-none"
+                                    value={options.postProcessorArgs || ''}
+                                    onChange={(e) => setters.setPostProcessorArgs?.(e.target.value)}
+                                >
+                                    <option value="">None</option>
+                                    <option value="-acodec libmp3lame -ab 320k">High Quality Audio (320kbps)</option>
+                                    <option value="-crf 28 -preset fast">Compress Video (CRF 28)</option>
+                                </select>
+                                {options.postProcessorArgs && (
+                                    <code className="block mt-2 text-[10px] font-mono bg-black/20 p-2 rounded text-muted-foreground break-all">
+                                        {options.postProcessorArgs}
+                                    </code>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Feature 5: Post-Processor Preset Selector */}
+                        <div className="pt-4 border-t border-border dark:border-white/5 space-y-3">
+                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                {t('settings.general.post_processing') || "Post-Processing"}
+                            </p>
+                            <div className="bg-secondary/20 p-3 rounded-xl border border-border/50">
+                                <label className="text-xs text-muted-foreground block mb-2">Apply Preset (FFmpeg)</label>
+                                <select
+                                    className="w-full bg-background border border-border/50 rounded-md px-2 py-1.5 text-sm focus:ring-1 focus:ring-primary outline-none"
+                                    value={options.postProcessorArgs || ''}
+                                    onChange={(e) => setters.setPostProcessorArgs?.(e.target.value)}
+                                >
+                                    <option value="">None</option>
+                                    {/* Hardcode presets for now since we don't have access to global settings in AddDialogContext yet. 
+                                        Ideally this should come from settings context. For now we use the same defaults. 
+                                    */}
+                                    <option value="-acodec libmp3lame -ab 320k">High Quality Audio (320kbps)</option>
+                                    <option value="-crf 28 -preset fast">Compress Video (CRF 28)</option>
+                                </select>
+                                {options.postProcessorArgs && (
+                                    <code className="block mt-2 text-[10px] font-mono bg-black/20 p-2 rounded text-muted-foreground break-all">
+                                        {options.postProcessorArgs}
+                                    </code>
+                                )}
+                            </div>
+                        </div>
                     </motion.div>
                 </AnimatePresence>
             </div>

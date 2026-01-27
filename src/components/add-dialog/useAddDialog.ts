@@ -128,25 +128,11 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
                 gifFps: options.format === 'gif' ? options.gifFps : undefined,
                 gifScale: options.format === 'gif' ? options.gifScale : undefined,
                 gifQuality: options.format === 'gif' ? options.gifQuality : undefined,
+                postProcessorArgs: options.postProcessorArgs,
 
                 // Extension Data
                 cookies: initialCookies,
                 userAgent: initialUserAgent
-            })
-        }
-
-        if (!options.batchMode && urls.length === 1) {
-            const { setSetting } = useAppStore.getState()
-            setSetting('lastDownloadOptions', {
-                format: options.format,
-                container: options.container,
-                audioBitrate: options.audioBitrate,
-                sponsorBlock: options.sponsorBlock,
-                subtitles: options.subtitles,
-                subtitleLang: options.subtitles ? options.subtitleLang : undefined,
-                embedSubtitles: options.subtitles ? options.embedSubtitles : false,
-                videoCodec: options.videoCodec,
-                path: savePath
             })
         }
 
@@ -180,21 +166,9 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
         }
     }
 
-    const quickDownload = async (targetUrl: string) => {
-        if (!settings.quickDownloadEnabled || !settings.lastDownloadOptions) {
-            return false
-        }
-
-        const lastOpts = settings.lastDownloadOptions
-        const savePath = lastOpts.path || settings.downloadPath || await downloadDir()
-
-        addTask(targetUrl, {
-            ...lastOpts,
-            path: savePath,
-            customFilename: undefined
-        })
-
-        return true
+    // Quick download is deprecated, always show dialog
+    const quickDownload = async (_targetUrl: string) => {
+        return false
     }
 
     const isDiskFull = !!(estimatedSize > 0 && diskFreeSpace !== null && estimatedSize > diskFreeSpace)

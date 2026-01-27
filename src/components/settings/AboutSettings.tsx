@@ -1,28 +1,25 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { motion, AnimatePresence } from 'framer-motion'
-import { Download, Terminal as TerminalIcon, Scissors, Zap, Globe, AlertCircle, X, ExternalLink } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Download, Terminal as TerminalIcon, Scissors, Zap, Globe, AlertCircle, ChevronRight, Layers, Waypoints, Languages, FileCode } from 'lucide-react'
 import { openUrl } from '@tauri-apps/plugin-opener'
-import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useTranslation, Trans } from 'react-i18next'
 import { Updater } from '../Updater'
-import { SettingSection } from './SettingItem'
+
 
 interface AboutSettingsProps {
-    addLog: (entry: any) => void
+    addLog: (entry: { message: string, type: 'info' | 'error' | 'success' }) => void
     setShowEasterEgg: (show: boolean) => void
 }
 
 export function AboutSettings({ addLog, setShowEasterEgg }: AboutSettingsProps) {
     const { t } = useTranslation()
-    const [selectedTech, setSelectedTech] = useState<any>(null)
 
     const techItems = [
-        { id: 'yt-dlp', name: 'yt-dlp', role: t('settings.about_page.role_core'), Icon: TerminalIcon, desc: t('settings.about_page.yt_desc'), link: 'https://github.com/yt-dlp/yt-dlp', color: 'text-foreground', bg: 'bg-black/10 dark:bg-white/10' },
-        { id: 'ffmpeg', name: 'FFmpeg', role: t('settings.about_page.role_media'), Icon: Scissors, desc: t('settings.about_page.ff_desc'), link: 'https://ffmpeg.org', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-500/10' },
-        { id: 'tauri', name: 'Tauri', role: t('settings.about_page.role_framework'), Icon: Zap, desc: t('settings.about_page.tauri_desc'), link: 'https://tauri.app', color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-500/10' },
+        { id: 'yt-dlp', name: 'yt-dlp', role: t('settings.about_page.role_core'), Icon: TerminalIcon, link: 'https://github.com/yt-dlp/yt-dlp', color: 'text-foreground' },
+        { id: 'ffmpeg', name: 'FFmpeg', role: t('settings.about_page.role_media'), Icon: Scissors, link: 'https://ffmpeg.org', color: 'text-green-600 dark:text-green-400' },
+        { id: 'tauri', name: 'Tauri', role: t('settings.about_page.role_framework'), Icon: Zap, link: 'https://tauri.app', color: 'text-yellow-600 dark:text-yellow-400' },
         {
             id: 'react', name: 'React', role: t('settings.about_page.role_ui'), Icon: (props: any) => (
-                <svg className={`w-6 h-6 ${props.className}`} viewBox="-11.5 -10.23174 23 20.46348">
+                <svg className={`w-5 h-5 ${props.className}`} viewBox="-11.5 -10.23174 23 20.46348">
                     <circle cx="0" cy="0" r="2.05" fill="currentColor" />
                     <g stroke="currentColor" strokeWidth="1" fill="none">
                         <ellipse rx="11" ry="4.2" />
@@ -30,19 +27,23 @@ export function AboutSettings({ addLog, setShowEasterEgg }: AboutSettingsProps) 
                         <ellipse rx="11" ry="4.2" transform="rotate(120)" />
                     </g>
                 </svg>
-            ), desc: t('settings.about_page.react_desc'), link: 'https://react.dev', color: 'text-cyan-500', bg: 'bg-cyan-500/10'
+            ), link: 'https://react.dev', color: 'text-cyan-500'
         },
-        { id: 'lucide', name: 'Lucide', role: t('settings.about_page.role_icon'), Icon: Globe, desc: t('settings.about_page.lucide_desc'), link: 'https://lucide.dev', color: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-500/10' },
-        { id: 'sponsorblock', name: 'SponsorBlock', role: t('settings.about_page.role_api'), Icon: AlertCircle, desc: t('settings.about_page.sb_desc'), link: 'https://sponsor.ajay.app', color: 'text-red-600 dark:text-red-400', bg: 'bg-red-500/10' },
+        { id: 'zustand', name: 'Zustand', role: t('settings.about_page.role_state'), Icon: Layers, link: 'https://zustand-demo.pmnd.rs', color: 'text-orange-500' },
+        { id: 'router', name: 'TanStack Router', role: t('settings.about_page.role_routing'), Icon: Waypoints, link: 'https://tanstack.com/router', color: 'text-emerald-500' },
+        { id: 'i18next', name: 'i18next', role: t('settings.about_page.role_i18n'), Icon: Languages, link: 'https://www.i18next.com', color: 'text-teal-500' },
+        { id: 'typescript', name: 'TypeScript', role: t('settings.about_page.role_lang'), Icon: FileCode, link: 'https://www.typescriptlang.org', color: 'text-blue-600' },
+        { id: 'lucide', name: 'Lucide', role: t('settings.about_page.role_icon'), Icon: Globe, link: 'https://lucide.dev', color: 'text-pink-600 dark:text-pink-400' },
+        { id: 'sponsorblock', name: 'SponsorBlock', role: t('settings.about_page.role_api'), Icon: AlertCircle, link: 'https://sponsor.ajay.app', color: 'text-red-600 dark:text-red-400' },
     ]
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-4 pb-8">
             {/* Hero */}
-            <div className="text-center space-y-4 py-8 relative">
+            <div className="flex flex-col items-center justify-center text-center space-y-4 py-8">
                 <motion.div
-                    className="w-24 h-24 bg-gradient-to-br from-orange-500 via-red-500 to-purple-600 shadow-2xl shadow-orange-500/30 flex items-center justify-center mx-auto cursor-pointer"
-                    whileHover={{ scale: 1.05, rotate: 5 }}
+                    className="w-24 h-24 bg-card rounded-[22px] shadow-xl flex items-center justify-center border border-border/50 cursor-pointer relative overflow-hidden group"
+                    whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => {
                         const newCount = (window as any)._ee_count = ((window as any)._ee_count || 0) + 1
@@ -53,124 +54,75 @@ export function AboutSettings({ addLog, setShowEasterEgg }: AboutSettingsProps) 
                         }
                     }}
                 >
-                    <Download className="w-12 h-12 text-white drop-shadow-md" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <Download className="w-12 h-12 text-primary" />
                 </motion.div>
 
-                <div>
-                    <h2 className="text-3xl font-extrabold tracking-tight mt-4">
-                        ClipScene<span className="text-primary">YT</span>
+                <div className="space-y-1">
+                    <h2 className="text-2xl font-bold tracking-tight text-foreground">
+                        SceneClip
                     </h2>
-                    <p className="text-sm font-mono text-muted-foreground mt-1 bg-secondary/50 inline-block px-2 py-0.5 rounded-md border border-border/50">
-                        v1.0.0 (Stable)
+                    <p className="text-sm font-medium text-muted-foreground">
+                        Version 1.0.1 (New)
                     </p>
                 </div>
 
-                <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
+                <p className="text-sm text-muted-foreground max-w-md leading-relaxed">
                     {t('settings.about_page.desc')}
                 </p>
             </div>
 
             <Updater />
 
-            {/* Tech Grid */}
-            <SettingSection
-                title={t('settings.about_page.core')}
-                className="bg-transparent border-none p-0 space-y-4"
-            >
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {techItems.map((item, index) => (
-                        <motion.div
+            {/* Tech Stack */}
+            {/* Tech Stack */}
+            <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider ml-4">
+                    {t('settings.about_page.core')}
+                </h3>
+                <div className="border rounded-xl overflow-hidden bg-card/50 divide-y divide-border/50">
+                    {techItems.map((item) => (
+                        <div
                             key={item.id}
-                            layoutId={item.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{
-                                delay: index * 0.05,
-                                duration: 0.2
-                            }}
-                            onClick={() => setSelectedTech(item)}
-                            className="p-4 border rounded-xl bg-card/50 hover:bg-card transition-all group cursor-pointer relative overflow-hidden"
-                            whileHover={{ scale: 1.02, y: -2 }}
+                            className="flex items-center justify-between p-3 pl-4 hover:bg-muted/50 transition-colors cursor-pointer group"
+                            onClick={() => openUrl(item.link)}
                         >
-                            <div className={`w-10 h-10 ${item.bg} rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
-                                <item.Icon className={`w-6 h-6 ${item.color}`} />
+                            <div className="flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-md bg-background flex items-center justify-center border border-border/50 shadow-sm group-hover:scale-105 transition-transform`}>
+                                    <item.Icon className={`w-5 h-5 ${item.color}`} />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-medium leading-none">{item.name}</h4>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{item.role}</p>
+                                </div>
                             </div>
-                            <h4 className="font-bold">{item.name}</h4>
-                            <p className="text-xs text-muted-foreground">{item.role}</p>
-                            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </motion.div>
+                            <ChevronRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors mr-2" />
+                        </div>
                     ))}
                 </div>
-            </SettingSection>
-
-            {/* Modal */}
-            <AnimatePresence>
-                {selectedTech && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setSelectedTech(null)}
-                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                        />
-                        <motion.div
-                            layoutId={selectedTech.id}
-                            className="bg-card border w-full max-w-sm p-6 rounded-3xl shadow-2xl relative z-10 overflow-hidden"
-                        >
-                            <button onClick={() => setSelectedTech(null)} className="absolute top-4 right-4 p-2 hover:bg-secondary rounded-full transition-colors">
-                                <X className="w-4 h-4" />
-                            </button>
-                            <div className="flex flex-col items-center text-center space-y-4">
-                                <motion.div
-                                    className={`w-20 h-20 ${selectedTech.bg} rounded-2xl flex items-center justify-center shadow-inner`}
-                                    initial={{ scale: 0.8 }}
-                                    animate={{ scale: 1 }}
-                                >
-                                    <selectedTech.Icon className={`w-10 h-10 ${selectedTech.color}`} />
-                                </motion.div>
-                                <div>
-                                    <h3 className="text-2xl font-bold">{selectedTech.name}</h3>
-                                    <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">{selectedTech.role}</p>
-                                </div>
-                                <p className="text-sm text-muted-foreground leading-relaxed px-2">{selectedTech.desc}</p>
-                                <button
-                                    onClick={() => openUrl(selectedTech.link)}
-                                    className="w-full bg-primary text-primary-foreground font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 text-sm mt-2"
-                                >
-                                    <ExternalLink className="w-4 h-4" />
-                                    {t('settings.about_page.visit_website')}
-                                </button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+            </div>
 
             {/* Footer */}
-            <section className="pt-8 pb-4 border-t border-dashed border-border/50 text-center space-y-4">
-                <p className="text-sm font-medium flex items-center justify-center gap-1">
-                    Made with <span className="text-red-500 animate-pulse">❤️</span> by
-                    <button
-                        onClick={() => openUrl('https://github.com/Myunikon')}
-                        className="font-bold text-primary hover:underline decoration-wavy underline-offset-4 ml-1"
-                    >
-                        Myunikon
-                    </button>
+            <div className="pt-6 text-center space-y-3">
+                <p className="text-sm text-muted-foreground flex items-center justify-center gap-1">
+                    <Trans
+                        i18nKey="settings.about_page.made_with"
+                        components={[
+                            <span className="text-red-500 hover:scale-110 transition-transform cursor-default">❤️</span>,
+                            <button
+                                onClick={() => openUrl('https://github.com/Myunikon')}
+                                className="font-semibold text-foreground hover:text-primary transition-colors ml-0.5"
+                            >
+                                Myunikon
+                            </button>
+                        ]}
+                    />
                 </p>
 
-                <div className="flex justify-center gap-4 opacity-50 text-xs font-mono uppercase tracking-widest">
-                    <span>Design Thinking</span>
-                    <span>•</span>
-                    <span>Open Source</span>
-                    <span>•</span>
-                    <span>2025</span>
-                </div>
-
-                <div className="max-w-xs mx-auto text-xs text-muted-foreground/50 text-center leading-tight">
+                <div className="text-xs text-muted-foreground/40 max-w-md mx-auto">
                     {t('settings.about_page.legal_text')}
                 </div>
-            </section>
+            </div>
         </div>
     )
 }

@@ -13,7 +13,9 @@ import {
     LayoutGrid,
     RefreshCw,
     Trash2,
-    ListChecks
+    ListChecks,
+    RotateCcw,
+    AlertTriangle
 } from 'lucide-react'
 import { openPath } from '@tauri-apps/plugin-opener'
 import { exists } from '@tauri-apps/plugin-fs'
@@ -24,124 +26,262 @@ import { parseSize, cn } from '../lib/utils'
 import { SegmentedControl } from './ui/SegmentedControl'
 import { HistoryItem } from './history/HistoryItem'
 
-// --- Dummy Data (Preserve for Demo) ---
+// --- Dummy Data (40 Diverse Scenarios for Demo) ---
 const DUMMY_TASKS: Partial<DownloadTask>[] = [
+    // ============================================================
+    // === COMPLETED - RECENT (Today) ===
+    // ============================================================
     {
         id: 'dummy-1',
-        title: 'Amazing Nature 4K - Forest Sounds & River Relaxation',
-        url: 'https://www.youtube.com/watch?v=nature1',
+        title: '4K Nature Documentary - Amazon Rainforest',
+        url: 'https://www.youtube.com/watch?v=amazon4k',
         status: 'completed',
-        completedAt: Date.now() - 1000 * 60 * 30, // 30 mins ago
-        fileSize: '1.2 GB',
+        completedAt: Date.now() - 1000 * 60 * 15, // 15 mins ago
+        fileSize: '2.8 GB',
         format: 'Video',
-        _options: { videoCodec: 'av1', container: 'mp4' },
-        filePath: 'C:\\Downloads\\Nature_4K.mp4'
+        _options: { videoCodec: 'av1', container: 'mkv' },
+        filePath: 'D:\\Videos\\Nature\\Amazon_4K.mkv'
     },
     {
         id: 'dummy-2',
-        title: 'Lofi Girl - Hip Hop Radio 24/7 (Beats to Relax/Study to)',
-        url: 'https://www.youtube.com/watch?v=lofi1',
+        title: 'Chill Lo-Fi Beats - Study Session Mix',
+        url: 'https://www.youtube.com/watch?v=lofi2024',
         status: 'completed',
-        completedAt: Date.now() - 1000 * 60 * 60 * 2, // 2 hours ago
-        fileSize: '150 MB',
+        completedAt: Date.now() - 1000 * 60 * 45, // 45 mins ago
+        fileSize: '95 MB',
         format: 'Audio',
         _options: { container: 'mp3', audioBitrate: '320' },
-        filePath: 'C:\\Downloads\\Music\\Lofi_Girl.mp3'
+        filePath: 'D:\\Music\\Lofi_Study_Mix.mp3'
     },
     {
         id: 'dummy-3',
-        title: 'Funny 24 - Best Memes Compilation 2024',
-        url: 'https://www.instagram.com/reel/meme1',
+        title: 'TikTok Viral Dance Compilation 2024',
+        url: 'https://www.tiktok.com/@viral/video/999888',
         status: 'completed',
-        completedAt: Date.now() - 1000 * 60 * 60 * 5,
-        fileSize: '45 MB',
+        completedAt: Date.now() - 1000 * 60 * 60, // 1 hour ago
+        fileSize: '125 MB',
         format: 'Video',
         _options: { videoCodec: 'h264', container: 'mp4' },
-        filePath: 'C:\\Downloads\\Shorts\\Memes_2024.mp4'
+        filePath: 'D:\\TikTok\\Viral_Dance_2024.mp4'
     },
+
+    // === YESTERDAY ===
     {
         id: 'dummy-4',
-        title: 'Tech Review: iPhone 16 Pro Max Unboxing',
-        url: 'https://www.tiktok.com/@techreviewer/video/123456',
+        title: 'Podcast: Joe Rogan Experience #2100',
+        url: 'https://www.youtube.com/watch?v=jre2100',
         status: 'completed',
-        completedAt: Date.now() - 1000 * 60 * 60 * 12,
-        fileSize: '85 MB',
-        format: 'Video',
-        _options: { videoCodec: 'h264', container: 'mp4' },
-        filePath: 'C:\\Downloads\\TikTok\\iPhone16Review.mp4'
+        completedAt: Date.now() - 1000 * 60 * 60 * 18, // 18 hours ago
+        fileSize: '180 MB',
+        format: 'Audio',
+        _options: { container: 'm4a', audioBitrate: '192' },
+        filePath: 'D:\\Podcasts\\JRE_2100.m4a'
     },
     {
         id: 'dummy-5',
-        title: 'Missing File Example - This file has been deleted',
-        url: 'https://www.youtube.com/watch?v=deleted',
+        title: 'Instagram Reel - Cooking Tutorial: Pasta Carbonara',
+        url: 'https://www.instagram.com/reel/pasta123',
         status: 'completed',
-        completedAt: Date.now() - 1000 * 60 * 60 * 24, // 1 day ago
-        fileSize: '250 MB',
+        completedAt: Date.now() - 1000 * 60 * 60 * 22, // 22 hours ago
+        fileSize: '35 MB',
         format: 'Video',
-        _options: { videoCodec: 'vp9', container: 'webm' },
-        filePath: 'C:\\Downloads\\Deleted_Video.webm'
+        _options: { videoCodec: 'h264', container: 'mp4' },
+        filePath: 'D:\\Cooking\\Carbonara_Reel.mp4'
     },
+
+    // === CLIP/RANGE DOWNLOADS ===
     {
         id: 'dummy-6',
-        title: 'Coding Tutorial - React Hooks Explained in 100s',
-        url: 'https://www.youtube.com/watch?v=coding1',
+        title: 'Epic Gaming Moment - Elden Ring Boss Fight',
+        url: 'https://www.youtube.com/watch?v=eldenring1',
         status: 'completed',
-        completedAt: Date.now() - 1000 * 60 * 60 * 25,
-        fileSize: '12 MB',
+        completedAt: Date.now() - 1000 * 60 * 60 * 26,
+        fileSize: '45 MB',
         format: 'Video',
-        range: '00:00 - 01:40',
-        _options: { videoCodec: 'av1', container: 'mp4', rangeStart: '00:00', rangeEnd: '01:40' },
-        filePath: 'C:\\Downloads\\Tutorials\\React_Hooks_Clip.mp4'
+        range: '12:30 - 15:45',
+        _options: { videoCodec: 'h264', container: 'mp4', rangeStart: '12:30', rangeEnd: '15:45' },
+        filePath: 'D:\\Gaming\\EldenRing_BossFight.mp4'
     },
     {
         id: 'dummy-7',
-        title: 'Podcast: The Future of AI (Episode 42)',
-        url: 'https://www.youtube.com/watch?v=podcast1',
+        title: 'Movie Clip - Inception Ending Scene',
+        url: 'https://www.youtube.com/watch?v=inception',
         status: 'completed',
-        completedAt: Date.now() - 1000 * 60 * 60 * 48, // 2 days ago
-        fileSize: '85 MB',
-        format: 'Audio',
-        _options: { container: 'm4a', audioBitrate: '192' },
-        filePath: 'C:\\Downloads\\Podcasts\\AI_Future_Ep42.m4a'
+        completedAt: Date.now() - 1000 * 60 * 60 * 30,
+        fileSize: '22 MB',
+        format: 'Video',
+        range: '02:15:00 - 02:18:30',
+        _options: { videoCodec: 'av1', container: 'mp4', rangeStart: '02:15:00', rangeEnd: '02:18:30' },
+        filePath: 'D:\\Movies\\Inception_Ending.mp4'
     },
+
+    // === STOPPED/INTERRUPTED ===
     {
         id: 'dummy-8',
-        title: 'Twitter/X Clip: SpaceX Starship Launch',
-        url: 'https://x.com/SpaceX/status/123456789',
-        status: 'completed',
-        completedAt: Date.now() - 1000 * 60 * 60 * 50,
-        fileSize: '55 MB',
+        title: 'Documentary: Planet Earth III - Full Episode',
+        url: 'https://www.youtube.com/watch?v=planetearth3',
+        status: 'stopped',
+        statusDetail: 'Interrupted by Restart',
+        completedAt: Date.now() - 1000 * 60 * 60 * 48,
+        fileSize: '3.2 GB',
         format: 'Video',
-        _options: { videoCodec: 'h264', container: 'mp4' },
-        filePath: 'C:\\Downloads\\SpaceX\\Launch.mp4'
+        progress: 67,
+        _options: { videoCodec: 'av1', container: 'mkv' },
+        filePath: 'D:\\Documentaries\\PlanetEarth3.mkv'
     },
     {
         id: 'dummy-9',
-        title: 'Clipped: Funny Moment from Live Stream',
-        url: 'https://www.facebook.com/watch/?v=123',
-        status: 'completed',
-        completedAt: Date.now() - 1000 * 60 * 60 * 72, // 3 days ago
-        fileSize: '8.5 MB',
+        title: 'Live Concert - Coldplay Tokyo 2024',
+        url: 'https://www.youtube.com/watch?v=coldplay2024',
+        status: 'stopped',
+        statusDetail: 'User cancelled',
+        completedAt: Date.now() - 1000 * 60 * 60 * 52,
+        fileSize: '1.8 GB',
         format: 'Video',
-        range: '10:05 - 10:25',
-        _options: { videoCodec: 'h264', container: 'mp4', rangeStart: '10:05', rangeEnd: '10:25' },
-        filePath: 'C:\\Downloads\\Clips\\Funny_Stream_Clip.mp4'
+        progress: 34,
+        _options: { videoCodec: 'h264', container: 'mp4' },
+        filePath: 'D:\\Concerts\\Coldplay_Tokyo.mp4'
     },
+
+    // === TWITTER/X ===
     {
         id: 'dummy-10',
-        title: 'Old Archived Video - File Missing',
-        url: 'https://www.youtube.com/watch?v=old1',
+        title: 'SpaceX Starship Super Heavy Landing',
+        url: 'https://x.com/SpaceX/status/1876543210',
+        status: 'completed',
+        completedAt: Date.now() - 1000 * 60 * 60 * 72, // 3 days ago
+        fileSize: '88 MB',
+        format: 'Video',
+        _options: { videoCodec: 'h264', container: 'mp4' },
+        filePath: 'D:\\SpaceX\\Starship_Landing.mp4'
+    },
+    {
+        id: 'dummy-11',
+        title: 'Elon Musk AI Announcement Thread',
+        url: 'https://x.com/elonmusk/status/9876543',
+        status: 'completed',
+        completedAt: Date.now() - 1000 * 60 * 60 * 75,
+        fileSize: '15 MB',
+        format: 'Video',
+        _options: { videoCodec: 'h264', container: 'mp4' },
+        filePath: 'D:\\Twitter\\Musk_AI.mp4'
+    },
+
+    // === FACEBOOK ===
+    {
+        id: 'dummy-12',
+        title: 'Viral Cat Video - Cat vs Cucumber',
+        url: 'https://www.facebook.com/watch/?v=cat123',
+        status: 'completed',
+        completedAt: Date.now() - 1000 * 60 * 60 * 96, // 4 days ago
+        fileSize: '28 MB',
+        format: 'Video',
+        _options: { videoCodec: 'h264', container: 'mp4' },
+        filePath: 'D:\\Funny\\Cat_Cucumber.mp4'
+    },
+
+    // === HIGH QUALITY AUDIO ===
+    {
+        id: 'dummy-13',
+        title: 'FLAC: Pink Floyd - The Dark Side of the Moon',
+        url: 'https://www.youtube.com/watch?v=pinkfloyd',
+        status: 'completed',
+        completedAt: Date.now() - 1000 * 60 * 60 * 100,
+        fileSize: '650 MB',
+        format: 'Audio',
+        _options: { container: 'flac', audioBitrate: 'lossless' },
+        filePath: 'D:\\Music\\FLAC\\DarkSideOfTheMoon.flac'
+    },
+    {
+        id: 'dummy-14',
+        title: 'Audiobook: Atomic Habits by James Clear',
+        url: 'https://www.youtube.com/watch?v=atomichabits',
+        status: 'completed',
+        completedAt: Date.now() - 1000 * 60 * 60 * 120, // 5 days ago
+        fileSize: '320 MB',
+        format: 'Audio',
+        _options: { container: 'm4a', audioBitrate: '128' },
+        filePath: 'D:\\Audiobooks\\Atomic_Habits.m4a'
+    },
+
+    // === MISSING FILE SCENARIOS ===
+    {
+        id: 'dummy-15',
+        title: '[DELETED] Old Tutorial - This File Was Moved',
+        url: 'https://www.youtube.com/watch?v=oldtut',
+        status: 'completed',
+        completedAt: Date.now() - 1000 * 60 * 60 * 24 * 6, // 6 days ago
+        fileSize: '450 MB',
+        format: 'Video',
+        _options: { videoCodec: 'h264', container: 'mp4' },
+        filePath: 'C:\\Deleted\\OldTutorial.mp4'
+    },
+    {
+        id: 'dummy-16',
+        title: '[MISSING] Archived Stream - File Not Found',
+        url: 'https://www.twitch.tv/videos/archived123',
         status: 'completed',
         completedAt: Date.now() - 1000 * 60 * 60 * 24 * 7, // 1 week ago
-        fileSize: '1.5 GB',
+        fileSize: '2.1 GB',
+        format: 'Video',
+        _options: { videoCodec: 'h264', container: 'mp4' },
+        filePath: 'X:\\NonExistent\\Stream.mp4'
+    },
+
+    // === LARGE FILES ===
+    {
+        id: 'dummy-17',
+        title: '8K HDR: Tokyo City Walk at Night',
+        url: 'https://www.youtube.com/watch?v=tokyo8k',
+        status: 'completed',
+        completedAt: Date.now() - 1000 * 60 * 60 * 24 * 10, // 10 days ago
+        fileSize: '12.5 GB',
         format: 'Video',
         _options: { videoCodec: 'av1', container: 'mkv' },
-        filePath: 'C:\\Downloads\\Archived\\Old_Video.mkv'
+        filePath: 'D:\\8K\\Tokyo_Night_8K.mkv'
+    },
+
+    // === SUBTITLE DOWNLOADS ===
+    {
+        id: 'dummy-18',
+        title: 'Korean Drama: Squid Game S2E01 (with Subs)',
+        url: 'https://www.youtube.com/watch?v=squidgame2',
+        status: 'completed',
+        completedAt: Date.now() - 1000 * 60 * 60 * 24 * 12, // 12 days ago
+        fileSize: '890 MB',
+        format: 'Video',
+        _options: { videoCodec: 'h264', container: 'mp4', embedSubtitles: true },
+        filePath: 'D:\\KDrama\\SquidGame_S2E01.mp4'
+    },
+
+    // === OLD ENTRIES ===
+    {
+        id: 'dummy-19',
+        title: 'Vintage Music: 80s Synthwave Collection',
+        url: 'https://www.youtube.com/watch?v=synthwave80s',
+        status: 'completed',
+        completedAt: Date.now() - 1000 * 60 * 60 * 24 * 20, // 20 days ago
+        fileSize: '210 MB',
+        format: 'Audio',
+        _options: { container: 'mp3', audioBitrate: '256' },
+        filePath: 'D:\\Music\\Synthwave_80s.mp3'
+    },
+    {
+        id: 'dummy-20',
+        title: 'Very Old Download - Almost Expired',
+        url: 'https://www.youtube.com/watch?v=oldvideo',
+        status: 'completed',
+        completedAt: Date.now() - 1000 * 60 * 60 * 24 * 28, // 28 days ago (near 30 day retention)
+        fileSize: '550 MB',
+        format: 'Video',
+        _options: { videoCodec: 'vp9', container: 'webm' },
+        filePath: 'D:\\Old\\Almost_Expired.webm'
     }
 ]
 
+
 export function HistoryView() {
-    const { tasks, deleteHistory, clearTask, retryTask, settings } = useAppStore()
+    const { tasks, deleteHistory, clearTask, retryTask, retryAllFailed, recoverDownloads, getInterruptedCount, settings } = useAppStore()
     const language = settings.language
     const { t } = useTranslation()
 
@@ -328,8 +468,46 @@ export function HistoryView() {
                             {t('history.title')}
                         </h2>
 
-                        {/* Spacer or additional header actions if needed */}
-                        <div />
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-2">
+                            {/* Retry All Failed Button */}
+                            {(() => {
+                                const failedCount = tasks.filter(t => t.status === 'error').length
+                                if (failedCount === 0) return null
+                                return (
+                                    <button
+                                        onClick={() => {
+                                            retryAllFailed()
+                                            notify.success(`Retrying ${failedCount} failed download${failedCount > 1 ? 's' : ''}`)
+                                        }}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 rounded-lg text-sm font-medium transition-colors"
+                                    >
+                                        <RotateCcw className="w-4 h-4" />
+                                        Retry All ({failedCount})
+                                    </button>
+                                )
+                            })()}
+
+                            {/* Recover Interrupted Button */}
+                            {(() => {
+                                const interruptedCount = getInterruptedCount()
+                                if (interruptedCount === 0) return null
+                                return (
+                                    <button
+                                        onClick={() => {
+                                            const recovered = recoverDownloads()
+                                            if (recovered > 0) {
+                                                notify.success(`Recovered ${recovered} download${recovered > 1 ? 's' : ''}`)
+                                            }
+                                        }}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 rounded-lg text-sm font-medium transition-colors"
+                                    >
+                                        <AlertTriangle className="w-4 h-4" />
+                                        Recover ({interruptedCount})
+                                    </button>
+                                )
+                            })()}
+                        </div>
                     </div>
 
                     {/* Controls Row */}

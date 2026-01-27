@@ -37,8 +37,14 @@ pub fn run() {
             commands::system::check_gpu_support,
             commands::system::set_window_effects,
             commands::process::suspend_process,
+            commands::process::suspend_process,
             commands::process::resume_process,
+            commands::power::prevent_suspend,
+            commands::power::is_suspend_inhibited,
             commands::stats::get_system_stats,
+            commands::keyring::set_credential,
+            commands::keyring::get_credential,
+            commands::keyring::delete_credential,
         ])
         .setup(|app| {
             let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;

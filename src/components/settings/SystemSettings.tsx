@@ -8,7 +8,7 @@ import { useAppStore } from '../../store'
 import { getBinaryName } from '../../lib/platform'
 import { SettingItem, SettingSection } from './SettingItem'
 
-interface AdvancedSettingsProps {
+interface SystemSettingsProps {
     settings: AppSettings
     setSetting: <K extends keyof AppSettings>(key: K, val: AppSettings[K]) => void
     updateSettings: (newSettings: Partial<AppSettings>) => void
@@ -18,7 +18,7 @@ import { ConfirmationModal } from '../ConfirmationModal'
 import { useState } from 'react'
 import { notify } from '../../lib/notify'
 
-export function AdvancedSettings({ settings, setSetting, updateSettings }: AdvancedSettingsProps) {
+export function SystemSettings({ settings, setSetting, updateSettings }: SystemSettingsProps) {
     const { t } = useTranslation()
     const { resetSettings } = useAppStore()
     const [showResetConfirm, setShowResetConfirm] = useState(false)
@@ -26,19 +26,39 @@ export function AdvancedSettings({ settings, setSetting, updateSettings }: Advan
     return (
         <div className="space-y-4">
             {/* Developer Mode - MASTER TOGGLE FIRST */}
-            <SettingSection
-                title={t('settings.advanced.developer_mode')}
-                description={t('settings.advanced.developer_mode_desc') || "Enable technical tools and logs"}
-                className="bg-orange-500/5 border-orange-500/20"
-                icon={<Terminal className="w-5 h-5" />}
-            >
-                <div className="flex justify-end">
-                    <Switch
-                        checked={settings.developerMode}
-                        onCheckedChange={(val) => updateSettings({ developerMode: val })}
-                    />
+            {/* Developer Mode - Refined UI */}
+            <div className="flex items-center justify-between p-4 rounded-xl border bg-card/50 shadow-sm transition-all hover:bg-card">
+                <div className="flex items-center gap-4">
+                    <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                        <Terminal className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <h3 className="font-semibold text-base">{t('settings.advanced.developer_mode')}</h3>
+                        <p className="text-xs text-muted-foreground">{t('settings.advanced.developer_mode_desc') || "Enable technical tools and logs"}</p>
+                    </div>
                 </div>
-            </SettingSection>
+                <Switch
+                    checked={settings.developerMode}
+                    onCheckedChange={(val) => updateSettings({ developerMode: val })}
+                />
+            </div>
+
+            {/* Danger Zone: Only visible if Developer Mode is on */}
+            {settings.developerMode && (
+                <SettingSection
+                    title={t('settings.advanced.tech_paths')}
+                    className="animate-in fade-in slide-in-from-top-2"
+                >
+                    <div className="space-y-4">
+                        <SettingItem title={getBinaryName('ytdlp')} layout="vertical">
+                            <input className="w-full p-2 rounded-md border border-input bg-secondary/30 font-mono text-xs shadow-sm transition-colors focus:bg-background focus:ring-1 focus:ring-ring" value={settings.binaryPathYtDlp} onChange={e => setSetting('binaryPathYtDlp', e.target.value)} placeholder="Auto-managed" />
+                        </SettingItem>
+                        <SettingItem title={getBinaryName('ffmpeg')} layout="vertical">
+                            <input className="w-full p-2 rounded-md border border-input bg-secondary/30 font-mono text-xs shadow-sm transition-colors focus:bg-background focus:ring-1 focus:ring-ring" value={settings.binaryPathFfmpeg} onChange={e => setSetting('binaryPathFfmpeg', e.target.value)} placeholder="Auto-managed" />
+                        </SettingItem>
+                    </div>
+                </SettingSection>
+            )}
 
             {/* Authentication & Cookies */}
             <SettingSection title={t('settings.advanced.auth')}>
@@ -82,7 +102,7 @@ export function AdvancedSettings({ settings, setSetting, updateSettings }: Advan
                                 description={
                                     <div className="relative mt-2">
                                         <input
-                                            className="w-full p-2 pr-8 rounded-md border bg-background/50 font-mono text-xs truncate"
+                                            className="w-full p-2 pr-8 rounded-md border border-input bg-secondary/30 font-mono text-xs truncate shadow-sm transition-colors focus:bg-background focus:ring-1 focus:ring-ring"
                                             value={settings.cookiePath || ''}
                                             readOnly
                                             placeholder={t('settings.advanced.no_file')}
@@ -114,7 +134,7 @@ export function AdvancedSettings({ settings, setSetting, updateSettings }: Advan
                                             console.error("Failed to open file dialog", e)
                                         }
                                     }}
-                                    className="text-[10px] bg-primary/10 hover:bg-primary/20 text-primary px-2 py-1 rounded transition-colors"
+                                    className="text-xs font-medium bg-secondary hover:bg-secondary/80 text-foreground px-3 py-1.5 rounded-md transition-colors border border-border/50 shadow-sm"
                                 >
                                     Browse...
                                 </button>
@@ -124,22 +144,7 @@ export function AdvancedSettings({ settings, setSetting, updateSettings }: Advan
                 </div>
             </SettingSection>
 
-            {/* Danger Zone: Only visible if Developer Mode is on */}
-            {settings.developerMode && (
-                <SettingSection
-                    title={t('settings.advanced.tech_paths')}
-                    className="bg-red-500/5 border-red-500/20 animate-in fade-in slide-in-from-top-2"
-                >
-                    <div className="space-y-4">
-                        <SettingItem title={getBinaryName('ytdlp')} layout="vertical">
-                            <input className="w-full p-2 rounded-md border bg-background/50 font-mono text-xs" value={settings.binaryPathYtDlp} onChange={e => setSetting('binaryPathYtDlp', e.target.value)} placeholder="Auto-managed" />
-                        </SettingItem>
-                        <SettingItem title={getBinaryName('ffmpeg')} layout="vertical">
-                            <input className="w-full p-2 rounded-md border bg-background/50 font-mono text-xs" value={settings.binaryPathFfmpeg} onChange={e => setSetting('binaryPathFfmpeg', e.target.value)} placeholder="Auto-managed" />
-                        </SettingItem>
-                    </div>
-                </SettingSection>
-            )}
+
 
             {/* Video Processing - Hardware Acceleration */}
             <SettingSection title={t('settings.advanced.video_processing.title')}>
@@ -167,9 +172,78 @@ export function AdvancedSettings({ settings, setSetting, updateSettings }: Advan
                 </div>
             </SettingSection>
 
+            {/* Data Retention Policy */}
+            <SettingSection
+                title={t('settings.advanced.history_retention')}
+                description={t('settings.advanced.history_retention_desc')}
+            >
+                <div className="flex flex-col gap-4">
+                    <SettingItem title={t('settings.advanced.history_retention')} layout="vertical">
+                        <Select
+                            value={String(settings.historyRetentionDays ?? 30)}
+                            onChange={(val) => {
+                                const numVal = Number(val);
+                                setSetting('historyRetentionDays', numVal);
+                                // Need to wait for state update or pass new value directly, but here passing numVal is enough for the days param
+                                useAppStore.getState().cleanupOldTasks(numVal);
+                            }}
+                            options={[
+                                { value: "-1", label: t('settings.advanced.retention_forever') },
+                                { value: "30", label: t('settings.advanced.retention_days', { count: 30 }) },
+                                { value: "14", label: t('settings.advanced.retention_days', { count: 14 }) },
+                                { value: "7", label: t('settings.advanced.retention_days', { count: 7 }) },
+                                { value: "3", label: t('settings.advanced.retention_days', { count: 3 }) },
+                                { value: "0", label: t('settings.advanced.retention_zero') },
+                            ]}
+                        />
+                    </SettingItem>
+
+                    <SettingItem title={t('settings.advanced.history_max_items') || "Max History Items"} layout="vertical">
+                        <Select
+                            value={String(settings.maxHistoryItems ?? -1)}
+                            onChange={(val) => {
+                                const numVal = Number(val);
+                                setSetting('maxHistoryItems', numVal);
+                                useAppStore.getState().cleanupOldTasks(settings.historyRetentionDays ?? 30);
+                            }}
+                            options={[
+                                { value: "-1", label: t('settings.advanced.retention_forever') },
+                                { value: "100", label: "100 Items" },
+                                { value: "50", label: "50 Items" },
+                                { value: "20", label: "20 Items" },
+                                { value: "10", label: "10 Items" },
+                            ]}
+                        />
+                    </SettingItem>
+                </div>
+            </SettingSection>
+
+            {/* Post-Download Action */}
+            <SettingSection
+                title={t('settings.advanced.post_action') || "After All Downloads Complete"}
+                description={t('settings.advanced.post_download_action_desc') || "Action to perform when download queue is empty"}
+            >
+                <SettingItem title={t('settings.advanced.post_action')} layout="vertical">
+                    <Select
+                        value={settings.postDownloadAction || 'none'}
+                        onChange={(val) => setSetting('postDownloadAction', val as AppSettings['postDownloadAction'])}
+                        options={[
+                            { value: "none", label: t('settings.advanced.post_actions.none') || "Do Nothing" },
+                            { value: "sleep", label: t('settings.advanced.post_actions.sleep') || "Sleep Computer" },
+                            { value: "shutdown", label: t('settings.advanced.post_actions.shutdown') || "Shutdown Computer" }
+                        ]}
+                    />
+                </SettingItem>
+                {settings.postDownloadAction === 'shutdown' && (
+                    <div className="mt-2 p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-500">
+                        ⚠️ {t('settings.advanced.shutdown_warning') || "Your computer will shutdown. Make sure to save all work!"}
+                    </div>
+                )}
+            </SettingSection>
+
             {/* Data Management */}
             <SettingSection title={t('settings.advanced.data_management')}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
                     <button
                         onClick={async () => {
                             try {
@@ -183,7 +257,7 @@ export function AdvancedSettings({ settings, setSetting, updateSettings }: Advan
                                 }
                             } catch (e) { notify.error(t('settings.advanced.alerts.export_fail') + e) }
                         }}
-                        className="p-3 text-sm border rounded-xl hover:bg-secondary/50 transition-colors flex items-center justify-between group"
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg hover:bg-secondary/50 transition-colors group text-left"
                     >
                         <span className="font-medium">{t('settings.advanced.btn_export_history')}</span>
                     </button>
@@ -203,17 +277,27 @@ export function AdvancedSettings({ settings, setSetting, updateSettings }: Advan
                                 }
                             } catch (e) { notify.error(t('settings.advanced.alerts.import_fail') + e) }
                         }}
-                        className="p-3 text-sm border rounded-xl hover:bg-secondary/50 transition-colors flex items-center justify-between group"
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg hover:bg-secondary/50 transition-colors group text-left"
                     >
                         <span className="font-medium">{t('settings.advanced.btn_import_history')}</span>
                     </button>
 
                     <button
+                        onClick={() => setSetting('hasSeenOnboarding', false)}
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg hover:bg-emerald-500/10 hover:text-emerald-600 transition-colors group text-left"
+                    >
+                        <span className="font-medium">{t('settings.advanced.btn_replay_welcome')}</span>
+                    </button>
+
+                    <div className="h-px bg-border/40 my-1" />
+
+                    <button
                         onClick={() => setShowResetConfirm(true)}
-                        className="p-3 text-sm border rounded-xl hover:bg-red-500/10 hover:border-red-500/30 transition-colors flex items-center justify-between group text-red-500"
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg hover:bg-red-500/10 text-red-500 transition-colors group text-left"
                     >
                         <span className="font-medium">{t('settings.advanced.btn_reset_data')}</span>
                     </button>
+
                     <ConfirmationModal
                         isOpen={showResetConfirm}
                         onClose={() => setShowResetConfirm(false)}
@@ -223,7 +307,6 @@ export function AdvancedSettings({ settings, setSetting, updateSettings }: Advan
                                 description: t('settings.advanced.alerts.reset_success_desc'),
                                 duration: 3000
                             })
-                            // Optional: Reload to force clean state
                             setTimeout(() => window.location.reload(), 1000)
                         }}
                         title={t('settings.advanced.alerts.confirm_reset') || "Reset Everything?"}
@@ -231,13 +314,6 @@ export function AdvancedSettings({ settings, setSetting, updateSettings }: Advan
                         confirmLabel={t('settings.advanced.alerts.reset_confirm_btn')}
                         variant="danger"
                     />
-
-                    <button
-                        onClick={() => setSetting('hasSeenOnboarding', false)}
-                        className="p-3 text-sm border rounded-xl hover:bg-emerald-500/10 transition-colors flex items-center justify-between group"
-                    >
-                        <span className="font-medium">{t('settings.advanced.btn_replay_welcome')}</span>
-                    </button>
                 </div>
             </SettingSection>
         </div>

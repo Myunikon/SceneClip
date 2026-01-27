@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pause, Play, StopCircle, Trash2, FolderOpen, RefreshCcw, Terminal, Zap } from 'lucide-react'
+import { Pause, Play, StopCircle, Trash2, FolderOpen, RefreshCcw, Terminal } from 'lucide-react'
 import { openPath } from '@tauri-apps/plugin-opener'
 import { useTranslation } from 'react-i18next'
 import { cn, formatRange } from '../../lib/utils'
@@ -122,10 +122,6 @@ export function DownloadItem({ task }: DownloadItemProps) {
                                 )}
                                 style={{
                                     width: `${task.progress}%`,
-                                    backgroundImage: (task.concurrentFragments || 1) > 1 && task.status === 'downloading'
-                                        ? 'linear-gradient(45deg,rgba(255,255,255,0.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,0.15) 50%,rgba(255,255,255,0.15) 75%,transparent 75%,transparent)'
-                                        : 'none',
-                                    backgroundSize: '1rem 1rem'
                                 }}
                             >
                                 {/* Active Shimmer */}
@@ -147,11 +143,7 @@ export function DownloadItem({ task }: DownloadItemProps) {
                                 <span className="font-mono text-foreground/70">ETA: {task.eta || '--:--'}</span>
                             </div>
                         )}
-                        {(task.concurrentFragments || 1) > 1 && (
-                            <span className={cn("flex items-center gap-1 text-yellow-500/80")} title={`Downloading with ${task.concurrentFragments} parallel fragments`}>
-                                <Zap className="w-3 h-3" fill="currentColor" />
-                            </span>
-                        )}
+
                     </div>
                 </div>
 

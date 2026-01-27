@@ -76,6 +76,8 @@ export interface DialogOptions {
     // Scheduling
     isScheduled: boolean
     scheduleTime: string
+    // Network
+    proxy: string
     // Batch
     batchMode: boolean
     // Clipping
@@ -86,6 +88,9 @@ export interface DialogOptions {
     gifFps: number
     gifScale: number // Represents height (e.g. 480)
     gifQuality: 'high' | 'fast'
+
+    // Feature 5
+    postProcessorArgs?: string
 }
 
 // Setters corresponding to DialogOptions (for Context or Prop Grouping)
@@ -106,6 +111,7 @@ export interface DialogOptionSetters {
     setEmbedSubtitles: (v: boolean) => void
     setIsScheduled: (v: boolean) => void
     setScheduleTime: (v: string) => void
+    setProxy: (v: string) => void
     setBatchMode: (v: boolean) => void
     setIsClipping: (v: boolean) => void
     setRangeStart: (v: string) => void
@@ -113,6 +119,9 @@ export interface DialogOptionSetters {
     setGifFps: (v: number) => void
     setGifScale: (v: number) => void
     setGifQuality: (v: 'high' | 'fast') => void
+
+    // Feature 5
+    setPostProcessorArgs?: (v: string) => void
 }
 
 // --- Store & Shared Types ---
@@ -139,13 +148,24 @@ export interface DownloadOptions {
     forceTranscode?: boolean // Force re-encoding if native codec unavailable
     cookies?: string // Netscape formatted cookies content (or path)
     userAgent?: string // Custom User Agent
+    useAria2c?: boolean // Parabolic: Use external aria2c downloader
     // GIF Options
     gifFps?: number
     gifScale?: number
     gifQuality?: 'high' | 'fast'
+
+    // Feature 5
+    postProcessorArgs?: string // Custom FFmpeg args from preset
+}
+
+
+export interface SavedCredential {
+    service: string
+    username: string
 }
 
 export interface AppSettings {
+
     // General
     theme: 'dark' | 'light' | 'system'
     language: 'en' | 'id' | 'ms' | 'zh'
@@ -165,11 +185,13 @@ export interface AppSettings {
 
     // Network
     concurrentDownloads: number
-    concurrentFragments: number // yt-dlp -N argument
     speedLimit: string
+    useAria2c: boolean
     proxy: string
     userAgent: string
     frontendFontSize: 'small' | 'medium' | 'large'
+    // savedCredentials: string[] // List of "service|username" keys to track what is in the vault
+    savedCredentials: SavedCredential[] // Structured storage for UI
 
 
     // Advanced
@@ -185,11 +207,33 @@ export interface AppSettings {
     embedChapters: boolean // Embed chapter markers in video
     postDownloadAction: 'none' | 'sleep' | 'shutdown'
     developerMode: boolean
-    quickDownloadEnabled: boolean // Skip dialog for repeat downloads
-    showQuickModeButton: boolean // Show/hide Quick Mode toggle in dialog
-    lastDownloadOptions: DownloadOptions | null // Remember last used options
     audioNormalization: boolean // Loudness Normalization (EBU R128)
-    disablePlayButton: boolean // New: Toggle play button in History
+    historyRetentionDays: number // Days to keep completed tasks in history (-1 = forever, 0 = never)
+    maxHistoryItems: number // Max number of completed tasks to keep (-1 = unlimited)
+
+    // Parabolic Features
+    enableDesktopNotifications: boolean // Send desktop notifications when app is in background
+    preventSuspendDuringDownload: boolean // Prevent system sleep during active downloads
+
+    // Custom Post-Processor Presets (Feature 5)
+    postProcessorPresets: PostProcessorPreset[] // User-defined FFmpeg argument presets
+}
+
+/**
+ * Post-Processor Preset
+ * Inspired by Parabolic's PostProcessorArgument
+ * Allows users to define reusable FFmpeg argument presets
+ */
+export interface PostProcessorPreset {
+    id: string
+    name: string
+    description?: string
+    // Post-processor type (determines when args are applied)
+    type: 'audio' | 'video' | 'metadata' | 'subtitles' | 'general'
+    // FFmpeg arguments to apply
+    args: string
+    // Whether this preset is enabled by default for new downloads
+    isDefault: boolean
 }
 
 export interface CompressionOptions {

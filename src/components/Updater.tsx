@@ -1,6 +1,7 @@
 import { Package, RefreshCw, CheckCircle, AlertTriangle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../store'
+import { useEffect } from 'react'
 
 export function Updater() {
     const {
@@ -10,6 +11,13 @@ export function Updater() {
     } = useAppStore()
 
     const { t } = useTranslation()
+
+    // Auto-check on mount if never checked before
+    useEffect(() => {
+        if (!ytdlpLatestVersion && !isCheckingUpdates) {
+            checkBinaryUpdates()
+        }
+    }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
     const StatusBadge = ({ hasUpdate, checked }: { hasUpdate: boolean, checked: boolean }) => {
         if (!checked) return <span className="text-xs text-muted-foreground">{t('settings.updater.not_checked')}</span>

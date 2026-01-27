@@ -1,8 +1,5 @@
 
 export type { DownloadOptions, AppSettings, CompressionOptions } from '../../types'
-// Explicitly re-export interfaces if import type isn't sufficient for some tooling (though above should work)
-// But wait, the previous errors said 'DownloadOptions' not found in store/slices/types.ts file itself?
-// Ah, because I'm using them in the interfaces below.
 import { DownloadOptions, AppSettings, CompressionOptions } from '../../types'
 
 export type DownloadStatus = 'pending' | 'queued' | 'fetching_info' | 'downloading' | 'completed' | 'error' | 'stopped' | 'paused' | 'scheduled' | 'processing'
@@ -29,7 +26,6 @@ export interface DownloadTask {
   log?: string
   path?: string // Save folder
   filePath?: string // Full path to file
-  concurrentFragments?: number // Number of parallel chunks used
   scheduledTime?: number // Timestamp for scheduled start
   addedAt?: number // Timestamp when added
   _options?: DownloadOptions
@@ -42,6 +38,7 @@ export interface DownloadTask {
   completedAt?: number
   chapters?: VideoChapter[] // Store chapters for sequential splitting
   audioNormalization?: boolean // Persisted for UI indicator (Loudness Normalization applied)
+  retryCount?: number // Auto-retry counter for transient network errors (max 3)
 }
 
 
@@ -123,6 +120,11 @@ export interface VideoSlice {
   importTasks: (tasks: DownloadTask[]) => void
   compressTask: (taskId: string, options: CompressionOptions) => Promise<void>
   sanitizeTasks: () => void
+  // Parabolic features: Recovery and Batch Retry
+  recoverDownloads: () => number  // Returns count of recovered tasks
+  retryAllFailed: () => void      // Retry all failed/stopped tasks
+  getInterruptedCount: () => number // Count tasks that can be recovered
+  cleanupOldTasks: (retentionDays: number) => void // Remove old completed tasks
 }
 
 export type AppState = UISlice & LogSlice & SettingsSlice & SystemSlice & VideoSlice

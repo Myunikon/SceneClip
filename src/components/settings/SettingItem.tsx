@@ -2,7 +2,7 @@ import { ReactNode } from 'react'
 import { cn } from '../../lib/utils'
 
 interface SettingSectionProps {
-    title: string
+    title: ReactNode
     icon?: ReactNode
     children: ReactNode
     className?: string

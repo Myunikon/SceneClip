@@ -1,19 +1,69 @@
+import { useState } from 'react'
 import { useTranslation, Trans } from 'react-i18next'
 import { Select } from '../Select'
 import { Switch } from '../Switch'
 import { AppSettings } from '../../store/slices/types'
+import { PostProcessorPreset } from '../../types' // Import from global types
 import { SettingItem, SettingSection } from './SettingItem'
+import { Check, Plus, Trash2, X, Sliders } from 'lucide-react'
+import { cn } from '../../lib/utils'
 
 interface QualitySettingsProps {
     settings: AppSettings
     setSetting: <K extends keyof AppSettings>(key: K, val: AppSettings[K]) => void
 }
 
+const SEGMENT_OPTS = [
+    { id: 'sponsor', label: 'Sponsor' },
+    { id: 'selfpromo', label: 'Self-Promo' },
+    { id: 'interaction', label: 'Interaction' },
+    { id: 'intro', label: 'Intro' },
+    { id: 'outro', label: 'Outro' },
+    { id: 'preview', label: 'Preview' },
+    { id: 'filler', label: 'Filler' },
+    { id: 'music_offtopic', label: 'Music' }
+]
+
 export function QualitySettings({ settings, setSetting }: QualitySettingsProps) {
     const { t } = useTranslation()
 
+    // Add Preset Form State
+    const [isAddingPreset, setIsAddingPreset] = useState(false)
+    const [newPreset, setNewPreset] = useState<Partial<PostProcessorPreset>>({
+        type: 'video',
+        name: '',
+        description: '',
+        args: '',
+        isDefault: false
+    })
+
+    const handleAddPreset = () => {
+        if (!newPreset.name || !newPreset.args) return
+
+        const preset: PostProcessorPreset = {
+            id: crypto.randomUUID(),
+            name: newPreset.name || 'Untitled Preset',
+            description: newPreset.description || '',
+            type: (newPreset.type as any) || 'video',
+            args: newPreset.args || '',
+            isDefault: newPreset.isDefault || false
+        }
+
+        const current = settings.postProcessorPresets || []
+        setSetting('postProcessorPresets', [...current, preset])
+
+        // Reset and close
+        setNewPreset({ type: 'video', name: '', description: '', args: '', isDefault: false })
+        setIsAddingPreset(false)
+    }
+
+    const handleDeletePreset = (id: string) => {
+        const current = settings.postProcessorPresets || []
+        setSetting('postProcessorPresets', current.filter(p => p.id !== id))
+    }
+
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             {/* Video Content Section */}
             <SettingSection title={t('settings.quality.video')}>
                 <div className="grid grid-cols-2 gap-4">
@@ -48,23 +98,63 @@ export function QualitySettings({ settings, setSetting }: QualitySettingsProps) 
 
                 <SettingItem
                     title={t('settings.quality.sponsorblock') || "SponsorBlock"}
-                    description="Auto-skip ads, intros, and outros"
+                    description={t('settings.quality.sponsorblock_desc')}
                     border
-                    className="hover:bg-muted/50 rounded-lg cursor-pointer transition-colors"
                 >
                     <Switch
                         checked={settings.useSponsorBlock}
                         onCheckedChange={(val) => setSetting('useSponsorBlock', val)}
                     />
                 </SettingItem>
+
+                {/* Refactored SponsorBlock Segment Picker */}
+                {settings.useSponsorBlock && (
+                    <div className="mt-4 animate-in fade-in slide-in-from-top-1">
+                        <p className="text-xs font-semibold uppercase text-muted-foreground mb-3">
+                            {t('settings.quality.skip_segments')}
+                        </p>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {SEGMENT_OPTS.map(segment => {
+                                const isActive = (settings.sponsorSegments || []).includes(segment.id)
+                                return (
+                                    <button
+                                        key={segment.id}
+                                        role="switch"
+                                        aria-checked={isActive}
+                                        onClick={() => {
+                                            const current = settings.sponsorSegments || []
+                                            const updated = isActive
+                                                ? current.filter(s => s !== segment.id)
+                                                : [...current, segment.id]
+                                            setSetting('sponsorSegments', updated)
+                                        }}
+                                        className={cn(
+                                            "flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium transition-all border",
+                                            isActive
+                                                ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                                                : "bg-background text-muted-foreground border-border/60 hover:border-primary/30 hover:bg-muted/50"
+                                        )}
+                                    >
+                                        <div className={cn(
+                                            "w-3.5 h-3.5 rounded-full flex items-center justify-center border",
+                                            isActive ? "border-primary-foreground/30 bg-primary-foreground/20" : "border-muted-foreground/30"
+                                        )}>
+                                            {isActive && <Check className="w-2.5 h-2.5" />}
+                                        </div>
+                                        {segment.label}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )}
             </SettingSection>
 
             {/* Audio Section */}
             <SettingSection title={t('settings.quality.audio') || "Audio Processing"}>
                 <SettingItem
                     title={t('settings.quality.audio_normalization') || "Loudness Normalization"}
-                    description="EBU R128 Standard"
-                    className="hover:bg-muted/50 rounded-lg cursor-pointer transition-colors"
+                    description={t('settings.quality.audio_normalization_desc')}
                 >
                     <Switch
                         checked={settings.audioNormalization}
@@ -74,43 +164,166 @@ export function QualitySettings({ settings, setSetting }: QualitySettingsProps) 
             </SettingSection>
 
             {/* Metadata Section */}
-            <SettingSection title={t('settings.quality.metadata') || "Metadata & Tags"}>
-                <div className="grid grid-cols-1 gap-2">
-                    <SettingItem
-                        title={t('settings.quality.embed_metadata')}
-                        className="hover:bg-muted/50 rounded-lg cursor-pointer transition-colors"
-                    >
+            <SettingSection title={t('settings.quality.metadata') || "Metadata"}>
+                <div className="space-y-1">
+                    <SettingItem title={t('settings.quality.embed_metadata')}>
                         <Switch checked={settings.embedMetadata} onCheckedChange={(val) => setSetting('embedMetadata', val)} />
                     </SettingItem>
-                    <SettingItem
-                        title={t('settings.quality.embed_thumbnail')}
-                        className="hover:bg-muted/50 rounded-lg cursor-pointer transition-colors"
-                    >
+                    <SettingItem title={t('settings.quality.embed_thumbnail')}>
                         <Switch checked={settings.embedThumbnail} onCheckedChange={(val) => setSetting('embedThumbnail', val)} />
                     </SettingItem>
-                    <SettingItem
-                        title={t('settings.quality.embed_chapters')}
-                        className="hover:bg-muted/50 rounded-lg cursor-pointer transition-colors"
-                    >
+                    <SettingItem title={t('settings.quality.embed_chapters')}>
                         <Switch checked={settings.embedChapters} onCheckedChange={(val) => setSetting('embedChapters', val)} />
-                    </SettingItem>
-                    <SettingItem
-                        title={t('settings.quality.disable_play_button')}
-                        className="hover:bg-muted/50 rounded-lg cursor-pointer transition-colors"
-                    >
-                        <Switch checked={settings.disablePlayButton} onCheckedChange={(val) => setSetting('disablePlayButton', val)} />
                     </SettingItem>
                 </div>
 
-                <div className="mt-3 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex gap-3 items-start">
-                    <div className="text-yellow-500 shrink-0 mt-0.5">
+                <div className="mt-4 p-3 rounded-lg bg-secondary/50 border border-border/50 flex gap-3">
+                    <div className="text-amber-500 shrink-0 mt-0.5">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                        <strong className="text-yellow-500 block mb-0.5">{t('settings.quality.metadata_warning_title')}</strong>
-                        <Trans i18nKey="settings.quality.metadata_warning_desc" components={{ 1: <strong /> }} />
+                        <span className="font-semibold text-foreground block mb-0.5">{t('settings.quality.metadata_warning_title')}</span>
+                        <Trans i18nKey="settings.quality.metadata_warning_desc" components={{ 1: <strong className="text-amber-500" /> }} />
                     </div>
                 </div>
+            </SettingSection>
+
+            {/* Post-Processing Presets (Refactored) */}
+            <SettingSection
+                title={
+                    <div className="flex items-center justify-between w-full">
+                        <span>{t('settings.quality.presets.title')}</span>
+                        {!isAddingPreset && (
+                            <button
+                                onClick={() => setIsAddingPreset(true)}
+                                className="text-primary hover:bg-primary/10 p-1.5 rounded-md transition-colors"
+                                title={t('settings.quality.presets.add_tooltip')}
+                            >
+                                <Plus className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
+                }
+                description={t('settings.quality.presets.desc')}
+            >
+                {/* Presets List */}
+                <div className="divide-y divide-border/40 border border-border/40 rounded-xl overflow-hidden bg-card/30">
+                    {settings.postProcessorPresets?.length === 0 && !isAddingPreset && (
+                        <div className="text-center py-8 text-muted-foreground text-sm">
+                            {t('settings.quality.presets.empty')}
+                        </div>
+                    )}
+
+                    {settings.postProcessorPresets?.map(preset => (
+                        <div key={preset.id} className="group flex items-center justify-between p-3.5 hover:bg-secondary/30 transition-colors">
+                            <div className="min-w-0 flex-1 mr-4">
+                                <div className="flex items-center gap-2 mb-0.5">
+                                    <span className="font-medium text-sm truncate">{preset.name}</span>
+                                    <span className={cn(
+                                        "text-[10px] px-1.5 py-0.5 rounded-full border uppercase font-bold tracking-wider",
+                                        preset.type === 'audio' ? "text-purple-500 border-purple-500/20 bg-purple-500/5" :
+                                            preset.type === 'video' ? "text-blue-500 border-blue-500/20 bg-blue-500/5" :
+                                                "text-gray-500 border-gray-500/20 bg-gray-500/5"
+                                    )}>
+                                        {preset.type}
+                                    </span>
+                                </div>
+                                <div className="text-xs text-muted-foreground truncate opacity-80 mb-1.5">
+                                    {preset.description || t('settings.quality.presets.desc_label')}
+                                </div>
+                                <code className="text-[10px] bg-secondary/50 px-1.5 py-0.5 rounded text-muted-foreground font-mono inline-block">
+                                    {preset.args}
+                                </code>
+                            </div>
+                            <button
+                                onClick={() => handleDeletePreset(preset.id)}
+                                className="opacity-0 group-hover:opacity-100 p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                                title={t('settings.quality.presets.delete_tooltip')}
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Add Preset Form */}
+                {isAddingPreset && (
+                    <div className="mt-4 rounded-xl border border-border/50 bg-card shadow-sm animate-in zoom-in-95 duration-200">
+                        <div className="p-3 border-b border-border/40 bg-muted/30 flex items-center justify-between rounded-t-xl">
+                            <h4 className="text-sm font-semibold flex items-center gap-2">
+                                <Sliders className="w-4 h-4 text-primary" />
+                                {t('settings.quality.presets.add_new')}
+                            </h4>
+                            <button
+                                onClick={() => setIsAddingPreset(false)}
+                                className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-background/50"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <div className="p-4 space-y-4">
+                            <div className="grid grid-cols-3 gap-4">
+                                <div className="col-span-2 space-y-1.5">
+                                    <label className="text-xs font-medium text-muted-foreground">{t('settings.quality.presets.name_label')}</label>
+                                    <input
+                                        type="text"
+                                        className="w-full bg-background border border-input rounded-md px-3 py-1.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-muted-foreground/50"
+                                        placeholder={t('settings.quality.presets.placeholder_name')}
+                                        value={newPreset.name}
+                                        onChange={e => setNewPreset({ ...newPreset, name: e.target.value })}
+                                        autoFocus
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-medium text-muted-foreground">{t('settings.quality.presets.type_label')}</label>
+                                    <Select
+                                        value={newPreset.type || 'video'}
+                                        onChange={val => setNewPreset({ ...newPreset, type: val as any })}
+                                        options={[
+                                            { value: 'video', label: t('settings.quality.presets.types.video') },
+                                            { value: 'audio', label: t('settings.quality.presets.types.audio') },
+                                            { value: 'metadata', label: t('settings.quality.presets.types.metadata') },
+                                            { value: 'general', label: t('settings.quality.presets.types.general') }
+                                        ]}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-muted-foreground">{t('settings.quality.presets.args_label')}</label>
+                                <input
+                                    type="text"
+                                    className="w-full font-mono bg-background border border-input rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-muted-foreground/50"
+                                    placeholder={t('settings.quality.presets.placeholder_args')}
+                                    value={newPreset.args}
+                                    onChange={e => setNewPreset({ ...newPreset, args: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-muted-foreground">{t('settings.quality.presets.desc_label')}</label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-background border border-input rounded-md px-3 py-1.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-muted-foreground/50"
+                                    placeholder={t('settings.quality.presets.placeholder_desc')}
+                                    value={newPreset.description}
+                                    onChange={e => setNewPreset({ ...newPreset, description: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="pt-2 flex justify-end">
+                                <button
+                                    onClick={handleAddPreset}
+                                    disabled={!newPreset.name || !newPreset.args}
+                                    className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                                >
+                                    {t('settings.quality.presets.save_btn')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </SettingSection>
         </div>
     )

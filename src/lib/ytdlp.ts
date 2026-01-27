@@ -34,6 +34,9 @@ export interface YtDlpOptions {
     forceTranscode?: boolean
     cookies?: string
     userAgent?: string
+    proxy?: string
+    username?: string
+    password?: string
 }
 
 export async function buildYtDlpArgs(
@@ -49,7 +52,8 @@ export async function buildYtDlpArgs(
     const isGif = fmt === 'gif'
 
     // Force single thread & no-part for clips/gifs to prevent fragmentation/locking issues (WinError 32)
-    const concurrentFragments = (isClipping || isGif) ? '1' : String(Math.max(1, settings.concurrentFragments || 4))
+    // Legacy: We removed 'concurrentFragments' setting, so we default to 4 for speed, or 1 for clips.
+    const concurrentFragments = (isClipping || isGif) ? '1' : '4'
 
     const args: string[] = [
         '-o', finalFilename, // Full path included in finalFilename
@@ -57,11 +61,25 @@ export async function buildYtDlpArgs(
         '--no-colors',
         '--no-playlist',
         '--encoding', 'utf-8', // Force UTF-8 output to prevent Tauri shell encoding errors
-        // CONCURRENT FRAGMENTS (Speed Boost)
+        // CONCURRENT FRAGMENTS (Speed Boost - Hidden Default)
         '-N', concurrentFragments,
         '--continue', // Force resume support
         '--socket-timeout', DEFAULTS.SOCKET_TIMEOUT, // Refresh link if connection hangs/throttles
+        // PARABOLIC: Template Parsing for reliability
+        '--progress-template', 'SCENECLIP_PROGRESS;%(progress.status)s;%(progress.downloaded_bytes)s;%(progress.total_bytes)s;%(progress.total_bytes_estimate)s;%(progress.speed)s;%(progress.eta)s'
     ]
+
+    // PARABOLIC: Aria2c Integration
+    if (settings.useAria2c) {
+        args.push('--downloader', 'aria2c')
+        args.push('--downloader-args', 'aria2c:--summary-interval=0 --enable-color=false -x 16 -k 1M')
+
+        // PARABOLIC: "Protocol Hack" for Trimming support with Aria2c
+        // Forces HTTPS over HLS/DASH to allow clean byte-range cutting + high speed
+        if (isClipping) {
+            args.push('--format-sort', 'proto:https')
+        }
+    }
 
     if (isClipping || isGif) {
         args.push('--no-part')
@@ -371,12 +389,23 @@ export async function buildYtDlpArgs(
         }
     }
 
-    if (settings.proxy) {
+    if (options.proxy) {
+        if (options.proxy.startsWith('-')) {
+            throw new Error("Invalid Task Proxy: Cannot start with '-'")
+        }
+        args.push('--proxy', options.proxy)
+    } else if (settings.proxy) {
         // SECURITY: Prevent argument injection in proxy field
         if (settings.proxy.startsWith('-')) {
             throw new Error("Invalid Proxy: Cannot start with '-'")
         }
         args.push('--proxy', settings.proxy)
+    }
+
+    // Credentials (Keyring)
+    if (options.username && options.password) {
+        args.push('--username', options.username)
+        args.push('--password', options.password)
     }
 
     // Cookie Source logic

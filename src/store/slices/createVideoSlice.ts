@@ -77,7 +77,8 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
                 scheduledTime: options.scheduledTime,
                 _options: {
                     ...options,
-                    cookies: cookiePath
+                    cookies: cookiePath,
+                    postProcessorArgs: options.postProcessorArgs
                 },
                 addedAt: Date.now()
             }
@@ -130,8 +131,63 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
                     updateTask(taskId, updates)
                 },
                 onError: (taskId, error) => {
-                    updateTask(taskId, { status: 'error', log: error })
-                    get().processQueue()
+                    const { tasks, updateTask, processQueue, addLog } = get()
+                    const task = tasks.find(t => t.id === taskId)
+
+                    // Transient error patterns that can be auto-retried
+                    const transientPatterns = [
+                        'timeout', 'etimedout', 'econnreset', 'econnrefused',
+                        'socket hang up', 'network', 'enotfound', 'epipe',
+                        'unable to download', 'http error 5', // 5xx server errors
+                        'connection reset', 'interrupted'
+                    ]
+
+                    const isTransientError = transientPatterns.some(pattern =>
+                        error.toLowerCase().includes(pattern)
+                    )
+
+                    const currentRetryCount = task?.retryCount || 0
+                    const maxRetries = 3
+
+                    if (isTransientError && currentRetryCount < maxRetries) {
+                        // Exponential backoff: 2s, 4s, 8s
+                        const delay = Math.pow(2, currentRetryCount + 1) * 1000
+                        const nextRetry = currentRetryCount + 1
+
+                        addLog({
+                            message: `[${taskId.substring(0, 4)}] Transient error detected. Auto-retry ${nextRetry}/${maxRetries} in ${delay / 1000}s...`,
+                            type: 'warning'
+                        })
+
+                        updateTask(taskId, {
+                            status: 'pending',
+                            progress: 0,
+                            retryCount: nextRetry,
+                            speed: `Retry ${nextRetry}/${maxRetries}...`,
+                            eta: `${delay / 1000}s`,
+                            log: `Auto-retry: ${error}`
+                        })
+
+                        // Schedule retry after delay
+                        setTimeout(() => {
+                            const { tasks, processQueue } = get()
+                            const currentTask = tasks.find(t => t.id === taskId)
+                            // Only retry if still in pending state (not manually stopped)
+                            if (currentTask?.status === 'pending') {
+                                processQueue()
+                            }
+                        }, delay)
+                    } else {
+                        // Permanent error or max retries exceeded
+                        if (currentRetryCount >= maxRetries) {
+                            addLog({
+                                message: `[${taskId.substring(0, 4)}] Max retries (${maxRetries}) exceeded. Marking as failed.`,
+                                type: 'error'
+                            })
+                        }
+                        updateTask(taskId, { status: 'error', log: error })
+                        processQueue()
+                    }
                 },
                 onComplete: async (taskId, result) => {
                     updateTask(taskId, {
@@ -143,8 +199,53 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
 
                     get().addLog({ message: `Task ${taskId} Completed. Path: ${result.path}`, type: 'success' })
 
-                    // Trigger Compression if needed
+                    // Trigger next in queue
                     get().processQueue()
+
+                    // Send desktop notification (if enabled)
+                    const task = get().tasks.find(t => t.id === taskId)
+                    if (get().settings.enableDesktopNotifications && task) {
+                        import('../../lib/notificationService').then(({ notificationService }) => {
+                            notificationService.notifyDownloadComplete(task.title, result.path)
+                        })
+                    }
+
+                    // Check for post-download action when queue is empty
+                    const { tasks, settings } = get()
+                    const hasActiveDownloads = tasks.some(t =>
+                        t.status === 'downloading' ||
+                        t.status === 'fetching_info' ||
+                        t.status === 'pending' ||
+                        t.status === 'queued' ||
+                        t.status === 'processing'
+                    )
+
+                    if (!hasActiveDownloads && settings.postDownloadAction && settings.postDownloadAction !== 'none') {
+                        // Send batch complete notification
+                        if (settings.enableDesktopNotifications) {
+                            const completedCount = tasks.filter(t => t.status === 'completed').length
+                            import('../../lib/notificationService').then(({ notificationService }) => {
+                                notificationService.notifyBatchComplete(completedCount)
+                            })
+                        }
+
+                        try {
+                            const { invoke } = await import('@tauri-apps/api/core')
+                            notify.info('All downloads complete', {
+                                description: `Performing action: ${settings.postDownloadAction}`,
+                                duration: 5000
+                            })
+                            // Delay to allow notification to show
+                            setTimeout(async () => {
+                                await invoke('perform_system_action', {
+                                    action: settings.postDownloadAction,
+                                    confirm: true
+                                })
+                            }, 3000)
+                        } catch (e) {
+                            notify.error('Failed to perform post-download action', { description: String(e) })
+                        }
+                    }
                 },
                 onCommand: (taskId, command) => {
                     updateTask(taskId, { ytdlpCommand: command })
@@ -160,7 +261,7 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
 
         pauseTask: async (id) => {
             const service = DownloadService.getInstance()
-            await service.stop(id)
+            await service.pause(id)
             get().updateTask(id, { status: 'paused', speed: 'Paused', eta: '-' })
         },
 
@@ -172,8 +273,8 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
 
         retryTask: async (id) => {
             const { updateTask, processQueue } = get()
-            // Simply re-queue for retry
-            updateTask(id, { status: 'pending', progress: 0, speed: 'Retrying...', eta: '...', log: undefined })
+            // Reset retryCount on manual retry for fresh auto-retry attempts
+            updateTask(id, { status: 'pending', progress: 0, speed: 'Retrying...', eta: '...', log: undefined, retryCount: 0 })
             processQueue()
         },
 
@@ -286,6 +387,147 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
                     return t
                 })
             }))
+        },
+
+        /**
+         * Recover interrupted downloads (Parabolic feature)
+         * Re-queues all stopped/interrupted tasks for retry
+         * @returns Number of tasks recovered
+         */
+        recoverDownloads: () => {
+            const { tasks, processQueue } = get()
+            const interruptedTasks = tasks.filter(t =>
+                t.status === 'stopped' &&
+                t.statusDetail === 'Interrupted by Restart'
+            )
+
+            if (interruptedTasks.length === 0) return 0
+
+            // Re-queue interrupted tasks
+            set(state => ({
+                tasks: state.tasks.map(t => {
+                    if (t.status === 'stopped' && t.statusDetail === 'Interrupted by Restart') {
+                        return {
+                            ...t,
+                            status: 'pending',
+                            statusDetail: 'Recovered',
+                            progress: 0,
+                            speed: 'Queued...',
+                            eta: '-'
+                        }
+                    }
+                    return t
+                })
+            }))
+
+            // Start processing queue
+            processQueue()
+
+            get().addLog({
+                translationKey: 'recoveredDownloads',
+                params: { count: interruptedTasks.length },
+                type: 'success'
+            })
+
+            return interruptedTasks.length
+        },
+
+        /**
+         * Retry all failed/error tasks (Parabolic feature)
+         * Batch retry for all tasks with error status
+         */
+        retryAllFailed: () => {
+            const { tasks, processQueue } = get()
+            const failedTasks = tasks.filter(t => t.status === 'error')
+
+            if (failedTasks.length === 0) return
+
+            set(state => ({
+                tasks: state.tasks.map(t => {
+                    if (t.status === 'error') {
+                        return {
+                            ...t,
+                            status: 'pending',
+                            progress: 0,
+                            speed: 'Retrying...',
+                            eta: '-',
+                            log: undefined
+                        }
+                    }
+                    return t
+                })
+            }))
+
+            processQueue()
+
+            get().addLog({
+                translationKey: 'retryingAllFailed',
+                params: { count: failedTasks.length },
+                type: 'info'
+            })
+        },
+
+        /**
+         * Get count of interrupted tasks that can be recovered
+         */
+        getInterruptedCount: () => {
+            return get().tasks.filter(t =>
+                t.status === 'stopped' &&
+                t.statusDetail === 'Interrupted by Restart'
+            ).length
+        },
+
+        /**
+         * Cleanup old completed/stopped tasks based on retention policy
+         * Uses immutable filter pattern per Context7/Zustand best practices
+         * 
+         * @param retentionDays - Days to keep tasks (-1 = forever, 0 = delete all)
+         * @see Context7: "prefer immutable operations like filter(...)"
+         */
+        /**
+         * Cleanup old completed/stopped tasks based on retention policy
+         * Supports both Time-based (Days) and Count-based (Max Items) retention
+         */
+        cleanupOldTasks: (retentionDays: number) => {
+            const { settings } = get()
+            const maxItems = settings.maxHistoryItems ?? -1
+
+            set(state => {
+                let currentTasks = [...state.tasks]
+
+                // 1. Time-based Retention
+                if (retentionDays === 0) {
+                    currentTasks = currentTasks.filter(t => !['completed', 'stopped'].includes(t.status))
+                } else if (retentionDays > 0) {
+                    const cutoffTime = Date.now() - (retentionDays * 24 * 60 * 60 * 1000)
+                    currentTasks = currentTasks.filter(t => {
+                        if (!['completed', 'stopped'].includes(t.status)) return true
+                        const taskTime = t.completedAt || t.addedAt || 0
+                        return taskTime > cutoffTime
+                    })
+                }
+
+                // 2. Count-based Retention (Max Items)
+                if (maxItems >= 0) {
+                    const activeTasks = currentTasks.filter(t => !['completed', 'stopped'].includes(t.status))
+                    const historyTasks = currentTasks.filter(t => ['completed', 'stopped'].includes(t.status))
+
+                    // Sort history by date desc (newest first)
+                    historyTasks.sort((a, b) => {
+                        const timeA = a.completedAt || a.addedAt || 0
+                        const timeB = b.completedAt || b.addedAt || 0
+                        return timeB - timeA
+                    })
+
+                    // Keep only top N
+                    if (historyTasks.length > maxItems) {
+                        const keptHistory = historyTasks.slice(0, maxItems)
+                        currentTasks = [...activeTasks, ...keptHistory]
+                    }
+                }
+
+                return { tasks: currentTasks }
+            })
         }
     }
 }

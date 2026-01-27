@@ -38,14 +38,23 @@ export function Select({ value, onChange, options, placeholder, className, disab
         }
     }, [isOpen])
 
-    // Handle Resize & Scroll (Close dropdown to be safe/simple)
+    // Handle Resize & Scroll
     useEffect(() => {
-        const handleResizeOrScroll = () => setIsOpen(false)
-        window.addEventListener('resize', handleResizeOrScroll)
-        window.addEventListener('scroll', handleResizeOrScroll, true) // Capture for all elements
+        const handleResize = () => setIsOpen(false)
+        const handleScroll = (e: Event) => {
+            // If the scroll event originated from within the dropdown list, do not close
+            if (listRef.current && (listRef.current === e.target || listRef.current.contains(e.target as Node))) {
+                return
+            }
+            setIsOpen(false)
+        }
+
+        window.addEventListener('resize', handleResize)
+        window.addEventListener('scroll', handleScroll, true) // Capture to detect outside scrolls
+
         return () => {
-            window.removeEventListener('resize', handleResizeOrScroll)
-            window.removeEventListener('scroll', handleResizeOrScroll, true)
+            window.removeEventListener('resize', handleResize)
+            window.removeEventListener('scroll', handleScroll, true)
         }
     }, [])
 

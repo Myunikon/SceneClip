@@ -4,7 +4,8 @@ export const zh = {
         browser: "浏览器",
         settings: "设置",
         tools: "工具",
-        terminal: "终端"
+        terminal: "终端",
+        keyring: "密钥环"
     },
     error_boundary: {
         title: "出了点问题。",
@@ -34,6 +35,23 @@ export const zh = {
         title: "下载列表",
         subtitle: "管理您的视频下载和剪辑。",
         new_download: "新建下载",
+        storage: "存储与布局",
+        path_select_label: "保存到",
+        change_folder: "选择文件夹...",
+        always_ask: "总是询问下载位置",
+        defaults: "命名与格式",
+        filename_template: "文件名格式",
+        insert_token: "插入变量...",
+        tokens: {
+            title: "视频标题",
+            uploader: "上传者名称",
+            ext: "文件扩展名",
+            id: "视频 ID",
+            width: "宽度",
+            height: "高度",
+            date: "上传日期"
+        },
+        example_note: "* 基于示例视频的预览",
 
         empty: "暂无下载。",
         headers: {
@@ -97,7 +115,14 @@ export const zh = {
             font_size: "字体大小",
             font_small: "小",
             font_medium: "中",
-            font_large: "大"
+            font_large: "大",
+            system_behavior: "窗口与系统",
+            minimize_desc: "应用将在后台继续运行",
+            quit_desc: "应用将完全退出",
+            desktop_notifications: "桌面通知",
+            desktop_notifications_desc: "当应用程序在后台时显示系统通知",
+            prevent_suspend: "防止休眠",
+            prevent_suspend_desc: "下载过程中保持系统唤醒"
         },
         downloads: {
             storage: "存储与路径",
@@ -123,8 +148,39 @@ export const zh = {
             sponsorblock: "SponsorBlock (自动跳过)",
             enable_sb: "启用 SponsorBlock",
             disable_play_button: "在历史记录中隐藏播放按钮",
+            sponsorblock_desc: "自动跳过广告、片头和其他片段",
+            skip_segments: "要跳过的片段",
+            audio_normalization_desc: "EBU R128 标准 (-14 LUFS)",
             metadata_warning_title: "注意:",
-            metadata_warning_desc: "当使用 <1>剪辑/Trim</1> 功能时，这些选项会自动禁用，以防止出现视频时长错误（例如 10 秒的片段显示为 1 小时）。"
+            metadata_warning_desc: "当使用 <1>剪辑/Trim</1> 功能时，这些选项会自动禁用，以防止出现视频时长错误（例如 10 秒的片段显示为 1 小时）。",
+            presets: {
+                title: "后处理预设",
+                desc: "管理自定义 FFmpeg 参数预设",
+                empty: "未定义预设",
+                add_new: "添加新预设",
+                name_label: "名称",
+                type_label: "类型",
+                args_label: "FFmpeg 参数",
+                desc_label: "描述 (可选)",
+                placeholder_name: "我的自定义预设",
+                placeholder_args: "-c:v libx265 -crf 28",
+                placeholder_desc: "高效 HEVC 编码...",
+                save_btn: "保存预设",
+                delete_tooltip: "删除预设",
+                add_tooltip: "添加预设",
+                types: {
+                    video: "视频",
+                    audio: "音频",
+                    metadata: "元数据",
+                    general: "通用"
+                }
+            }
+        },
+        filename_preview: {
+            label: "预览",
+            example_title: "我的精彩视频",
+            example_uploader: "优秀创作者",
+            reset: "重置"
         },
         network: {
             connection: "速度与连接",
@@ -142,6 +198,12 @@ export const zh = {
 
             perf_aggressive_desc: "最大吞吐量。如果滥用可能会导致暂时性 IP 封禁 (429 Too Many Requests)。",
             perf_warning: "* 适用于所有下载模式（完整视频、音频和剪辑）。",
+
+            // Aria2c
+            aria2c_section: "下载引擎",
+            aria2c_title: "使用 Aria2c (外部下载器)",
+            aria2c_desc: "多连接下载器 (16x)。比标准更快。",
+            aria2c_active: "Aria2c 已激活。原生 '并行分片' 设置已禁用以防止冲突。",
 
             manual_config: "手动配置模式",
             chunks_label: "{n} 分段",
@@ -169,6 +231,8 @@ export const zh = {
                 sleep: "睡眠",
                 shutdown: "关机"
             },
+            post_download_action_desc: "选择所有下载完成后的操作。",
+            shutdown_warning: "下载完成后电脑将强制关机。请保存您的工作！",
             danger_zone_proxy: "危险区域 (代理)",
             danger_zone_binaries: "危险区域 (二进制)",
             danger_desc: "更改这些路径可能会导致应用损坏。",
@@ -209,11 +273,48 @@ export const zh = {
                 hw_cpu: "强制 CPU (慢但安全)",
                 hw_desc: "控制是否使用显卡进行视频编码。如果 GPU 失败，'自动' 将回退到 CPU。",
             },
-
+            history_retention: "历史保留",
+            history_retention_desc: "一段时间后自动从历史记录中删除已完成的任务。",
+            retention_days: "{{count}} 天后删除",
+            retention_forever: "永久 (保存所有)",
+            retention_zero: "不保存历史",
+            history_max_items: "最大历史项目数",
             btn_replay_welcome: "重播欢迎页",
             btn_reset_data: "重置所有数据",
             btn_export_history: "导出历史",
             btn_import_history: "导入历史"
+        },
+        security: {
+            keyring_title: "安全密钥环",
+            keyring_desc: "管理高级网站的保存密码",
+            saved_passwords: "已保存密码",
+            add_new: "新增",
+            add_first: "添加首个账户",
+            no_passwords: "未保存密码",
+            no_passwords_desc: "添加您的高级账户凭证以从需要登录的网站下载。",
+            edit_credential: "编辑凭证",
+            new_credential: "新凭证",
+            service_domain: "服务域名",
+            service_placeholder: "例如 crunchyroll.com",
+            username: "用户名",
+            username_placeholder: "user@example.com",
+            password: "密码",
+            password_placeholder: "输入安全密码",
+            save_btn: "保存凭证",
+            saving_btn: "保存中...",
+            confirm_delete: "确定要删除 {{service}} 的凭证吗？",
+            copy_success: "用户名已复制",
+            save_success: "已保存 {{service}} 的凭证",
+            save_error: "保存失败: {{error}}",
+            delete_success: "已删除 {{service}} 的凭证",
+            delete_error: "删除失败: {{error}}",
+            missing_vault: "Vault 中找不到密码。请重新设置。",
+            auth_failed: "验证失败: {{error}}",
+            delete_title: "删除",
+            delete_warning_detail: "此密码将从 {{storage}} 中永久删除。此操作无法撤消。",
+            cancel: "取消",
+            delete: "删除",
+            secure_storage_hint: "已安全存储在 {{storage}} 中"
         },
         updater: {
             title: "软件更新",
@@ -245,7 +346,7 @@ export const zh = {
         },
         about_page: {
             desc: "同类中最先进的 YouTube 下载器和剪辑器。",
-            core: "核心引擎与致谢",
+            core: "致谢",
             yt_desc: "幕后的主力军。yt-dlp 是从数千个网站下载媒体的全球行业标准。",
             ff_desc: "多媒体的瑞士军刀。处理转换、音频/视频合成和精确剪辑。",
             aria_desc: "下载加速器。启用多线程连接（Turbo 模式）以获得最大速度。",
@@ -258,10 +359,15 @@ export const zh = {
             role_media: "媒体处理",
             role_framework: "框架",
             role_ui: "UI 库",
+            role_state: "状态管理",
+            role_routing: "路由",
+            role_i18n: "国际化",
+            role_lang: "语言",
             role_icon: "图标",
             role_api: "跳过片段 API",
             visit_website: "访问网站",
             legal: "法律免责声明",
+            made_with: "由 <1>Myunikon</1> 用 <0>❤️</0> 制作",
             legal_text: "SceneClip 仅供个人使用（存档、教育）。开发者与 YouTube/Google 无关。所有使用风险（包括侵犯版权或违反平台服务条款）均由用户自行承担。",
             secret_found: "发现秘密！",
             secret_desc: "您解锁了秘密开发者感谢徽章！",

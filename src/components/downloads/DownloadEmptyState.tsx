@@ -1,5 +1,6 @@
 import { Download } from 'lucide-react'
 import { useTranslation, Trans } from 'react-i18next'
+import { getShortcutSymbol } from '../../lib/platform'
 import youtubeIcon from '../../assets/platforms/youtube.png'
 import instagramIcon from '../../assets/platforms/instagram.png'
 import tiktokIcon from '../../assets/platforms/tiktok.png'
@@ -8,6 +9,7 @@ import xIcon from '../../assets/platforms/x.png'
 
 export function DownloadEmptyState() {
     const { t } = useTranslation()
+    const MOD = getShortcutSymbol()
 
     return (
         <div className="h-full w-full flex flex-col items-center justify-center p-6 bg-transparent">
@@ -28,7 +30,8 @@ export function DownloadEmptyState() {
                     <p className="text-sm text-muted-foreground/60 leading-relaxed max-w-xs mx-auto">
                         <Trans
                             i18nKey="empty_state.description"
-                            defaults="Paste a link or press <1>Ctrl+N</1> to start."
+                            defaults="Paste a link or press <1>{{mod}}+N</1> to start."
+                            values={{ mod: MOD }}
                             components={{ 1: <span className="font-mono text-primary/80" /> }}
                         />
                     </p>

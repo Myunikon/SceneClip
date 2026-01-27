@@ -1,8 +1,8 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useMemo } from 'react'
 import { Keyboard, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-
 import { useTranslation } from 'react-i18next'
+import { getShortcutSymbol, getShiftSymbol, getAltSymbol, IS_MAC } from '../lib/platform'
 
 interface ShortcutsPopoverProps {
     isOpen: boolean
@@ -10,20 +10,37 @@ interface ShortcutsPopoverProps {
     anchorRef?: React.RefObject<HTMLButtonElement>
 }
 
-const shortcuts = [
-    { keys: ['Ctrl', 'N'], action: 'new_download' },
-    { keys: ['Ctrl', ','], action: 'settings' },
-    { keys: ['Ctrl', 'H'], action: 'history' },
-    { keys: ['Ctrl', 'D'], action: 'downloads' },
-    { keys: ['F11'], action: 'fullscreen' },
-    { keys: ['F12'], action: 'devtools' },
-    { keys: ['Esc'], action: 'close_dialog' },
-]
-
 export function ShortcutsPopover({ isOpen, onClose }: ShortcutsPopoverProps) {
-
     const { t } = useTranslation()
     const popoverRef = useRef<HTMLDivElement>(null)
+
+    // Dynamic shortcuts list
+    const shortcuts = useMemo(() => {
+        const MOD = getShortcutSymbol()
+        const SHIFT = getShiftSymbol()
+        const ALT = getAltSymbol()
+
+        const list = [
+            { keys: [MOD, 'N'], action: 'new_download' },
+            { keys: [MOD, ','], action: 'settings' },
+            // History: Cmd+Shift+H (Mac) vs Ctrl+H (Win)
+            {
+                keys: IS_MAC ? [MOD, SHIFT, 'H'] : [MOD, 'H'],
+                action: 'history'
+            },
+            // Downloads: Cmd+Opt+L (Mac) vs Ctrl+J (Win)
+            {
+                keys: IS_MAC ? [MOD, ALT, 'L'] : [MOD, 'J'],
+                action: 'downloads'
+            },
+            // Fullscreen: Cmd+Ctrl+F (Mac) vs F11 (Win/Web)
+            {
+                keys: IS_MAC ? ['Fn', 'F'] : ['F11'],
+                action: 'fullscreen'
+            },
+        ]
+        return list
+    }, [])
 
     // Close on click outside
     useEffect(() => {
@@ -99,7 +116,7 @@ export function ShortcutsPopover({ isOpen, onClose }: ShortcutsPopoverProps) {
                                     {shortcut.keys.map((key, j) => (
                                         <kbd
                                             key={j}
-                                            className="px-1.5 py-0.5 bg-secondary border border-border rounded text-xs font-mono font-medium"
+                                            className="px-1.5 py-0.5 bg-secondary border border-border rounded text-xs font-mono font-medium min-w-[20px] text-center"
                                         >
                                             {key}
                                         </kbd>

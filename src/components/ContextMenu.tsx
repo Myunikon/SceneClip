@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, Check } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { getShortcutSymbol, getShiftSymbol } from '../lib/platform'
 
 interface ContextMenuProps {
     x: number
@@ -16,6 +17,8 @@ export function ContextMenu({ x, y, visible, onClose }: ContextMenuProps) {
     const [canPaste, setCanPaste] = useState(true)
     const [isInputFocused, setIsInputFocused] = useState(false)
     const { t } = useTranslation()
+    const MOD = getShortcutSymbol()
+    const SHIFT = getShiftSymbol()
 
     // Check states when menu opens
     useEffect(() => {
@@ -127,13 +130,13 @@ export function ContextMenu({ x, y, visible, onClose }: ContextMenuProps) {
                 >
                     <MenuItem
                         label={t('context_menu.undo')}
-                        shortcut="Ctrl+Z"
+                        shortcut={`${MOD}+Z`}
                         onClick={handleUndo}
                         disabled={!isInputFocused}
                     />
                     <MenuItem
                         label={t('context_menu.redo')}
-                        shortcut="Ctrl+Shift+Z"
+                        shortcut={`${MOD}+${SHIFT}+Z`}
                         onClick={handleRedo}
                         disabled={!isInputFocused}
                     />
@@ -148,25 +151,25 @@ export function ContextMenu({ x, y, visible, onClose }: ContextMenuProps) {
 
                     <MenuItem
                         label={t('context_menu.cut')}
-                        shortcut="Ctrl+X"
+                        shortcut={`${MOD}+X`}
                         onClick={handleCut}
                         disabled={!hasSelection}
                     />
                     <MenuItem
                         label={t('context_menu.copy')}
-                        shortcut="Ctrl+C"
+                        shortcut={`${MOD}+C`}
                         onClick={handleCopy}
                         disabled={!hasSelection}
                     />
                     <MenuItem
                         label={t('context_menu.paste')}
-                        shortcut="Ctrl+V"
+                        shortcut={`${MOD}+V`}
                         onClick={handlePaste}
                         disabled={!canPaste}
                     />
                     <MenuItem
                         label={t('context_menu.paste_plain')}
-                        shortcut="Ctrl+Shift+V"
+                        shortcut={`${MOD}+${SHIFT}+V`}
                         onClick={handlePastePlainText}
                         disabled={!canPaste}
                     />
@@ -175,7 +178,7 @@ export function ContextMenu({ x, y, visible, onClose }: ContextMenuProps) {
 
                     <MenuItem
                         label={t('context_menu.select_all')}
-                        shortcut="Ctrl+A"
+                        shortcut={`${MOD}+A`}
                         onClick={handleSelectAll}
                     />
                 </motion.div>

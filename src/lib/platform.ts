@@ -47,3 +47,12 @@ export function getBinaryName(binary: "ffmpeg" | "ffprobe" | "ytdlp"): string {
 export function isTauriAvailable(): boolean {
   return typeof window !== 'undefined' && '__TAURI__' in window;
 }
+
+// Shortcut Utilities
+export const IS_MAC = getPlatform() === 'macos';
+export const IS_WINDOWS = getPlatform() === 'windows';
+
+export const getModifierKey = () => IS_MAC ? 'Meta' : 'Control';
+export const getShortcutSymbol = () => IS_MAC ? '⌘' : 'Ctrl';
+export const getAltSymbol = () => IS_MAC ? '⌥' : 'Alt';
+export const getShiftSymbol = () => IS_MAC ? '⇧' : 'Shift';

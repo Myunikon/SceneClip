@@ -985,20 +985,19 @@ export const en = {
         confirm_delete_msg: "Are you sure you want to delete {{count}} items?"
     },
 
+    // Onboarding (Welcome Sheet)
     onboarding: {
-        step1_title: "Welcome to SceneClip",
-        step1_desc: "The ultimate video downloader with precision clipping and smart queue management.",
-        step2_title: "One-Click Downloads",
-        step2_desc: "Auto-detect links from your clipboard. Just copy and we handle the rest.",
-        step3_title: "Smart Queue",
-        step3_desc: "Track downloads in real-time and access history instantly.",
-        step4_title: "Precision Clipping",
-        step4_desc: "Download only what you need by setting exact timestamps.",
-        step5_title: "Ready to Go!",
-        step5_desc: "Customize your experience in Settings anytime.",
-        skip: "Skip",
-        continue: "Continue",
-        start: "Get Started"
+        welcome_title: "Welcome to SceneClip",
+        start: "Get Started",
+        skip: "Skip Introduction", // kept just in case, though likely typically removed in single page if blocking
+        features: {
+            smart_title: "Smart Detection",
+            smart_desc: "Auto-detects video links from your clipboard.",
+            clip_title: "Precision Clipping",
+            clip_desc: "Download only the best parts to save space.",
+            secure_title: "Secure Keyring",
+            secure_desc: "Safe storage for your premium account credentials."
+        }
     },
 
     all: "All",

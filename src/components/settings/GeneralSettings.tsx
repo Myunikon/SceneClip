@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
-import { Select } from '../Select'
-import { Switch } from '../Switch'
+import { Select } from '../ui'
+import { Switch } from '../ui'
 import { AppSettings } from '../../store/slices/types'
 import { enable, disable } from '@tauri-apps/plugin-autostart'
 import { SettingItem, SettingSection } from './SettingItem'

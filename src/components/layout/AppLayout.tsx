@@ -1,6 +1,6 @@
 import { ReactNode, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Background } from "../Background";
+import { Background } from "../providers/Background";
 import { WifiOff, AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "../../store";

@@ -1,8 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider, createRouter } from '@tanstack/react-router'
-import { AppGuard } from "./components/AppGuard";
-import { ErrorBoundary } from "./components/ErrorBoundary";
+import { AppGuard } from "./components/providers/AppGuard";
+import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import "./assets/main.css";
 import "./lib/i18n";
 import "sonner/dist/styles.css";

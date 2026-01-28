@@ -60,6 +60,8 @@ export async function buildYtDlpArgs(
         '--newline',
         '--no-colors',
         '--no-playlist',
+        '--force-overwrites', // Prevent interactive prompts that hang the process
+        '--no-input', // Disable user interaction (stdin) to prevent hangs on prompts
         '--encoding', 'utf-8', // Force UTF-8 output to prevent Tauri shell encoding errors
         // CONCURRENT FRAGMENTS (Speed Boost - Hidden Default)
         '-N', concurrentFragments,
@@ -449,11 +451,16 @@ export async function buildYtDlpArgs(
         }
     }
 
-    // Speed Limit (e.g. "5M", "500K")
+    // Speed Limit (e.g. "500" -> "500K", "5M" -> "5M")
     if (settings.speedLimit && settings.speedLimit.trim()) {
-        const limit = settings.speedLimit.trim()
+        let limit = settings.speedLimit.trim()
         // SECURITY: Prevent argument injection
         if (!limit.startsWith('-')) {
+            // FIX: Auto-append 'K' (Kilobytes) if user input is purely numeric
+            // This matches the UI label "KB/s"
+            if (/^\d+$/.test(limit)) {
+                limit += 'K'
+            }
             args.push('--limit-rate', limit)
         }
     }

@@ -45,6 +45,8 @@ pub fn run() {
             commands::keyring::set_credential,
             commands::keyring::get_credential,
             commands::keyring::delete_credential,
+            commands::download::download_with_channel,
+            commands::download::cancel_download,
         ])
         .setup(|app| {
             let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
@@ -74,14 +76,14 @@ pub fn run() {
                 tray_builder.build(app)?
             };
 
-            // DEEP LINK REGISTRATION (Runtime)
+            // DEEP LINK REGISTRATION
             #[cfg(any(windows, target_os = "linux"))]
             {
                 use tauri_plugin_deep_link::DeepLinkExt;
                 app.deep_link().register("clipscene")?;
             }
 
-            // WINDOW VIBRANCY (Transparency) - Default to ON at startup
+            // WINDOW VIBRANCY
             #[cfg(target_os = "windows")]
             use window_vibrancy::apply_blur;
             #[cfg(target_os = "macos")]
@@ -93,6 +95,25 @@ pub fn run() {
 
                 #[cfg(target_os = "windows")]
                 let _ = apply_blur(&window, Some((0, 0, 0, 0)));
+
+                // --- 1. START MINIMIZED LOGIC ---
+                use tauri_plugin_store::StoreExt;
+                let store = app.store("settings.json")?; // Use ? to propagate error if store fails
+
+                // Check 'startMinimized' (default false)
+                let start_minimized = store
+                    .get("startMinimized")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+
+                if start_minimized {
+                    // Hide immediately (we assume window is created visible: false in tauri.conf.json is better,
+                    // but if it's visible by default, this hides it quickly)
+                    let _ = window.hide();
+                } else {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
             }
 
             let mut sys = sysinfo::System::new_with_specifics(
@@ -100,15 +121,40 @@ pub fn run() {
                     .with_cpu(sysinfo::CpuRefreshKind::everything())
                     .with_memory(sysinfo::MemoryRefreshKind::everything()),
             );
-            // Initial refresh for baseline
             sys.refresh_cpu_usage();
 
             app.manage(std::sync::Mutex::new(sys));
 
-            // Start Local Server
             server::init(app.handle().clone());
 
             Ok(())
+        })
+        // --- 2. CLOSE TO TRAY LOGIC ---
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                // We need to check settings to see if we should Minimize to Tray or full Quit
+                let app = window.app_handle();
+                use tauri_plugin_store::StoreExt;
+
+                // We attempt to load store differently depending on context
+                // but app_handle has access to it.
+                if let Ok(store) = app.store("settings.json") {
+                    // Check 'closeAction' (default 'quit' or 'minimize')
+                    let close_action = store
+                        .get("closeAction")
+                        .and_then(|v| v.as_str().map(|s| s.to_string()))
+                        .unwrap_or_else(|| "quit".to_string()); // Default to quit if not set
+
+                    if close_action == "minimize" {
+                        // Prevent the close = Keep App Running
+                        api.prevent_close();
+                        let _ = window.hide();
+                    }
+                    // If "quit", we do nothing and let default close happen (which closes window -> app exit if simple)
+                    // Note: on Mac, closing last window usually keeps app running, but on Win/Lin it quits.
+                    // This behavior is standard.
+                }
+            }
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

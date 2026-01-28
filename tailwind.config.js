@@ -58,6 +58,15 @@ export default {
         "3xl": "calc(var(--radius) + 12px)", /* 24px */
       },
       keyframes: {
+        rippling: {
+          "0%": {
+            opacity: "1",
+          },
+          "100%": {
+            transform: "scale(2)",
+            opacity: "0",
+          },
+        },
         blob: {
           "0%": {
             transform: "translate(0px, 0px) scale(1)",
@@ -79,12 +88,28 @@ export default {
         shimmer: {
           "0%": { transform: "translateX(-100%)" },
           "100%": { transform: "translateX(100%)" },
-        }
+        },
+        aurora: {
+          "0%": {
+            backgroundPosition: "0% 50%",
+            // filter: "hue-rotate(0deg)",
+          },
+          "50%": {
+            backgroundPosition: "100% 50%",
+            // filter: "hue-rotate(45deg)",
+          },
+          "100%": {
+            backgroundPosition: "0% 50%",
+            // filter: "hue-rotate(0deg)",
+          },
+        },
       },
       animation: {
+        rippling: "rippling var(--duration, 600ms) ease-out",
         blob: "blob 30s infinite",
         shine: "shine 1.5s infinite",
         shimmer: "shimmer 0.7s ease-out forwards",
+        aurora: "aurora 10s ease-in-out infinite alternate",
       },
     },
   },

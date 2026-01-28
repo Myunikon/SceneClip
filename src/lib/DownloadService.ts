@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { AppSettings, DownloadTask } from '../store/slices/types';
 import { buildYtDlpArgs, parseYtDlpProgress, isErrorLine, getPostProcessStatusText, sanitizeFilename, parseYtDlpJson, getYtDlpCommand } from './ytdlp';
 import { getUniqueFilePath, saveTempCookieFile } from './fileUtils';
+import { formatSpeed, formatBytes } from './formatters';
 
 // Define the callbacks interface for managing updates
 export interface DownloadCallbacks {
@@ -229,9 +230,11 @@ export class DownloadService {
 
                         callbacks.onProgress(id, {
                             progress: percent,
-                            speed: isNaN(speedVal) ? '-' : `${(speedVal / 1024 / 1024).toFixed(2)} MiB/s`,
+                            speed: isNaN(speedVal) ? '-' : formatSpeed(speedVal),
+                            speedRaw: isNaN(speedVal) || !isFinite(speedVal) ? undefined : speedVal,
                             eta: isNaN(etaVal) ? '-' : `${etaVal}s`,
-                            totalSize: isNaN(total) ? '-' : `${(total / 1024 / 1024).toFixed(2)} MiB`,
+                            etaRaw: isNaN(etaVal) || !isFinite(etaVal) ? undefined : etaVal,
+                            totalSize: isNaN(total) ? '-' : formatBytes(total),
                             status: 'downloading'
                         });
                         return; // Skip other parsers

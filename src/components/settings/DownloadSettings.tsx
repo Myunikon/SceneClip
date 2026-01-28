@@ -1,5 +1,5 @@
-import { Switch } from '../Switch'
-import { Select } from '../Select' // Reused for "Insert Variable"
+import { Switch } from '../ui'
+import { Select } from '../ui' // Reused for "Insert Variable"
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { useTranslation } from 'react-i18next'
 import { AppSettings } from '../../store/slices/types'

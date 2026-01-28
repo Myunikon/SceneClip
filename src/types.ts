@@ -89,7 +89,7 @@ export interface DialogOptions {
     gifScale: number // Represents height (e.g. 480)
     gifQuality: 'high' | 'fast'
 
-    // Feature 5
+    // Post-Processing
     postProcessorArgs?: string
 }
 
@@ -120,8 +120,8 @@ export interface DialogOptionSetters {
     setGifScale: (v: number) => void
     setGifQuality: (v: 'high' | 'fast') => void
 
-    // Feature 5
-    setPostProcessorArgs?: (v: string) => void
+    // Post-Processing
+    setPostProcessorArgs: (v: string) => void
 }
 
 // --- Store & Shared Types ---
@@ -154,8 +154,8 @@ export interface DownloadOptions {
     gifScale?: number
     gifQuality?: 'high' | 'fast'
 
-    // Feature 5
-    postProcessorArgs?: string // Custom FFmpeg args from preset
+    // Post-Processing (Custom FFmpeg args from preset)
+    postProcessorArgs?: string
 }
 
 

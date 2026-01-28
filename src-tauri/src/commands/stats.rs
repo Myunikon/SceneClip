@@ -30,24 +30,23 @@ pub struct SystemStats {
 
 #[command]
 pub fn get_system_stats(
-    state: tauri::State<'_, Mutex<System>>,
+    _state: tauri::State<'_, Mutex<System>>,
     download_path: Option<String>,
 ) -> SystemStats {
-    let mut sys = state.lock().unwrap();
+    // let mut sys = state.lock().unwrap();
 
     // Refresh specific components
-    // refresh_cpu_usage() calculates delta from last call, so no need to sleep!
-    sys.refresh_cpu_usage();
-    sys.refresh_memory();
+    // sys.refresh_cpu_usage();
+    // sys.refresh_memory();
 
     // Get CPU usage (average of all cores)
-    let cpu_usage: f32 =
-        sys.cpus().iter().map(|cpu| cpu.cpu_usage()).sum::<f32>() / sys.cpus().len().max(1) as f32;
+    let cpu_usage: f32 = 0.0;
+    // sys.cpus().iter().map(|cpu| cpu.cpu_usage()).sum::<f32>() / sys.cpus().len().max(1) as f32;
 
     // Memory info
-    let memory_used = sys.used_memory();
-    let memory_total = sys.total_memory();
-    let memory_percent = (memory_used as f64 / memory_total.max(1) as f64 * 100.0) as f32;
+    let memory_used = 0; // sys.used_memory();
+    let memory_total = 0; // sys.total_memory();
+    let memory_percent = 0.0; // (memory_used as f64 / memory_total.max(1) as f64 * 100.0) as f32;
 
     // Network stats
     // Note: Networks::new_with_refreshed_list() is still a bit heavy but necessary for new interfaces

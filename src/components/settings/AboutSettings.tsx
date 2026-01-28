@@ -2,7 +2,8 @@ import { motion } from 'framer-motion'
 import { Download, Terminal as TerminalIcon, Scissors, Zap, Globe, AlertCircle, ChevronRight, Layers, Waypoints, Languages, FileCode } from 'lucide-react'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { useTranslation, Trans } from 'react-i18next'
-import { Updater } from '../Updater'
+import { Updater } from '../providers'
+import { AuroraText } from '@/registry/magicui/aurora-text'
 
 
 interface AboutSettingsProps {
@@ -60,7 +61,7 @@ export function AboutSettings({ addLog, setShowEasterEgg }: AboutSettingsProps) 
 
                 <div className="space-y-1">
                     <h2 className="text-2xl font-bold tracking-tight text-foreground">
-                        SceneClip
+                        Scene<AuroraText className="font-bold" stopAfter={10000}>Clip</AuroraText>
                     </h2>
                     <p className="text-sm font-medium text-muted-foreground">
                         Version 1.0.1 (New)

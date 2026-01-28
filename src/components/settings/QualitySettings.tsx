@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation, Trans } from 'react-i18next'
-import { Select } from '../Select'
-import { Switch } from '../Switch'
+import { Select } from '../ui'
+import { Switch } from '../ui'
 import { AppSettings } from '../../store/slices/types'
 import { PostProcessorPreset } from '../../types' // Import from global types
 import { SettingItem, SettingSection } from './SettingItem'

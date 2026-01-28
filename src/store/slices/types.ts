@@ -17,9 +17,11 @@ export interface DownloadTask {
   title: string
   status: DownloadStatus
   statusDetail?: string // Granular status: "Merging...", "Extracting Audio...", "Fixing..."
-  progress: number
+  progress: number | null // null = indeterminate (processing/merging)
   speed: string
   eta: string
+  etaRaw?: number   // Raw seconds for human-readable formatting in UI
+  speedRaw?: number // Raw bytes/sec for calculations
   totalSize?: string // e.g. "123.45MiB"
   range?: string
   format?: string

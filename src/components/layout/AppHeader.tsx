@@ -1,7 +1,9 @@
-import { Download, FolderOpen, Settings, HelpCircle, Plus, Keyboard, Lock } from 'lucide-react'
+import { Download, History, Settings, HelpCircle, Plus, Keyboard, Lock } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from '@tanstack/react-router'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
+import { Button } from '../ui/button'
 import { cn } from '../../lib/utils'
 
 interface AppHeaderProps {
@@ -36,7 +38,7 @@ export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeade
                 {[
                     { id: 'downloads', path: '/', label: t('nav.downloads'), icon: Download },
                     { id: 'keyring', path: '/keyring', label: t('nav.keyring') || "Keyring", icon: Lock },
-                    { id: 'history', path: '/history', label: t('history.title'), icon: FolderOpen },
+                    { id: 'history', path: '/history', label: t('history.title'), icon: History },
                     { id: 'settings', path: '/settings', label: t('nav.settings'), icon: Settings }
                 ].map((tab) => (
                     <Link
@@ -48,7 +50,6 @@ export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeade
                                 ? "text-primary"
                                 : "text-muted-foreground hover:text-foreground"
                         )}
-                        title={tab.label}
                     >
                         {activeTab === tab.id && (
                             <motion.div
@@ -68,7 +69,7 @@ export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeade
                 {[
                     { id: 'downloads', path: '/', label: t('nav.downloads'), icon: Download },
                     { id: 'keyring', path: '/keyring', label: t('nav.keyring') || "Keyring", icon: Lock },
-                    { id: 'history', path: '/history', label: t('history.title'), icon: FolderOpen },
+                    { id: 'history', path: '/history', label: t('history.title'), icon: History },
                     { id: 'settings', path: '/settings', label: t('nav.settings'), icon: Settings }
                 ].map((tab) => (
                     <Link
@@ -94,49 +95,46 @@ export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeade
             </nav>
 
             <div className="flex items-center gap-1 shrink-0">
-                <button
-                    onClick={onOpenShortcuts}
-                    className="hidden md:block p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground"
-                    title={t('guide.sections.shortcuts') || 'Keyboard Shortcuts'}
-                >
-                    <Keyboard className="w-5 h-5" />
-                </button>
-                <button
-                    onClick={onOpenGuide}
-                    className="hidden md:block p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground"
-                    title={t('guide.title')}
-                >
-                    <HelpCircle className="w-5 h-5" />
-                </button>
-                <button
-                    onClick={async () => {
-                        const { importBatchFile } = await import('../../lib/batchImport')
-                        const result = await importBatchFile()
-                        if (result.urls.length > 0) {
-                            openDialog()
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                onClick={onOpenShortcuts}
+                                className="hidden md:flex h-auto w-auto p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground"
+                            >
+                                <Keyboard className="w-5 h-5" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{t('guide.sections.shortcuts') || 'Keyboard Shortcuts'}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                onClick={onOpenGuide}
+                                className="hidden md:flex h-auto w-auto p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground"
+                            >
+                                <HelpCircle className="w-5 h-5" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{t('guide.title')}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
 
-                            const { writeText } = await import('@tauri-apps/plugin-clipboard-manager')
-                            await writeText(result.urls.join('\n'))
-
-                            const { notify } = await import('../../lib/notify')
-                            notify.success(t('dialog.batch_imported_title'), { description: t('dialog.batch_imported_desc', { count: result.urls.length }) })
-                        } else if (result.error) {
-                            const { notify } = await import('../../lib/notify')
-                            notify.error(t('dialog.import_failed'), { description: result.error })
-                        }
-                    }}
-                    className="p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground"
-                    title={t('dialog.batch_import_btn')}
-                >
-                    <FolderOpen className="w-5 h-5" />
-                </button>
-                <button
+                <Button
                     onClick={openDialog}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground p-2 lg:px-4 lg:py-2 rounded-full flex items-center gap-2 shadow-lg shadow-primary/20 text-sm font-bold whitespace-nowrap active:scale-95 transition-all aspect-square lg:aspect-auto justify-center"
+                    className="h-auto w-auto bg-primary hover:bg-primary/90 text-primary-foreground p-2 lg:px-4 lg:py-2 rounded-full flex items-center gap-2 shadow-lg shadow-primary/20 text-sm font-bold whitespace-nowrap active:scale-95 transition-all aspect-square lg:aspect-auto justify-center"
                 >
                     <Plus className="w-5 h-5 lg:w-4 lg:h-4" />
                     <span className="hidden lg:inline">{t('downloads.new_download')}</span>
-                </button>
+                </Button>
             </div>
         </header>
     )

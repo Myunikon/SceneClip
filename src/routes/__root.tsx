@@ -14,15 +14,15 @@ import { useTheme } from '../hooks/useTheme'
 import { useNetworkStatus } from '../hooks/useNetworkStatus'
 import { useDeepLinks } from '../hooks/useDeepLinks'
 import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts'
-import { AddDialog } from '../components/AddDialog'
-import { Onboarding } from '../components/Onboarding'
-import { ClipboardListener } from '../components/ClipboardListener'
-import { GuideModal, GuideModalRef } from '../components/GuideModal'
-import { ShortcutsPopover } from '../components/ShortcutsPopover'
-import { AppHeader } from '../components/layout/AppHeader'
-import { AppLayout } from '../components/layout/AppLayout'
-import { ContextMenu } from '../components/ContextMenu'
-import { StatusFooter } from '../components/StatusFooter'
+import { AddDialog } from '../components/dialogs'
+import { Onboarding } from '../components/providers'
+import { ClipboardListener } from '../components/providers'
+import { GuideModal, GuideModalRef } from '../components/dialogs'
+import { ShortcutsPopover } from '../components/common'
+import { AppHeader } from '../components/layout'
+import { AppLayout } from '../components/layout'
+import { ContextMenu } from '../components/common'
+import { StatusFooter } from '../components/statusbar'
 import { usePowerManagement } from '../hooks/usePowerManagement'
 
 export const Route = createRootRoute({
@@ -291,7 +291,7 @@ function RootComponent() {
                     </div>
                 </div>
 
-                <ClipboardListener onFound={(url) => handleNewTask(url)} />
+                <ClipboardListener />
 
                 <AddDialog
                     ref={addDialogRef}

@@ -1,8 +1,8 @@
 import { Terminal, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
-import { Select } from '../Select'
-import { Switch } from '../Switch'
+import { Select } from '../ui'
+import { Switch } from '../ui'
 import { AppSettings } from '../../store/slices/types'
 import { useAppStore } from '../../store'
 import { getBinaryName } from '../../lib/platform'
@@ -14,7 +14,7 @@ interface SystemSettingsProps {
     updateSettings: (newSettings: Partial<AppSettings>) => void
 }
 
-import { ConfirmationModal } from '../ConfirmationModal'
+import { ConfirmationModal } from '../dialogs'
 import { useState } from 'react'
 import { notify } from '../../lib/notify'
 

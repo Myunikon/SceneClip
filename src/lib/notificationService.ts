@@ -94,6 +94,7 @@ class NotificationService {
     /**
      * Send download complete notification
      */
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public async notifyDownloadComplete(title: string, _filePath?: string): Promise<boolean> {
         return this.notifyIfBackground(
             '✅ Download Complete',

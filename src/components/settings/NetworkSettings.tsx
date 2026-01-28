@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
-import { Switch } from '../Switch'
-import { Slider } from '../Slider'
+import { Switch } from '../ui'
+import { Slider } from '../ui'
 import { AppSettings } from '../../store/slices/types'
 import { SettingItem, SettingSection } from './SettingItem'
 
@@ -49,7 +49,7 @@ export function NetworkSettings({ settings, setSetting }: NetworkSettingsProps) 
                                     placeholder="0"
                                 />
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
-                                    MB/s
+                                    KB/s
                                 </div>
                             </div>
                         </SettingItem>

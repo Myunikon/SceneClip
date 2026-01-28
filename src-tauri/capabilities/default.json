@@ -85,6 +85,19 @@
       ]
     },
     {
+      "identifier": "fs:allow-read-text-file",
+      "allow": [
+        "$APP_DATA/**",
+        "$APPDATA/**",
+        "$DOWNLOAD/**",
+        "$TEMP/**",
+        "$RESOURCE/**",
+        "$HOME/**",
+        "$DESKTOP/**",
+        "$DOCUMENT/**"
+      ]
+    },
+    {
       "identifier": "fs:allow-write-file",
       "allow": [
         "$APP_DATA/**",

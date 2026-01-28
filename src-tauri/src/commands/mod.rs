@@ -1,3 +1,4 @@
+pub mod download;
 pub mod keyring;
 pub mod power;
 pub mod process;

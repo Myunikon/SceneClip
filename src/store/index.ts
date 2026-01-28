@@ -22,7 +22,7 @@ export const useAppStore = create<AppState>()(
         ...createVideoSlice(...a),
       }),
       {
-        name: 'app-storage-v2',
+        name: 'app-storage-v5-clean',
         storage: createJSONStorage(() => tauriStorage),
         partialize: (state) => ({
           tasks: state.tasks,

@@ -1,5 +1,5 @@
-import { Zap } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
+import { Zap, Cpu } from 'lucide-react'
+// import { useTranslation } from 'react-i18next'
 
 interface GpuIndicatorProps {
     gpuType: 'cpu' | 'nvidia' | 'amd' | 'intel' | 'apple'
@@ -7,35 +7,30 @@ interface GpuIndicatorProps {
 }
 
 export function GpuIndicator({ gpuType, hardwareDecoding }: GpuIndicatorProps) {
-    const { t } = useTranslation()
+    // const { t } = useTranslation() // Unused
 
-    const vendorLabels: Record<string, string> = {
-        'nvidia': t('statusbar.nvidia_gpu'),
-        'amd': t('statusbar.amd_gpu'),
-        'intel': t('statusbar.intel_gpu'),
-        'apple': t('statusbar.apple_gpu'),
-        'cpu': t('statusbar.cpu_mode')
-    }
-    const displayLabel = vendorLabels[gpuType] || 'GPU'
+    // Removed unused vendorLabels and displayLabel since we are now Icon-Only
 
     if (!hardwareDecoding) {
         return (
-            <>
-                <Zap className="w-3.5 h-3.5 text-muted-foreground/30" />
-                <span className="text-muted-foreground/40 font-bold uppercase tracking-tighter">SFW</span>
-            </>
+            <div className="relative flex items-center justify-center opacity-50">
+                <Cpu className="w-3.5 h-3.5 text-muted-foreground" />
+            </div>
         )
     }
 
+    const Icon = hardwareDecoding ? Zap : Cpu // Use Zap (Lightning) for HW Accel, CPU chip for Software
+
     return gpuType !== 'cpu' ? (
-        <>
-            <span className="relative flex h-2 w-2 mr-1">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 will-change-transform"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
-            </span>
-            <span className="text-emerald-500 font-bold uppercase tracking-tighter">{displayLabel}</span>
-        </>
+        <div className="relative flex items-center justify-center">
+            {/* Breathing Icon */}
+            <Icon className="w-3.5 h-3.5 text-emerald-500 animate-pulse duration-[3000ms]" />
+            {/* Subtle Glow behind */}
+            <div className="absolute inset-0 bg-emerald-500/20 blur-[4px] rounded-full"></div>
+        </div>
     ) : (
-        <span className="text-muted-foreground/30 font-bold uppercase tracking-tighter">CPU</span>
+        <div className="relative flex items-center justify-center">
+            <Cpu className="w-3.5 h-3.5 text-muted-foreground/30" />
+        </div>
     )
 }

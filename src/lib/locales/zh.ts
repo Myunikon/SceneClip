@@ -429,6 +429,16 @@ export const zh = {
         sponsor_clip_conflict: "剪辑时不可用",
         video_codec: "视频编码",
         codec_desc: "AV1最佳，H264兼容性最好",
+        proxy: "网络代理",
+        proxy_desc: "为此下载使用特定代理",
+        post_processing: "后期处理",
+        post_proc_desc: "应用FFmpeg预设",
+        post_proc_active: "自定义FFmpeg参数已激活",
+        select_preset: "选择预设",
+        custom_preset: "自定义 / 手动",
+        custom_args_label: "输入自定义FFmpeg参数",
+        not_available: "不可用",
+        inside_video: "嵌入视频文件内",
         subtitle_settings: "字幕设置",
         schedule_time: "计划时间",
         embed_subs: "嵌入到视频文件",
@@ -819,7 +829,7 @@ export const zh = {
 
     empty_state: {
         title: "暂无下载",
-        description: "贴上链接或按 <1>Ctrl+N</1> 开始。"
+        description: "复制链接并按 <1>{{mod}}+N</1> 开始。"
     },
 
     filename_preview: {
@@ -898,5 +908,19 @@ export const zh = {
         copy_line: "复制行",
         ready: "系统就绪。等待任务...",
         no_logs: "未找到 {filter} 日志。"
+    },
+
+    // ETA Human-Readable Translations (i18next pluralization)
+    eta: {
+        unknown: "剩余时间未知",
+        hours_one: "{{count}} 小时",
+        hours_other: "{{count}} 小时",
+        minutes_one: "{{count}} 分钟",
+        minutes_other: "{{count}} 分钟",
+        seconds_one: "{{count}} 秒",
+        seconds_other: "{{count}} 秒",
+        and: "",
+        remaining: "剩余 {{time}}"
     }
 }
+

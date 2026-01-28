@@ -12,18 +12,18 @@ import { useTheme } from './hooks/useTheme'
 import { useNetworkStatus } from './hooks/useNetworkStatus'
 import { useDeepLinks } from './hooks/useDeepLinks'
 import { useGlobalShortcuts } from './hooks/useGlobalShortcuts'
-import { AddDialog } from './components/AddDialog'
-import { HistoryView } from './components/HistoryView'
-import { Onboarding } from './components/Onboarding'
-import { ClipboardListener } from './components/ClipboardListener'
-import { SettingsView } from './components/SettingsView'
-import { DownloadsView } from './components/DownloadsView'
-import { GuideModal, GuideModalRef } from './components/GuideModal'
-import { ShortcutsPopover } from './components/ShortcutsPopover'
+import { AddDialog } from './components/dialogs/AddDialog'
+import { HistoryView } from './components/history/HistoryView'
+import { Onboarding } from './components/providers/Onboarding'
+import { ClipboardListener } from './components/providers/ClipboardListener'
+import { SettingsView } from './components/settings/SettingsView'
+import { DownloadsView } from './components/downloads/DownloadsView'
+import { GuideModal, GuideModalRef } from './components/dialogs/GuideModal'
+import { ShortcutsPopover } from './components/common/ShortcutsPopover'
 import { AppHeader } from './components/layout/AppHeader'
 import { AppLayout } from './components/layout/AppLayout'
-import { ContextMenu } from './components/ContextMenu'
-import { StatusFooter } from './components/StatusFooter'
+import { ContextMenu } from './components/common/ContextMenu'
+import { StatusFooter } from './components/statusbar/StatusFooter'
 
 type ViewState = 'downloads' | 'settings' | 'history'
 
@@ -425,7 +425,7 @@ function App() {
                     </div >
                 </div >
 
-                <ClipboardListener onFound={(url) => handleNewTask(url)} />
+                <ClipboardListener onFound={(url: string) => handleNewTask(url)} />
 
                 <AddDialog
                     ref={addDialogRef}

@@ -54,7 +54,7 @@ export const ms = {
         example_note: "* Pratonton video sampel",
 
         empty: "Tiada muat turun lagi",
-        empty_description: "Tampal pautan atau tekan Ctrl+N untuk mula.",
+        empty_description: "Salin pautan dan tekan Ctrl+N untuk mula.",
         plus_more: "+1000 lagi",
         headers: {
             title_url: "Tajuk / URL",
@@ -420,6 +420,16 @@ export const ms = {
         sponsor_clip_conflict: "Tidak tersedia semasa memotong",
         video_codec: "Codec Video",
         codec_desc: "AV1 terbaik, H264 paling serasi",
+        proxy: "Proksi Rangkaian",
+        proxy_desc: "Gunakan proksi khusus untuk muat turun ini",
+        post_processing: "Pasca-Pemprosesan",
+        post_proc_desc: "Gunakan pratetap FFmpeg",
+        post_proc_active: "Argumen FFmpeg tersuai aktif",
+        select_preset: "Pilih Pratetap",
+        custom_preset: "Tersuai / Manual",
+        custom_args_label: "Masukkan argumen FFmpeg tersuai",
+        not_available: "Tidak tersedia",
+        inside_video: "Dalam fail video",
         subtitle_settings: "Tetapan Sarikata",
         schedule_time: "Masa Jadual",
         embed_subs: "Benamkan ke dalam fail video",
@@ -821,7 +831,7 @@ export const ms = {
 
     empty_state: {
         title: "Belum ada muat turun",
-        description: "Tampal pautan atau tekan <1>Ctrl+N</1> untuk mula."
+        description: "Salin pautan dan tekan <1>{{mod}}+N</1> untuk mula."
     },
 
     filename_preview: {
@@ -900,5 +910,19 @@ export const ms = {
         copy_line: "Salin Baris",
         ready: "Sistem siap. Menunggu tugas...",
         no_logs: "Tidak ada log {filter} ditemukan."
+    },
+
+    // ETA Human-Readable Translations (i18next pluralization)
+    eta: {
+        unknown: "Masa tidak diketahui",
+        hours_one: "{{count}} jam",
+        hours_other: "{{count}} jam",
+        minutes_one: "{{count}} minit",
+        minutes_other: "{{count}} minit",
+        seconds_one: "{{count}} saat",
+        seconds_other: "{{count}} saat",
+        and: "dan",
+        remaining: "{{time}} lagi"
     }
 }
+

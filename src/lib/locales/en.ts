@@ -54,7 +54,7 @@ export const en = {
         example_note: "* Preview based on sample video",
 
         empty: "No downloads yet",
-        empty_description: "Paste a link or press Ctrl+N to start.",
+        empty_description: "Copy a link and press Ctrl+N to start.",
         plus_more: "+1000 more",
         headers: {
             title_url: "Title / URL",
@@ -119,7 +119,8 @@ export const en = {
             desktop_notifications: "Desktop Notifications",
             desktop_notifications_desc: "Show system notifications when app is in background",
             prevent_suspend: "Prevent Sleep",
-            prevent_suspend_desc: "Keep system awake during downloads"
+            prevent_suspend_desc: "Keep system awake during downloads",
+            post_processing: "Post-Processing"
         },
         downloads: {
             storage: "Storage & Path",
@@ -438,6 +439,16 @@ export const en = {
         sponsor_clip_conflict: "Unavailable while trimming",
         video_codec: "Video Codec",
         codec_desc: "AV1 is best, H264 is most compatible",
+        proxy: "Network Proxy",
+        proxy_desc: "Use specific proxy for this download",
+        post_processing: "Post-Processing",
+        post_proc_desc: "Apply FFmpeg presets",
+        post_proc_active: "Custom FFmpeg args active",
+        select_preset: "Select Preset",
+        custom_preset: "Custom / Manual",
+        custom_args_label: "Enter custom FFmpeg arguments",
+        not_available: "Not available",
+        inside_video: "Inside video file",
         subtitle_settings: "Subtitle Settings",
         trim_video: "Trim Video",
         trim_audio: "Trim Audio",
@@ -642,8 +653,6 @@ export const en = {
             mov_reencode: "Format <strong>.MOV</strong> with <strong>{codec}</strong> requires re-encoding. This may take longer."
         },
 
-        not_available: "Not available",
-        inside_video: "Inside video file",
         sequential_mode: "Sequential Mode: Will split after download",
 
         restart: "Restart",
@@ -915,7 +924,7 @@ export const en = {
 
     empty_state: {
         title: "No downloads yet",
-        description: "Paste a link or press <1>Ctrl+N</1> to start."
+        description: "Copy a link and press <1>{{mod}}+N</1> to start."
     },
 
     filename_preview: {
@@ -1002,5 +1011,18 @@ export const en = {
 
     all: "All",
     video: "Video",
-    audio: "Audio"
+    audio: "Audio",
+
+    // ETA Human-Readable Translations (i18next pluralization)
+    eta: {
+        unknown: "Unknown time left",
+        hours_one: "{{count}} hour",
+        hours_other: "{{count}} hours",
+        minutes_one: "{{count}} minute",
+        minutes_other: "{{count}} minutes",
+        seconds_one: "{{count}} second",
+        seconds_other: "{{count}} seconds",
+        and: "and",
+        remaining: "{{time}} remaining"
+    }
 }

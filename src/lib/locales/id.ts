@@ -54,7 +54,7 @@ export const id = {
         example_note: "* Pratinjau video sampel",
 
         empty: "Belum ada unduhan",
-        empty_description: "Tempel link atau tekan Ctrl+N untuk mulai.",
+        empty_description: "Salin link dan tekan Ctrl+N untuk mulai.",
         plus_more: "+1000 lainnya",
         headers: {
             title_url: "Judul / URL",
@@ -438,6 +438,16 @@ export const id = {
         sponsor_clip_conflict: "Tidak tersedia saat memotong",
         video_codec: "Codec Video",
         codec_desc: "AV1 terbaik, H264 paling kompatibel",
+        proxy: "Proxy Jaringan",
+        proxy_desc: "Gunakan proxy khusus untuk unduhan ini",
+        post_processing: "Pasca-Pemrosesan",
+        post_proc_desc: "Terapkan preset FFmpeg",
+        post_proc_active: "Argumen FFmpeg kustom aktif",
+        select_preset: "Pilih Preset",
+        custom_preset: "Kustom / Manual",
+        custom_args_label: "Masukkan argumen FFmpeg kustom",
+        not_available: "Tidak tersedia",
+        inside_video: "Di dalam file video",
         subtitle_settings: "Pengaturan Subtitle",
         schedule_time: "Waktu Jadwal",
         embed_subs: "Sematkan ke file video",
@@ -523,7 +533,7 @@ export const id = {
 
     empty_state: {
         title: "Belum ada unduhan",
-        description: "Tempel link atau tekan <1>Ctrl+N</1> untuk mulai."
+        description: "Salin link dan tekan <1>{{mod}}+N</1> untuk mulai."
     },
 
     dialog_status: {
@@ -920,5 +930,18 @@ export const id = {
     },
     all: "Semua",
     video: "Video",
-    audio: "Audio"
+    audio: "Audio",
+
+    // ETA Human-Readable Translations (i18next pluralization)
+    eta: {
+        unknown: "Waktu tidak diketahui",
+        hours_one: "{{count}} jam",
+        hours_other: "{{count}} jam",
+        minutes_one: "{{count}} menit",
+        minutes_other: "{{count}} menit",
+        seconds_one: "{{count}} detik",
+        seconds_other: "{{count}} detik",
+        and: "dan",
+        remaining: "{{time}} tersisa"
+    }
 }

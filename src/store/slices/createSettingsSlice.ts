@@ -39,7 +39,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     savedCredentials: [],
     historyRetentionDays: 30, // Default: keep 30 days of history
     maxHistoryItems: 100, // Default: keep up to 100 completed tasks (-1 = unlimited)
-    useSrtFixer: true, // Default: ON
+
     useMetadataEnhancer: true, // Default: ON
     useReplayGain: false, // Default: OFF (needs external tools like rsgain)
     usePoToken: true, // Default: ON (crucial for 403 bypass)

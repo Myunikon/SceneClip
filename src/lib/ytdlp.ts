@@ -74,29 +74,27 @@ export async function buildYtDlpArgs(
     ]
 
     // Plugin Integration
-    const needsPlugins = settings.useSrtFixer || settings.useReplayGain || settings.useChromeCookieUnlock || settings.usePoToken
-    if (needsPlugins) {
-        try {
-            const { resolveResource } = await import('@tauri-apps/api/path')
-            const pluginsPath = await resolveResource('resources/plugins')
-            args.push('--plugin-dirs', pluginsPath)
+    // Plugin Integration
+    // PARABOLIC: Always load plugins path for mandatory extensions like SrtFix
+    try {
+        const { resolveResource } = await import('@tauri-apps/api/path')
+        const pluginsPath = await resolveResource('resources/plugins') // Resolves strictly to resources/plugins
+        args.push('--plugin-dirs', pluginsPath)
 
-            if (settings.useSrtFixer) {
-                args.push('--use-postprocessor', 'srt_fix')
-            }
+        // MANDATORY: Automatic Subtitle Cleaner
+        args.push('--use-postprocessor', 'SrtFix')
 
-            if (settings.useReplayGain) {
-                // ReplayGain usually needs a 'when' trigger
-                args.push('--use-postprocessor', 'ReplayGain:when=after_move')
-            }
-
-            if (settings.useChromeCookieUnlock) {
-                // This postprocessor must run at pre_process to patch cookie loading BEFORE download
-                args.push('--use-postprocessor', 'ChromeCookieUnlock:when=pre_process')
-            }
-        } catch (e) {
-            console.error('Failed to resolve plugins path:', e)
+        if (settings.useReplayGain) {
+            // ReplayGain usually needs a 'when' trigger
+            args.push('--use-postprocessor', 'ReplayGain:when=after_move')
         }
+
+        if (settings.useChromeCookieUnlock) {
+            // This postprocessor must run at pre_process to patch cookie loading BEFORE download
+            args.push('--use-postprocessor', 'ChromeCookieUnlock:when=pre_process')
+        }
+    } catch (e) {
+        console.error('Failed to resolve plugins path:', e)
     }
 
     // Custom FFmpeg Path Support

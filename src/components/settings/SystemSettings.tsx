@@ -175,15 +175,7 @@ export function SystemSettings({ settings, setSetting, updateSettings }: SystemS
             {/* Content Enhancements */}
             <SettingSection title={t('settings.advanced.content_enhancements.title')}>
                 <div className="space-y-4">
-                    <SettingItem
-                        title={t('settings.advanced.content_enhancements.srt_fixer')}
-                        description={t('settings.advanced.content_enhancements.srt_fixer_desc')}
-                    >
-                        <Switch
-                            checked={settings.useSrtFixer}
-                            onCheckedChange={(val) => setSetting('useSrtFixer', val)}
-                        />
-                    </SettingItem>
+
 
                     <SettingItem
                         title={t('settings.advanced.content_enhancements.metadata_enhancer')}

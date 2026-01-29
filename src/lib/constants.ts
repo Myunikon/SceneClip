@@ -1,8 +1,8 @@
 
 export const BINARIES = {
-    FFMPEG: 'ffmpeg',
-    YTDLP: 'yt-dlp',
-    FFPROBE: 'ffprobe'
+    FFMPEG: 'bin/ffmpeg',
+    YTDLP: 'bin/yt-dlp',
+    FFPROBE: 'bin/ffprobe'
 }
 
 export const DEFAULTS = {

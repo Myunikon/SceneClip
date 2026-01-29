@@ -83,31 +83,30 @@ jobs:
 
       # --- SIDECARE BINARIES SETUP (Optimized) ---
       
-      # 1. Try Download Custom Minimal Binaries (if available)
-      - name: Download Custom Binaries
+      # 1. Download All Sidecar Binaries (Pre-prepared)
+      - name: Download Sidecar Binaries
         uses: dsaltares/fetch-gh-release-asset@master
         continue-on-error: true
         with:
           repo: ${{ github.repository }}
           version: tags/binaries
-          file: "ffmpeg-*"
-          target: "src-tauri/"
+          file: "*" # Download all binaries from the 'binaries' tag
+          target: "src-tauri/bin/"
           token: ${{ secrets.GITHUB_TOKEN }}
         
       - name: Grant Permissions (Linux/Mac)
         if: matrix.platform != 'windows-latest'
         run: |
-           chmod +x src-tauri/ffmpeg-* || true
+           chmod +x src-tauri/bin/* || true
 
-      # 2. Setup Sidecar Binaries (Skip if exists)
-      # Uses scripts/setup-binaries.js. If custom binaries exist in src-tauri, it skips download.
+      # 2. Setup Sidecar Binaries (Fallback/Verify)
+      # If Download failed or missing some, run the setup script
       - name: Setup Sidecar Binaries
         shell: bash
         run: |
             if [ "${{ matrix.platform }}" == "windows-latest" ]; then
-               npm run setup-binaries -- --target win-x64
+               npm run setup-binaries -- --target win-x64 --target win-x86
             elif [ "${{ matrix.platform }}" == "macos-latest" ]; then
-               # Download both architectures for Universal Build
                npm run setup-binaries -- --target mac-x64 --target mac-arm64
             else
                npm run setup-binaries -- --target linux-x64
@@ -117,22 +116,20 @@ jobs:
       - name: Fix Sidecar Binaries (macOS Universal)
         if: matrix.platform == 'macos-latest'
         run: |
-          cd src-tauri
-          # Copy x64 binaries to 'universal' name (User accepted strategy: x64 via Rosetta for ffmpeg, fat binary for yt-dlp)
+          cd src-tauri/bin
+          # Duplicate x64 binaries as universal for sidecars that don't have native fat binaries or where one arch is sufficient
           
-          # 1. yt-dlp
-          # If we have specific archs, we might want to lipo them if they were actual compilation,
-          # but here we just follow the previous logic or copy one.
-          # The script downloads `yt-dlp-x86_64-apple-darwin` and `yt-dlp-aarch64-apple-darwin`?
-          # Let's check script behavior. It names them `yt-dlp-triple`.
-          # We need to map them to `universal`.
-          
-          # For robustness, we duplicate x64 as universal if lipo isn't used
-          # Or if the app expects `universal` suffix.
-          
-          cp yt-dlp-x86_64-apple-darwin yt-dlp-universal-apple-darwin
-          cp ffmpeg-x86_64-apple-darwin ffmpeg-universal-apple-darwin
-          cp aria2c-x86_64-apple-darwin aria2c-universal-apple-darwin
+          SIDE_CARS=("yt-dlp" "ffmpeg" "aria2c" "rsgain")
+          for bin in "${SIDE_CARS[@]}"; do
+            # Use specific arch if available, or fallback to x64
+            if [ -f "${bin}-aarch64-apple-darwin" ] && [ -f "${bin}-x86_64-apple-darwin" ]; then
+              # If both exist, we could lipo, but for yt-dlp/ffmpeg we often just use one or copy
+              # Let's copy x86_64 as a safe default for 'universal' if we don't want to bundle both in one file
+              cp "${bin}-x86_64-apple-darwin" "${bin}-universal-apple-darwin"
+            elif [ -f "${bin}-x86_64-apple-darwin" ]; then
+              cp "${bin}-x86_64-apple-darwin" "${bin}-universal-apple-darwin"
+            fi
+          done
           
           chmod +x *-universal-apple-darwin
           ls -la *-universal-apple-darwin
@@ -166,20 +163,26 @@ jobs:
           
           if (Test-Path "$nsisDir/ffmpeg-x86_64-pc-windows-msvc.exe") {
             Copy-Item "$nsisDir/ffmpeg-x86_64-pc-windows-msvc.exe" "$portableDir/ffmpeg-x86_64-pc-windows-msvc.exe"
-          } elseif (Test-Path "src-tauri/ffmpeg-x86_64-pc-windows-msvc.exe") {
-            Copy-Item "src-tauri/ffmpeg-x86_64-pc-windows-msvc.exe" "$portableDir/ffmpeg-x86_64-pc-windows-msvc.exe"
+          } elseif (Test-Path "src-tauri/bin/ffmpeg-x86_64-pc-windows-msvc.exe") {
+            Copy-Item "src-tauri/bin/ffmpeg-x86_64-pc-windows-msvc.exe" "$portableDir/ffmpeg-x86_64-pc-windows-msvc.exe"
           }
           
           if (Test-Path "$nsisDir/yt-dlp-x86_64-pc-windows-msvc.exe") {
             Copy-Item "$nsisDir/yt-dlp-x86_64-pc-windows-msvc.exe" "$portableDir/yt-dlp-x86_64-pc-windows-msvc.exe"
-          } elseif (Test-Path "src-tauri/yt-dlp-x86_64-pc-windows-msvc.exe") {
-             Copy-Item "src-tauri/yt-dlp-x86_64-pc-windows-msvc.exe" "$portableDir/yt-dlp-x86_64-pc-windows-msvc.exe"
+          } elseif (Test-Path "src-tauri/bin/yt-dlp-x86_64-pc-windows-msvc.exe") {
+             Copy-Item "src-tauri/bin/yt-dlp-x86_64-pc-windows-msvc.exe" "$portableDir/yt-dlp-x86_64-pc-windows-msvc.exe"
           }
 
           if (Test-Path "$nsisDir/aria2c-x86_64-pc-windows-msvc.exe") {
             Copy-Item "$nsisDir/aria2c-x86_64-pc-windows-msvc.exe" "$portableDir/aria2c-x86_64-pc-windows-msvc.exe"
-          } elseif (Test-Path "src-tauri/aria2c-x86_64-pc-windows-msvc.exe") {
-             Copy-Item "src-tauri/aria2c-x86_64-pc-windows-msvc.exe" "$portableDir/aria2c-x86_64-pc-windows-msvc.exe"
+          } elseif (Test-Path "src-tauri/bin/aria2c-x86_64-pc-windows-msvc.exe") {
+             Copy-Item "src-tauri/bin/aria2c-x86_64-pc-windows-msvc.exe" "$portableDir/aria2c-x86_64-pc-windows-msvc.exe"
+          }
+
+          if (Test-Path "$nsisDir/rsgain-x86_64-pc-windows-msvc.exe") {
+            Copy-Item "$nsisDir/rsgain-x86_64-pc-windows-msvc.exe" "$portableDir/rsgain-x86_64-pc-windows-msvc.exe"
+          } elseif (Test-Path "src-tauri/bin/rsgain-x86_64-pc-windows-msvc.exe") {
+             Copy-Item "src-tauri/bin/rsgain-x86_64-pc-windows-msvc.exe" "$portableDir/rsgain-x86_64-pc-windows-msvc.exe"
           }
           
           Compress-Archive -Path "$portableDir/*" -DestinationPath "SceneClip_${version}_x64_portable.zip"

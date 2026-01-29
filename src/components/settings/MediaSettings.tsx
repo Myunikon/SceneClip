@@ -3,12 +3,13 @@ import { useTranslation, Trans } from 'react-i18next'
 import { Select } from '../ui'
 import { Switch } from '../ui'
 import { AppSettings } from '../../store/slices/types'
-import { PostProcessorPreset } from '../../types' // Import from global types
+import { PostProcessorPreset } from '../../types'
 import { SettingItem, SettingSection } from './SettingItem'
 import { Check, Plus, Trash2, X, Sliders } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
-interface QualitySettingsProps {
+
+interface MediaSettingsProps {
     settings: AppSettings
     setSetting: <K extends keyof AppSettings>(key: K, val: AppSettings[K]) => void
 }
@@ -24,7 +25,7 @@ const SEGMENT_OPTS = [
     { id: 'music_offtopic', label: 'Music' }
 ]
 
-export function QualitySettings({ settings, setSetting }: QualitySettingsProps) {
+export function MediaSettings({ settings, setSetting }: MediaSettingsProps) {
     const { t } = useTranslation()
 
     // Add Preset Form State
@@ -64,6 +65,8 @@ export function QualitySettings({ settings, setSetting }: QualitySettingsProps) 
 
     return (
         <div className="space-y-6">
+
+
             {/* Video Content Section */}
             <SettingSection title={t('settings.quality.video')}>
                 <div className="grid grid-cols-2 gap-4">
@@ -107,7 +110,6 @@ export function QualitySettings({ settings, setSetting }: QualitySettingsProps) 
                     />
                 </SettingItem>
 
-                {/* Refactored SponsorBlock Segment Picker */}
                 {settings.useSponsorBlock && (
                     <div className="mt-4 animate-in fade-in slide-in-from-top-1">
                         <p className="text-xs font-semibold uppercase text-muted-foreground mb-3">
@@ -150,30 +152,31 @@ export function QualitySettings({ settings, setSetting }: QualitySettingsProps) 
                 )}
             </SettingSection>
 
-            {/* Audio Section */}
-            <SettingSection title={t('settings.quality.audio') || "Audio Processing"}>
-                <SettingItem
-                    title={t('settings.quality.audio_normalization') || "Loudness Normalization"}
-                    description={t('settings.quality.audio_normalization_desc')}
-                >
-                    <Switch
-                        checked={settings.audioNormalization}
-                        onCheckedChange={(val) => setSetting('audioNormalization', val)}
-                    />
-                </SettingItem>
-            </SettingSection>
+
 
             {/* Metadata Section */}
             <SettingSection title={t('settings.quality.metadata') || "Metadata"}>
                 <div className="space-y-1">
-                    <SettingItem title={t('settings.quality.embed_metadata')}>
+                    <SettingItem title={t('settings.quality.embed_metadata')} description={t('settings.quality.embed_metadata_desc')}>
                         <Switch checked={settings.embedMetadata} onCheckedChange={(val) => setSetting('embedMetadata', val)} />
                     </SettingItem>
-                    <SettingItem title={t('settings.quality.embed_thumbnail')}>
+                    <SettingItem title={t('settings.quality.embed_thumbnail')} description={t('settings.quality.embed_thumbnail_desc')}>
                         <Switch checked={settings.embedThumbnail} onCheckedChange={(val) => setSetting('embedThumbnail', val)} />
                     </SettingItem>
-                    <SettingItem title={t('settings.quality.embed_chapters')}>
+                    <SettingItem title={t('settings.quality.embed_chapters')} description={t('settings.quality.embed_chapters_desc')}>
                         <Switch checked={settings.embedChapters} onCheckedChange={(val) => setSetting('embedChapters', val)} />
+                    </SettingItem>
+
+                    {/* Moved Metadata Enhancer from Advanced */}
+                    {/* Moved Metadata Enhancer from Advanced */}
+                    <SettingItem
+                        title={t('settings.advanced.content_enhancements.metadata_enhancer') || "Metadata Enhancer"}
+                        description={t('settings.advanced.content_enhancements.metadata_enhancer_desc')}
+                    >
+                        <Switch
+                            checked={settings.useMetadataEnhancer}
+                            onCheckedChange={(val) => setSetting('useMetadataEnhancer', val)}
+                        />
                     </SettingItem>
                 </div>
 
@@ -188,7 +191,7 @@ export function QualitySettings({ settings, setSetting }: QualitySettingsProps) 
                 </div>
             </SettingSection>
 
-            {/* Post-Processing Presets (Refactored) */}
+            {/* Post-Processing Presets */}
             <SettingSection
                 title={
                     <div className="flex items-center justify-between w-full">

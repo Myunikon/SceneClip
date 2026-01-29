@@ -210,8 +210,8 @@ export interface AppSettings {
     audioNormalization: boolean // Loudness Normalization (EBU R128)
     historyRetentionDays: number // Days to keep completed tasks in history (-1 = forever, 0 = never)
     maxHistoryItems: number // Max number of completed tasks to keep (-1 = unlimited)
-
     useMetadataEnhancer: boolean
+    useSmartProxy: boolean
     useReplayGain: boolean
     usePoToken: boolean
     poToken: string

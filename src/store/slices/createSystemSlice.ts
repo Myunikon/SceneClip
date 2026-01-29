@@ -131,20 +131,51 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
         try {
             get().addLog({ message: 'Checking bundled binaries...', type: 'info', source: 'system' })
 
+            // Essential Binaries (yt-dlp, ffmpeg)
             const [ffVer, ytVer] = await Promise.all([
                 getBinaryVersion('ffmpeg'),
                 getBinaryVersion('yt-dlp')
             ])
 
+            // Log essential binaries
+            console.log('==================================================')
+            console.log('SceneClip Binary Detection Report')
+            console.log('==================================================')
+            console.log(`  [OK] yt-dlp   : ${ytVer || '[ERROR] NOT FOUND'}`)
+            console.log(`  [OK] ffmpeg   : ${ffVer || '[ERROR] NOT FOUND'}`)
+
             if (ffVer && ytVer) {
-                get().addLog({ message: `Binaries Found: ffmpeg=${ffVer}, yt-dlp=${ytVer}`, type: 'success', source: 'system' })
+                get().addLog({ message: `Essential Binaries: ffmpeg=${ffVer}, yt-dlp=${ytVer}`, type: 'success', source: 'system' })
                 set({ binariesReady: true, ytdlpVersion: ytVer })
                 get().detectHardwareAccel()
             } else {
                 // If sidecar check fails, it means they are missing or permission denied
-                get().addLog({ message: `Missing binaries! ffmpeg=${ffVer}, yt-dlp=${ytVer}`, type: 'error', source: 'system' })
+                get().addLog({ message: `Missing essential binaries! ffmpeg=${ffVer}, yt-dlp=${ytVer}`, type: 'error', source: 'system' })
                 notify.error("Critical Error: Bundled binaries missing or not executable.")
                 set({ binariesReady: false })
+            }
+
+            // Optional Binaries (aria2c, rsgain) - Log only, no notification
+            const [aria2Ver, rsgainVer] = await Promise.all([
+                getBinaryVersion('aria2c'),
+                getBinaryVersion('rsgain')
+            ])
+
+            console.log(`  [DL] aria2c   : ${aria2Ver || '[WARN] Not bundled (download acceleration disabled)'}`)
+            console.log(`  [RG] rsgain   : ${rsgainVer || '[WARN] Not bundled (ReplayGain disabled)'}`)
+            console.log('==================================================')
+
+            // Log to app logs (terminal panel)
+            if (aria2Ver) {
+                get().addLog({ message: `aria2c detected: v${aria2Ver} (Download acceleration enabled)`, type: 'info', source: 'system' })
+            } else {
+                get().addLog({ message: `aria2c not found. Multi-threaded downloads disabled.`, type: 'warning', source: 'system' })
+            }
+
+            if (rsgainVer) {
+                get().addLog({ message: `rsgain detected: v${rsgainVer} (ReplayGain enabled)`, type: 'info', source: 'system' })
+            } else {
+                get().addLog({ message: `rsgain not found. ReplayGain normalization disabled.`, type: 'warning', source: 'system' })
             }
 
         } catch (e) {

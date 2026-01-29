@@ -31,9 +31,15 @@ dist-ssr
 # Tauri
 src-tauri/target/
 src-tauri/gen/
+src-tauri/bin/
 src-tauri/ffmpeg*
 src-tauri/yt-dlp*
+src-tauri/aria2c*
+src-tauri/rsgain*
 src-tauri/binaries/
+
+# TanStack
+.tanstack/
 
 # Project specific
 Perbaikan/

@@ -6,7 +6,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     language: 'en',
     launchAtStartup: false,
     startMinimized: false,
-    closeAction: 'minimize',
+    closeAction: 'quit',
     hasSeenOnboarding: false,
 
     downloadPath: '',
@@ -40,12 +40,13 @@ export const DEFAULT_SETTINGS: AppSettings = {
     historyRetentionDays: 30, // Default: keep 30 days of history
     maxHistoryItems: 100, // Default: keep up to 100 completed tasks (-1 = unlimited)
 
-    useMetadataEnhancer: true, // Default: ON
-    useReplayGain: false, // Default: OFF (needs external tools like rsgain)
-    usePoToken: true, // Default: ON (crucial for 403 bypass)
+    useMetadataEnhancer: false, // Default: OFF
+    useSmartProxy: false, // Default: OFF
+    useReplayGain: false, // Default: OFF
+    usePoToken: false, // Default: OFF
     poToken: '',
     visitorData: '',
-    useChromeCookieUnlock: true, // Default: ON (Windows security bypass)
+    useChromeCookieUnlock: false, // Default: OFF
 
     enableDesktopNotifications: true, // Default: enabled
     preventSuspendDuringDownload: true, // Default: prevent sleep during downloads (ON)

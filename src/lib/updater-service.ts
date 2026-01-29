@@ -4,10 +4,29 @@ import { fetch } from '@tauri-apps/plugin-http'
 /**
  * Get the version of a sidecar binary
  */
-export async function getBinaryVersion(binaryName: 'yt-dlp' | 'ffmpeg'): Promise<string | null> {
+export async function getBinaryVersion(binaryName: 'yt-dlp' | 'ffmpeg' | 'aria2c' | 'rsgain'): Promise<string | null> {
     try {
-        // match the name in capabilities/default.json
-        const cmd = Command.sidecar(binaryName, binaryName === 'ffmpeg' ? ['-version'] : ['--version'])
+        // match the name in capabilities/default.json or tauri.conf.json
+        // Since we moved binaries to 'bin/' folder, we must prefix the command name.
+        const sidecarName = `bin/${binaryName}`
+
+        // Determine the correct version argument for each binary
+        let versionArg: string[]
+        switch (binaryName) {
+            case 'ffmpeg':
+                versionArg = ['-version']
+                break
+            case 'aria2c':
+                versionArg = ['--version']
+                break
+            case 'rsgain':
+                versionArg = ['--version']
+                break
+            default:
+                versionArg = ['--version']
+        }
+
+        const cmd = Command.sidecar(sidecarName, versionArg)
         const output = await cmd.execute()
 
         console.log(`[Binary Check] ${binaryName} exit code: ${output.code}`)
@@ -19,8 +38,19 @@ export async function getBinaryVersion(binaryName: 'yt-dlp' | 'ffmpeg'): Promise
             stdout = stdout.trim()
             const fullOutput = stdout || stderr // Fallback to stderr if stdout is empty
 
+            // Parse version string based on binary type
             if (binaryName === 'ffmpeg') {
                 const match = fullOutput.match(/ffmpeg version ([^\s]+)/i)
+                return match ? match[1] : fullOutput.split('\n')[0]
+            }
+            if (binaryName === 'aria2c') {
+                // aria2 version 1.36.0
+                const match = fullOutput.match(/aria2 version ([^\s]+)/i)
+                return match ? match[1] : fullOutput.split('\n')[0]
+            }
+            if (binaryName === 'rsgain') {
+                // rsgain 3.6 (Linux/Mac) or similar
+                const match = fullOutput.match(/rsgain\s+([^\s]+)/i)
                 return match ? match[1] : fullOutput.split('\n')[0]
             }
             return fullOutput.split('\n')[0]

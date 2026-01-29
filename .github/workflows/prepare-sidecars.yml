@@ -1,0 +1,53 @@
+name: Prepare Sidecar Binaries
+# Downloads and packages all necessary sidecars for all supported architectures.
+# This workflow is manually triggered or runs monthly.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 1 * *' # Monthly update
+
+jobs:
+  gather-binaries:
+    name: Gather Binaries
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Create Bin Directory
+        run: mkdir -p src-tauri/bin
+
+      - name: Download All Binaries (Windows x64)
+        run: node scripts/setup-binaries.js --target win-x64
+
+      - name: Download All Binaries (macOS x64)
+        run: node scripts/setup-binaries.js --target mac-x64
+
+      - name: Download All Binaries (macOS arm64)
+        run: node scripts/setup-binaries.js --target mac-arm64
+
+      - name: Download All Binaries (Linux x64)
+        run: node scripts/setup-binaries.js --target linux-x64
+
+      - name: List Gathered Binaries
+        run: ls -lh src-tauri/bin/
+
+      - name: Create 'binaries' Tag Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: binaries
+          name: "Standard Sidecar Binaries"
+          draft: false
+          prerelease: true
+          files: src-tauri/bin/*
+          token: ${{ secrets.GITHUB_TOKEN }}

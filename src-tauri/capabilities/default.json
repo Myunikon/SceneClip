@@ -171,17 +171,22 @@
       "identifier": "shell:allow-execute",
       "allow": [
         {
-          "name": "yt-dlp",
+          "name": "bin/yt-dlp",
           "sidecar": true,
           "args": true
         },
         {
-          "name": "ffmpeg",
+          "name": "bin/ffmpeg",
           "sidecar": true,
           "args": true
         },
         {
-          "name": "aria2c",
+          "name": "bin/aria2c",
+          "sidecar": true,
+          "args": true
+        },
+        {
+          "name": "bin/rsgain",
           "sidecar": true,
           "args": true
         },
@@ -196,17 +201,22 @@
       "identifier": "shell:allow-spawn",
       "allow": [
         {
-          "name": "yt-dlp",
+          "name": "bin/yt-dlp",
           "sidecar": true,
           "args": true
         },
         {
-          "name": "ffmpeg",
+          "name": "bin/ffmpeg",
           "sidecar": true,
           "args": true
         },
         {
-          "name": "aria2c",
+          "name": "bin/aria2c",
+          "sidecar": true,
+          "args": true
+        },
+        {
+          "name": "bin/rsgain",
           "sidecar": true,
           "args": true
         },

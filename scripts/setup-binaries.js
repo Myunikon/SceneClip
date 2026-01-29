@@ -9,7 +9,7 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const BIN_DIR = path.resolve(__dirname, '../src-tauri');
+const BIN_DIR = path.resolve(__dirname, '../src-tauri/bin');
 
 if (!fs.existsSync(BIN_DIR)) {
     fs.mkdirSync(BIN_DIR, { recursive: true });
@@ -24,6 +24,17 @@ const TARGETS = {
         ffmpegUrl: 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip',
         ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe',
         aria2Url: 'https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0-win-64bit-build1.zip',
+        rsgainUrl: 'https://github.com/complexlogic/rsgain/releases/download/v3.6/rsgain_3.6_win64.zip',
+        ext: '.exe'
+    },
+    'win-x86': {
+        triple: 'i686-pc-windows-msvc',
+        platform: 'win32',
+        arch: 'x86',
+        ffmpegUrl: 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win32-gpl.zip',
+        ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_x86.exe',
+        aria2Url: 'https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0-win-32bit-build1.zip',
+        rsgainUrl: null, // No 32-bit binary
         ext: '.exe'
     },
     'mac-x64': {
@@ -34,6 +45,7 @@ const TARGETS = {
         ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos',
         // Official Mac build (Intel). Runs via Rosetta on ARM.
         aria2Url: 'https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0-osx-darwin.tar.bz2',
+        rsgainUrl: 'https://github.com/complexlogic/rsgain/releases/download/v3.6/rsgain_3.6_macos-x64.zip',
         ext: ''
     },
     'mac-arm64': {
@@ -46,6 +58,7 @@ const TARGETS = {
         ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos',
         // Use Intel build via Rosetta
         aria2Url: 'https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0-osx-darwin.tar.bz2',
+        rsgainUrl: 'https://github.com/complexlogic/rsgain/releases/download/v3.6/rsgain_3.6_macos-arm64.zip',
         ext: ''
     },
     'linux-x64': {
@@ -55,6 +68,7 @@ const TARGETS = {
         ffmpegUrl: 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz',
         ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp',
         aria2Url: 'https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0-linux-gnu-64bit-build1.tar.bz2',
+        rsgainUrl: null, // No static binary available for Linux. Use package manager.
         ext: ''
     }
 };
@@ -243,6 +257,52 @@ async function setupTarget(key, config) {
             console.log(`[SKIP] ${aria2Name} exists`);
         }
 
+        // 4. Setup rsgain (ReplayGain)
+        if (config.rsgainUrl) {
+            const rsgainName = `rsgain-${config.triple}${config.ext}`;
+            const rsgainPath = path.join(BIN_DIR, rsgainName);
+
+            if (!fs.existsSync(rsgainPath)) {
+                let archiveName = 'rsgain_archive';
+                if (config.rsgainUrl.endsWith('.zip')) archiveName += '.zip';
+
+                const archivePath = path.join(tempDir, archiveName);
+                console.log(`[DOWNLOAD] rsgain from ${config.rsgainUrl}...`);
+                await downloadFile(config.rsgainUrl, archivePath);
+                await extractArchive(archivePath, tempDir);
+
+                // Find binary
+                const findFile = (dir, filename) => {
+                    const entries = fs.readdirSync(dir, { withFileTypes: true });
+                    for (const entry of entries) {
+                        const fullPath = path.join(dir, entry.name);
+                        if (entry.isDirectory()) {
+                            const found = findFile(fullPath, filename);
+                            if (found) return found;
+                        } else if (entry.name === filename) {
+                            return fullPath;
+                        }
+                    }
+                    return null;
+                };
+
+                const targetBinaryName = config.platform === 'win32' ? 'rsgain.exe' : 'rsgain';
+                const foundBinary = findFile(tempDir, targetBinaryName);
+
+                if (foundBinary) {
+                    fs.copyFileSync(foundBinary, rsgainPath);
+                    fs.chmodSync(rsgainPath, 0o755);
+                    console.log(`[OK] Saved ${rsgainName}`);
+                } else {
+                    console.error(`[ERROR] Could not find ${targetBinaryName} in extracted archive for ${key}`);
+                }
+            } else {
+                console.log(`[SKIP] ${rsgainName} exists`);
+            }
+        } else if (config.platform === 'linux') {
+            console.log('[INFO] Skipping rsgain (No static binary for Linux). Please install via package manager (apt install rsgain or equivalent).');
+        }
+
     } catch (e) {
         console.error(`[ERROR] Handling ${key}: ${e.message}`);
     } finally {
@@ -271,6 +331,7 @@ async function main() {
     if (downloadAll) {
         console.log('Mode: Download ALL platforms (Windows, macOS, Linux)');
         await setupTarget('win-x64', TARGETS['win-x64']);
+        await setupTarget('win-x86', TARGETS['win-x86']);
         await setupTarget('mac-x64', TARGETS['mac-x64']);
         await setupTarget('mac-arm64', TARGETS['mac-arm64']);
         await setupTarget('linux-x64', TARGETS['linux-x64']);

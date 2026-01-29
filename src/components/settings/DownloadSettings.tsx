@@ -107,6 +107,8 @@ export function DownloadSettings({ settings, setSetting }: DownloadSettingsProps
                 </div>
             </SettingSection>
 
+
+
             <SettingSection title={t('settings.downloads.defaults')}>
                 <div className="space-y-4">
                     <div className="space-y-2">

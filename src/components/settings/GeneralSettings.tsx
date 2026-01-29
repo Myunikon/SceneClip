@@ -113,6 +113,7 @@ export function GeneralSettings({ settings, setSetting }: GeneralSettingsProps) 
                 <div className="space-y-1">
                     <SettingItem
                         title={t('settings.general.launch_startup')}
+                        description={t('settings.general.launch_startup_desc')}
                         className="hover:bg-secondary/30 rounded-lg transition-colors cursor-pointer"
                     >
                         <Switch checked={settings.launchAtStartup} onCheckedChange={handleAutostart} />
@@ -120,31 +121,15 @@ export function GeneralSettings({ settings, setSetting }: GeneralSettingsProps) 
 
                     <SettingItem
                         title={t('settings.general.start_minimized')}
+                        description={t('settings.general.start_minimized_desc')}
                         className="hover:bg-secondary/30 rounded-lg transition-colors cursor-pointer"
                     >
                         <Switch checked={settings.startMinimized} onCheckedChange={val => setSetting('startMinimized', val)} />
                     </SettingItem>
 
-                    <SettingItem
-                        title={t('settings.general.close_action')}
-                        layout="horizontal"
-                        description={settings.closeAction === 'minimize'
-                            ? (t('settings.general.minimize_desc') || "App keeps running in background")
-                            : (t('settings.general.quit_desc') || "App terminates completely")}
-                    >
-                        <div className="w-48">
-                            <Select
-                                value={settings.closeAction}
-                                onChange={(val) => setSetting('closeAction', val as AppSettings['closeAction'])}
-                                options={[
-                                    { value: 'minimize', label: t('settings.general.minimize_tray') || "Minimize to Tray" },
-                                    { value: 'quit', label: t('settings.general.quit_app') || "Quit Application" }
-                                ]}
-                            />
-                        </div>
-                    </SettingItem>
 
-                    <div className="h-px bg-border/50 my-2 mx-2" />
+
+
 
                     <SettingItem
                         title={t('settings.general.desktop_notifications') || "Desktop Notifications"}
@@ -167,8 +152,51 @@ export function GeneralSettings({ settings, setSetting }: GeneralSettingsProps) 
                             onCheckedChange={val => setSetting('preventSuspendDuringDownload', val)}
                         />
                     </SettingItem>
+
+                    <SettingItem
+                        title={t('settings.general.close_action')}
+                        layout="horizontal"
+                        description={settings.closeAction === 'minimize'
+                            ? (t('settings.general.minimize_desc') || "App keeps running in background")
+                            : (t('settings.general.quit_desc') || "App terminates completely")}
+                        className="p-2 hover:bg-secondary/30 rounded-lg transition-colors"
+                    >
+                        <div className="w-48">
+                            <Select
+                                value={settings.closeAction}
+                                onChange={(val) => setSetting('closeAction', val as AppSettings['closeAction'])}
+                                options={[
+                                    { value: 'minimize', label: t('settings.general.minimize_tray') || "Minimize to Tray" },
+                                    { value: 'quit', label: t('settings.general.quit_app') || "Quit Application" }
+                                ]}
+                            />
+                        </div>
+                    </SettingItem>
+
+                    {/* Post-Download Action (Moved from Downloads) */}
+                    <SettingItem
+                        title={t('settings.advanced.post_action') || "Post-Download Action"}
+                        layout="horizontal"
+                        description={settings.postDownloadAction === 'shutdown'
+                            ? (t('settings.advanced.shutdown_warning') || "Warning: Forces shutdown!")
+                            : (t('settings.advanced.post_download_action_desc') || "Action after all downloads finish")}
+                        className={settings.postDownloadAction === 'shutdown' ? 'bg-red-500/5 hover:bg-red-500/10 rounded-lg transition-colors' : 'hover:bg-secondary/30 rounded-lg transition-colors'}
+                    >
+                        <div className="w-48">
+                            <Select
+                                value={settings.postDownloadAction || 'none'}
+                                onChange={(val) => setSetting('postDownloadAction', val as AppSettings['postDownloadAction'])}
+                                options={[
+                                    { value: "none", label: t('settings.advanced.post_actions.none') || "Do Nothing" },
+                                    { value: "sleep", label: t('settings.advanced.post_actions.sleep') || "Sleep System" },
+                                    { value: "shutdown", label: t('settings.advanced.post_actions.shutdown') || "Shutdown System" }
+                                ]}
+                            />
+                        </div>
+                    </SettingItem>
                 </div>
             </SettingSection>
+
         </div>
     )
 }

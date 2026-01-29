@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Globe, Cpu, Palette, HardDrive, Film, Info, FileClock } from 'lucide-react'
+import { Globe, Palette, HardDrive, Film, Info, FileClock, Cpu } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../../lib/utils'
@@ -8,18 +8,16 @@ import { useShallow } from 'zustand/react/shallow'
 import { TerminalView } from './TerminalView'
 import { AppSettings } from '../../store/slices/types'
 
-// NEW HEADER IMPORTS
+// COMPONENTS
 import { GeneralSettings } from './GeneralSettings'
 import { DownloadSettings } from './DownloadSettings'
-import { QualitySettings } from './QualitySettings'
+import { MediaSettings } from './MediaSettings'
 import { NetworkSettings } from './NetworkSettings'
 import { SystemSettings } from './SystemSettings'
 import { AboutSettings } from './AboutSettings'
 
-
-
 export interface SettingsViewProps {
-    initialTab?: 'general' | 'downloads' | 'quality' | 'network' | 'advanced' | 'about' | 'logs'
+    initialTab?: 'general' | 'downloads' | 'media' | 'network' | 'system' | 'about' | 'logs'
 }
 
 export function SettingsView({ initialTab }: SettingsViewProps) {
@@ -33,36 +31,35 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
     const { t } = useTranslation()
     const [showEasterEgg, setShowEasterEgg] = useState(false)
 
-    // Auto-Save: Direct Store Updates with Type Safety
+    // Auto-Save
     const setSetting = <K extends keyof AppSettings>(key: K, val: AppSettings[K]) => {
         updateSettings({ ...settings, [key]: val })
     }
 
-    const [activeTab, setActiveTab] = useState<'general' | 'downloads' | 'quality' | 'network' | 'advanced' | 'about' | 'logs'>('general')
+    const [activeTab, setActiveTab] = useState<'general' | 'downloads' | 'media' | 'network' | 'system' | 'about' | 'logs'>('general')
 
-    // Sync prop changes (Deep Linking)
+    // Deep Linking
     useState(() => {
         if (initialTab) setActiveTab(initialTab)
     })
-    // Also watch for changes if user navigates while mounted
+
     const [prevInitialTab, setPrevInitialTab] = useState(initialTab)
     if (initialTab !== prevInitialTab) {
         setPrevInitialTab(initialTab)
         if (initialTab) setActiveTab(initialTab)
     }
 
-    type TabId = 'general' | 'downloads' | 'quality' | 'network' | 'advanced' | 'about' | 'logs'
+    type TabId = 'general' | 'downloads' | 'media' | 'network' | 'system' | 'about' | 'logs'
     const tabs = [
-        { id: 'general' as TabId, label: t('settings.tabs.general'), icon: Palette }, // Appearance
-        { id: 'downloads' as TabId, label: t('settings.tabs.downloads'), icon: HardDrive }, // Storage
-        { id: 'quality' as TabId, label: t('settings.tabs.quality'), icon: Film }, // Quality/Media
-        { id: 'network' as TabId, label: t('settings.tabs.network'), icon: Globe }, // Network
-        { id: 'advanced' as TabId, label: t('settings.tabs.advanced'), icon: Cpu }, // System
-        ...(settings.developerMode ? [{ id: 'logs' as TabId, label: t('settings.tabs.logs') || "Logs", icon: FileClock }] : []), // History/Logs
-        { id: 'about' as TabId, label: t('settings.tabs.about'), icon: Info }, // About
+        { id: 'general' as TabId, label: t('settings.tabs.general') || "General", icon: Palette },
+        { id: 'downloads' as TabId, label: t('settings.tabs.downloads') || "Downloads", icon: HardDrive },
+        { id: 'media' as TabId, label: t('settings.tabs.media') || "Media", icon: Film },
+        { id: 'network' as TabId, label: t('settings.tabs.network') || "Network", icon: Globe },
+        { id: 'system' as TabId, label: t('settings.tabs.system') || "System", icon: Cpu },
+        ...(settings.developerMode ? [{ id: 'logs' as TabId, label: t('settings.tabs.logs') || "Logs", icon: FileClock }] : []),
+        { id: 'about' as TabId, label: t('settings.tabs.about') || "About", icon: Info },
     ]
 
-    // Scroll Logic for Large Title Collapse
     const scrollRef = useRef<HTMLDivElement>(null)
     const [isScrolled, setIsScrolled] = useState(false)
 
@@ -109,27 +106,9 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
                             onClick={() => setShowEasterEgg(false)}
                             className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-full transition-all hover:scale-105 active:scale-95 shadow-lg shadow-orange-500/25"
                         >
-                            {t('settings.about_page.awesome')}
+                            {t('settings.about_page.awesome') || "Awesome!"}
                         </button>
                     </motion.div>
-                    {/* Confetti Particles */}
-                    {[...Array(20)].map((_, i) => (
-                        <motion.div
-                            key={i}
-                            className="absolute w-2 h-2 rounded-full pointer-events-none"
-                            style={{
-                                backgroundColor: ['#f97316', '#ef4444', '#fbbf24', '#b91c1c'][i % 4],
-                                left: '50%', top: '50%'
-                            }}
-                            animate={{
-                                x: (Math.random() - 0.5) * 500,
-                                y: (Math.random() - 0.5) * 500,
-                                opacity: [1, 0],
-                                scale: [0, 1.5]
-                            }}
-                            transition={{ duration: 1.5, ease: "easeOut" }}
-                        />
-                    ))}
                 </div>
             )}
 
@@ -161,12 +140,10 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
 
             {/* DESKTOP: Native Sidebar */}
             <div className="hidden md:flex flex-col w-64 bg-secondary/10 border-r border-border/40 shrink-0 backdrop-blur-xl pt-6 px-3">
-                {/* Settings Header in Sidebar */}
                 <div className="px-3 mb-4">
-                    <h2 className="text-xl font-bold tracking-tight text-foreground/80">{t('settings.title')}</h2>
+                    <h2 className="text-xl font-bold tracking-tight text-foreground/80">{t('settings.title') || "Settings"}</h2>
                 </div>
 
-                {/* Tab Buttons */}
                 <div className="flex flex-col gap-1">
                     {tabs.map(tab => (
                         <button
@@ -188,8 +165,6 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-
-                {/* Collapsible Header (Desktop) - Mimics macOS Toolbar/Title separation */}
                 <div className={cn(
                     "hidden md:flex items-center px-8 py-4 border-b transition-all duration-500 z-10 bg-background/40 backdrop-blur-xl absolute top-0 left-0 right-0 supports-[backdrop-filter]:bg-background/20",
                     isScrolled ? "border-border/40 h-14 shadow-sm translate-y-0 opacity-100" : "border-transparent h-14 -translate-y-full opacity-0 pointer-events-none"
@@ -203,7 +178,6 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
                     className="flex-1 overflow-y-auto px-4 md:px-8 pb-20 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20"
                 >
                     <div className="max-w-4xl mx-auto w-full">
-                        {/* Large Title */}
                         <div className="pt-8 pb-6 md:pt-10 md:pb-8">
                             <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground animate-in fade-in slide-in-from-bottom-2 duration-500">
                                 {activeTabLabel}
@@ -225,8 +199,8 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
                                 />
                             )}
 
-                            {activeTab === 'quality' && (
-                                <QualitySettings
+                            {activeTab === 'media' && (
+                                <MediaSettings
                                     settings={settings}
                                     setSetting={setSetting}
                                 />
@@ -239,7 +213,7 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
                                 />
                             )}
 
-                            {activeTab === 'advanced' && (
+                            {activeTab === 'system' && (
                                 <SystemSettings
                                     settings={settings}
                                     setSetting={setSetting}
@@ -247,9 +221,6 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
                                 />
                             )}
 
-                            {/* Logs are heavy, lets keep them conditional or check performance. 
-                                Actually, logs should definitely stick around to not lose history if it was just an in-memory buffer.
-                                But typically TerminalView might have its own internal state. Let's persist it too. */}
                             <div className={cn("h-[calc(100vh-200px)] min-h-[400px] animate-in fade-in slide-in-from-bottom-2", activeTab === 'logs' ? 'block' : 'hidden')}>
                                 <TerminalView />
                             </div>

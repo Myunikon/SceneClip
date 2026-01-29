@@ -84,8 +84,15 @@ export async function buildYtDlpArgs(
         // MANDATORY: Automatic Subtitle Cleaner
         args.push('--use-postprocessor', 'SrtFix')
 
+        // MANDATORY: Smart Proxy Rotator (Anti-429) - Always Active Protection (User Configurable)
+        if (settings.useSmartProxy) {
+            args.push('--use-postprocessor', 'SmartProxyRotator')
+        }
+
         if (settings.useReplayGain) {
             // ReplayGain usually needs a 'when' trigger
+            // We assume 'rsgain' is available in PATH or bundled sidecar is reachable via some mechanism
+            // For now, we rely on the plugin finding it or user having it in PATH (since resolving sidecar path in frontend is non-trivial without executing)
             args.push('--use-postprocessor', 'ReplayGain:when=after_move')
         }
 

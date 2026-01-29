@@ -44,9 +44,10 @@
       "icons/icon.ico"
     ],
     "externalBin": [
-      "yt-dlp",
-      "ffmpeg",
-      "aria2c"
+      "bin/yt-dlp",
+      "bin/ffmpeg",
+      "bin/aria2c",
+      "bin/rsgain"
     ],
     "resources": [
       "resources/plugins"

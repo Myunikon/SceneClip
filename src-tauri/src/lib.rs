@@ -5,13 +5,27 @@ use tauri::{
 };
 
 mod commands;
+mod download_queue;
 mod server;
+mod ytdlp; // Added
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(
+            tauri_plugin_log::Builder::default()
+                .targets([
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stdout),
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir {
+                        file_name: Some("sceneclip".to_string()),
+                    }),
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Webview),
+                ])
+                .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepAll)
+                .build(),
+        )
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec![]),
@@ -23,9 +37,8 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
-            println!("{}, {argv:?}, {_cwd}", app.package_info().name);
+            log::info!("{}, {argv:?}, {_cwd}", app.package_info().name);
             let _ = app
                 .get_webview_window("main")
                 .expect("no main window")
@@ -36,9 +49,12 @@ pub fn run() {
             commands::system::perform_system_action,
             commands::system::check_gpu_support,
             commands::system::set_window_effects,
+            commands::system::validate_binary,
+            commands::system::open_log_dir,
             commands::process::suspend_process,
             commands::process::suspend_process,
             commands::process::resume_process,
+            commands::process::kill_process_tree,
             commands::power::prevent_suspend,
             commands::power::is_suspend_inhibited,
             commands::stats::get_system_stats,
@@ -47,6 +63,21 @@ pub fn run() {
             commands::keyring::delete_credential,
             commands::download::download_with_channel,
             commands::download::cancel_download,
+            commands::filesystem::get_unique_filepath,
+            commands::filesystem::save_temp_cookie_file,
+            commands::ffmpeg::compress_media,
+            commands::ffmpeg::split_media_chapters,
+            commands::settings::validate_path,
+            commands::settings::validate_url,
+            commands::settings::is_youtube_url,
+            commands::settings::validate_url,
+            commands::settings::is_youtube_url,
+            // Queue Commands
+            commands::queue::add_to_queue,
+            commands::queue::remove_from_queue,
+            commands::queue::pause_queue,
+            commands::queue::resume_queue,
+            commands::queue::get_queue_state,
         ])
         .setup(|app| {
             let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
@@ -124,6 +155,16 @@ pub fn run() {
             sys.refresh_cpu_usage();
 
             app.manage(std::sync::Mutex::new(sys));
+
+            // Queue System Init
+            let queue_state = std::sync::Arc::new(crate::download_queue::QueueState::new());
+            app.manage(queue_state.clone());
+
+            // Spawn Background Queue Processor
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                crate::download_queue::start_queue_processor(handle, queue_state).await;
+            });
 
             server::init(app.handle().clone());
 

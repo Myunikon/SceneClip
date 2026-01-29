@@ -91,7 +91,7 @@ export const ms = {
         saved: "Disimpan!",
         about: "Tentang",
         tabs: {
-            general: "Tampilan",
+            general: "Umum",
             downloads: "Penyimpanan",
             quality: "Kualiti",
             network: "Rangkaian",
@@ -280,16 +280,13 @@ export const ms = {
             errors: {
                 open: "Buka Folder"
             },
-            source_disabled: "Dinyahaktifkan (Lalai)",
-            browser_type: "Jenis Pelayar",
-            no_file: "Tiada fail dipilih...",
-            clear_path: "Kosongkan Laluan",
-            tech_paths: "Path Teknis & Binari",
-            cookie_path: "Laluan Fail Cookie",
-            browse_btn: "Semak... (Browse)",
-            auto_managed: "Diurus-automatik",
-            detected_gpu: "GPU Dikesan:",
-            unknown_integrated: "Tidak Diketahui / Bersepadu",
+            validation: {
+                checking: "Menyemak...",
+                valid: "Binary Sah",
+                invalid: "Binary Tidak Sah",
+                success_desc: "Versi ditemui: {{version}}",
+                error_desc: "Gagal pengesahan. Pastikan fail adalah binary boleh laku."
+            },
             video_processing: {
                 title: "Pemprosesan Video",
                 hw_accel: "Pecutan Perkakasan",
@@ -474,6 +471,7 @@ export const ms = {
         preview: {
             failed: "Pratonton Gagal",
             no_data: "Tiada data",
+            no_thumbnail: "Tiada gambar kecil",
             instruction: "Masukkan URL sah untuk lihat pratonton"
         },
         formats: {

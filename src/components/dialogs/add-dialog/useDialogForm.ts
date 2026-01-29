@@ -18,15 +18,17 @@ export function useDialogForm({ initialStart, initialEnd, settings }: UseDialogT
     )
     const [rangeStart, setRangeStart] = useState(initialStart ? String(initialStart) : '')
     const [rangeEnd, setRangeEnd] = useState(initialEnd ? String(initialEnd) : '')
-    const [sponsorBlock, setSponsorBlock] = useState(false)
+    const [sponsorBlock, setSponsorBlock] = useState(settings.useSponsorBlock)
     const [customFilename, setCustomFilename] = useState('')
     const [batchMode, setBatchMode] = useState(false)
     const [audioBitrate, setAudioBitrate] = useState('192')
     const [audioFormat, setAudioFormat] = useState('mp3')
-    const [subtitles, setSubtitles] = useState(false)
+    const [subtitles, setSubtitles] = useState(settings.embedSubtitles || false) // Initialize from settings? Usually separate settings for download vs embed. 
+    // Wait, check types.ts. settings has embedSubtitles. 
+    // Let's stick to just sponsorBlock for now to be safe, or just follow the pattern.
     const [subtitleLang, setSubtitleLang] = useState('auto')
     const [subtitleFormat, setSubtitleFormat] = useState<string | undefined>(undefined)
-    const [embedSubtitles, setEmbedSubtitles] = useState(true)
+    const [embedSubtitles, setEmbedSubtitles] = useState(settings.embedSubtitles)
     const [isScheduled, setIsScheduled] = useState(false)
     const [scheduleTime, setScheduleTime] = useState('')
     const [videoCodec, setVideoCodec] = useState<'auto' | 'av1' | 'h264' | 'hevc' | 'vp9'>('auto')

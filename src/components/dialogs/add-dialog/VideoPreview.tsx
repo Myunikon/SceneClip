@@ -16,6 +16,8 @@ interface VideoPreviewProps {
     url?: string
 }
 
+import { getProxiedSrc } from '../../../lib/image-proxy'
+
 export function VideoPreview({ loading, meta, error, t, url }: VideoPreviewProps) {
     const [imgError, setImgError] = useState(false)
     const [isPreviewOpen, setIsPreviewOpen] = useState(false)
@@ -34,7 +36,7 @@ export function VideoPreview({ loading, meta, error, t, url }: VideoPreviewProps
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isPreviewOpen])
 
-    const imageSrc = meta?.thumbnail
+    const imageSrc = getProxiedSrc(meta?.thumbnail)
 
     const handleOpenLink = async (e: React.MouseEvent) => {
         e.stopPropagation()

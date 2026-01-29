@@ -1,23 +1,30 @@
+import { invoke } from '@tauri-apps/api/core';
 import { getHostname, parse } from 'tldts';
 
 // Constants
-// Permissive Regex: Allow any HTTP/HTTPS URL
-// We let yt-dlp determine validity.
-// Update: Require at least one dot in the domain part to avoid single words like "standard" being caught
 export const VIDEO_URL_REGEX = /^https?:\/\/[\w.-]+\.[\w.-]+/i
-export const MAX_URL_LENGTH = 2000 // Increased for long tokens
+export const MAX_URL_LENGTH = 2000
 
 /**
- * Validates a potential video URL.
- * Now permissive to support all yt-dlp sites.
+ * Validates a potential video URL (Frontend Regex Pre-check)
+ * Use validateUrlBackend for robust checking.
  */
 export function isValidVideoUrl(text: string): boolean {
     if (!text || text.length > MAX_URL_LENGTH) return false
     return VIDEO_URL_REGEX.test(text.trim())
 }
 
-
-
+/**
+ * Validates URL using Rust backend (Strict & Consistent)
+ */
+export async function validateUrlBackend(url: string): Promise<boolean> {
+    try {
+        return await invoke('validate_url', { url });
+    } catch (e) {
+        console.error("Backend validation failed", e);
+        return false;
+    }
+}
 
 /**
  * Extracts a clean hostname from a URL.

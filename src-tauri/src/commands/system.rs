@@ -228,3 +228,51 @@ pub fn set_window_effects(app_handle: AppHandle, enable: bool) -> Result<(), Str
     }
     Ok(())
 }
+#[command]
+pub async fn validate_binary(path: String, flag: String) -> Result<String, String> {
+    let mut cmd = tokio::process::Command::new(&path);
+
+    #[cfg(target_os = "windows")]
+    {
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    }
+
+    cmd.arg(&flag);
+
+    match cmd.output().await {
+        Ok(output) => {
+            if output.status.success() {
+                let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+                if stdout.trim().is_empty() {
+                    // Fallback to stderr for some binaries that output version info there
+                    Ok(String::from_utf8_lossy(&output.stderr).to_string())
+                } else {
+                    Ok(stdout)
+                }
+            } else {
+                let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+                if stderr.trim().is_empty() {
+                    Err(format!("Exit code: {}", output.status.code().unwrap_or(-1)))
+                } else {
+                    Err(stderr)
+                }
+            }
+        }
+        Err(e) => Err(format!("Execution failed: {}", e)),
+    }
+}
+#[command]
+pub async fn open_log_dir(app_handle: AppHandle) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    let log_dir = app_handle.path().app_log_dir().map_err(|e| e.to_string())?;
+
+    if !log_dir.exists() {
+        return Err("Log directory does not exist".to_string());
+    }
+
+    app_handle
+        .opener()
+        .open_path(log_dir.to_string_lossy().to_string(), None::<String>)
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}

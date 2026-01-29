@@ -5,8 +5,7 @@
  * Extracted from createVideoSlice for better modularity.
  */
 
-import { Child, Command } from '@tauri-apps/plugin-shell'
-import { type } from '@tauri-apps/plugin-os'
+import { Child } from '@tauri-apps/plugin-shell'
 import { formatBytes, parseTime } from './utils'
 
 // =============================================================================
@@ -58,45 +57,11 @@ export const timeToSeconds = parseTime
  */
 export async function killProcessTree(pid: number, logFn: LogFunction): Promise<void> {
   try {
-    const osType = await type()
-
-    if (osType === 'windows') {
-      // Use PowerShell to kill the process and all children
-      const cmd = Command.create('run-powershell', [
-        '-NoProfile', '-Command',
-        `$children = Get-CimInstance Win32_Process | Where-Object { $_.ParentProcessId -eq ${pid} }; ` +
-        `foreach ($child in $children) { Stop-Process -Id $child.ProcessId -Force -ErrorAction SilentlyContinue }; ` +
-        `Stop-Process -Id ${pid} -Force -ErrorAction SilentlyContinue`
-      ])
-      const output = await cmd.execute()
-      if (output.code !== 0) {
-        // Decode stderr if it's not a string
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const stderr = typeof output.stderr === 'string' ? output.stderr : new TextDecoder().decode(output.stderr as any)
-        logFn({ message: `[Kill] Failed to terminate PID ${pid}: ${stderr.substring(0, 100)}`, type: 'warning' })
-      } else {
-        logFn({ message: `[Kill] Terminated process tree for PID ${pid} (Windows)`, type: 'info' })
-      }
-    } else {
-      // Unix (Linux/macOS): Use pkill -P to kill all child processes first
-      try {
-        const killChildren = Command.create('pkill', ['-P', String(pid)])
-        await killChildren.execute()
-      } catch {
-        // pkill may fail if no children exist - this is fine
-      }
-
-      // Then kill the parent process with SIGKILL (-9)
-      try {
-        const killParent = Command.create('kill', ['-9', String(pid)])
-        await killParent.execute()
-      } catch {
-        // Process may already be dead
-      }
-
-      logFn({ message: `[Kill] Terminated process tree for PID ${pid} (Unix)`, type: 'info' })
-    }
+    const { invoke } = await import('@tauri-apps/api/core')
+    await invoke('kill_process_tree', { pid })
+    logFn({ message: `[Kill] Terminated process tree for PID ${pid} (Backend)`, type: 'info' })
   } catch (e) {
+    logFn({ message: `[Kill] Failed to terminate PID ${pid}: ${String(e)}`, type: 'warning' })
     console.warn('Process tree kill failed:', e)
   }
 }

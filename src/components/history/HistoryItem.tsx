@@ -13,6 +13,7 @@ import facebookIcon from '../../assets/platforms/facebook.png'
 import xIcon from '../../assets/platforms/x.png'
 import { Globe } from 'lucide-react'
 import { open as openUrl } from '@tauri-apps/plugin-shell'
+import { getProxiedSrc } from '../../lib/image-proxy'
 
 // Helper for source icon
 const getSourceInfo = (url: string) => {
@@ -99,7 +100,7 @@ export const HistoryItem = memo(({
                 {/* Micro Badge */}
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-background shadow-sm flex items-center justify-center border border-border overflow-hidden">
                     {source.isImage ? (
-                        <img src={source.icon as string} alt={source.name} className="w-full h-full object-cover" />
+                        <img src={getProxiedSrc(source.icon as string)} alt={source.name} className="w-full h-full object-cover" />
                     ) : (
                         <source.icon className="w-2.5 h-2.5 text-muted-foreground" />
                     )}

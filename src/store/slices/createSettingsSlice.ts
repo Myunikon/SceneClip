@@ -30,9 +30,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
     sponsorSegments: ['sponsor', 'selfpromo', 'interaction'],
     binaryPathYtDlp: '',
     binaryPathFfmpeg: '',
+    binaryPathFfprobe: '',
+    binaryPathNode: '',
     embedMetadata: true, // Default: ON
     embedThumbnail: true, // Default: ON
     embedChapters: false, // Default: OFF
+    embedSubtitles: false, // Default: OFF
     postDownloadAction: 'none', // Default: none
     developerMode: false, // Default: OFF
     audioNormalization: false, // Default: OFF

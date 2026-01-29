@@ -1,8 +1,12 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Switch, Select, Slider } from '../ui'
+import { Switch, Select, Slider, Button } from '../ui'
 import { AppSettings } from '../../store/slices/types'
 import { SettingItem, SettingSection } from './SettingItem'
-import { Key, Trash2 } from 'lucide-react'
+import { Key, FolderOpen, X } from 'lucide-react'
+import { cn } from '../../lib/utils'
+
+import { validateUrlBackend } from '../../lib/validators'
 
 interface NetworkSettingsProps {
     settings: AppSettings
@@ -11,6 +15,18 @@ interface NetworkSettingsProps {
 
 export function NetworkSettings({ settings, setSetting }: NetworkSettingsProps) {
     const { t } = useTranslation()
+    const [proxyError, setProxyError] = useState<boolean>(false)
+
+    // Validate Proxy on Blur
+    const handleProxyBlur = async () => {
+        if (!settings.proxy) {
+            setProxyError(false)
+            return
+        }
+        const isValid = await validateUrlBackend(settings.proxy)
+        setProxyError(!isValid)
+    }
+
     return (
         <div className="space-y-4">
             {/* Traffic Control (User Request: Top) */}
@@ -61,11 +77,25 @@ export function NetworkSettings({ settings, setSetting }: NetworkSettingsProps) 
                     {/* Proxy */}
                     <SettingItem title={t('settings.network.proxy') || "Proxy Server"} layout="vertical">
                         <input
-                            className="w-full p-2.5 rounded-lg border border-input bg-background/80 font-mono text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/50"
+                            className={cn(
+                                "w-full p-2.5 rounded-lg border bg-background/80 font-mono text-sm focus:ring-2 transition-all placeholder:text-muted-foreground/50",
+                                proxyError
+                                    ? "border-red-500 focus:ring-red-500/20 focus:border-red-500"
+                                    : "border-input focus:ring-primary/20 focus:border-primary"
+                            )}
                             value={settings.proxy}
-                            onChange={(e) => setSetting('proxy', e.target.value)}
+                            onChange={(e) => {
+                                setSetting('proxy', e.target.value)
+                                if (!e.target.value) setProxyError(false)
+                            }}
+                            onBlur={handleProxyBlur}
                             placeholder="http://127.0.0.1:8080"
                         />
+                        {proxyError && (
+                            <span className="text-[10px] text-red-500 mt-1 block ml-1">
+                                {t('settings.network.proxy_invalid') || "Invalid Proxy URL"}
+                            </span>
+                        )}
                     </SettingItem>
 
                     {/* User Agent */}
@@ -151,16 +181,6 @@ export function NetworkSettings({ settings, setSetting }: NetworkSettingsProps) 
                         />
                     </SettingItem>
 
-                    <SettingItem
-                        title={t('settings.advanced.content_enhancements.cookie_unlock') || "Cookie Unlock"}
-                        description={t('settings.advanced.content_enhancements.cookie_unlock_desc')}
-                    >
-                        <Switch
-                            checked={settings.useChromeCookieUnlock}
-                            onCheckedChange={(val) => setSetting('useChromeCookieUnlock', val)}
-                        />
-                    </SettingItem>
-
                     {settings.cookieSource === 'browser' && (
                         <div className="animate-in fade-in slide-in-from-top-1">
                             <SettingItem title={t('settings.advanced.browser_type') || "Browser"} layout="vertical">
@@ -185,10 +205,14 @@ export function NetworkSettings({ settings, setSetting }: NetworkSettingsProps) 
                             <SettingItem
                                 title={t('settings.advanced.cookie_path') || "Cookie File"}
                                 layout="vertical"
-                                description={
-                                    <div className="relative mt-2">
+                            >
+                                <div className="flex gap-2">
+                                    <div className="relative flex-1">
                                         <input
-                                            className="w-full p-2 pr-8 rounded-md border border-input bg-secondary/30 font-mono text-xs truncate shadow-sm transition-colors focus:bg-background focus:ring-1 focus:ring-ring"
+                                            className={cn(
+                                                "w-full p-2.5 rounded-xl border font-mono text-xs shadow-sm transition-all outline-none pr-10",
+                                                "bg-secondary/30 focus:bg-background border-input focus:ring-2 focus:ring-primary/20"
+                                            )}
                                             value={settings.cookiePath || ''}
                                             readOnly
                                             placeholder={t('settings.advanced.no_file')}
@@ -196,37 +220,48 @@ export function NetworkSettings({ settings, setSetting }: NetworkSettingsProps) 
                                         {settings.cookiePath && (
                                             <button
                                                 onClick={() => setSetting('cookiePath', '')}
-                                                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-red-500 transition-colors"
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-muted rounded-md transition-all text-muted-foreground hover:text-red-500 active:scale-90"
                                                 title={t('settings.advanced.clear_path')}
                                             >
-                                                <Trash2 className="w-3.5 h-3.5" />
+                                                <X className="w-3.5 h-3.5" />
                                             </button>
                                         )}
                                     </div>
-                                }
-                            >
-                                <button
-                                    onClick={async () => {
-                                        try {
-                                            const { open } = await import('@tauri-apps/plugin-dialog')
-                                            const selected = await open({
-                                                filters: [{ name: t('settings.advanced.text_file') || 'Text File', extensions: ['txt'] }],
-                                                multiple: false
-                                            })
-                                            if (selected && typeof selected === 'string') {
-                                                setSetting('cookiePath', selected)
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="shrink-0 h-[38px] w-[38px] rounded-xl border-dashed hover:border-solid transition-all"
+                                        onClick={async () => {
+                                            try {
+                                                const { open } = await import('@tauri-apps/plugin-dialog')
+                                                const selected = await open({
+                                                    filters: [{ name: t('settings.advanced.text_file') || 'Text File', extensions: ['txt'] }],
+                                                    multiple: false
+                                                })
+                                                if (selected && typeof selected === 'string') {
+                                                    setSetting('cookiePath', selected)
+                                                }
+                                            } catch (e) {
+                                                console.error("Failed to open file dialog", e)
                                             }
-                                        } catch (e) {
-                                            console.error("Failed to open file dialog", e)
-                                        }
-                                    }}
-                                    className="text-xs font-medium bg-secondary hover:bg-secondary/80 text-foreground px-3 py-1.5 rounded-md transition-colors border border-border/50 shadow-sm"
-                                >
-                                    {t('settings.advanced.browse_btn') || "Browse..."}
-                                </button>
+                                        }}
+                                    >
+                                        <FolderOpen className="w-4 h-4" />
+                                    </Button>
+                                </div>
                             </SettingItem>
                         </div>
                     )}
+
+                    <SettingItem
+                        title={t('settings.advanced.content_enhancements.cookie_unlock') || "Cookie Unlock"}
+                        description={t('settings.advanced.content_enhancements.cookie_unlock_desc')}
+                    >
+                        <Switch
+                            checked={settings.useChromeCookieUnlock}
+                            onCheckedChange={(val) => setSetting('useChromeCookieUnlock', val)}
+                        />
+                    </SettingItem>
                 </div>
             </SettingSection>
 

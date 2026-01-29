@@ -166,7 +166,7 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col h-full overflow-hidden relative">
                 <div className={cn(
-                    "hidden md:flex items-center px-8 py-4 border-b transition-all duration-500 z-10 bg-background/40 backdrop-blur-xl absolute top-0 left-0 right-0 supports-[backdrop-filter]:bg-background/20",
+                    "hidden md:flex items-center px-8 py-4 border-b transition-all duration-500 z-30 bg-background/40 backdrop-blur-xl absolute top-0 left-0 right-0 supports-[backdrop-filter]:bg-background/20",
                     isScrolled ? "border-border/40 h-14 shadow-sm translate-y-0 opacity-100" : "border-transparent h-14 -translate-y-full opacity-0 pointer-events-none"
                 )}>
                     <span className="font-semibold">{activeTabLabel}</span>

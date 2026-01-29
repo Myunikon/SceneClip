@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react'
-import { Trash2, Copy, Filter, Check, Terminal, Cpu, Scissors } from 'lucide-react'
+import { Trash2, Copy, Filter, Check, Terminal, Cpu, Scissors, FolderOpen } from 'lucide-react'
+import { invoke } from '@tauri-apps/api/core'
 import { useAppStore } from '../../store'
 import { writeText } from '@tauri-apps/plugin-clipboard-manager'
 import { notify } from '../../lib/notify'
@@ -46,6 +47,15 @@ export function TerminalView() {
         } catch (e: unknown) {
             console.error('Failed to copy line:', e)
             notify.error(t.copy_line, { description: e instanceof Error ? e.message : undefined })
+        }
+    }
+
+    const handleOpenLogs = async () => {
+        try {
+            await invoke('open_log_dir')
+        } catch (e) {
+            console.error('Failed to open log dir:', e)
+            notify.error("Failed to open logs", { description: e instanceof Error ? e.message : String(e) })
         }
     }
 
@@ -107,6 +117,21 @@ export function TerminalView() {
                             <TooltipContent>
                                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                 <p>{(translations[settings.language as keyof typeof translations] as any)?.terminal?.copy_all || "Copy All"}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    onClick={handleOpenLogs}
+                                    className="p-1.5 hover:bg-white/10 rounded flex items-center gap-1 text-gray-400 hover:text-white transition-colors"
+                                >
+                                    <FolderOpen className="w-3.5 h-3.5" />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Open Log Folder</p>
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>

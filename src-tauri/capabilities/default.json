@@ -60,9 +60,16 @@
       "allow": [
         "$APP_DATA/**",
         "$APPDATA/**",
+        "$DOWNLOAD",
         "$DOWNLOAD/**",
+        "$TEMP",
         "$TEMP/**",
-        "$RESOURCE/**"
+        "$RESOURCE/**",
+        "$HOME/**",
+        "$DESKTOP",
+        "$DESKTOP/**",
+        "$DOCUMENT",
+        "$DOCUMENT/**"
       ]
     },
     {
@@ -71,7 +78,10 @@
         "$APP_DATA/**",
         "$APPDATA/**",
         "$DOWNLOAD/**",
-        "$TEMP/**"
+        "$TEMP/**",
+        "$HOME/**",
+        "$DESKTOP/**",
+        "$DOCUMENT/**"
       ]
     },
     {
@@ -81,7 +91,10 @@
         "$APPDATA/**",
         "$DOWNLOAD/**",
         "$TEMP/**",
-        "$RESOURCE/**"
+        "$RESOURCE/**",
+        "$HOME/**",
+        "$DESKTOP/**",
+        "$DOCUMENT/**"
       ]
     },
     {
@@ -103,7 +116,10 @@
         "$APP_DATA/**",
         "$APPDATA/**",
         "$DOWNLOAD/**",
-        "$TEMP/**"
+        "$TEMP/**",
+        "$HOME/**",
+        "$DESKTOP/**",
+        "$DOCUMENT/**"
       ]
     },
     {
@@ -112,7 +128,10 @@
         "$APP_DATA/**",
         "$APPDATA/**",
         "$DOWNLOAD/**",
-        "$TEMP/**"
+        "$TEMP/**",
+        "$HOME/**",
+        "$DESKTOP/**",
+        "$DOCUMENT/**"
       ]
     },
     {
@@ -120,9 +139,16 @@
       "allow": [
         "$APP_DATA/**",
         "$APPDATA/**",
+        "$DOWNLOAD",
         "$DOWNLOAD/**",
+        "$TEMP",
         "$TEMP/**",
-        "$RESOURCE/**"
+        "$RESOURCE/**",
+        "$HOME/**",
+        "$DESKTOP",
+        "$DESKTOP/**",
+        "$DOCUMENT",
+        "$DOCUMENT/**"
       ]
     },
     {
@@ -130,9 +156,16 @@
       "allow": [
         "$APP_DATA/**",
         "$APPDATA/**",
+        "$DOWNLOAD",
         "$DOWNLOAD/**",
+        "$TEMP",
         "$TEMP/**",
-        "$RESOURCE/**"
+        "$RESOURCE/**",
+        "$HOME/**",
+        "$DESKTOP",
+        "$DESKTOP/**",
+        "$DOCUMENT",
+        "$DOCUMENT/**"
       ]
     },
     {
@@ -141,7 +174,10 @@
         "$APP_DATA/**",
         "$APPDATA/**",
         "$DOWNLOAD/**",
-        "$TEMP/**"
+        "$TEMP/**",
+        "$HOME/**",
+        "$DESKTOP/**",
+        "$DOCUMENT/**"
       ]
     },
     {

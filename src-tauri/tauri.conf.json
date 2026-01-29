@@ -47,7 +47,9 @@
       "bin/yt-dlp",
       "bin/ffmpeg",
       "bin/aria2c",
-      "bin/rsgain"
+      "bin/rsgain",
+      "bin/deno",
+      "bin/ffprobe"
     ],
     "resources": [
       "resources/plugins"

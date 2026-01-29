@@ -48,6 +48,8 @@ export const id = {
             id: "ID Video",
             res: "Resolusi (cth. 1080p)",
             source: "Nama Sumber (cth. YouTube)",
+            site: "Situs",
+            author: "Pengunggah",
             date: "Tanggal Upload (DD-MM-YYYY)"
         },
         example_note: "* Pratinjau video sampel",
@@ -91,7 +93,7 @@ export const id = {
         saved: "Tersimpan!",
         about: "Tentang",
         tabs: {
-            general: "Tampilan",
+            general: "Umum",
             downloads: "Penyimpanan",
             quality: "Kualitas",
             network: "Jaringan",
@@ -303,10 +305,19 @@ export const id = {
             browse_btn: "Telusuri",
             auto_managed: "Otomatis (Bawaan)",
             tech_paths: "Path Teknis & Binari",
+            js_runtime: "Jalur JS Runtime (Node/Deno)",
+            js_runtime_desc: "Penting untuk stabilitas & 4K YouTube. Otomatis dideteksi jika kosong.",
             detected_gpu: "GPU Terdeteksi:",
             unknown_integrated: "Tidak Diketahui / Terintegrasi",
             errors: {
                 open: "Buka Folder"
+            },
+            validation: {
+                checking: "Memeriksa...",
+                valid: "Binary Valid",
+                invalid: "Binary Tidak Valid",
+                success_desc: "Ditemukan versi: {{version}}",
+                error_desc: "Gagal verifikasi. Pastikan file adalah binary executable."
             },
             video_processing: {
                 title: "Pemrosesan Video",
@@ -594,6 +605,7 @@ export const id = {
     preview: {
         failed: "Pratinjau Gagal",
         no_data: "Tidak ada data kembali",
+        no_thumbnail: "Tidak ada thumbnail",
         instruction: "Masukkan URL valid untuk pratinjau"
     },
     formats: {

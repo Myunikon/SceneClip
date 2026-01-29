@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Pause, Play, StopCircle, Trash2, FolderOpen, RefreshCcw, Terminal, FileVideo, FileAudio, FileImage } from 'lucide-react'
+import { Pause, Play, StopCircle, Trash2, FolderOpen, RefreshCcw, Terminal, FileVideo, FileAudio, FileImage, Copy, Check } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
 import { openPath } from '@tauri-apps/plugin-opener'
+import { writeText } from '@tauri-apps/plugin-clipboard-manager'
 import { useTranslation } from 'react-i18next'
 import { cn, formatRange } from '../../lib/utils'
 import { useAppStore } from '../../store'
@@ -34,6 +35,7 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
     const [showCommandModal, setShowCommandModal] = useState(false)
     const [showCancelConfirm, setShowCancelConfirm] = useState(false)
     const [showClipPauseWarning, setShowClipPauseWarning] = useState(false)
+    const [isCopying, setIsCopying] = useState(false)
 
     // Bail if task not found (deleted mid-render)
     if (!task) return null
@@ -52,6 +54,18 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
         }
         // Default to Video
         return <FileVideo className="w-5 h-5" strokeWidth={1.5} />
+    }
+
+    const handleCopyError = async () => {
+        if (!task.log) return
+        try {
+            await writeText(task.log)
+            setIsCopying(true)
+            setTimeout(() => setIsCopying(false), 2000)
+            notify.info(t('common.copied') || 'Copied to clipboard')
+        } catch (e) {
+            console.error('Failed to copy', e)
+        }
     }
 
     // --- Semantic Status Formatter (Safari Style) ---
@@ -76,7 +90,8 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
             return `Paused • ${progressDisplay}% downloaded`
         }
         if (task.status === 'error') {
-            return task.log || 'Download failed'
+            // Rendered custom below
+            return null
         }
         if (task.status === 'completed') {
             return `${task.totalSize || 'File'} • Download complete`
@@ -180,10 +195,28 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
 
                     {/* Status Text (Unified Line) */}
                     <div className={cn(
-                        "text-[11px] font-medium truncate",
-                        task.status === 'error' ? "text-destructive" : "text-muted-foreground/70"
+                        "text-[11px] font-medium",
+                        task.status === 'error' ? "text-destructive" : "text-muted-foreground/70 truncate"
                     )}>
-                        {getStatusText()}
+                        {task.status === 'error' ? (
+                            <div className="flex items-start gap-2 max-w-full">
+                                <span className="flex-1 select-text cursor-text break-words whitespace-normal leading-relaxed hover:text-destructive/90">
+                                    {task.log || 'Download failed'}
+                                </span>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleCopyError()
+                                    }}
+                                    className="shrink-0 p-1 hover:bg-destructive/10 rounded-md transition-colors text-destructive/70 hover:text-destructive"
+                                    title={t('common.copy_error') || "Copy Error"}
+                                >
+                                    {isCopying ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                                </button>
+                            </div>
+                        ) : (
+                            getStatusText()
+                        )}
                     </div>
                 </div>
 
@@ -227,8 +260,8 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
                         </button>
                     )}
 
-                    {/* Logs */}
-                    {(settings.developerMode || task.status === 'error') && (
+                    {/* Logs - Strictly for Developer Mode */}
+                    {settings.developerMode && (
                         <button onClick={() => setShowCommandModal(true)} className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground">
                             <Terminal className="w-4 h-4" />
                         </button>

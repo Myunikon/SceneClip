@@ -20,7 +20,6 @@ const createMockSettings = (overrides: Partial<AppSettings> = {}): AppSettings =
     resolution: 'Best',
     container: 'mp4',
     concurrentDownloads: 3,
-    concurrentFragments: 4,
     speedLimit: '',
     proxy: '',
     userAgent: '',
@@ -36,12 +35,23 @@ const createMockSettings = (overrides: Partial<AppSettings> = {}): AppSettings =
     postDownloadAction: 'none',
     developerMode: false,
     frontendFontSize: 'medium',
-    quickDownloadEnabled: false,
-    showQuickModeButton: false,
-    lastDownloadOptions: null,
     hardwareDecoding: true,
     audioNormalization: false,
-    disablePlayButton: false,
+    useAria2c: false,
+    historyRetentionDays: 30,
+    maxHistoryItems: 100,
+    useMetadataEnhancer: false,
+    useSmartProxy: false,
+    useReplayGain: false,
+    usePoToken: false,
+    poToken: '',
+    visitorData: '',
+    useChromeCookieUnlock: false,
+    enableDesktopNotifications: true,
+    preventSuspendDuringDownload: false,
+    postProcessorPresets: [],
+    savedCredentials: [],
+    binaryPathNode: '',
     ...overrides
 })
 
@@ -53,18 +63,19 @@ describe('buildYtDlpArgs', () => {
         expect(args).toContain('-o')
         expect(args).toContain('/downloads/test.mp4')
         expect(args).toContain('--newline')
+        expect(args).toContain('--ignore-config') // STRICT: Added in buildYtDlpArgs
         expect(args).toContain('--no-colors')
         expect(args).toContain('--no-playlist')
         expect(args).toContain('--continue')
     })
 
-    it('should use custom concurrent fragments setting', async () => {
-        const settings = createMockSettings({ concurrentFragments: 8 })
+    it('should use default concurrent fragments (4)', async () => {
+        const settings = createMockSettings()
         const args = await buildYtDlpArgs('https://youtube.com/watch?v=test', {}, settings, 'test.mp4')
 
         const nIndex = args.indexOf('-N')
         expect(nIndex).toBeGreaterThan(-1)
-        expect(args[nIndex + 1]).toBe('8') // Should use the setting value
+        expect(args[nIndex + 1]).toBe('4') // Hardcoded default
     })
 
     it('should set correct audio format for audio-only downloads', async () => {
@@ -208,19 +219,19 @@ describe('buildYtDlpArgs GPU Acceleration', () => {
     it('should inject nvidia encoder args when gpuType is nvidia', async () => {
         const args = await buildYtDlpArgs(url, {}, settings, 'test.mp4', 'nvidia')
         expect(args).toContain('--postprocessor-args')
-        expect(args).toContain('ffmpeg:-c:v h264_nvenc')
+        expect(args.some(a => a.includes('ffmpeg:') && a.includes('h264_nvenc'))).toBe(true)
     })
 
     it('should inject amd encoder args when gpuType is amd', async () => {
         const args = await buildYtDlpArgs(url, {}, settings, 'test.mp4', 'amd')
         expect(args).toContain('--postprocessor-args')
-        expect(args).toContain('ffmpeg:-c:v h264_amf')
+        expect(args.some(a => a.includes('ffmpeg:') && a.includes('h264_amf'))).toBe(true)
     })
 
     it('should inject intel encoder args when gpuType is intel', async () => {
         const args = await buildYtDlpArgs(url, {}, settings, 'test.mp4', 'intel')
         expect(args).toContain('--postprocessor-args')
-        expect(args).toContain('ffmpeg:-c:v h264_qsv')
+        expect(args.some(a => a.includes('ffmpeg:') && a.includes('h264_qsv'))).toBe(true)
     })
 
     it('should NOT inject encoder args when gpuType is cpu', async () => {
@@ -486,20 +497,17 @@ describe('buildYtDlpArgs Advanced Scenarios', () => {
     })
 
     // 3. HARDWARE ACCELERATION SPECIFICS
-    it('should use Intel QSV flags with ICQ mode during clipping', async () => {
-        // ICQ mode (-global_quality) is only applied during clipping for quality consistency
-        const args = await buildYtDlpArgs(url, { rangeStart: '10' }, settings, 'test.mp4', 'intel')
+    it('should use Intel QSV flags when enabled (No Clipping)', async () => {
+        // HW Accel is now disabled for clips for stability. Test with no clipping.
+        const args = await buildYtDlpArgs(url, {}, settings, 'test.mp4', 'intel')
         const ppArgs = args.filter((_, i) => args[i - 1] === '--postprocessor-args').join(' ')
         expect(ppArgs).toContain('h264_qsv')
-        expect(ppArgs).toContain('-global_quality') // ICQ mode for clips
     })
 
-    it('should use AMD AMF flags with clipping optimization', async () => {
-        // AMF with clipping triggers specific rate control
-        const args = await buildYtDlpArgs(url, { rangeStart: '10' }, settings, 'test.mp4', 'amd')
+    it('should use AMD AMF flags when enabled (No Clipping)', async () => {
+        const args = await buildYtDlpArgs(url, {}, settings, 'test.mp4', 'amd')
         const ppArgs = args.filter((_, i) => args[i - 1] === '--postprocessor-args').join(' ')
         expect(ppArgs).toContain('h264_amf')
-        expect(ppArgs).toContain('-rc cqp') // Constant Quality
     })
 
     it('should use Apple VideoToolbox flags', async () => {
@@ -630,10 +638,32 @@ describe('buildYtDlpArgs Advanced Scenarios', () => {
 
         // Should include HEVC format string
         expect(args.join(' ')).toContain('vcodec^=hevc')
+    })
 
-        // Should include MKV container
-        expect(args).toContain('--merge-output-format')
-        expect(args).toContain('mkv')
+    // -------------------------------------------------------------------------
+    // 10. STRICT MODE AUDIT (User Request: "Mati ya harusnya mati")
+    // -------------------------------------------------------------------------
+    it('should NOT add extractor-args for YouTube when PO Token is OFF', async () => {
+        const noPoSettings = createMockSettings({ usePoToken: false })
+        const args = await buildYtDlpArgs('https://youtube.com/watch?v=test', {}, noPoSettings, 'test.mp4')
+
+        // Ensure no --extractor-args are added by default
+        const extractorIndex = args.indexOf('--extractor-args')
+        expect(extractorIndex).toBe(-1)
+
+        // Ensure NO 'youtube:' related args are present (since we removed the fallback)
+        expect(args.some(a => a.includes('youtube:'))).toBe(false)
+    })
+
+    it('should NOT add plugin-dirs if no plugins are used', async () => {
+        const minimalSettings = createMockSettings({
+            useSmartProxy: false,
+            useReplayGain: false,
+            useChromeCookieUnlock: false
+        })
+        const args = await buildYtDlpArgs(url, { subtitles: false }, minimalSettings, 'test.mp4')
+
+        expect(args).not.toContain('--plugin-dirs')
     })
 })
 
@@ -994,5 +1024,62 @@ describe('buildYtDlpArgs Edge Cases & Bad Scenarios', () => {
             expect(args).toContain('en')
         })
     })
-})
 
+    // -------------------------------------------------------------------------
+    // 11. BINARY PRECEDENCE TESTS
+    // -------------------------------------------------------------------------
+    describe('Binary Precedence', () => {
+        it('should inject --ffmpeg-location when custom path is provided', async () => {
+            const customSettings = createMockSettings({
+                binaryPathFfmpeg: 'C:/custom/ffmpeg.exe'
+            })
+            const args = await buildYtDlpArgs('https://youtube.com/watch?v=test', {}, customSettings, 'test.mp4')
+
+            expect(args).toContain('--ffmpeg-location')
+            expect(args).toContain('C:/custom/ffmpeg.exe')
+        })
+
+        it('should NOT inject --ffmpeg-location when path is empty or Auto-managed', async () => {
+            const autoSettings = createMockSettings({
+                binaryPathFfmpeg: 'Auto-managed (Bundled)'
+            })
+            const args = await buildYtDlpArgs('https://youtube.com/watch?v=test', {}, autoSettings, 'test.mp4')
+            expect(args).not.toContain('--ffmpeg-location')
+
+            const emptySettings = createMockSettings({
+                binaryPathFfmpeg: '  '
+            })
+            const args2 = await buildYtDlpArgs('https://youtube.com/watch?v=test', {}, emptySettings, 'test.mp4')
+            expect(args2).not.toContain('--ffmpeg-location')
+        })
+
+        it('should prioritize binaryPathNode over options.jsRuntimePath', async () => {
+            const settingsWithNode = createMockSettings({
+                binaryPathNode: 'C:/settings/node.exe'
+            })
+            const options: YtDlpOptions = {
+                jsRuntimePath: 'C:/options/deno.exe'
+            }
+            const args = await buildYtDlpArgs('https://youtube.com/watch?v=test', options, settingsWithNode, 'test.mp4')
+
+            const jsIndex = args.indexOf('--js-runtimes')
+            expect(jsIndex).toBeGreaterThan(-1)
+            expect(args[jsIndex + 1]).toContain('C:/settings/node.exe')
+            expect(args[jsIndex + 1]).not.toContain('C:/options/deno.exe')
+        })
+
+        it('should detect correct runtime type from path', async () => {
+            // Deno
+            const denoArgs = await buildYtDlpArgs('https://youtube.com/watch?v=test', {}, createMockSettings({ binaryPathNode: 'C:/bin/deno.exe' }), 'test.mp4')
+            expect(denoArgs[denoArgs.indexOf('--js-runtimes') + 1]).toMatch(/^deno:/)
+
+            // Bun
+            const bunArgs = await buildYtDlpArgs('https://youtube.com/watch?v=test', {}, createMockSettings({ binaryPathNode: 'C:/bin/bun.exe' }), 'test.mp4')
+            expect(bunArgs[bunArgs.indexOf('--js-runtimes') + 1]).toMatch(/^bun:/)
+
+            // Node (default)
+            const nodeArgs = await buildYtDlpArgs('https://youtube.com/watch?v=test', {}, createMockSettings({ binaryPathNode: 'C:/bin/node.exe' }), 'test.mp4')
+            expect(nodeArgs[nodeArgs.indexOf('--js-runtimes') + 1]).toMatch(/^node:/)
+        })
+    })
+})

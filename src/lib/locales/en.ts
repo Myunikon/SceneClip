@@ -48,6 +48,8 @@ export const en = {
             id: "Video ID",
             res: "Resolution (e.g. 1080p)",
             source: "Source Name (e.g. YouTube)",
+            site: "Source",
+            author: "Uploader",
             date: "Upload Date (DD-MM-YYYY)"
         },
         example_note: "* Preview based on sample video",
@@ -302,6 +304,8 @@ export const en = {
             browse_btn: "Browse",
             auto_managed: "Auto-managed (Bundled)",
             tech_paths: "Technical & Binary Paths",
+            js_runtime: "JS Runtime Path (Node/Deno)",
+            js_runtime_desc: "Required for YouTube high-quality & stability. Auto-detected if empty.",
             detected_gpu: "Detected GPU:",
             unknown_integrated: "Unknown / Integrated",
             btn_replay_welcome: "Replay Welcome",
@@ -310,6 +314,13 @@ export const en = {
             btn_import_history: "Import History (.json)",
             errors: {
                 open: "Open Folder"
+            },
+            validation: {
+                checking: "Checking...",
+                valid: "Binary Valid",
+                invalid: "Binary Invalid",
+                success_desc: "Found version: {{version}}",
+                error_desc: "Verification failed. Ensure the file is an executable binary."
             },
             video_processing: {
                 title: "Video Processing",
@@ -500,6 +511,7 @@ export const en = {
         preview: {
             failed: "Preview Failed",
             no_data: "No data returned",
+            no_thumbnail: "No thumbnail available",
             instruction: "Enter a valid URL to see preview"
         },
         formats: {
@@ -748,6 +760,7 @@ export const en = {
         menu: {
             start: "Getting Started",
             clip: "Clipping & Edit",
+            advanced: "Advanced",
             faq: "Common Errors",
         },
         compress: {

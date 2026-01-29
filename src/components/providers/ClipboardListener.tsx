@@ -72,8 +72,12 @@ export function ClipboardListener({ onFound }: ClipboardListenerProps) {
                     }
                 }
             } catch (e) {
-                // Clipboard permission denied or empty
-                console.error("Clipboard Error", e)
+                // Suppress common clipboard errors (empty, locked, format mismatch)
+                const msg = String(e)
+                if (msg.includes('empty') || msg.includes('not available')) {
+                    return
+                }
+                console.error("Clipboard Access Error:", e)
             }
         }
 

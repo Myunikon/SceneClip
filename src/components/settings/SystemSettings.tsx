@@ -1,18 +1,168 @@
-import { Terminal, History, Database, Monitor, Music } from 'lucide-react'
+import { Terminal, History, Database, Monitor, Music, FolderOpen, Loader2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Select, Switch } from '../ui'
+import { Select, Switch, Button } from '../ui'
 import { AppSettings } from '../../store/slices/types'
 import { useAppStore } from '../../store'
-import { getBinaryName } from '../../lib/platform'
 import { SettingItem, SettingSection } from './SettingItem'
 import { ConfirmationModal } from '../dialogs'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { notify } from '../../lib/notify'
+import { validateBinary, detectBinaryType } from '../../lib/binaryValidator'
+import { cn } from '../../lib/utils'
+
+// @ts-ignore - Reserved for future type-specific logic
+const _detect = detectBinaryType;
 
 interface SystemSettingsProps {
     settings: AppSettings
     setSetting: <K extends keyof AppSettings>(key: K, val: AppSettings[K]) => void
     updateSettings: (newSettings: Partial<AppSettings>) => void
+}
+
+function BinaryPathInput({ label, value, onChange, description, expectedType }: {
+    label: string,
+    value: string,
+    onChange: (val: string) => void,
+    description?: string,
+    expectedType: 'ytdlp' | 'ffmpeg' | 'ffprobe' | 'node' | 'deno' | 'bun' | 'js-runtime'
+}) {
+    const { t } = useTranslation()
+    const [status, setStatus] = useState<{ isValid: boolean | null, version: string | null, loading: boolean }>({
+        isValid: null,
+        version: null,
+        loading: false
+    })
+
+    const validate = async (path: string) => {
+        if (!path || path.trim() === '' || path.includes('Auto-managed')) {
+            setStatus({ isValid: null, version: null, loading: false })
+            return
+        }
+
+        // Prevent concurrent validation
+        if (status.loading) return;
+
+        setStatus(s => ({ ...s, loading: true }))
+        try {
+            const detected = detectBinaryType(path)
+
+            // Strict type check
+            const isJsRuntimeField = expectedType === 'js-runtime'
+            const isJsBinary = detected === 'node' || detected === 'deno' || detected === 'bun'
+
+            if (detected) {
+                const isMismatch = isJsRuntimeField ? !isJsBinary : detected !== expectedType
+
+                if (isMismatch) {
+                    setStatus({ isValid: false, version: null, loading: false })
+                    notify.error(t('settings.advanced.validation.invalid') || "Binary Invalid", {
+                        description: `File appears to be ${detected.toUpperCase()}, but ${expectedType.toUpperCase()} is expected.`
+                    })
+                    return
+                }
+            }
+            // If NOT detected (null), we proceed to backend validation.
+            // This allows renamed binaries (e.g., yt-dlp.exe to my-dlp.exe) to work!
+
+            const valType = isJsRuntimeField ? (detected || 'deno') as any : expectedType
+            const res = await validateBinary(path, valType)
+            setStatus({ isValid: res.isValid, version: res.version || null, loading: false })
+
+            if (res.isValid) {
+                notify.success(t('settings.advanced.validation.valid') || "Binary Valid", {
+                    description: t('settings.advanced.validation.success_desc', { version: res.version })
+                })
+            } else {
+                notify.error(t('settings.advanced.validation.invalid') || "Binary Invalid", {
+                    description: t('settings.advanced.validation.error_desc') || "Verification failed."
+                })
+            }
+        } catch (e) {
+            setStatus({ isValid: false, version: null, loading: false })
+            notify.error(t('settings.advanced.validation.invalid') || "Binary Invalid", {
+                description: "Critical verification error"
+            })
+        }
+    }
+
+    // Validate on mount or reset
+    useEffect(() => {
+        if (value && value.trim() !== '' && !value.includes('Auto-managed') && status.isValid === null) {
+            validate(value)
+        } else if (!value || value.trim() === '' || value.includes('Auto-managed')) {
+            setStatus({ isValid: null, version: null, loading: false })
+        }
+    }, []) // Only on mount
+
+    const handleBrowse = async () => {
+        try {
+            const { open } = await import('@tauri-apps/plugin-dialog')
+            const path = await open({
+                multiple: false,
+                directory: false,
+                filters: [
+                    { name: 'Executable', extensions: ['exe', 'bin', 'sh', 'bat', 'cmd', '*'] },
+                    { name: 'All Files', extensions: ['*'] }
+                ]
+            })
+
+            if (path && typeof path === 'string') {
+                onChange(path)
+                validate(path) // Trigger explicitly
+            }
+        } catch (e) {
+            notify.error("Failed to open file browser")
+        }
+    }
+
+    return (
+        <SettingItem title={label} layout="vertical" description={description}>
+            <div className="flex gap-2">
+                <div className="relative flex-1">
+                    <input
+                        className={cn(
+                            "w-full p-2.5 rounded-xl border font-mono text-xs shadow-sm transition-all outline-none",
+                            "bg-secondary/30 focus:bg-background",
+                            status.isValid === true && "ring-2 ring-emerald-500/50 border-emerald-500/50 bg-emerald-500/5",
+                            status.isValid === false && "ring-2 ring-red-500/50 border-red-500/50 bg-red-500/5",
+                            status.isValid === null && "border-input focus:ring-2 focus:ring-primary/20",
+                            status.loading && "opacity-70"
+                        )}
+                        value={value}
+                        onChange={e => {
+                            onChange(e.target.value)
+                            if (status.isValid !== null) setStatus({ isValid: null, version: null, loading: false })
+                        }}
+                        onBlur={() => validate(value)}
+                        placeholder={t('settings.advanced.auto_managed')}
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                        {value && !value.includes('Auto-managed') && (
+                            <button
+                                onClick={() => {
+                                    onChange('')
+                                    setStatus({ isValid: null, version: null, loading: false })
+                                }}
+                                className="p-1 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
+                                title={t('settings.advanced.clear_path')}
+                            >
+                                <X className="w-3 h-3" />
+                            </button>
+                        )}
+                        {status.loading && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
+                    </div>
+                </div>
+                <Button
+                    variant="outline"
+                    size="icon"
+                    className="shrink-0 h-[38px] w-[38px] rounded-xl border-dashed hover:border-solid transition-all"
+                    onClick={handleBrowse}
+                >
+                    <FolderOpen className="w-4 h-4" />
+                </Button>
+            </div>
+        </SettingItem>
+    )
 }
 
 export function SystemSettings({ settings, setSetting, updateSettings }: SystemSettingsProps) {
@@ -46,12 +196,31 @@ export function SystemSettings({ settings, setSetting, updateSettings }: SystemS
                     className="animate-in fade-in slide-in-from-top-2"
                 >
                     <div className="space-y-4">
-                        <SettingItem title={getBinaryName('ytdlp')} layout="vertical">
-                            <input className="w-full p-2 rounded-md border border-input bg-secondary/30 font-mono text-xs shadow-sm transition-colors focus:bg-background focus:ring-1 focus:ring-ring" value={settings.binaryPathYtDlp} onChange={e => setSetting('binaryPathYtDlp', e.target.value)} placeholder={t('settings.advanced.auto_managed')} />
-                        </SettingItem>
-                        <SettingItem title={getBinaryName('ffmpeg')} layout="vertical">
-                            <input className="w-full p-2 rounded-md border border-input bg-secondary/30 font-mono text-xs shadow-sm transition-colors focus:bg-background focus:ring-1 focus:ring-ring" value={settings.binaryPathFfmpeg} onChange={e => setSetting('binaryPathFfmpeg', e.target.value)} placeholder={t('settings.advanced.auto_managed')} />
-                        </SettingItem>
+                        <BinaryPathInput
+                            label="YT-DLP"
+                            value={settings.binaryPathYtDlp}
+                            onChange={val => setSetting('binaryPathYtDlp', val)}
+                            expectedType="ytdlp"
+                        />
+                        <BinaryPathInput
+                            label="FFMPEG"
+                            value={settings.binaryPathFfmpeg}
+                            onChange={val => setSetting('binaryPathFfmpeg', val)}
+                            expectedType="ffmpeg"
+                        />
+                        <BinaryPathInput
+                            label="FFPROBE"
+                            value={settings.binaryPathFfprobe}
+                            onChange={val => setSetting('binaryPathFfprobe', val)}
+                            expectedType="ffprobe"
+                        />
+                        <BinaryPathInput
+                            label={t('settings.advanced.js_runtime') || "JS Runtime (Node/Deno)"}
+                            description={t('settings.advanced.js_runtime_desc')}
+                            value={settings.binaryPathNode}
+                            onChange={val => setSetting('binaryPathNode', val)}
+                            expectedType="js-runtime"
+                        />
                     </div>
                 </SettingSection>
             )}

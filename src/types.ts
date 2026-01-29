@@ -133,6 +133,7 @@ export interface DownloadOptions {
     format?: string
     container?: string
     sponsorBlock?: boolean
+    removeSponsors?: boolean // Alias for sponsorBlock (used by internal logic)
     liveFromStart?: boolean // Download livestream from the beginning
     splitChapters?: boolean // Split video into multiple files based on chapters
     customFilename?: string // User-defined filename (without extension)
@@ -202,9 +203,12 @@ export interface AppSettings {
     sponsorSegments: string[]
     binaryPathYtDlp: string
     binaryPathFfmpeg: string
+    binaryPathFfprobe: string
+    binaryPathNode: string
     embedMetadata: boolean
     embedThumbnail: boolean
     embedChapters: boolean // Embed chapter markers in video
+    embedSubtitles: boolean // Embed subtitles in video
     postDownloadAction: 'none' | 'sleep' | 'shutdown'
     developerMode: boolean
     audioNormalization: boolean // Loudness Normalization (EBU R128)

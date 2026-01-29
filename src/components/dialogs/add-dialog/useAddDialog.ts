@@ -138,7 +138,7 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
                 audioBitrate: options.audioBitrate,
                 audioFormat: options.audioFormat as DownloadOptions['audioFormat'],
 
-                sponsorBlock: options.sponsorBlock,
+                removeSponsors: options.sponsorBlock,
                 subtitles: options.subtitles,
                 subtitleLang: options.subtitles ? options.subtitleLang : undefined,
                 subtitleFormat: options.subtitles ? options.subtitleFormat : undefined,

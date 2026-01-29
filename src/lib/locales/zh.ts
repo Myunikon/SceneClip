@@ -89,7 +89,7 @@ export const zh = {
         saved: "已保存!",
         about: "关于",
         tabs: {
-            general: "外观",
+            general: "常规",
             downloads: "存储",
             quality: "质量",
             network: "网络",
@@ -278,16 +278,13 @@ export const zh = {
             errors: {
                 open: "打开文件夹"
             },
-            source_disabled: "已禁用 (默认)",
-            browser_type: "浏览器类型",
-            no_file: "未选择文件...",
-            clear_path: "清除路径",
-            tech_paths: "技术与二进制路径",
-            cookie_path: "Cookie文件路径",
-            browse_btn: "浏览...",
-            auto_managed: "自动管理",
-            detected_gpu: "检测到 GPU:",
-            unknown_integrated: "未知 / 集成显卡",
+            validation: {
+                checking: "正在检查...",
+                valid: "二进制文件有效",
+                invalid: "二进制文件无效",
+                success_desc: "发现版本: {{version}}",
+                error_desc: "验证失败。请确保文件是可执行二进制文件。"
+            },
             video_processing: {
                 title: "视频处理",
                 hw_accel: "硬件加速",
@@ -483,6 +480,7 @@ export const zh = {
         preview: {
             failed: "预览失败",
             no_data: "无数据",
+            no_thumbnail: "无缩略图",
             instruction: "输入有效链接以查看预览"
         },
         formats: {

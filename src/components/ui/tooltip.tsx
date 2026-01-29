@@ -70,7 +70,7 @@ export function Tooltip({ children, open: controlledOpen, onOpenChange: setContr
 }
 
 export const TooltipTrigger = React.forwardRef<HTMLElement, React.HTMLProps<HTMLElement> & { asChild?: boolean }>(
-    ({ children, ...props }, propRef) => {
+    ({ children, asChild, ...props }, propRef) => {
         const context = useTooltip()
         const childrenRef = (children as any).ref
         const ref = React.useMemo(() => {

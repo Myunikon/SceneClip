@@ -158,7 +158,10 @@ export function SelectDownloadType() {
                             {/* 1. Best Option - Standalone, Prominent */}
                             <BestOptionButton
                                 isSelected={format === 'Best'}
-                                onClick={() => setFormat('Best')}
+                                onClick={() => {
+                                    setFormat('Best')
+                                    setAudioFormat(undefined as any) // Clear audio contamination
+                                }}
                                 label={bestOption.label}
                                 desc={bestOption.desc}
                                 icon={bestOption.icon}
@@ -167,7 +170,10 @@ export function SelectDownloadType() {
                             {/* 2. Resolutions - Horizontal Scroll */}
                             <ChoiceGroup
                                 value={format}
-                                onChange={setFormat}
+                                onChange={(val) => {
+                                    setFormat(val)
+                                    setAudioFormat(undefined as any) // Clear audio contamination
+                                }}
                                 variant="wrap"
                                 options={resolutionOptions}
                             />

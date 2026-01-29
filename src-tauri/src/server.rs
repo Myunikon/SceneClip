@@ -46,7 +46,7 @@ async fn start_server(app_handle: AppHandle) {
         .with_state(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 19575));
-    println!("Server listening on {}", addr);
+    log::info!("Server listening on {}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
@@ -60,11 +60,11 @@ async fn handle_download(
     State(state): State<AppState>,
     Json(payload): Json<DownloadRequest>,
 ) -> Response {
-    println!("Received download request: {}", payload.url);
+    log::info!("Received download request: {}", payload.url);
 
     // Emit event to frontend
     if let Err(e) = state.app_handle.emit("server-v1-download", &payload) {
-        eprintln!("Failed to emit event: {}", e);
+        log::error!("Failed to emit event: {}", e);
         return (StatusCode::INTERNAL_SERVER_ERROR, "Failed to emit event").into_response();
     }
 

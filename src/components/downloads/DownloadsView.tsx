@@ -6,7 +6,12 @@ import { DownloadItem } from './DownloadItem'
 export function DownloadsView() {
   // Context7 Pattern: Select derived value (IDs) instead of raw array
   // This prevents re-renders when individual task data changes (only task additions/removals trigger re-render)
-  const taskIds = useAppStore(useShallow((s) => s.tasks.map(t => t.id)))
+  // FIX: Only show active/error tasks. Completed/Stopped should "move" to History.
+  const taskIds = useAppStore(useShallow((s) =>
+    s.tasks
+      .filter(t => !['completed', 'stopped'].includes(t.status))
+      .map(t => t.id)
+  ))
 
   if (taskIds.length === 0) {
     return <DownloadEmptyState />

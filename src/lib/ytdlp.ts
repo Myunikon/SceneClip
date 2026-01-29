@@ -3,6 +3,7 @@ import { AppSettings } from '../store/slices/types'
 import { useAppStore } from '../store'
 import { Command } from '@tauri-apps/plugin-shell'
 import { BINARIES, DEFAULTS, ALL_SUPPORTED_EXTS } from './constants'
+import { isYouTubeUrl } from './validators'
 
 export interface YtDlpOptions {
     path?: string
@@ -39,6 +40,9 @@ export interface YtDlpOptions {
     username?: string
     password?: string
     customFilename?: string
+    postProcessorArgs?: string
+    // JS Runtime override (usually from settings, but can be passed)
+    jsRuntimePath?: string
 }
 
 export async function buildYtDlpArgs(
@@ -48,7 +52,10 @@ export async function buildYtDlpArgs(
     finalFilename: string,
     gpuType: 'cpu' | 'nvidia' | 'amd' | 'intel' | 'apple' = 'cpu'
 ): Promise<string[]> {
-    const fmt = options.format || settings.resolution
+    // FIX: Only treat as audio if format is explicitly 'audio' OR (format is missing AND audioFormat is present)
+    // This prevents "Video Mode" from being hijacked if audioFormat is accidentally left in options
+    const isAudioMode = options.format === 'audio' || (!options.format && !!options.audioFormat)
+    const fmt = isAudioMode ? 'audio' : (options.format || settings.resolution)
     const container = options.container || settings.container || 'mp4'
     const isClipping = !!(options.rangeStart || options.rangeEnd)
     const isGif = fmt === 'gif'
@@ -63,51 +70,97 @@ export async function buildYtDlpArgs(
         '--no-colors',
         '--no-playlist',
         '--force-overwrites', // Prevent interactive prompts that hang the process
-        '--no-input', // Disable user interaction (stdin) to prevent hangs on prompts
+        // '--no-input', // REMOVED: Not supported by this version of yt-dlp, caused Exit Code 2 crash
         '--encoding', 'utf-8', // Force UTF-8 output to prevent Tauri shell encoding errors
         // CONCURRENT FRAGMENTS (Speed Boost - Hidden Default)
         '-N', concurrentFragments,
         '--continue', // Force resume support
         '--socket-timeout', DEFAULTS.SOCKET_TIMEOUT, // Refresh link if connection hangs/throttles
         // PARABOLIC: Template Parsing for reliability
-        '--progress-template', 'SCENECLIP_PROGRESS;%(progress.status)s;%(progress.downloaded_bytes)s;%(progress.total_bytes)s;%(progress.total_bytes_estimate)s;%(progress.speed)s;%(progress.eta)s'
+        '--progress-template', 'SCENECLIP_PROGRESS;%(progress.status)s;%(progress.downloaded_bytes)s;%(progress.total_bytes)s;%(progress.total_bytes_estimate)s;%(progress.speed)s;%(progress.eta)s',
+
+        // FIX: Force highest quality sorting (Resolution > FPS > Bitrate)
+        // This prevents "burik" (low quality) results when using fallback clients like 'android'
+        '-S', 'res:2160,fps,br,size',
+
+        // STRICT: Ignore any external yt-dlp configurations (yt-dlp.conf)
+        '--ignore-config'
     ]
 
-    // Plugin Integration
-    // Plugin Integration
-    // PARABOLIC: Always load plugins path for mandatory extensions like SrtFix
+    // Plugin & JS Runtime Integration
+    // Required for YouTube signature deciphering (since late 2024)
+    // and custom post-processors like SrtFix
     try {
         const { resolveResource } = await import('@tauri-apps/api/path')
-        const pluginsPath = await resolveResource('resources/plugins') // Resolves strictly to resources/plugins
-        args.push('--plugin-dirs', pluginsPath)
 
-        // MANDATORY: Automatic Subtitle Cleaner
-        args.push('--use-postprocessor', 'SrtFix')
+        // 1. Plugins Path
+        const needsPlugins = options.subtitles || settings.useSmartProxy || settings.useReplayGain || settings.useChromeCookieUnlock
+        if (needsPlugins) {
+            try {
+                const pluginsPath = await resolveResource('resources/plugins')
+                args.push('--plugin-dirs', pluginsPath)
+            } catch (e) {
+                console.error('Failed to resolve plugins path:', e)
+            }
+        }
 
-        // MANDATORY: Smart Proxy Rotator (Anti-429) - Always Active Protection (User Configurable)
+        // 2. JS RUNTIME SUPPORT (Deno/Node/Bun)
+        // Priority: 1. Manual Path in Settings, 2. Bundled Deno Sidecar
+        let activeJsPath = settings.binaryPathNode || options.jsRuntimePath
+
+        // If no manual path, try to use the bundled Deno sidecar
+        if (!activeJsPath) {
+            try {
+                const sidecarPath = await resolveResource(BINARIES.DENO)
+                if (sidecarPath) {
+                    activeJsPath = sidecarPath
+                }
+            } catch (e) {
+                console.debug('Bundled Deno sidecar not found, yt-dlp will use system default if available.')
+            }
+        }
+
+        if (activeJsPath) {
+            // Detect runtime type
+            const lowerPath = activeJsPath.toLowerCase()
+            let runtimeType = 'node'
+            if (lowerPath.includes('deno')) runtimeType = 'deno'
+            else if (lowerPath.includes('bun')) runtimeType = 'bun'
+            else if (lowerPath.includes('qjs')) runtimeType = 'quickjs'
+
+            args.push('--js-runtimes', `${runtimeType}:${activeJsPath}`)
+
+            // Automatic script updates (Deno/Bun only)
+            if (runtimeType === 'deno' || runtimeType === 'bun') {
+                args.push('--remote-components', 'ejs:npm')
+            }
+        }
+
+        // 3. Post-Processors
+        if (options.subtitles) {
+            args.push('--use-postprocessor', 'SrtFix')
+        }
+
         if (settings.useSmartProxy) {
             args.push('--use-postprocessor', 'SmartProxyRotator')
         }
 
         if (settings.useReplayGain) {
-            // ReplayGain usually needs a 'when' trigger
-            // We assume 'rsgain' is available in PATH or bundled sidecar is reachable via some mechanism
-            // For now, we rely on the plugin finding it or user having it in PATH (since resolving sidecar path in frontend is non-trivial without executing)
             args.push('--use-postprocessor', 'ReplayGain:when=after_move')
         }
 
         if (settings.useChromeCookieUnlock) {
-            // This postprocessor must run at pre_process to patch cookie loading BEFORE download
             args.push('--use-postprocessor', 'ChromeCookieUnlock:when=pre_process')
         }
     } catch (e) {
-        console.error('Failed to resolve plugins path:', e)
+        console.error('Critical failure in resource resolution:', e)
     }
 
     // Custom FFmpeg Path Support
     if (settings.binaryPathFfmpeg && settings.binaryPathFfmpeg.trim().length > 0) {
         args.push('--ffmpeg-location', settings.binaryPathFfmpeg)
     }
+
 
     // PARABOLIC: Aria2c Integration
     if (settings.useAria2c) {
@@ -287,9 +340,10 @@ export async function buildYtDlpArgs(
     }
 
     // 2. Hardware Acceleration & Codec Logic
-    // FIX: Strictly disable generic HW args if we are already forcing a transcode (VideoConvertor)
-    // This prevents "Double Transcode" conflicts.
-    if (activeGpuType !== 'cpu' && fmt !== 'audio' && fmt !== 'gif' && !options.forceTranscode) {
+    // FIX: Strictly disable generic HW args if we are already forcing a transcode (VideoConvertor) 
+    // OR if we are CLIPPING. Clipping + HW Accel + force-keyframes often leads to FFmpeg crash (Exit Code 2).
+    // We fall back to CPU encoding (libx264) for clips for maximum stability.
+    if (activeGpuType !== 'cpu' && fmt !== 'audio' && fmt !== 'gif' && !options.forceTranscode && !isClipping) {
         const encoderMap: Record<string, string> = {
             'nvidia': 'h264_nvenc',
             'amd': 'h264_amf',
@@ -399,7 +453,12 @@ export async function buildYtDlpArgs(
     }
 
     // SponsorBlock: Check BOTH per-task option (from dialog) and global setting
-    const useSponsorBlockNow = options.removeSponsors || settings.useSponsorBlock
+    // FIX: Respect explicit 'false' from options (if user unchecked it in dialog)
+    // If options.removeSponsors is defined (true/false), use it. otherwise use global setting.
+    const useSponsorBlockNow = (options.removeSponsors !== undefined)
+        ? options.removeSponsors
+        : settings.useSponsorBlock
+
     if (useSponsorBlockNow && settings.sponsorSegments.length > 0) {
         args.push('--sponsorblock-remove', settings.sponsorSegments.join(','))
     }
@@ -448,10 +507,12 @@ export async function buildYtDlpArgs(
         args.push('--password', options.password)
     }
 
-    // PO Token Bypass (Security)
-    if (settings.usePoToken) {
+    // PO Token Bypass (Security) & Client Selection
+    // STRICT: Only apply extractor-args if PO Token is enabled. 
+    // We remove the automatic 'tv' client fallback to honor user settings strictly.
+    if (isYouTubeUrl(url) && settings.usePoToken) {
         // use mweb client which is best for PO Tokens
-        let ytArgs = 'player-client=mweb'
+        let ytArgs = 'player_client=mweb'
         if (settings.poToken) {
             ytArgs += `;po_token=${settings.poToken}`
         }
@@ -537,17 +598,17 @@ export async function buildYtDlpArgs(
         }
     }
 
-    // Embed Thumbnail (cover art into file)
-    // Embed Thumbnail (cover art into file)
-    // FIX: Also disable thumbnail embedding for clips to prevent metadata/duration corruption
-    if (settings.embedThumbnail && !isClipping) {
-        args.push('--embed-thumbnail')
-    }
 
-    // Embed Chapters (markers)
-    // FIX: Also disable for clips to unwanted chapter markers appearing outside the clipped range
-    if (settings.embedChapters && !isClipping) {
-        args.push('--embed-chapters')
+    // --- FINAL OVERRIDES (USER PRESETS) ---
+    // We apply these LAST so they can override any settings-based flags if they clash
+    // e.g. If user preset has a different codec than the HW Accel logic
+    if (options.postProcessorArgs && options.postProcessorArgs.trim().length > 0) {
+        const ppArgs = options.postProcessorArgs.trim()
+        if (!ppArgs.startsWith('ffmpeg:') && !ppArgs.startsWith('sami:') && !ppArgs.startsWith('double_ffmpeg:')) {
+            args.push('--postprocessor-args', `ffmpeg:${ppArgs}`)
+        } else {
+            args.push('--postprocessor-args', ppArgs)
+        }
     }
 
     // URL must be LAST, after all options
@@ -697,12 +758,19 @@ export function sanitizeFilename(template: string, meta: any, options?: YtDlpOpt
     // Determine Target Extension based on Options (User Intent), not just Source Metadata
     let targetExt = meta.ext || 'mp4'
 
-    if (options?.format === 'audio' || options?.audioFormat) {
+    // Match logic with buildYtDlpArgs
+    const isAudioMode = options?.format === 'audio' || (!options?.format && !!options?.audioFormat)
+
+    if (isAudioMode) {
         targetExt = options?.audioFormat || 'mp3'
     } else if (options?.format === 'gif') {
         targetExt = 'gif'
     } else if (options?.container) {
         targetExt = options.container
+    } else if (options?.format === 'Best') {
+        // Explicit Best Video -> Default to MP4 or container setting
+        // Do NOT let audioFormat contamination affect this
+        targetExt = options.container || 'mp4'
     }
 
     const expectedExt = `.${targetExt}`
@@ -736,17 +804,24 @@ export function sanitizeFilename(template: string, meta: any, options?: YtDlpOpt
 
 // Sidecar-based Command Factory
 export async function getYtDlpCommand(args: string[], binaryPath?: string) {
-    if (binaryPath && binaryPath.trim().length > 0) {
+    if (binaryPath && typeof binaryPath === 'string' && binaryPath.trim().length > 0 && !binaryPath.includes('Auto-managed')) {
         return Command.create(binaryPath, args)
     }
     return Command.sidecar(BINARIES.YTDLP, args)
 }
 
 export async function getFFmpegCommand(args: string[], binaryPath?: string) {
-    if (binaryPath && binaryPath.trim().length > 0) {
+    if (binaryPath && typeof binaryPath === 'string' && binaryPath.trim().length > 0 && !binaryPath.includes('Auto-managed')) {
         return Command.create(binaryPath, args)
     }
     return Command.sidecar(BINARIES.FFMPEG, args)
+}
+
+export async function getFFprobeCommand(args: string[], binaryPath?: string) {
+    if (binaryPath && typeof binaryPath === 'string' && binaryPath.trim().length > 0 && !binaryPath.includes('Auto-managed')) {
+        return Command.create(binaryPath, args)
+    }
+    return Command.sidecar(BINARIES.FFPROBE, args)
 }
 
 

@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 import { Switch } from '../ui'
 import { Select } from '../ui' // Reused for "Insert Variable"
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
@@ -13,6 +15,14 @@ interface DownloadSettingsProps {
 
 export function DownloadSettings({ settings, setSetting }: DownloadSettingsProps) {
     const { t } = useTranslation()
+    const [pathWarning, setPathWarning] = useState<boolean>(false)
+
+    useEffect(() => {
+        if (!settings.downloadPath) return
+        invoke('validate_path', { path: settings.downloadPath })
+            .then(isValid => setPathWarning(!isValid as boolean))
+            .catch(() => setPathWarning(true))
+    }, [settings.downloadPath])
 
     const handleInsertToken = (token: string) => {
         const current = settings.filenameTemplate || '{title}'
@@ -85,6 +95,11 @@ export function DownloadSettings({ settings, setSetting }: DownloadSettingsProps
                                 <span className="text-sm font-medium truncate font-mono" title={settings.downloadPath || 'Downloads'}>
                                     {settings.downloadPath || 'Downloads'}
                                 </span>
+                                {pathWarning && (
+                                    <span className="text-[10px] text-red-500 block">
+                                        {t('settings.downloads.path_invalid') || "Path not found"}
+                                    </span>
+                                )}
                             </div>
                         </div>
                         <button

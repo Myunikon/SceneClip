@@ -6,31 +6,36 @@ import { toast as sonnerToast, ExternalToast } from 'sonner'
 import { useAppStore } from '../store'
 
 // Get addLog function from store (non-hook version)
-const addToNotificationCenter = (message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info', logData?: Record<string, unknown>) => {
-    useAppStore.getState().addLog({ message, type, ...logData })
+const addToNotificationCenter = (
+    message: string,
+    type: 'info' | 'success' | 'warning' | 'error' = 'info',
+    source: 'system' | 'ytdlp' | 'ffmpeg' = 'system',
+    logData?: Record<string, unknown>
+) => {
+    useAppStore.getState().addLog({ message, type, source, ...logData })
 }
 
 /**
  * Enhanced toast that shows popup AND saves to notification center
  */
 export const notify = {
-    success: (message: string, options?: ExternalToast, logData?: Record<string, unknown>) => {
-        addToNotificationCenter(message, 'success', logData)
+    success: (message: string, options?: ExternalToast, source: 'system' | 'ytdlp' | 'ffmpeg' = 'system', logData?: Record<string, unknown>) => {
+        addToNotificationCenter(message, 'success', source, logData)
         return sonnerToast.success(message, options)
     },
 
-    error: (message: string, options?: ExternalToast, logData?: Record<string, unknown>) => {
-        addToNotificationCenter(message, 'error', logData)
+    error: (message: string, options?: ExternalToast, source: 'system' | 'ytdlp' | 'ffmpeg' = 'system', logData?: Record<string, unknown>) => {
+        addToNotificationCenter(message, 'error', source, logData)
         return sonnerToast.error(message, options)
     },
 
-    warning: (message: string, options?: ExternalToast, logData?: Record<string, unknown>) => {
-        addToNotificationCenter(message, 'warning', logData)
+    warning: (message: string, options?: ExternalToast, source: 'system' | 'ytdlp' | 'ffmpeg' = 'system', logData?: Record<string, unknown>) => {
+        addToNotificationCenter(message, 'warning', source, logData)
         return sonnerToast.warning(message, options)
     },
 
-    info: (message: string, options?: ExternalToast, logData?: Record<string, unknown>) => {
-        addToNotificationCenter(message, 'info', logData)
+    info: (message: string, options?: ExternalToast, source: 'system' | 'ytdlp' | 'ffmpeg' = 'system', logData?: Record<string, unknown>) => {
+        addToNotificationCenter(message, 'info', source, logData)
         return sonnerToast.info(message, options)
     },
 

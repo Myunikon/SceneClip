@@ -43,13 +43,12 @@ export const ms = {
         filename_template: "Format Nama Fail",
         insert_token: "Tambah Pembolehubah...",
         tokens: {
-            title: "Tajuk Video",
-            uploader: "Nama Pemuat Naik",
-            ext: "Lencungan Fail",
-            id: "ID Video",
-            width: "Lebar",
-            height: "Tinggi",
-            date: "Tarikh Muat Naik"
+            title: "Tajuk",
+            author: "Penulis",
+            id: "ID",
+            res: "Resolusi",
+            site: "Laman",
+            date: "Tarikh"
         },
         example_note: "* Pratonton video sampel",
 
@@ -132,7 +131,7 @@ export const ms = {
             change: "Ubah",
             always_ask: "Sentiasa tanya lokasi simpan",
             filename_template: "Uturan Nama Fail (Templat)",
-            available_vars: "Tersedia: {title}, {width}, {height}, {ext}",
+            available_vars: "Tersedia: {title}, {res}, {source}, {date}",
             resolution: "Resolusi Lalai",
             container: "Kontainer (Format)",
             best: "Terbaik",
@@ -229,12 +228,19 @@ export const ms = {
             clear_cache: "Kosongkan Cache",
             post_action: "Tindakan Selepas Muat Turun",
             post_actions: {
-                none: "Tiada",
-                sleep: "Tidur",
-                shutdown: "Matikan Sistem"
+                none: "Jangan Buat Apa-apa",
+                sleep: "Tidurkan Komputer (Sleep)",
+                shutdown: "Matikan Sistem (Shutdown)"
             },
             post_download_action_desc: "Pilih tindakan selepas semua muat turun selesai.",
             shutdown_warning: "Komputer akan ditutup secara paksa selepas muat turun. Simpan kerja anda!",
+            content_enhancements: {
+                title: "Peningkatan Kandungan",
+                srt_fixer: "SRT Fixer",
+                srt_fixer_desc: "Baiki baris bertindih dan masa yang tidak tepat pada sari kata automatik YouTube.",
+                metadata_enhancer: "Metadata Enhancer",
+                metadata_enhancer_desc: "Sematkan metadata tambahan seperti dislike, bab, dan info json ke dalam fail."
+            },
             danger_zone_proxy: "Zon Bahaya (Proxy)",
             danger_zone_binaries: "Zon Bahaya (Binari)",
             danger_desc: "Menukar laluan ini boleh merosakkan aplikasi.",
@@ -267,6 +273,16 @@ export const ms = {
             errors: {
                 open: "Buka Folder"
             },
+            source_disabled: "Dinyahaktifkan (Lalai)",
+            browser_type: "Jenis Pelayar",
+            no_file: "Tiada fail dipilih...",
+            clear_path: "Kosongkan Laluan",
+            tech_paths: "Path Teknis & Binari",
+            cookie_path: "Laluan Fail Cookie",
+            browse_btn: "Semak... (Browse)",
+            auto_managed: "Diurus-automatik",
+            detected_gpu: "GPU Dikesan:",
+            unknown_integrated: "Tidak Diketahui / Bersepadu",
             video_processing: {
                 title: "Pemprosesan Video",
                 hw_accel: "Pecutan Perkakasan",
@@ -281,6 +297,7 @@ export const ms = {
             retention_forever: "Selamanya (Simpan Semua)",
             retention_zero: "Jangan Simpan Sejarah",
             history_max_items: "Maks Item Sejarah",
+            history_item_count: "{{count}} Item",
             btn_replay_welcome: "Main Semula Intro",
             btn_reset_data: "Tetap Semula Data",
             btn_export_history: "Eksport Sejarah",
@@ -903,6 +920,8 @@ export const ms = {
     terminal: {
         filter_all: "Semua",
         filter_system: "Sistem",
+        filter_ytdlp: "yt-dlp",
+        filter_ffmpeg: "FFmpeg",
         copy_all: "Salin Semua",
         clear_all: "Bersihkan Semua",
         copied: "Disalin!",

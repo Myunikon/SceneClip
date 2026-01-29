@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { notify } from '../../../lib/notify'
 import { parseYtDlpJson } from '../../../lib/ytdlp'
 import { VideoMeta } from '../../../types'
+import { useAppStore } from '../../../store'
 
 export function useVideoMeta(url: string) {
     const [meta, setMeta] = useState<VideoMeta | null>(null)
@@ -25,7 +26,8 @@ export function useVideoMeta(url: string) {
             try {
                 // Use shared sidecar command factory
                 const { getYtDlpCommand } = await import('../../../lib/ytdlp')
-                const cmd = await getYtDlpCommand(['--dump-json', '--no-warnings', '--', url])
+                const settings = useAppStore.getState().settings
+                const cmd = await getYtDlpCommand(['--dump-json', '--no-warnings', '--', url], settings.binaryPathYtDlp)
                 const output = await cmd.execute()
 
                 if (output.code === 0) {

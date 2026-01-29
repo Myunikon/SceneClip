@@ -34,3 +34,8 @@ src-tauri/gen/
 src-tauri/ffmpeg*
 src-tauri/yt-dlp*
 src-tauri/binaries/
+
+# Project specific
+Perbaikan/
+Filosofi Light dan Dark Mode.md
+

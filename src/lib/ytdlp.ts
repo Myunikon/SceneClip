@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { AppSettings } from '../store/slices/types'
+import { useAppStore } from '../store'
 import { Command } from '@tauri-apps/plugin-shell'
-import { BINARIES, DEFAULTS } from './constants'
+import { BINARIES, DEFAULTS, ALL_SUPPORTED_EXTS } from './constants'
 
 export interface YtDlpOptions {
     path?: string
@@ -37,6 +38,7 @@ export interface YtDlpOptions {
     proxy?: string
     username?: string
     password?: string
+    customFilename?: string
 }
 
 export async function buildYtDlpArgs(
@@ -70,6 +72,37 @@ export async function buildYtDlpArgs(
         // PARABOLIC: Template Parsing for reliability
         '--progress-template', 'SCENECLIP_PROGRESS;%(progress.status)s;%(progress.downloaded_bytes)s;%(progress.total_bytes)s;%(progress.total_bytes_estimate)s;%(progress.speed)s;%(progress.eta)s'
     ]
+
+    // Plugin Integration
+    const needsPlugins = settings.useSrtFixer || settings.useReplayGain || settings.useChromeCookieUnlock || settings.usePoToken
+    if (needsPlugins) {
+        try {
+            const { resolveResource } = await import('@tauri-apps/api/path')
+            const pluginsPath = await resolveResource('resources/plugins')
+            args.push('--plugin-dirs', pluginsPath)
+
+            if (settings.useSrtFixer) {
+                args.push('--use-postprocessor', 'srt_fix')
+            }
+
+            if (settings.useReplayGain) {
+                // ReplayGain usually needs a 'when' trigger
+                args.push('--use-postprocessor', 'ReplayGain:when=after_move')
+            }
+
+            if (settings.useChromeCookieUnlock) {
+                // This postprocessor must run at pre_process to patch cookie loading BEFORE download
+                args.push('--use-postprocessor', 'ChromeCookieUnlock:when=pre_process')
+            }
+        } catch (e) {
+            console.error('Failed to resolve plugins path:', e)
+        }
+    }
+
+    // Custom FFmpeg Path Support
+    if (settings.binaryPathFfmpeg && settings.binaryPathFfmpeg.trim().length > 0) {
+        args.push('--ffmpeg-location', settings.binaryPathFfmpeg)
+    }
 
     // PARABOLIC: Aria2c Integration
     if (settings.useAria2c) {
@@ -410,6 +443,19 @@ export async function buildYtDlpArgs(
         args.push('--password', options.password)
     }
 
+    // PO Token Bypass (Security)
+    if (settings.usePoToken) {
+        // use mweb client which is best for PO Tokens
+        let ytArgs = 'player-client=mweb'
+        if (settings.poToken) {
+            ytArgs += `;po_token=${settings.poToken}`
+        }
+        if (settings.visitorData) {
+            ytArgs += `;visitor_data=${settings.visitorData}`
+        }
+        args.push('--extractor-args', `youtube:${ytArgs}`)
+    }
+
     // Cookie Source logic
     // PRIORITY: 1. Task-specific Cookies (from Browser Extension) 2. System Browser 3. txt file
     if (options.cookies) {
@@ -467,11 +513,23 @@ export async function buildYtDlpArgs(
 
     // Embed Metadata (artist, title, etc. into file)
     // CRITICAL FIX: Disable metadata embedding for clips.
-    // yt-dlp sees the original video duration (e.g. 20 min) and writes it to the file tags,
-    // causing players to show "20:00" duration for a 10s clip.
-    // NOTE: isClipping is already defined above in Hardware Acceleration logic.
     if (settings.embedMetadata && !isClipping) {
         args.push('--embed-metadata')
+    }
+
+    // Embed Thumbnail
+    if (settings.embedThumbnail && !isClipping) {
+        args.push('--embed-thumbnail')
+    }
+
+    // Embed Chapters & Enhanced Metadata
+    if ((settings.embedChapters || settings.useMetadataEnhancer) && !isClipping) {
+        args.push('--embed-chapters')
+
+        // Metadata Enhancer adds even more detailed data
+        if (settings.useMetadataEnhancer) {
+            args.push('--embed-info-json')
+        }
     }
 
     // Embed Thumbnail (cover art into file)
@@ -525,18 +583,86 @@ export function parseMetadata(lines: string[]) {
     return { streamUrls, needsMerging, meta }
 }
 
-export function sanitizeFilename(template: string, meta: any): string {
+export function sanitizeFilename(template: string, meta: any, options?: YtDlpOptions): string {
     // Helper to sanitize individual path segments (folders/filenames)
     const sanitizeSegment = (s: string) => s.replace(/[\\/:*?"<>|]/g, '_').replace(/\.\./g, '').trim()
 
     let finalName = template
+
+    // FIX: If custom filename is used, treat it as the {Title} part (User Request)
+    // The "template" argument passed here is actually `options.customFilename || settings.filenameTemplate`
+    // So if options.customFilename is present, it IS the title replacement in essence? 
+    // Wait, the logic call in DownloadService is: `template = options.customFilename || settings.filenameTemplate`
+    // If the user sets a custom name "My Video", `template` becomes "My Video".
+    // If we just replace {title}, "My Video" remains "My Video".
+    // BUT the user wants the custom name to be *treated* as title if using a complex template?
+    // "Title Handling: Semua konfigurasi download (baik default name maupun custom name) dianggap sebagai 'title'"
+    // This implies we should always use the SETTINGS template, but inject the custom name as the {Title} variable.
+    // However, the current logic overrides the template completely if a custom name is set.
+    // Let's stick to the current logic: 
+    // If custom template provided (options.customFilename), it effectively REPLACES the {Title} variable in the user's mind?
+    // No, if user types "My Video", they expect "My Video.mp4".
+    // The user's request says: Custom Name: "Cara Cepat" -> Template {Title}_{Res} -> Result "Cara Cepat_1080p".
+    // THIS MEANS: We should NOT use `options.customFilename` as the *whole* template.
+    // We should use `settings.filenameTemplate` as the base, and use `options.customFilename` as the value for `{Title}`.
+
+    // Correction in DownloadService would be needed for that perfect architecture, but we can patch it here if we assume `template` passed in MIGHT be just the title.
+    // Actually, let's look at DownloadService again: `const template = options?.customFilename || settings.filenameTemplate || '{title}';`
+    // This is the flaw. It overwrites the template.
+    // We need to change how this is called, but since I am editing THIS file:
+    // I can't fix the upstream logic here easily without changing DownloadService again.
+    // BUT, I can try to detect if it's a custom filename? No.
+
+    // Let's assume for this step, we implement the Variable Logic, and I will fix the Template Selection in DownloadService in a subsequent step if needed.
+    // Wait, I already edited DownloadService to pass options.
+    // So I can check `options.customFilename`.
+
+    // Determining Title Value
+    const titleValue = options?.customFilename || meta.title || 'Untitled'
+
+    // Determining Resolution
+    let resolution = 'NA'
+    if (options?.format === 'audio') {
+        resolution = 'Audio'
+    } else {
+        // Use meta.height or options.format (e.g. "1080p") logic
+        if (meta.height) resolution = `${meta.height}p`
+        else if (options?.format && options.format !== 'best') resolution = options.format // might be "1080p"
+    }
+
+    // Determining Source (Extractor)
+    // meta.extractor_key is usually "Youtube", "TikTok", etc.
+    const source = meta.extractor_key || meta.extractor || 'Web'
+
+    // Determining Date (DD-MM-YYYY)
+    // meta.upload_date is usually "YYYYMMDD" (e.g. 20251224)
+    let date = '00-00-0000'
+    if (meta.upload_date && meta.upload_date.length === 8) {
+        const y = meta.upload_date.substring(0, 4)
+        const m = meta.upload_date.substring(4, 6)
+        const d = meta.upload_date.substring(6, 8)
+        date = `${d}-${m}-${y}`
+    }
+
     // Replace template variables first (so their content can be sanitized later)
-    finalName = finalName.replace(/{title}/gi, meta.title || '')
-    finalName = finalName.replace(/{ext}/gi, meta.ext || 'mp4')
+    finalName = finalName.replace(/{title}/gi, titleValue)
+    finalName = finalName.replace(/{res}/gi, resolution)
+    finalName = finalName.replace(/{author}/gi, meta.uploader || 'Unknown')
+    finalName = finalName.replace(/{site}/gi, source)
+    finalName = finalName.replace(/{date}/gi, date)
     finalName = finalName.replace(/{id}/gi, meta.id || '')
+
+    // Legacy support (still replace old vars if present for backward compatibility)
+    finalName = finalName.replace(/{source}/gi, source)
     finalName = finalName.replace(/{uploader}/gi, meta.uploader || 'Unknown')
-    finalName = finalName.replace(/{width}/gi, meta.width ? String(meta.width) : '')
-    finalName = finalName.replace(/{height}/gi, meta.height ? String(meta.height) : '')
+    finalName = finalName.replace(/{resolution}/gi, resolution)
+    finalName = finalName.replace(/{ext}/gi, '') // Remove {ext} explicitly if user left it
+
+    // Clean up resulting double separators or empty brackets
+    // e.g. "MyTitle_.mp4" -> "MyTitle.mp4"
+    // simplistic cleanup:
+    finalName = finalName.replace(/\.\./g, '.')
+
 
     // Handle Directory Structure:
     // Split by / or \ to preserve user-intended subfolders (e.g. "Series/Title")
@@ -562,17 +688,42 @@ export function sanitizeFilename(template: string, meta: any): string {
         }
     }
 
-    // STRICT EXTENSION ENFORCEMENT
-    const expectedExt = `.${meta.ext || 'mp4'}`
+    // STRICT EXTENSION ENFORCEMENT logic
+    // Determine Target Extension based on Options (User Intent), not just Source Metadata
+    let targetExt = meta.ext || 'mp4'
 
-    // Case-insensitive check for extension (only on the last segment/filename)
-    if (!finalName.toLowerCase().endsWith(expectedExt.toLowerCase())) {
-        finalName = `${finalName}${expectedExt}`
+    if (options?.format === 'audio' || options?.audioFormat) {
+        targetExt = options?.audioFormat || 'mp3'
+    } else if (options?.format === 'gif') {
+        targetExt = 'gif'
+    } else if (options?.container) {
+        targetExt = options.container
     }
+
+    const expectedExt = `.${targetExt}`
+
+    // Ensure filename ends with target extension
+    // Fix: If user manually typed an extension in the template (e.g. "myfile.mp4"),
+    // we should strip it first to ensure we don't get "myfile.mp4.mp4" or "myfile.mp4.mp3".
+    // We use the comprehensive list from constants plus a few legacy ones.
+    const dynamicExts = [...ALL_SUPPORTED_EXTS, 'ts', 'm4v', 'flv', '3gp', 'rmvb', 'vob', 'aac', 'm4p']
+    let baseName = finalName
+
+    // Check for any of the common extensions at the end
+    for (const ext of dynamicExts) {
+        const dotted = `.${ext}`
+        if (baseName.toLowerCase().endsWith(dotted)) {
+            baseName = baseName.substring(0, baseName.length - dotted.length)
+            break
+        }
+    }
+
+    // Final assembly: baseName (stripped of common exts) + the correct extension
+    finalName = `${baseName}${expectedExt}`
 
     // Fallback for completely empty names
     if (finalName === expectedExt || finalName.trim() === expectedExt) {
-        finalName = sanitizeSegment(meta.title || 'Untitled').substring(0, 200) + expectedExt
+        finalName = sanitizeSegment(titleValue).substring(0, 200) + expectedExt
     }
 
     return finalName
@@ -581,11 +732,16 @@ export function sanitizeFilename(template: string, meta: any): string {
 // Sidecar-based Command Factory
 export async function getYtDlpCommand(args: string[], binaryPath?: string) {
     if (binaryPath && binaryPath.trim().length > 0) {
-        // Use custom binary path (e.g. updated version in AppData)
-        // Note: This requires the path to be allowed in tauri.conf.json shell capabilities
         return Command.create(binaryPath, args)
     }
     return Command.sidecar(BINARIES.YTDLP, args)
+}
+
+export async function getFFmpegCommand(args: string[], binaryPath?: string) {
+    if (binaryPath && binaryPath.trim().length > 0) {
+        return Command.create(binaryPath, args)
+    }
+    return Command.sidecar(BINARIES.FFMPEG, args)
 }
 
 
@@ -683,7 +839,8 @@ export function parseYtDlpJson(stdout: string) {
 }
 // Clear local cache command
 export async function clearCache() {
-    const cmd = await getYtDlpCommand(['--rm-cache-dir'])
+    const settings = useAppStore.getState().settings
+    const cmd = await getYtDlpCommand(['--rm-cache-dir'], settings.binaryPathYtDlp)
     const output = await cmd.execute()
     if (output.code !== 0) throw new Error(output.stderr)
     return true

@@ -2,7 +2,6 @@
 import { StateCreator } from 'zustand'
 import { AppState, DownloadTask, VideoSlice } from './types'
 import { v4 as uuidv4 } from 'uuid'
-import { Command } from '@tauri-apps/plugin-shell'
 
 // Import Helper Libs
 import { notify } from '../../lib/notify'
@@ -15,8 +14,8 @@ import {
     buildCompressedOutputPath,
     detectFileType
 } from '../../lib/ffmpegService'
+import { getFFmpegCommand } from '../../lib/ytdlp'
 import { stat } from '@tauri-apps/plugin-fs'
-import { BINARIES } from '../../lib/constants'
 
 // Import Extracted Services
 import {
@@ -44,7 +43,7 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
                 (t.status === 'downloading' || t.status === 'fetching_info' || t.status === 'queued')
             )
             if (existingTask) {
-                get().addLog({ message: `[Queue] Duplicate URL ignored: ${url}`, type: 'warning' })
+                get().addLog({ message: `[Queue] Duplicate URL ignored: ${url}`, type: 'warning', source: 'system' })
                 return
             }
 
@@ -59,7 +58,7 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
                         cookiePath = options.cookies
                     }
                 } catch (e) {
-                    get().addLog({ message: `Failed to save cookie file: ${e}`, type: 'error' })
+                    get().addLog({ message: `Failed to save cookie file: ${e}`, type: 'error', source: 'system' })
                 }
             }
 
@@ -123,8 +122,20 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
             const service = DownloadService.getInstance()
 
             await service.start(task, get().settings, {
-                onLog: (taskId, message, type) => {
-                    get().addLog({ message: `[${taskId.substring(0, 4)}] ${message}`, type: type || 'info' })
+                onLog: (taskId, message, type, explicitSource) => {
+                    // Logic to distinguish between ytdlp and ffmpeg logs based on content
+                    const lowerMsg = message.toLowerCase();
+                    const source = explicitSource || (
+                        (lowerMsg.includes('ffmpeg') || lowerMsg.includes('merge') || lowerMsg.includes('muxing'))
+                            ? 'ffmpeg'
+                            : 'ytdlp'
+                    );
+
+                    get().addLog({
+                        message: `[${taskId.substring(0, 4)}] ${message}`,
+                        type: type || 'info',
+                        source
+                    })
                     if (type === 'error') updateTask(taskId, { log: message })
                 },
                 onProgress: (taskId, updates) => {
@@ -156,7 +167,8 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
 
                         addLog({
                             message: `[${taskId.substring(0, 4)}] Transient error detected. Auto-retry ${nextRetry}/${maxRetries} in ${delay / 1000}s...`,
-                            type: 'warning'
+                            type: 'warning',
+                            source: 'system'
                         })
 
                         updateTask(taskId, {
@@ -182,7 +194,8 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
                         if (currentRetryCount >= maxRetries) {
                             addLog({
                                 message: `[${taskId.substring(0, 4)}] Max retries (${maxRetries}) exceeded. Marking as failed.`,
-                                type: 'error'
+                                type: 'error',
+                                source: 'system'
                             })
                         }
                         updateTask(taskId, { status: 'error', log: error })
@@ -197,7 +210,7 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
                         completedAt: Date.now()
                     })
 
-                    get().addLog({ message: `Task ${taskId} Completed. Path: ${result.path}`, type: 'success' })
+                    get().addLog({ message: `Task ${taskId} Completed. Path: ${result.path}`, type: 'success', source: 'system' })
 
                     // Trigger next in queue
                     get().processQueue()
@@ -221,6 +234,23 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
                     )
 
                     if (!hasActiveDownloads && settings.postDownloadAction && settings.postDownloadAction !== 'none') {
+                        // SAFETY CHECK: Abort if any task in the current session failed
+                        // Session heuristic: within last 6 hours
+                        const sessionCutoff = Date.now() - (6 * 60 * 60 * 1000)
+                        const hasFailedTasks = tasks.some(t =>
+                            t.status === 'error' &&
+                            (t.completedAt || t.addedAt || 0) > sessionCutoff
+                        )
+
+                        if (hasFailedTasks) {
+                            get().addLog({
+                                message: `Post-download action (${settings.postDownloadAction}) aborted because one or more tasks failed.`,
+                                type: 'warning',
+                                source: 'system'
+                            })
+                            return
+                        }
+
                         // Send batch complete notification
                         if (settings.enableDesktopNotifications) {
                             const completedCount = tasks.filter(t => t.status === 'completed').length
@@ -335,7 +365,7 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
 
             // Spawn FFmpeg Sidecar
             try {
-                const cmd = Command.sidecar(BINARIES.FFMPEG, args)
+                const cmd = await getFFmpegCommand(args, settings.binaryPathFfmpeg)
                 let durationSec = 0
 
                 cmd.stderr.on('data', (line) => {
@@ -370,6 +400,7 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
                         notify.success("Compression Complete", { description: newTask.title })
                     } else {
                         updateTask(newId, { status: 'error', log: `Exit Code ${data.code}` })
+                        get().addLog({ message: `Compression Failed: Exit Code ${data.code} for ${originalTask.title}`, type: 'error', source: 'ffmpeg' })
                     }
                 })
 
@@ -426,7 +457,8 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
             get().addLog({
                 translationKey: 'recoveredDownloads',
                 params: { count: interruptedTasks.length },
-                type: 'success'
+                type: 'success',
+                source: 'system'
             })
 
             return interruptedTasks.length
@@ -463,7 +495,8 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
             get().addLog({
                 translationKey: 'retryingAllFailed',
                 params: { count: failedTasks.length },
-                type: 'info'
+                type: 'info',
+                source: 'system'
             })
         },
 

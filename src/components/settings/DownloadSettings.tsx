@@ -15,28 +15,57 @@ export function DownloadSettings({ settings, setSetting }: DownloadSettingsProps
     const { t } = useTranslation()
 
     const handleInsertToken = (token: string) => {
-        const current = settings.filenameTemplate || '{Title}.{ext}'
-        // Append token, ensuring we handle potential lack of selection gracefully by just appending
+        const current = settings.filenameTemplate || '{title}'
         setSetting('filenameTemplate', current + token)
     }
 
     // Mock preview logic
     const getPreview = () => {
         const mockValues: Record<string, string> = {
-            '{Title}': t('filename_preview.example_title') || 'My Awesome Video',
-            '{Uploader}': t('filename_preview.example_uploader') || 'CoolCreator',
-            '{Ext}': 'mp4',
-            '{Id}': 'dQw4w9WgXcQ',
-            '{Width}': '1920',
-            '{Height}': '1080',
-            '{Date}': '20230101'
+            '{title}': t('filename_preview.example_title') || 'My Awesome Video',
+            '{author}': t('filename_preview.example_uploader') || 'CoolCreator',
+            '{id}': 'dQw4w9WgXcQ',
+            '{res}': '1080p',
+            '{site}': 'YouTube',
+            '{date}': '24-12-2025'
         }
-        let preview = settings.filenameTemplate || '{Title}.{ext}'
+        let preview = settings.filenameTemplate || '{title}'
+
+        // Remove legacy {ext} if user pasted it
+        preview = preview.replace(/{ext}/gi, '')
+            .replace(/\.\./g, '.') // clean up double dots
+
+        // Replace vars
         Object.entries(mockValues).forEach(([key, val]) => {
             preview = preview.replace(new RegExp(key, 'gi'), val)
         })
-        return preview
+
+        // Clean trailing/leading separators
+        preview = preview.replace(/^[._-]+|[._-]+$/g, '')
+
+        // Always append ext for preview, but check if user already typed one
+        const commonExts = ['.mp4', '.mkv', '.webm', '.mp3', '.m4a', '.wav', '.gif', '.png', '.jpg', '.jpeg', '.ts', '.mov', '.avi']
+        const hasExt = commonExts.some(ext => preview.toLowerCase().endsWith(ext))
+
+        if (hasExt) return preview
+        return `${preview}.mp4`
     }
+
+    // Prepare tokens list
+    const allTokens = [
+        { value: '{title}', label: t('downloads.tokens.title') },
+        { value: '{author}', label: t('downloads.tokens.author') },
+        { value: '{res}', label: t('downloads.tokens.res') },
+        { value: '{site}', label: t('downloads.tokens.site') },
+        { value: '{date}', label: t('downloads.tokens.date') },
+        { value: '{id}', label: t('downloads.tokens.id') },
+    ]
+
+    // Filter out used tokens
+    const currentTemplate = settings.filenameTemplate || ''
+    const availableTokens = allTokens.filter(token =>
+        !currentTemplate.toLowerCase().includes(token.value.toLowerCase())
+    )
 
     return (
         <div className="space-y-6">
@@ -89,16 +118,9 @@ export function DownloadSettings({ settings, setSetting }: DownloadSettingsProps
                                     value=""
                                     onChange={handleInsertToken}
                                     placeholder={t('downloads.insert_token')}
-                                    options={[
-                                        { value: '{Title}', label: t('downloads.tokens.title') },
-                                        { value: '{Uploader}', label: t('downloads.tokens.uploader') },
-                                        { value: '{Ext}', label: t('downloads.tokens.ext') },
-                                        { value: '{Id}', label: t('downloads.tokens.id') },
-                                        { value: '{Width}', label: t('downloads.tokens.width') },
-                                        { value: '{Height}', label: t('downloads.tokens.height') },
-                                        { value: '{Date}', label: t('downloads.tokens.date') }
-                                    ]}
+                                    options={availableTokens}
                                     className="h-8 text-xs bg-background"
+                                    disabled={availableTokens.length === 0}
                                 />
                             </div>
                         </div>
@@ -107,7 +129,7 @@ export function DownloadSettings({ settings, setSetting }: DownloadSettingsProps
                             className="w-full p-2.5 rounded-lg border bg-background text-sm font-mono focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-muted-foreground/50 shadow-sm"
                             value={settings.filenameTemplate}
                             onChange={e => setSetting('filenameTemplate', e.target.value)}
-                            placeholder="{Title}.{ext}"
+                            placeholder="{title}"
                         />
 
                         {/* Live Preview - Cleaner */}

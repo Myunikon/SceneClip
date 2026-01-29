@@ -34,7 +34,7 @@ export function SystemSettings({ settings, setSetting, updateSettings }: SystemS
                     </div>
                     <div>
                         <h3 className="font-semibold text-base">{t('settings.advanced.developer_mode')}</h3>
-                        <p className="text-xs text-muted-foreground">{t('settings.advanced.developer_mode_desc') || "Enable technical tools and logs"}</p>
+                        <p className="text-xs text-muted-foreground">{t('settings.advanced.developer_mode_desc')}</p>
                     </div>
                 </div>
                 <Switch
@@ -51,10 +51,10 @@ export function SystemSettings({ settings, setSetting, updateSettings }: SystemS
                 >
                     <div className="space-y-4">
                         <SettingItem title={getBinaryName('ytdlp')} layout="vertical">
-                            <input className="w-full p-2 rounded-md border border-input bg-secondary/30 font-mono text-xs shadow-sm transition-colors focus:bg-background focus:ring-1 focus:ring-ring" value={settings.binaryPathYtDlp} onChange={e => setSetting('binaryPathYtDlp', e.target.value)} placeholder="Auto-managed" />
+                            <input className="w-full p-2 rounded-md border border-input bg-secondary/30 font-mono text-xs shadow-sm transition-colors focus:bg-background focus:ring-1 focus:ring-ring" value={settings.binaryPathYtDlp} onChange={e => setSetting('binaryPathYtDlp', e.target.value)} placeholder={t('settings.advanced.auto_managed')} />
                         </SettingItem>
                         <SettingItem title={getBinaryName('ffmpeg')} layout="vertical">
-                            <input className="w-full p-2 rounded-md border border-input bg-secondary/30 font-mono text-xs shadow-sm transition-colors focus:bg-background focus:ring-1 focus:ring-ring" value={settings.binaryPathFfmpeg} onChange={e => setSetting('binaryPathFfmpeg', e.target.value)} placeholder="Auto-managed" />
+                            <input className="w-full p-2 rounded-md border border-input bg-secondary/30 font-mono text-xs shadow-sm transition-colors focus:bg-background focus:ring-1 focus:ring-ring" value={settings.binaryPathFfmpeg} onChange={e => setSetting('binaryPathFfmpeg', e.target.value)} placeholder={t('settings.advanced.auto_managed')} />
                         </SettingItem>
                     </div>
                 </SettingSection>
@@ -97,7 +97,7 @@ export function SystemSettings({ settings, setSetting, updateSettings }: SystemS
                     {settings.cookieSource === 'txt' && (
                         <div className="animate-in fade-in zoom-in-95 duration-200">
                             <SettingItem
-                                title={t('settings.advanced.cookie_path') || "Cookie File Path"}
+                                title={t('settings.advanced.cookie_path')}
                                 layout="vertical"
                                 description={
                                     <div className="relative mt-2">
@@ -136,7 +136,7 @@ export function SystemSettings({ settings, setSetting, updateSettings }: SystemS
                                     }}
                                     className="text-xs font-medium bg-secondary hover:bg-secondary/80 text-foreground px-3 py-1.5 rounded-md transition-colors border border-border/50 shadow-sm"
                                 >
-                                    Browse...
+                                    {t('settings.advanced.browse_btn')}
                                 </button>
                             </SettingItem>
                         </div>
@@ -172,6 +172,95 @@ export function SystemSettings({ settings, setSetting, updateSettings }: SystemS
                 </div>
             </SettingSection>
 
+            {/* Content Enhancements */}
+            <SettingSection title={t('settings.advanced.content_enhancements.title')}>
+                <div className="space-y-4">
+                    <SettingItem
+                        title={t('settings.advanced.content_enhancements.srt_fixer')}
+                        description={t('settings.advanced.content_enhancements.srt_fixer_desc')}
+                    >
+                        <Switch
+                            checked={settings.useSrtFixer}
+                            onCheckedChange={(val) => setSetting('useSrtFixer', val)}
+                        />
+                    </SettingItem>
+
+                    <SettingItem
+                        title={t('settings.advanced.content_enhancements.metadata_enhancer')}
+                        description={t('settings.advanced.content_enhancements.metadata_enhancer_desc')}
+                    >
+                        <Switch
+                            checked={settings.useMetadataEnhancer}
+                            onCheckedChange={(val) => setSetting('useMetadataEnhancer', val)}
+                        />
+                    </SettingItem>
+
+                    <SettingItem
+                        title={t('settings.advanced.content_enhancements.replaygain')}
+                        description={t('settings.advanced.content_enhancements.replaygain_desc')}
+                    >
+                        <Switch
+                            checked={settings.useReplayGain}
+                            onCheckedChange={(val) => setSetting('useReplayGain', val)}
+                        />
+                    </SettingItem>
+
+                    <div className="space-y-2">
+                        <SettingItem
+                            title={t('settings.advanced.content_enhancements.po_token')}
+                            description={t('settings.advanced.content_enhancements.po_token_desc')}
+                        >
+                            <Switch
+                                checked={settings.usePoToken}
+                                onCheckedChange={(val) => setSetting('usePoToken', val)}
+                            />
+                        </SettingItem>
+
+                        {settings.usePoToken && (
+                            <div className="pl-6 space-y-3 pt-2 border-l-2 border-primary/20 ml-2 animate-in slide-in-from-left-2 duration-300">
+                                <div className="grid gap-1.5">
+                                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                        {t('settings.advanced.content_enhancements.po_token_label')}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="w-full bg-secondary/50 border border-border/50 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                                        placeholder={t('settings.advanced.content_enhancements.po_token_placeholder')}
+                                        value={settings.poToken || ''}
+                                        onChange={(e) => setSetting('poToken', e.target.value)}
+                                    />
+                                </div>
+                                <div className="grid gap-1.5">
+                                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                        {t('settings.advanced.content_enhancements.visitor_data_label')}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="w-full bg-secondary/50 border border-border/50 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                                        placeholder={t('settings.advanced.content_enhancements.visitor_data_placeholder')}
+                                        value={settings.visitorData || ''}
+                                        onChange={(e) => setSetting('visitorData', e.target.value)}
+                                    />
+                                </div>
+                                <p className="text-[10px] text-muted-foreground italic">
+                                    {t('settings.advanced.content_enhancements.token_info')}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    <SettingItem
+                        title={t('settings.advanced.content_enhancements.cookie_unlock')}
+                        description={t('settings.advanced.content_enhancements.cookie_unlock_desc')}
+                    >
+                        <Switch
+                            checked={settings.useChromeCookieUnlock}
+                            onCheckedChange={(val) => setSetting('useChromeCookieUnlock', val)}
+                        />
+                    </SettingItem>
+                </div>
+            </SettingSection>
+
             {/* Data Retention Policy */}
             <SettingSection
                 title={t('settings.advanced.history_retention')}
@@ -198,7 +287,7 @@ export function SystemSettings({ settings, setSetting, updateSettings }: SystemS
                         />
                     </SettingItem>
 
-                    <SettingItem title={t('settings.advanced.history_max_items') || "Max History Items"} layout="vertical">
+                    <SettingItem title={t('settings.advanced.history_max_items')} layout="vertical">
                         <Select
                             value={String(settings.maxHistoryItems ?? -1)}
                             onChange={(val) => {
@@ -208,10 +297,10 @@ export function SystemSettings({ settings, setSetting, updateSettings }: SystemS
                             }}
                             options={[
                                 { value: "-1", label: t('settings.advanced.retention_forever') },
-                                { value: "100", label: "100 Items" },
-                                { value: "50", label: "50 Items" },
-                                { value: "20", label: "20 Items" },
-                                { value: "10", label: "10 Items" },
+                                { value: "100", label: t('settings.advanced.history_item_count', { count: 100 }) },
+                                { value: "50", label: t('settings.advanced.history_item_count', { count: 50 }) },
+                                { value: "20", label: t('settings.advanced.history_item_count', { count: 20 }) },
+                                { value: "10", label: t('settings.advanced.history_item_count', { count: 10 }) },
                             ]}
                         />
                     </SettingItem>
@@ -220,23 +309,23 @@ export function SystemSettings({ settings, setSetting, updateSettings }: SystemS
 
             {/* Post-Download Action */}
             <SettingSection
-                title={t('settings.advanced.post_action') || "After All Downloads Complete"}
-                description={t('settings.advanced.post_download_action_desc') || "Action to perform when download queue is empty"}
+                title={t('settings.advanced.post_action')}
+                description={t('settings.advanced.post_download_action_desc')}
             >
                 <SettingItem title={t('settings.advanced.post_action')} layout="vertical">
                     <Select
                         value={settings.postDownloadAction || 'none'}
                         onChange={(val) => setSetting('postDownloadAction', val as AppSettings['postDownloadAction'])}
                         options={[
-                            { value: "none", label: t('settings.advanced.post_actions.none') || "Do Nothing" },
-                            { value: "sleep", label: t('settings.advanced.post_actions.sleep') || "Sleep Computer" },
-                            { value: "shutdown", label: t('settings.advanced.post_actions.shutdown') || "Shutdown Computer" }
+                            { value: "none", label: t('settings.advanced.post_actions.none') },
+                            { value: "sleep", label: t('settings.advanced.post_actions.sleep') },
+                            { value: "shutdown", label: t('settings.advanced.post_actions.shutdown') }
                         ]}
                     />
                 </SettingItem>
                 {settings.postDownloadAction === 'shutdown' && (
                     <div className="mt-2 p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-500">
-                        ⚠️ {t('settings.advanced.shutdown_warning') || "Your computer will shutdown. Make sure to save all work!"}
+                        ⚠️ {t('settings.advanced.shutdown_warning')}
                     </div>
                 )}
             </SettingSection>
@@ -309,7 +398,7 @@ export function SystemSettings({ settings, setSetting, updateSettings }: SystemS
                             })
                             setTimeout(() => window.location.reload(), 1000)
                         }}
-                        title={t('settings.advanced.alerts.confirm_reset') || "Reset Everything?"}
+                        title={t('settings.advanced.alerts.confirm_reset')}
                         description={t('settings.advanced.alerts.reset_confirm_desc')}
                         confirmLabel={t('settings.advanced.alerts.reset_confirm_btn')}
                         variant="danger"

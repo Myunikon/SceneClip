@@ -2,14 +2,16 @@
 import { Child } from '@tauri-apps/plugin-shell';
 import { invoke } from '@tauri-apps/api/core';
 import { AppSettings, DownloadTask } from '../store/slices/types';
+import { useAppStore } from '../store';
 import { buildYtDlpArgs, parseYtDlpProgress, isErrorLine, getPostProcessStatusText, sanitizeFilename, parseYtDlpJson, getYtDlpCommand } from './ytdlp';
 import { getUniqueFilePath, saveTempCookieFile } from './fileUtils';
 import { formatSpeed, formatBytes } from './formatters';
+import { matchDomain } from './validators';
 
 // Define the callbacks interface for managing updates
 export interface DownloadCallbacks {
     onProgress: (id: string, progress: Partial<DownloadTask>) => void;
-    onLog: (id: string, message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
+    onLog: (id: string, message: string, type?: 'info' | 'error' | 'success' | 'warning', source?: 'system' | 'ytdlp' | 'ffmpeg') => void;
     onCommand?: (id: string, command: string) => void;
     onComplete: (id: string, result: any) => void;
     onError: (id: string, error: string) => void;
@@ -85,21 +87,21 @@ export class DownloadService {
                 try {
                     const pid = this.activePidMap.get(id);
                     await invoke('resume_process', { pid });
-                    callbacks.onLog(id, `Process resumed (PID: ${pid})`, 'info');
+                    callbacks.onLog(id, `Process resumed (PID: ${pid})`, 'info', 'system');
                     callbacks.onProgress(id, { status: 'downloading', speed: 'Resuming...', eta: '...' });
                     return; // EXIT EARLY, do not respawn
                 } catch (e) {
-                    callbacks.onLog(id, `Failed to resume process: ${e}. Restarting...`, 'warning');
+                    callbacks.onLog(id, `Failed to resume process: ${e}. Restarting...`, 'warning', 'system');
                     // Fallthrough to normal restart logic
                 }
             }
 
-            callbacks.onLog(id, `Starting download for ${url}...`, 'info');
+            callbacks.onLog(id, `Starting download for ${url}...`, 'info', 'ytdlp');
 
             // 1. Fetch Metadata (Simplified)
             let meta: any = null;
             try {
-                callbacks.onLog(id, 'Fetching metadata...', 'info');
+                callbacks.onLog(id, 'Fetching metadata...', 'info', 'ytdlp');
                 const infoCmd = await getYtDlpCommand(['--dump-json', url], settings.binaryPathYtDlp);
                 const infoOutput = await infoCmd.execute();
                 meta = parseYtDlpJson(infoOutput.stdout);
@@ -107,13 +109,13 @@ export class DownloadService {
                     callbacks.onProgress(id, { title: meta.title });
                 }
             } catch {
-                callbacks.onLog(id, 'Metadata fetch failed, trying generic info...', 'warning');
+                callbacks.onLog(id, 'Metadata fetch failed, trying generic info...', 'warning', 'ytdlp');
                 meta = { title: 'Unknown Video', ext: 'mp4', id: 'unknown' };
             }
 
             // 2. Prepare Filename
             const template = options?.customFilename || settings.filenameTemplate || '{title}';
-            const finalName = sanitizeFilename(template, meta);
+            const finalName = sanitizeFilename(template, meta, options);
 
             // Determine Base Download Directory
             // Priority: Task-specific path > Settings path
@@ -134,7 +136,7 @@ export class DownloadService {
             const platform = await type();
 
             if (platform === 'windows' && fullOutputPath.length > 250) {
-                callbacks.onLog(id, 'Filename too long for Windows, truncating...', 'warning');
+                callbacks.onLog(id, 'Filename too long for Windows, truncating...', 'warning', 'system');
                 // Calculate how much we need to shave off
                 const excess = fullOutputPath.length - 250;
                 // We truncate from the filename, preserving extension
@@ -155,7 +157,7 @@ export class DownloadService {
                     if (base.length > excess) {
                         const newBase = base.substring(0, base.length - excess - 5); // Extra buffer
                         const newName = `${newBase}${ext}`;
-                        fullOutputPath = await join(dir, newName);
+                        fullOutputPath = await getUniqueFilePath(await join(dir, newName));
                     }
                 }
             }
@@ -166,14 +168,14 @@ export class DownloadService {
                 cookiePath = await saveTempCookieFile(options.cookies, id);
             }
 
+
             // 3.5. Keyring Lookup
             let keyringCreds: { username?: string, password?: string } = {};
             if (settings.savedCredentials?.length > 0) {
                 try {
-                    // Simple domain matching
-                    // savedCredentials are objects { service, username }
+                    // Robust domain matching
                     const match = settings.savedCredentials.find(cred => {
-                        return url.includes(cred.service);
+                        return matchDomain(url, cred.service);
                     });
 
                     if (match) {
@@ -184,25 +186,45 @@ export class DownloadService {
                         }
                     }
                 } catch (e) {
-                    callbacks.onLog(id, `Keyring lookup failed: ${e}`, 'warning');
+                    callbacks.onLog(id, `Keyring lookup failed: ${e}`, 'warning', 'system');
                 }
             }
 
             // 4. Build Arguments
             const ytDlpOptions = { ...options, ...keyringCreds, cookies: cookiePath };
-            const args = await buildYtDlpArgs(url, ytDlpOptions, settings, fullOutputPath, 'cpu'); // GPU Type should ideally be passed in or detected
+            const gpuType = useAppStore.getState().gpuType;
+            const args = await buildYtDlpArgs(url, ytDlpOptions, settings, fullOutputPath, gpuType);
 
-            // SECURITY: Redact password from logs
+            // SECURITY: Redact sensitive information from logs
             const secureArgs = args.map((arg, index) => {
-                // strict check: if previous arg was --password, redact this one
-                if (index > 0 && args[index - 1] === '--password') return '********';
-                // also redact if it looks like a password arg in one string (rare in this array build but safe to check)
+                const prevArg = index > 0 ? args[index - 1] : '';
+
+                // 1. Redact values following sensitive keys
+                const sensitiveKeys = ['--password', '--video-password', '--username', '--proxy-password'];
+                if (sensitiveKeys.includes(prevArg)) return '********';
+
+                // 2. Redact key=value pairs
                 if (arg.startsWith('--password=')) return '--password=********';
+                if (arg.startsWith('--video-password=')) return '--video-password=********';
+                if (arg.startsWith('--username=')) return '--username=********';
+
+                // 3. Redact proxy with credentials (e.g. http://user:pass@host)
+                if (prevArg === '--proxy' && arg.includes('@') && arg.includes(':')) {
+                    try {
+                        const url = new URL(arg);
+                        if (url.username || url.password) {
+                            return `${url.protocol}//********:********@${url.host}${url.pathname}${url.search}`;
+                        }
+                    } catch {
+                        return '********'; // Fallback
+                    }
+                }
+
                 return arg;
             });
 
             const commandStr = `yt-dlp ${secureArgs.join(' ')}`;
-            callbacks.onLog(id, `Executing: ${commandStr}`, 'info');
+            callbacks.onLog(id, `Executing: ${commandStr}`, 'info', 'system');
             if (callbacks.onCommand) {
                 callbacks.onCommand(id, commandStr);
             }
@@ -292,7 +314,7 @@ export class DownloadService {
                 if (isErrorLine(str)) {
                     stderrBuffer.push(str);
                     if (stderrBuffer.length > 10) stderrBuffer.shift();
-                    callbacks.onLog(id, str, 'error');
+                    callbacks.onLog(id, str, 'error', 'ytdlp');
                 }
             });
 

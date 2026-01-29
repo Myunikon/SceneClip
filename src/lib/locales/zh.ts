@@ -43,13 +43,12 @@ export const zh = {
         filename_template: "文件名格式",
         insert_token: "插入变量...",
         tokens: {
-            title: "视频标题",
-            uploader: "上传者名称",
-            ext: "文件扩展名",
-            id: "视频 ID",
-            width: "宽度",
-            height: "高度",
-            date: "上传日期"
+            title: "标题",
+            author: "作者",
+            id: "ID",
+            res: "分辨率",
+            site: "来源",
+            date: "日期"
         },
         example_note: "* 基于示例视频的预览",
 
@@ -130,7 +129,7 @@ export const zh = {
             change: "更改",
             always_ask: "总是询问保存位置",
             filename_template: "自动命名规则 (模板)",
-            available_vars: "可用变量: {title}, {width}, {height}, {ext}",
+            available_vars: "可用变量: {title}, {res}, {source}, {date}",
             resolution: "默认分辨率",
             container: "默认格式 (容器)",
             best: "最佳可用",
@@ -227,12 +226,19 @@ export const zh = {
             clear_cache: "清除缓存",
             post_action: "下载完成后动作",
             post_actions: {
-                none: "无操作",
+                none: "不执行任何操作",
                 sleep: "睡眠",
                 shutdown: "关机"
             },
             post_download_action_desc: "选择所有下载完成后的操作。",
             shutdown_warning: "下载完成后电脑将强制关机。请保存您的工作！",
+            content_enhancements: {
+                title: "内容增强",
+                srt_fixer: "SRT 修复器",
+                srt_fixer_desc: "修复 YouTube 自动生成字幕中的重复行和重叠时间。",
+                metadata_enhancer: "元数据增强器",
+                metadata_enhancer_desc: "在文件中嵌入额外的元数据，如不喜欢数、章节和丰富的 info json。"
+            },
             danger_zone_proxy: "危险区域 (代理)",
             danger_zone_binaries: "危险区域 (二进制)",
             danger_desc: "更改这些路径可能会导致应用损坏。",
@@ -265,6 +271,16 @@ export const zh = {
             errors: {
                 open: "打开文件夹"
             },
+            source_disabled: "已禁用 (默认)",
+            browser_type: "浏览器类型",
+            no_file: "未选择文件...",
+            clear_path: "清除路径",
+            tech_paths: "技术与二进制路径",
+            cookie_path: "Cookie文件路径",
+            browse_btn: "浏览...",
+            auto_managed: "自动管理",
+            detected_gpu: "检测到 GPU:",
+            unknown_integrated: "未知 / 集成显卡",
             video_processing: {
                 title: "视频处理",
                 hw_accel: "硬件加速",
@@ -279,6 +295,7 @@ export const zh = {
             retention_forever: "永久 (保存所有)",
             retention_zero: "不保存历史",
             history_max_items: "最大历史项目数",
+            history_item_count: "{{count}} 个项目",
             btn_replay_welcome: "重播欢迎页",
             btn_reset_data: "重置所有数据",
             btn_export_history: "导出历史",
@@ -901,6 +918,8 @@ export const zh = {
     terminal: {
         filter_all: "全部",
         filter_system: "系统",
+        filter_ytdlp: "yt-dlp",
+        filter_ffmpeg: "FFmpeg",
         copy_all: "复制全部",
         clear_all: "清空",
         copied: "已复制!",

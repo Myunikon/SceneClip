@@ -10,8 +10,11 @@ interface ClipboardListenerProps {
 }
 
 export function ClipboardListener({ onFound }: ClipboardListenerProps) {
-    const { settings } = useAppStore()
-    const t = translations[settings.language as keyof typeof translations].monitor
+    const settings = useAppStore((state) => state.settings)
+
+    // Safe access to translations with fallback to English
+    const language = settings?.language || 'en'
+    const t = (translations[language as keyof typeof translations] || translations.en).monitor
 
     const lastTextRef = useRef<string>('')
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -60,6 +63,12 @@ export function ClipboardListener({ onFound }: ClipboardListenerProps) {
                             actionTypeId: 'DOWNLOAD_ACTION',
                             extra: { url: text }
                         })
+
+                        useAppStore.getState().addLog({
+                            message: `[Monitor] URL detected from clipboard: ${text}`,
+                            type: 'info',
+                            source: 'system'
+                        })
                     }
                 }
             } catch (e) {
@@ -78,7 +87,7 @@ export function ClipboardListener({ onFound }: ClipboardListenerProps) {
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current)
         }
-    }, [settings.enableDesktopNotifications, t.title])
+    }, [settings.enableDesktopNotifications, t.title, onFound])
 
     return null // No UI component
 }

@@ -22,26 +22,7 @@ export function TerminalView() {
     // Filter logs based on selected filter
     const filteredLogs = useMemo(() => {
         if (filter === 'all') return logs
-        return logs.filter(log => {
-            const lower = (log.message || '').toLowerCase()
-            switch (filter) {
-                case 'system':
-                    return lower.includes('system:') || lower.includes('[system]') ||
-                        lower.includes('store') || lower.includes('binary') ||
-                        lower.includes('ready') || lower.includes('error')
-                case 'ytdlp':
-                    return lower.includes('yt-dlp') || lower.includes('ytdlp') ||
-                        lower.includes('[download]') || lower.includes('[info]') ||
-                        lower.includes('downloading') || lower.includes('eta') ||
-                        lower.includes('speed') || lower.includes('%')
-                case 'ffmpeg':
-                    return lower.includes('ffmpeg') || lower.includes('merge') ||
-                        lower.includes('muxing') || lower.includes('video:') ||
-                        lower.includes('audio:')
-                default:
-                    return true
-            }
-        })
+        return logs.filter(log => log.source === filter)
     }, [logs, filter])
 
     const handleCopyAll = async () => {
@@ -68,12 +49,16 @@ export function TerminalView() {
         }
     }
 
-    const filterButtons = [
-        { id: 'all', label: 'All', icon: Terminal },
-        { id: 'system', label: 'System', icon: Cpu },
-        { id: 'ytdlp', label: 'yt-dlp', icon: Terminal },
-        { id: 'ffmpeg', label: 'FFmpeg', icon: Scissors },
-    ] as const
+    const filterButtons = useMemo(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const t = (translations[settings.language as keyof typeof translations] as any)?.terminal || translations.en.terminal
+        return [
+            { id: 'all', label: t.filter_all || 'All', icon: Terminal },
+            { id: 'system', label: t.filter_system || 'System', icon: Cpu },
+            { id: 'ytdlp', label: t.filter_ytdlp || 'yt-dlp', icon: Terminal },
+            { id: 'ffmpeg', label: t.filter_ffmpeg || 'FFmpeg', icon: Scissors },
+        ] as const
+    }, [settings.language])
 
     return (
         <div className="flex flex-col h-full bg-[#09090b] dark:bg-black/90 text-green-400 font-mono text-xs rounded-lg shadow-md border border-zinc-300 dark:border-white/10 overflow-hidden relative">

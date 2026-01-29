@@ -45,11 +45,10 @@ export const en = {
         tokens: {
             title: "Video Title",
             uploader: "Uploader Name",
-            ext: "File Extension",
             id: "Video ID",
-            width: "Width",
-            height: "Height",
-            date: "Upload Date"
+            res: "Resolution (e.g. 1080p)",
+            source: "Source Name (e.g. YouTube)",
+            date: "Upload Date (DD-MM-YYYY)"
         },
         example_note: "* Preview based on sample video",
 
@@ -128,7 +127,7 @@ export const en = {
             change: "Change",
             always_ask: "Always ask where to save",
             filename_template: "Auto-Rename Rule (Template)",
-            available_vars: "Variables: {title}, {width}, {height}, {ext}",
+            available_vars: "Variables: {title}, {res}, {source}, {date}",
             resolution: "Default Resolution",
             container: "Default Format (Container)",
             best: "Best Available",
@@ -236,6 +235,24 @@ export const en = {
             },
             post_download_action_desc: "Choose what happens after all downloads finish.",
             shutdown_warning: "Your computer will force shutdown after downloads. Unsaved work may be lost!",
+            content_enhancements: {
+                title: "Content Enhancements",
+                srt_fixer: "SRT Fixer",
+                srt_fixer_desc: "Fix duplicate lines and overlapping timings in YouTube auto-generated subtitles.",
+                metadata_enhancer: "Metadata Enhancer",
+                metadata_enhancer_desc: "Embed extra metadata like dislikes, chapters, and rich info json into file.",
+                replaygain: "Audio ReplayGain",
+                replaygain_desc: "Normalize audio volume levels using ReplayGain tags.",
+                po_token: "PO Token Security",
+                po_token_desc: "Bypass YouTube bot detection using Proof of Origin tokens.",
+                cookie_unlock: "Cookie Database Unlock",
+                cookie_unlock_desc: "Allow access to locked browser cookie databases (Windows).",
+                po_token_label: "PO TOKEN",
+                po_token_placeholder: "Manually enter token (optional)...",
+                visitor_data_label: "VISITOR DATA",
+                visitor_data_placeholder: "Manually enter visitor data (optional)...",
+                token_info: "Leave empty to use automatic plugins if available."
+            },
 
 
 

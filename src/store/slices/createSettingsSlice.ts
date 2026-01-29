@@ -1,8 +1,8 @@
 import { StateCreator } from 'zustand'
 import { AppState, SettingsSlice, AppSettings } from './types'
 
-const DEFAULT_SETTINGS: AppSettings = {
-    theme: 'system',
+export const DEFAULT_SETTINGS: AppSettings = {
+    theme: 'light',
     language: 'en',
     launchAtStartup: false,
     startMinimized: false,
@@ -14,11 +14,11 @@ const DEFAULT_SETTINGS: AppSettings = {
     filenameTemplate: '{Title}',
     resolution: 'Best',
     container: 'mp4',
-    hardwareDecoding: true,
+    hardwareDecoding: false, // Default: OFF
 
-    concurrentDownloads: 2,
+    concurrentDownloads: 2, // Default: 2
     speedLimit: '',
-    useAria2c: false,
+    useAria2c: false, // Default: OFF
     proxy: '',
     userAgent: '',
     frontendFontSize: 'medium',
@@ -26,23 +26,29 @@ const DEFAULT_SETTINGS: AppSettings = {
     cookieSource: 'none',
     browserType: 'chrome',
     cookiePath: '',
-    useSponsorBlock: false,
+    useSponsorBlock: false, // Default: OFF
     sponsorSegments: ['sponsor', 'selfpromo', 'interaction'],
     binaryPathYtDlp: '',
     binaryPathFfmpeg: '',
-    embedMetadata: true,
-    embedThumbnail: true,
-    embedChapters: true,
-    postDownloadAction: 'none',
-    developerMode: false,
-    audioNormalization: false,
+    embedMetadata: true, // Default: ON
+    embedThumbnail: true, // Default: ON
+    embedChapters: false, // Default: OFF
+    postDownloadAction: 'none', // Default: none
+    developerMode: false, // Default: OFF
+    audioNormalization: false, // Default: OFF
     savedCredentials: [],
     historyRetentionDays: 30, // Default: keep 30 days of history
     maxHistoryItems: 100, // Default: keep up to 100 completed tasks (-1 = unlimited)
+    useSrtFixer: true, // Default: ON
+    useMetadataEnhancer: true, // Default: ON
+    useReplayGain: false, // Default: OFF (needs external tools like rsgain)
+    usePoToken: true, // Default: ON (crucial for 403 bypass)
+    poToken: '',
+    visitorData: '',
+    useChromeCookieUnlock: true, // Default: ON (Windows security bypass)
 
-    // Parabolic Features
     enableDesktopNotifications: true, // Default: enabled
-    preventSuspendDuringDownload: true, // Default: prevent sleep during downloads
+    preventSuspendDuringDownload: true, // Default: prevent sleep during downloads (ON)
     postProcessorPresets: [
         // Built-in presets
         {

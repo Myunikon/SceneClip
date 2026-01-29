@@ -5,10 +5,10 @@
  * Extracted from createVideoSlice for better modularity.
  */
 
-import { BINARIES } from './constants'
-
 import { timeToSeconds } from './processUtils'
 import { CompressionOptions } from '../store/slices/types'
+import { getFFmpegCommand } from './ytdlp'
+import { useAppStore } from '../store'
 
 // =============================================================================
 // Types
@@ -175,8 +175,6 @@ export function buildCompressedOutputPath(originalPath: string): string {
   return `${basePath}_compress${ext}`
 }
 
-import { Command } from '@tauri-apps/plugin-shell'
-
 // Chapter type for video splitting
 export interface VideoChapter {
   title: string
@@ -226,8 +224,8 @@ export async function splitVideoByChapters(
     ]
 
     try {
-      // Use hardcoded path or relative path to ffmpeg binary
-      const cmd = Command.sidecar(BINARIES.FFMPEG, args)
+      const settings = useAppStore.getState().settings
+      const cmd = await getFFmpegCommand(args, settings.binaryPathFfmpeg)
 
       // Wait for completion (promisified)
       await new Promise<void>((resolve, reject) => {

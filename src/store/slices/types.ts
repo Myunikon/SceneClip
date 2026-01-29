@@ -58,6 +58,7 @@ export interface LogEntry {
   translationKey?: string
   params?: Record<string, string | number>
   type: 'info' | 'success' | 'warning' | 'error'
+  source: 'system' | 'ytdlp' | 'ffmpeg'
   timestamp: number
 }
 
@@ -80,7 +81,7 @@ export interface SystemSlice {
   binariesReady: boolean
   listenersInitialized: boolean
   hasNotifiedMissingBinaries: boolean // Track if we've alerted user
-  gpuType: 'cpu' | 'nvidia' | 'amd' | 'intel'
+  gpuType: 'cpu' | 'nvidia' | 'amd' | 'intel' | 'apple'
   gpuModel?: string
   gpuRenderer?: string
 

@@ -20,7 +20,7 @@ export async function getUniqueFilePath(filePath: string, maxAttempts = 1000): P
         let uniquePath = filePath;
 
         while (await exists(uniquePath) && counter < maxAttempts) {
-            uniquePath = `${base}_${counter}${ext}`;
+            uniquePath = `${base} (${counter})${ext}`;
             counter++;
         }
 

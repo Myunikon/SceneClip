@@ -47,6 +47,9 @@
       "yt-dlp",
       "ffmpeg",
       "aria2c"
+    ],
+    "resources": [
+      "resources/plugins"
     ]
   }
 }

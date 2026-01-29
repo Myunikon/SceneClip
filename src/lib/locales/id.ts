@@ -45,11 +45,10 @@ export const id = {
         tokens: {
             title: "Judul Video",
             uploader: "Nama Pengunggah",
-            ext: "Ekstensi File",
             id: "ID Video",
-            width: "Lebar",
-            height: "Tinggi",
-            date: "Tanggal Upload"
+            res: "Resolusi (cth. 1080p)",
+            source: "Nama Sumber (cth. YouTube)",
+            date: "Tanggal Upload (DD-MM-YYYY)"
         },
         example_note: "* Pratinjau video sampel",
 
@@ -132,7 +131,7 @@ export const id = {
             change: "Ubah",
             always_ask: "Selalu tanya lokasi simpan",
             filename_template: "Aturan Nama File (Template)",
-            available_vars: "Tersedia: {title}, {width}, {height}, {ext}",
+            available_vars: "Tersedia: {title}, {res}, {source}, {date}",
             resolution: "Resolusi Default",
             container: "Kontainer (Format)",
             best: "Terbaik",
@@ -235,6 +234,24 @@ export const id = {
             },
             post_download_action_desc: "Pilih tindakan setelah semua unduhan selesai.",
             shutdown_warning: "Komputer akan dimatikan paksa setelah unduhan. Simpan pekerjaan Anda!",
+            content_enhancements: {
+                title: "Peningkatan Konten",
+                srt_fixer: "SRT Fixer",
+                srt_fixer_desc: "Perbaiki baris duplikat dan tumpang tindih waktu pada subtitle otomatis YouTube.",
+                metadata_enhancer: "Metadata Enhancer",
+                metadata_enhancer_desc: "Sematkan metadata tambahan seperti dislike, chapter, dan info json kaya ke dalam file.",
+                replaygain: "ReplayGain Audio",
+                replaygain_desc: "Normalisasi level volume audio menggunakan tag ReplayGain.",
+                po_token: "Keamanan PO Token",
+                po_token_desc: "Bypass deteksi bot YouTube menggunakan token Proof of Origin.",
+                cookie_unlock: "Buka Kunci Database Cookie",
+                cookie_unlock_desc: "Izinkan akses ke database cookie browser yang terkunci (Windows).",
+                po_token_label: "PO TOKEN",
+                po_token_placeholder: "Masukkan token secara manual (opsional)...",
+                visitor_data_label: "DATA PENGUNJUNG",
+                visitor_data_placeholder: "Masukkan data pengunjung secara manual (opsional)...",
+                token_info: "Kosongkan jika ingin menggunakan plugin otomatis."
+            },
 
 
 

@@ -100,8 +100,11 @@ class ErrorBoundaryClass extends Component<Props, State> {
 }
 
 export function ErrorBoundary({ children }: { children?: ReactNode }) {
-  const { settings } = useAppStore();
-  const t = translations[settings.language].error_boundary;
+  const settings = useAppStore((state) => state.settings);
+
+  // Safe access to translations with fallback to English
+  const language = settings?.language || 'en';
+  const t = (translations[language as keyof typeof translations] || translations.en).error_boundary;
 
   return <ErrorBoundaryClass t={t}>{children}</ErrorBoundaryClass>;
 }

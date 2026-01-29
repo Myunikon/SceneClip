@@ -88,9 +88,9 @@ export function NotificationCenter() {
                         <h3 className="font-medium text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                             <Bell className="w-3.5 h-3.5" />
                             {t.notifications?.title || "Notifications"}
-                            {logs.length > 0 && (
+                            {unreadCount > 0 && (
                                 <span className="bg-primary/20 text-primary px-1.5 py-0.5 rounded text-[10px] font-bold">
-                                    {logs.length}
+                                    {unreadCount}
                                 </span>
                             )}
                         </h3>

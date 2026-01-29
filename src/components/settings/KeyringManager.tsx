@@ -10,6 +10,7 @@ import { cn } from '../../lib/utils'
 import { SettingSection } from './SettingItem'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
 import { Button } from '../ui/button'
+import { extractHostname } from '../../lib/validators'
 
 
 interface KeyringManagerProps {
@@ -45,7 +46,7 @@ export function KeyringManager({ settings, setSetting }: KeyringManagerProps) {
 
     // Helper: Clean domain input
     const cleanDomain = (url: string) => {
-        return url.replace(/^(?:https?:\/\/)?(?:www\.)?/i, "").split('/')[0].toLowerCase();
+        return extractHostname(url);
     }
 
     // Fetch password for editing

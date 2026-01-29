@@ -12,7 +12,7 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
     binariesReady: false,
     listenersInitialized: false,
     hasNotifiedMissingBinaries: false,
-    gpuType: 'cpu',
+    gpuType: 'cpu' as 'nvidia' | 'amd' | 'intel' | 'apple' | 'cpu',
 
     // yt-dlp Version Tracking
     ytdlpVersion: null,
@@ -52,10 +52,10 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
                         const output = await cmd.execute()
                         const cpuLog = output.stdout || output.stderr
 
-                        get().addLog({ message: `[CPU DETECT DIAGNOSTIC]\n${cpuLog.trim()}`, type: 'info' })
+                        get().addLog({ message: `[CPU DETECT DIAGNOSTIC]\n${cpuLog.trim()}`, type: 'info', source: 'system' })
                     } catch (e) {
                         console.warn("CPU Check failed:", e)
-                        get().addLog({ message: `[CPU Error] Failed to detect CPU details: ${e}`, type: 'error' })
+                        get().addLog({ message: `[CPU Error] Failed to detect CPU details: ${e}`, type: 'error', source: 'system' })
                     }
 
                     // 2. GPU DIAGNOSTIC
@@ -69,23 +69,23 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
                     } else {
                         logMsg += ` [Renderer: ${gpuInfo.renderer}]`
                     }
-                    get().addLog({ message: logMsg, type: 'info' })
-                    get().addLog({ message: `[GPU DETECT DIAGNOSTIC]\n${gpuInfo.debug_info}`, type: 'info' })
+                    get().addLog({ message: logMsg, type: 'info', source: 'system' })
+                    get().addLog({ message: `[GPU DETECT DIAGNOSTIC]\n${gpuInfo.debug_info}`, type: 'info', source: 'system' })
 
 
-                    // Validate against known types
-                    const validTypes = ['nvidia', 'amd', 'intel', 'cpu']
+                    // Validate against known types (including Apple Silicon/VideoToolbox)
+                    const validTypes = ['nvidia', 'amd', 'intel', 'apple', 'cpu']
                     // Use OS vendor if valid, even if renderer is software (to show the name)
                     const finalType = validTypes.includes(gpuInfo.vendor) ? gpuInfo.vendor : 'cpu'
 
                     set({
-                        gpuType: finalType as 'nvidia' | 'amd' | 'intel' | 'cpu',
+                        gpuType: finalType as 'nvidia' | 'amd' | 'intel' | 'apple' | 'cpu',
                         gpuModel: gpuInfo.model,
                         gpuRenderer: gpuInfo.renderer
                     })
                 } catch (e) {
                     console.error("GPU details fetch failed:", e)
-                    get().addLog({ message: `[GPU Error] Backend check failed: ${e}`, type: 'error' })
+                    get().addLog({ message: `[GPU Error] Backend check failed: ${e}`, type: 'error', source: 'system' })
                 }
             }
         } catch (e) {
@@ -129,7 +129,7 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
 
         // Check for Binaries (Sidecar Check)
         try {
-            get().addLog({ message: 'Checking bundled binaries...', type: 'info' })
+            get().addLog({ message: 'Checking bundled binaries...', type: 'info', source: 'system' })
 
             const [ffVer, ytVer] = await Promise.all([
                 getBinaryVersion('ffmpeg'),
@@ -137,12 +137,12 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
             ])
 
             if (ffVer && ytVer) {
-                get().addLog({ message: `Binaries Found: ffmpeg=${ffVer}, yt-dlp=${ytVer}`, type: 'success' })
+                get().addLog({ message: `Binaries Found: ffmpeg=${ffVer}, yt-dlp=${ytVer}`, type: 'success', source: 'system' })
                 set({ binariesReady: true, ytdlpVersion: ytVer })
                 get().detectHardwareAccel()
             } else {
                 // If sidecar check fails, it means they are missing or permission denied
-                get().addLog({ message: `Missing binaries! ffmpeg=${ffVer}, yt-dlp=${ytVer}`, type: 'error' })
+                get().addLog({ message: `Missing binaries! ffmpeg=${ffVer}, yt-dlp=${ytVer}`, type: 'error', source: 'system' })
                 notify.error("Critical Error: Bundled binaries missing or not executable.")
                 set({ binariesReady: false })
             }
@@ -151,7 +151,7 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
             console.error("Binary check failed:", e)
             const t = translations[get().settings.language as keyof typeof translations]?.errors || translations.en.errors
             notify.error(t.binary_validation, { description: String(e) })
-            get().addLog({ message: `Binary check failed: ${e}`, type: 'error' })
+            get().addLog({ message: `Binary check failed: ${e}`, type: 'error', source: 'system' })
         }
     },
 
@@ -170,13 +170,13 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
                 ffmpegNeedsUpdate: result.ffmpeg.hasUpdate
             })
 
-            get().addLog({ message: `[Version Check] yt-dlp: ${result.ytdlp.current} → ${result.ytdlp.latest || 'N/A'} (Update: ${result.ytdlp.hasUpdate})`, type: 'info' })
-            get().addLog({ message: `[Version Check] FFmpeg: ${result.ffmpeg.current} → ${result.ffmpeg.latest || 'N/A'} (Update: ${result.ffmpeg.hasUpdate})`, type: 'info' })
+            get().addLog({ message: `[Version Check] yt-dlp: ${result.ytdlp.current} → ${result.ytdlp.latest || 'N/A'} (Update: ${result.ytdlp.hasUpdate})`, type: 'info', source: 'system' })
+            get().addLog({ message: `[Version Check] FFmpeg: ${result.ffmpeg.current} → ${result.ffmpeg.latest || 'N/A'} (Update: ${result.ffmpeg.hasUpdate})`, type: 'info', source: 'system' })
         } catch (e) {
             console.error('Version check failed:', e)
             const t = translations[get().settings.language as keyof typeof translations]?.errors || translations.en.errors
             notify.error(t.update_check, { description: String(e) })
-            get().addLog({ message: `[Version Check] Failed: ${e}`, type: 'error' })
+            get().addLog({ message: `[Version Check] Failed: ${e}`, type: 'error', source: 'system' })
         } finally {
             set({ isCheckingUpdates: false })
         }
@@ -184,7 +184,7 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
 
     updateBinary: async (name) => {
         try {
-            get().addLog({ message: `Starting update for ${name}...`, type: 'info' })
+            get().addLog({ message: `Starting update for ${name}...`, type: 'info', source: 'system' })
             const { updateBinary } = await import('../../lib/updater-service')
             const newPath = await updateBinary(name)
 
@@ -199,7 +199,7 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
             }
 
             notify.success(`${name} updated successfully!`)
-            get().addLog({ message: `${name} updated to ${newPath}`, type: 'success' })
+            get().addLog({ message: `${name} updated to ${newPath}`, type: 'success', source: 'system' })
 
             // Re-check to confirm version
             get().checkBinaryUpdates()
@@ -207,7 +207,7 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
         } catch (e) {
             console.error("Update failed:", e)
             notify.error(`Update failed: ${e}`)
-            get().addLog({ message: `Update failed: ${e}`, type: 'error' })
+            get().addLog({ message: `Update failed: ${e}`, type: 'error', source: 'system' })
         }
     },
 })

@@ -91,12 +91,58 @@ pub struct AppSettings {
     pub po_token: String,
     pub visitor_data: String,
     pub use_chrome_cookie_unlock: bool,
-    // Parabolic
+
     pub enable_desktop_notifications: bool,
     pub prevent_suspend_during_download: bool,
 }
 
 // --- Logic ---
+
+pub fn resolve_ytdlp_path(app: &AppHandle, configured_path: &str) -> String {
+    if !configured_path.is_empty() {
+        return configured_path.to_string();
+    }
+
+    // 1. Check AppLocalData (Writable Update Storage) - PRIORITY
+    // This allows updates to override the bundled immutable binary.
+    if let Ok(local_dir) = app.path().app_local_data_dir() {
+        #[cfg(target_os = "windows")]
+        let binary_name = "yt-dlp.exe";
+        #[cfg(not(target_os = "windows"))]
+        let binary_name = "yt-dlp";
+
+        let local_path = local_dir.join(binary_name);
+        if local_path.exists() {
+            // Must return absolute path
+            return local_path.to_string_lossy().to_string();
+        }
+    }
+
+    // 2. Attempt to find bundled sidecar in current execution dir
+    if let Ok(mut exe_path) = std::env::current_exe() {
+        exe_path.pop(); // Parent dir
+
+        #[cfg(target_os = "windows")]
+        let binary_name = "yt-dlp.exe";
+        #[cfg(not(target_os = "windows"))]
+        let binary_name = "yt-dlp";
+
+        // Check flat in root (standard Tauri bundle behavior)
+        let flat_path = exe_path.join(binary_name);
+        if flat_path.exists() {
+            return flat_path.to_string_lossy().to_string();
+        }
+
+        // Check bin/ subdir (custom structure)
+        let bin_path = exe_path.join("bin").join(binary_name);
+        if bin_path.exists() {
+            return bin_path.to_string_lossy().to_string();
+        }
+    }
+
+    // Fallback to expecting it in PATH
+    "yt-dlp".to_string()
+}
 
 pub fn is_youtube_url(url: &str) -> bool {
     url.contains("youtube.com") || url.contains("youtu.be")

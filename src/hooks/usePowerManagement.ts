@@ -1,10 +1,3 @@
-/**
- * Power Management Hook
- * 
- * Inspired by Parabolic's SuspendInhibitor
- * Automatically prevents system sleep when downloads are active
- */
-
 import { useEffect, useRef } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { useAppStore } from '../store'

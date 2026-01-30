@@ -41,10 +41,12 @@ export type DownloadEvent =
         data: {
             id: string;
             percent: number;
-            speed: number;       // bytes per second
-            eta: number;         // seconds remaining
-            downloaded: number;  // bytes downloaded
-            total: number | null; // total bytes (if known)
+            speed: string;       // Formatted string
+            eta: string;         // Formatted string
+            total_size: string;  // Formatted string
+            status: string;
+            speed_raw?: number;
+            eta_raw?: number;
         };
     }
     | {
@@ -111,8 +113,11 @@ export function createDownloadChannel(
             case 'progress':
                 onProgress(message.data.id, {
                     progress: message.data.percent,
-                    speedRaw: message.data.speed,
-                    etaRaw: message.data.eta,
+                    speed: message.data.speed,
+                    speedRaw: message.data.speed_raw || 0,
+                    eta: message.data.eta,
+                    etaRaw: message.data.eta_raw || 0,
+                    totalSize: message.data.total_size,
                     status: 'downloading'
                 });
                 break;

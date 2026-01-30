@@ -1,4 +1,4 @@
-import { Package, RefreshCw, CheckCircle, AlertTriangle } from 'lucide-react'
+import { Package, RefreshCw, CheckCircle, ArrowDownCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../store'
 import { useEffect } from 'react'
@@ -6,7 +6,6 @@ import { useEffect } from 'react'
 export function Updater() {
     const {
         ytdlpVersion, ytdlpLatestVersion, ytdlpNeedsUpdate,
-        ffmpegVersion, ffmpegLatestVersion, ffmpegNeedsUpdate,
         checkBinaryUpdates, isCheckingUpdates, updateBinary
     } = useAppStore()
 
@@ -19,80 +18,75 @@ export function Updater() {
         }
     }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-    const StatusBadge = ({ hasUpdate, checked }: { hasUpdate: boolean, checked: boolean }) => {
-        if (!checked) return <span className="text-xs text-muted-foreground">{t('settings.updater.not_checked')}</span>
-        return hasUpdate
-            ? <span className="text-xs px-1.5 py-0.5 bg-amber-500/20 text-amber-500 rounded font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{t('settings.updater.update_available')}</span>
-            : <span className="text-xs px-1.5 py-0.5 bg-green-500/20 text-green-500 rounded font-medium flex items-center gap-1"><CheckCircle className="w-3 h-3" />{t('settings.updater.up_to_date')}</span>
-    }
-
     return (
-        <div className="p-5 border border-border rounded-xl bg-card space-y-4">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="bg-primary/10 p-2.5 rounded-lg">
-                        <Package className="w-5 h-5 text-primary" />
+        <div className="flex flex-col space-y-4">
+            {/* Apple-style Grouped List Container */}
+            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+
+                {/* Section Header (Integrated like macOS Settings) */}
+                <div className="flex items-center justify-between border-b border-border/50 bg-muted/30 px-4 py-3">
+                    <div className="flex items-center gap-2.5">
+                        <Package className="h-4 w-4 text-muted-foreground/70" />
+                        <span className="text-sm font-medium text-foreground">{t('settings.updater.binary_versions')}</span>
                     </div>
-                    <div>
-                        <h3 className="font-semibold text-base">{t('settings.updater.binary_versions')}</h3>
-                        <p className="text-sm text-muted-foreground">{t('settings.updater.check_updates')}</p>
+
+                    {/* Secondary Action: Check for Updates */}
+                    <button
+                        onClick={() => checkBinaryUpdates()}
+                        disabled={isCheckingUpdates}
+                        className="group flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-background hover:text-foreground hover:shadow-sm disabled:opacity-50 transition-all"
+                    >
+                        <RefreshCw className={`h-3 w-3 ${isCheckingUpdates ? 'animate-spin' : ''}`} />
+                        <span>{isCheckingUpdates ? t('settings.updater.checking') : t('settings.updater.check_updates')}</span>
+                    </button>
+                </div>
+
+                {/* List Items */}
+                <div className="divide-y divide-border/50 bg-card/50">
+                    {/* Item: yt-dlp */}
+                    <div className="flex items-center justify-between px-4 py-3.5 hover:bg-muted/20 transition-colors">
+                        <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-foreground">yt-dlp</span>
+                                {ytdlpNeedsUpdate && (
+                                    <span className="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400">
+                                        Update Available
+                                    </span>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs">
+                                <span className="font-mono text-muted-foreground">{ytdlpVersion || t('settings.updater.unknown')}</span>
+                                {ytdlpLatestVersion && !ytdlpNeedsUpdate && (
+                                    <span className="flex items-center gap-1 text-green-600 dark:text-green-500">
+                                        <CheckCircle className="h-3 w-3" />
+                                        <span>{t('settings.updater.up_to_date')}</span>
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Right Side Actions */}
+                        <div>
+                            {ytdlpNeedsUpdate ? (
+                                <button
+                                    onClick={() => updateBinary('yt-dlp')}
+                                    className="flex items-center gap-2 rounded-full bg-blue-600 px-4 py-1.5 text-xs font-medium text-white shadow-sm transition-all hover:bg-blue-700 hover:shadow active:scale-95"
+                                >
+                                    <ArrowDownCircle className="h-3.5 w-3.5" />
+                                    {t('updater_banner.update_now')}
+                                </button>
+                            ) : (
+                                <span className="text-xs font-medium text-muted-foreground/40">
+                                    {t('settings.updater.latest')}
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
-                <button
-                    onClick={() => checkBinaryUpdates()}
-                    disabled={isCheckingUpdates}
-                    className="text-xs px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50"
-                >
-                    <RefreshCw className={`w-3 h-3 ${isCheckingUpdates ? 'animate-spin' : ''}`} />
-                    {isCheckingUpdates ? t('settings.updater.checking') : t('settings.updater.update_btn')}
-                </button>
             </div>
 
-            {/* Version Cards */}
-            <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 bg-secondary/30 rounded-lg space-y-2 border border-border/50">
-                    <div className="flex items-center justify-between">
-                        <div className="font-medium">yt-dlp</div>
-                        <StatusBadge hasUpdate={ytdlpNeedsUpdate} checked={!!ytdlpLatestVersion} />
-                    </div>
-                    <div className="text-xs text-muted-foreground font-mono">
-                        {t('settings.updater.current_ver')}: <span className="text-foreground">{ytdlpVersion || t('settings.updater.unknown')}</span>
-                    </div>
-                    {ytdlpLatestVersion && (
-                        <div className="text-xs text-muted-foreground/70">
-                            {t('settings.updater.latest_prefix')}{ytdlpLatestVersion}
-                        </div>
-                    )}
-                    {ytdlpNeedsUpdate && (
-                        <button
-                            onClick={() => updateBinary('yt-dlp')}
-                            className="w-full mt-1 px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 text-xs rounded border border-amber-500/20 transition-colors flex items-center justify-center gap-1"
-                        >
-                            <RefreshCw className="w-3 h-3" /> Update Now
-                        </button>
-                    )}
-                </div>
-
-                <div className="p-3 bg-secondary/30 rounded-lg space-y-2 border border-border/50">
-                    <div className="flex items-center justify-between">
-                        <div className="font-medium">FFmpeg</div>
-                        <StatusBadge hasUpdate={ffmpegNeedsUpdate} checked={!!ffmpegLatestVersion} />
-                    </div>
-                    <div className="text-xs text-muted-foreground font-mono truncate">
-                        {t('settings.updater.current_ver')}: <span className="text-foreground text-xs">{ffmpegVersion || t('settings.updater.unknown')}</span>
-                    </div>
-                    {ffmpegLatestVersion && (
-                        <div className="text-xs text-muted-foreground/70 truncate text-xs">
-                            {t('settings.updater.latest_prefix')}{ffmpegLatestVersion}
-                        </div>
-                    )}
-                    {/* FFmpeg update disable for now as per logic */}
-                </div>
-            </div>
-
-            {/* Hardware Acceleration Status - Only show if GPU is detected (Active) */}
-
-            <p className="text-xs text-muted-foreground/60 text-center">
+            {/* Footer Note */}
+            <p className="px-2 text-center text-[11px] text-muted-foreground/50">
                 {t('settings.updater.binary_bundled')}
             </p>
         </div>

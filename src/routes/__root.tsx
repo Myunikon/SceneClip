@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive_deps */
 import { createRootRoute, Outlet, useRouter } from '@tanstack/react-router'
 // import { TanStackRouterDevtools } from '@tanstack/router-devtools'
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useCallback } from 'react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { exists } from '@tauri-apps/plugin-fs'
 import { downloadDir } from '@tauri-apps/api/path'
@@ -62,7 +62,7 @@ function RootComponent() {
     const [clipboardStart, setClipboardStart] = useState<number | undefined>(undefined)
     const [clipboardEnd, setClipboardEnd] = useState<number | undefined>(undefined)
 
-    const handleNewTask = async (url?: string, cookies?: string, userAgent?: string, start?: number, end?: number) => {
+    const handleNewTask = useCallback(async (url?: string, cookies?: string, userAgent?: string, start?: number, end?: number) => {
         // 1. Set State and Open Dialog
         if (url) {
             setClipboardUrl(url)
@@ -78,7 +78,7 @@ function RootComponent() {
             setClipboardEnd(undefined)
         }
         setTimeout(() => addDialogRef.current?.showModal(), 50)
-    }
+    }, [])
 
     const addTask = (url: string, opts: any) => useAppStore.getState().addTask(url, opts)
     const openDialog = () => handleNewTask()
@@ -124,7 +124,7 @@ function RootComponent() {
                 if (hasScheduled) {
                     event.preventDefault()
                     await getCurrentWindow().minimize()
-                    notify.warning("Scheduler Active ⏳", {
+                    notify.warning("Scheduler Active \u23F3", {
                         description: "App minimized to background to keep the timer running. Don't close it!",
                         duration: 5000
                     })
@@ -134,7 +134,7 @@ function RootComponent() {
                 if (hasActive && state.settings.closeAction === 'minimize') {
                     event.preventDefault()
                     await getCurrentWindow().minimize()
-                    notify.info("Downloads Running ⬇️", { description: "App minimized to continue downloading." })
+                    notify.info("Downloads Running \u2B07\uFE0F", { description: "App minimized to continue downloading." })
                     return
                 }
 
@@ -291,7 +291,7 @@ function RootComponent() {
                     </div>
                 </div>
 
-                <ClipboardListener />
+                <ClipboardListener onNotificationClick={handleNewTask} />
 
                 <AddDialog
                     ref={addDialogRef}

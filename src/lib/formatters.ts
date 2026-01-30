@@ -1,12 +1,3 @@
-/**
- * Formatters Utility Module
- * 
- * Human-readable formatting for download progress data.
- * Inspired by Parabolic (C++) and best practices from Context7.
- * 
- * @see https://www.i18next.com/translation-function/plurals
- */
-
 import { TFunction } from 'i18next'
 
 /**
@@ -55,17 +46,6 @@ export function formatEtaHumanReadable(seconds: number, t: TFunction): string {
     return t('eta.remaining', { time: joined })
 }
 
-/**
- * Format bytes/sec into human-readable speed string with appropriate unit.
- * Auto-scales from B/s → KiB/s → MiB/s → GiB/s
- * 
- * @example
- * formatSpeed(512)       // "512 B/s"
- * formatSpeed(51200)     // "50.00 KiB/s"
- * formatSpeed(2621440)   // "2.50 MiB/s"
- * 
- * @see Parabolic: downloadprogresschangedeventargs.cpp:16-35
- */
 export function formatSpeed(bytesPerSec: number): string {
     if (bytesPerSec <= 0 || isNaN(bytesPerSec) || !isFinite(bytesPerSec)) {
         return '0 B/s'

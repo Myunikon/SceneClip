@@ -193,6 +193,31 @@ pub async fn check_gpu_support(app_handle: AppHandle) -> Result<GpuInfo, String>
         final_vendor, model_name, final_renderer
     ));
 
+    // 3. Get CPU Info (Added to fix frontend popup issue)
+    let mut cpu_info_str = String::new();
+    #[cfg(target_os = "windows")]
+    {
+        let mut cmd_cpu = tokio::process::Command::new("powershell");
+        cmd_cpu.creation_flags(0x08000000); // CREATE_NO_WINDOW
+        cmd_cpu.args(&[
+            "-NoProfile",
+            "-Command",
+            "Get-CimInstance Win32_Processor | Select-Object Name, Manufacturer, NumberOfCores, NumberOfLogicalProcessors, MaxClockSpeed, L3CacheSize | Format-List",
+        ]);
+
+        match cmd_cpu.output().await {
+            Ok(output) => {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                cpu_info_str.push_str("\n--- CPU INFO ---\n");
+                cpu_info_str.push_str(&stdout);
+            }
+            Err(e) => {
+                cpu_info_str.push_str(&format!("\nCPU Info Failed: {}\n", e));
+            }
+        }
+    }
+    debug_log.push_str(&cpu_info_str);
+
     Ok(GpuInfo {
         vendor: final_vendor.to_string(),
         model: model_name,

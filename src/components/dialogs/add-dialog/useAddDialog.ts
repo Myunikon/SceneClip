@@ -52,32 +52,42 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
     // 3. Disk Stats Hook
     const { diskFreeSpace } = useDiskStats(options.path, isOpen)
 
-    // Auto-paste initial URL or from Clipboard
+    // React to external URL triggers (Notification click, Deep link)
+    // This MUST run whenever initialUrl changes to catch the updates
+    useEffect(() => {
+        if (initialUrl) {
+            console.log("[AddDialog] Hydrating from external source:", initialUrl)
+            setUrl(initialUrl)
+            setIsOpen(true)
+        }
+    }, [initialUrl])
+
+    // Auto-paste from Clipboard on Open (Fallback)
     useEffect(() => {
         if (!isOpen) return
 
-        if (initialUrl) {
-            setUrl(initialUrl)
-        } else {
-            // Only check clipboard ONCE when dialog opens, do not track 'url' changes
-            const checkClipboard = async () => {
-                // If user already typed something (unlikely on fresh open, but possible if state preserved), skip
-                if (url) return
+        // If we have a URL already (from props or typing), don't override
+        if (url) return
 
-                try {
-                    const text = await readText()
-                    // Use a slightly stricter check for auto-paste to avoid annoyance
-                    if (text && isValidVideoUrl(text)) {
+        const checkClipboard = async () => {
+            // Double check inside async
+            if (url) return
+
+            try {
+                const text = await readText()
+                if (text && isValidVideoUrl(text)) {
+                    // Only auto-paste if we don't have an initialUrl conflicting
+                    if (!initialUrl) {
                         setUrl(text)
                     }
-                } catch (e) {
-                    console.warn('Clipboard auto-read failed', e)
                 }
+            } catch (e) {
+                console.warn('Clipboard auto-read failed', e)
             }
-            checkClipboard()
         }
+        checkClipboard()
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen]) // Only run on Open. Remove 'url' to fix "Clear button" bug.
+    }, [isOpen])
 
     // Close on Escape key
     useEffect(() => {

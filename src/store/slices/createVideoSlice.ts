@@ -1,340 +1,151 @@
 
 import { StateCreator } from 'zustand'
 import { AppState, DownloadTask, VideoSlice } from './types'
+import { invoke } from '@tauri-apps/api/core'
+import { listen } from '@tauri-apps/api/event'
+import { getFFmpegCommand, buildCompressionArgs, buildCompressedOutputPath, detectFileType } from '../../lib/ffmpegService'
+import { getUniqueFilePath } from '../../lib/fileUtils'
+import { formatBytes } from '../../lib/utils'
 import { v4 as uuidv4 } from 'uuid'
-
-// Import Helper Libs
 import { notify } from '../../lib/notify'
-import { getUniqueFilePath, saveTempCookieFile } from '../../lib/fileUtils'
-import { DownloadService } from '../../lib/DownloadService'
-import {
-    parseFFmpegProgress,
-    parseFFmpegDuration,
-    buildCompressionArgs,
-    buildCompressedOutputPath,
-    detectFileType
-} from '../../lib/ffmpegService'
-import { getFFmpegCommand } from '../../lib/ytdlp'
 import { stat } from '@tauri-apps/plugin-fs'
 
-// Import Extracted Services
-import {
-    formatBytes,
-    activeProcessMap,
-    startingTaskIds,
-    cleanupTask
-} from '../../lib/processUtils'
-
+// Helper for compression pid tracking
+const activeCompressionMap = new Map<string, any>()
 
 export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set, get) => {
-
-    // We can inject context here if needed, or just use get() inside callbacks
 
     return {
         tasks: [],
 
+        // --- QUEUE COMMANDS (Rust) ---
+
+        initializeQueue: async () => {
+            // 1. Fetch initial state
+            try {
+                const currentQueue = await invoke<DownloadTask[]>('get_queue_state');
+                set({ tasks: currentQueue });
+            } catch (e) {
+                console.error("Failed to fetch queue state:", e);
+            }
+
+            // 2. Listen for updates
+            await listen<DownloadTask[]>('queue_update', (event) => {
+                set({ tasks: event.payload });
+            });
+        },
+
         addTask: async (url, options) => {
-            const id = uuidv4()
-            const settings = get().settings
-
-            // Prevent duplicate downloads
-            const existingTask = get().tasks.find(t =>
-                t.url === url &&
-                (t.status === 'downloading' || t.status === 'fetching_info' || t.status === 'queued')
-            )
-            if (existingTask) {
-                get().addLog({ message: `[Queue] Duplicate URL ignored: ${url}`, type: 'warning', source: 'system' })
-                return
-            }
-
-            // Handle Cookie File Creation
-            let cookiePath = undefined
-            if (options?.cookies) {
-                try {
-                    // Primitive check: if it looks like Netscape content, save to file
-                    if (options.cookies.includes("Netscape")) {
-                        cookiePath = await saveTempCookieFile(options.cookies, id)
-                    } else {
-                        cookiePath = options.cookies
-                    }
-                } catch (e) {
-                    get().addLog({ message: `Failed to save cookie file: ${e}`, type: 'error', source: 'system' })
-                }
-            }
-
-            const newTask: DownloadTask = {
-                id,
-                url,
-                title: 'Queueing...',
-                status: options.scheduledTime ? 'scheduled' : 'pending',
-                progress: 0,
-                speed: '-',
-                eta: '-',
-                range: (options.rangeStart || options.rangeEnd) ? `${options.rangeStart || 0}-${options.rangeEnd || ''}` : 'Full',
-                format: options.format || settings.resolution,
-                path: options.path || settings.downloadPath,
-                scheduledTime: options.scheduledTime,
-                _options: {
-                    ...options,
-                    cookies: cookiePath,
-                    postProcessorArgs: options.postProcessorArgs
-                },
-                addedAt: Date.now()
-            }
-
-            set(state => ({ tasks: [newTask, ...state.tasks] }))
-            get().processQueue()
-        },
-
-        processQueue: () => {
-            const { tasks, settings, startTask } = get()
-            const activeCount = tasks.filter(t =>
-                t.status === 'downloading' ||
-                t.status === 'fetching_info' ||
-                t.status === 'processing' ||
-                startingTaskIds.has(t.id)
-            ).length
-            const limit = settings.concurrentDownloads || 3
-
-            if (activeCount < limit) {
-                const pending = tasks.find(t =>
-                    t.status === 'pending' && !startingTaskIds.has(t.id)
-                )
-                if (pending) {
-                    startingTaskIds.add(pending.id)
-                    startTask(pending.id)
-                }
+            // No duplicate check needed here, backend handles logic or we allow it.
+            try {
+                // Pass options directly. Backend expects camelCase keys matching YtDlpOptions
+                await invoke('add_to_queue', { url, options });
+                // No need to manually update state, the event 'queue_update' will fire from backend
+            } catch (e) {
+                console.error("Failed to add task:", e);
+                notify.error("Failed to add to queue", { description: String(e) });
             }
         },
 
-        startTask: async (id) => {
-            const { tasks, updateTask } = get()
-            const task = tasks.find(t => t.id === id)
-            if (!task) {
-                cleanupTask(id)
-                return
+        removeTask: async (id: string) => {
+            try {
+                await invoke('remove_from_queue', { id });
+            } catch (e) {
+                console.error("Failed to remove task:", e);
             }
-
-            updateTask(id, { status: 'fetching_info' })
-            startingTaskIds.delete(id)
-
-            // Delegate to DownloadService
-            const service = DownloadService.getInstance()
-
-            await service.start(task, get().settings, {
-                onLog: (taskId, message, type, explicitSource) => {
-                    // Logic to distinguish between ytdlp and ffmpeg logs based on content
-                    const lowerMsg = message.toLowerCase();
-                    const source = explicitSource || (
-                        (lowerMsg.includes('ffmpeg') || lowerMsg.includes('merge') || lowerMsg.includes('muxing'))
-                            ? 'ffmpeg'
-                            : 'ytdlp'
-                    );
-
-                    get().addLog({
-                        message: `[${taskId.substring(0, 4)}] ${message}`,
-                        type: type || 'info',
-                        source
-                    })
-                    if (type === 'error') updateTask(taskId, { log: message })
-                },
-                onProgress: (taskId, updates) => {
-                    updateTask(taskId, updates)
-                },
-                onError: (taskId, error) => {
-                    const { tasks, updateTask, processQueue, addLog } = get()
-                    const task = tasks.find(t => t.id === taskId)
-
-                    // Transient error patterns that can be auto-retried
-                    const transientPatterns = [
-                        'timeout', 'etimedout', 'econnreset', 'econnrefused',
-                        'socket hang up', 'network', 'enotfound', 'epipe',
-                        'unable to download', 'http error 5', // 5xx server errors
-                        'connection reset', 'interrupted'
-                    ]
-
-                    const isTransientError = transientPatterns.some(pattern =>
-                        error.toLowerCase().includes(pattern)
-                    )
-
-                    const currentRetryCount = task?.retryCount || 0
-                    const maxRetries = 3
-
-                    if (isTransientError && currentRetryCount < maxRetries) {
-                        // Exponential backoff: 2s, 4s, 8s
-                        const delay = Math.pow(2, currentRetryCount + 1) * 1000
-                        const nextRetry = currentRetryCount + 1
-
-                        addLog({
-                            message: `[${taskId.substring(0, 4)}] Transient error detected. Auto-retry ${nextRetry}/${maxRetries} in ${delay / 1000}s...`,
-                            type: 'warning',
-                            source: 'system'
-                        })
-
-                        updateTask(taskId, {
-                            status: 'pending',
-                            progress: 0,
-                            retryCount: nextRetry,
-                            speed: `Retry ${nextRetry}/${maxRetries}...`,
-                            eta: `${delay / 1000}s`,
-                            log: `Auto-retry: ${error}`
-                        })
-
-                        // Schedule retry after delay
-                        setTimeout(() => {
-                            const { tasks, processQueue } = get()
-                            const currentTask = tasks.find(t => t.id === taskId)
-                            // Only retry if still in pending state (not manually stopped)
-                            if (currentTask?.status === 'pending') {
-                                processQueue()
-                            }
-                        }, delay)
-                    } else {
-                        // Permanent error or max retries exceeded
-                        if (currentRetryCount >= maxRetries) {
-                            addLog({
-                                message: `[${taskId.substring(0, 4)}] Max retries (${maxRetries}) exceeded. Marking as failed.`,
-                                type: 'error',
-                                source: 'system'
-                            })
-                        }
-                        updateTask(taskId, { status: 'error', log: error })
-                        processQueue()
-                    }
-                },
-                onComplete: async (taskId, result) => {
-                    updateTask(taskId, {
-                        status: 'completed',
-                        progress: 100,
-                        filePath: result.path,
-                        completedAt: Date.now()
-                    })
-
-                    get().addLog({ message: `Task ${taskId} Completed. Path: ${result.path}`, type: 'success', source: 'system' })
-
-                    // Trigger next in queue
-                    get().processQueue()
-
-                    // Send desktop notification (if enabled)
-                    const task = get().tasks.find(t => t.id === taskId)
-                    if (get().settings.enableDesktopNotifications && task) {
-                        import('../../lib/notificationService').then(({ notificationService }) => {
-                            notificationService.notifyDownloadComplete(task.title, result.path)
-                        })
-                    }
-
-                    // Check for post-download action when queue is empty
-                    const { tasks, settings } = get()
-                    const hasActiveDownloads = tasks.some(t =>
-                        t.status === 'downloading' ||
-                        t.status === 'fetching_info' ||
-                        t.status === 'pending' ||
-                        t.status === 'queued' ||
-                        t.status === 'processing'
-                    )
-
-                    if (!hasActiveDownloads && settings.postDownloadAction && settings.postDownloadAction !== 'none') {
-                        // SAFETY CHECK: Abort if any task in the current session failed
-                        // Session heuristic: within last 6 hours
-                        const sessionCutoff = Date.now() - (6 * 60 * 60 * 1000)
-                        const hasFailedTasks = tasks.some(t =>
-                            t.status === 'error' &&
-                            (t.completedAt || t.addedAt || 0) > sessionCutoff
-                        )
-
-                        if (hasFailedTasks) {
-                            get().addLog({
-                                message: `Post-download action (${settings.postDownloadAction}) aborted because one or more tasks failed.`,
-                                type: 'warning',
-                                source: 'system'
-                            })
-                            return
-                        }
-
-                        // Send batch complete notification
-                        if (settings.enableDesktopNotifications) {
-                            const completedCount = tasks.filter(t => t.status === 'completed').length
-                            import('../../lib/notificationService').then(({ notificationService }) => {
-                                notificationService.notifyBatchComplete(completedCount)
-                            })
-                        }
-
-                        try {
-                            const { invoke } = await import('@tauri-apps/api/core')
-                            notify.info('All downloads complete', {
-                                description: `Performing action: ${settings.postDownloadAction}`,
-                                duration: 5000
-                            })
-                            // Delay to allow notification to show
-                            setTimeout(async () => {
-                                await invoke('perform_system_action', {
-                                    action: settings.postDownloadAction,
-                                    confirm: true
-                                })
-                            }, 3000)
-                        } catch (e) {
-                            notify.error('Failed to perform post-download action', { description: String(e) })
-                        }
-                    }
-                },
-                onCommand: (taskId, command) => {
-                    updateTask(taskId, { ytdlpCommand: command })
-                }
-            })
-        },
-
-        stopTask: async (id) => {
-            const service = DownloadService.getInstance()
-            await service.stop(id)
-            get().updateTask(id, { status: 'stopped', speed: '-', eta: 'Stopped' })
         },
 
         pauseTask: async (id) => {
-            const service = DownloadService.getInstance()
-            await service.pause(id)
-            get().updateTask(id, { status: 'paused', speed: 'Paused', eta: '-' })
+            try {
+                await invoke('pause_task', { id });
+            } catch (e) {
+                console.error("Failed to pause task:", e);
+                notify.error("Pause Failed", { description: String(e) });
+            }
         },
 
         resumeTask: async (id) => {
-            const { updateTask, processQueue } = get()
-            updateTask(id, { status: 'pending' }) // Re-queue
-            processQueue()
+            try {
+                await invoke('resume_task', { id });
+            } catch (e) {
+                console.error("Failed to resume task:", e);
+                // Fallback: if resume fails (e.g. process gone), maybe we should try restart?
+                // For now, just notify.
+                notify.error("Resume Failed", { description: String(e) });
+            }
+        },
+
+        stopTask: async (id) => {
+            await invoke('remove_from_queue', { id });
         },
 
         retryTask: async (id) => {
-            const { updateTask, processQueue } = get()
-            // Reset retryCount on manual retry for fresh auto-retry attempts
-            updateTask(id, { status: 'pending', progress: 0, speed: 'Retrying...', eta: '...', log: undefined, retryCount: 0 })
-            processQueue()
+            // Same as resume for now
+            const task = get().tasks.find(t => t.id === id);
+            if (task) {
+                await invoke('remove_from_queue', { id }); // Ensure cleaned up
+                // Small delay?
+                // Then re-add
+                const opts = task.options || task._options || {};
+                await invoke('add_to_queue', { url: task.url, options: opts });
+            }
         },
 
-        clearTask: (id) => {
-            const { stopTask } = get()
-            stopTask(id)
-            set(state => ({ tasks: state.tasks.filter(t => t.id !== id) }))
+        clearTask: async (id) => {
+            await invoke('remove_from_queue', { id });
         },
+
+        // --- LEGACY / FRONTEND ONLY FEATURES ---
 
         deleteHistory: () => {
-            set(state => ({ tasks: state.tasks.filter(t => t.status !== 'completed' && t.status !== 'stopped') }))
+            // This modifies local state filters. 
+            // Since state comes from Backend, we should probably have a backend command `clear_history`?
+            // Or we just locally filter and maybe backend doesn't broadcast 'history' tasks?
+            // Current backend: `get_queue_state` returns ALL tasks including completed.
+            // If we really want to delete history, we should tell backend to remove completed tasks.
+
+            const completed = get().tasks.filter(t => t.status === 'completed' || t.status === 'stopped');
+            completed.forEach(t => {
+                invoke('remove_from_queue', { id: t.id });
+            });
         },
 
         importTasks: (importedTasks) => {
-            set(state => {
-                const existingIds = new Set(state.tasks.map(t => t.id))
-                const newTasks = importedTasks.filter(t => !existingIds.has(t.id))
-                return { tasks: [...state.tasks, ...newTasks] }
-            })
+            // Batch add
+            importedTasks.forEach(t => {
+                invoke('add_to_queue', { url: t.url, options: t.options || t._options || {} });
+            });
         },
 
-        updateTask: (id, updates) => {
-            set(state => ({
-                tasks: state.tasks.map(t => t.id === id ? { ...t, ...updates } : t)
-            }))
+        updateTask: (_id, _updates) => {
+            // State managed by backend
         },
 
-        // --- Compression Logic (Basic Re-impl) ---
+        startTask: async (_id) => {
+            // Backend handled
+        },
+
+        processQueue: () => {
+            // Backend handled
+        },
+
+        recoverDownloads: () => 0, // Backend handles this on startup
+        retryAllFailed: () => {
+            const failed = get().tasks.filter(t => t.status === 'error');
+            failed.forEach(t => {
+                invoke('add_to_queue', { url: t.url, options: t.options || t._options || {} });
+            });
+        },
+        getInterruptedCount: () => 0,
+        sanitizeTasks: () => { },
+        cleanupOldTasks: (_days) => {
+            // Implemented via backend retention later
+        },
+
+        // --- COMPRESSION (Frontend managed) ---
+        // TODO: Move compression to Rust eventually
         compressTask: async (taskId, options) => {
-            const { tasks, updateTask, settings } = get()
+            const { tasks, settings } = get()
             const originalTask = tasks.find(t => t.id === taskId)
             if (!originalTask || !originalTask.filePath) return
 
@@ -348,219 +159,30 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
             const args = buildCompressionArgs(originalTask.filePath, outputPath, options, fileType)
             const newId = uuidv4()
 
-            const newTask: DownloadTask = {
-                id: newId,
-                url: originalTask.filePath,
-                title: `Compressing: ${originalTask.title}`,
-                status: 'downloading',
-                statusDetail: 'Initializing...',
-                progress: 0,
-                speed: '0',
-                eta: '...',
-                path: settings.downloadPath,
-                addedAt: Date.now()
-            }
+            // Temporary Notification
+            notify.info("Compression Started", { description: "Running in background..." });
 
-            set(state => ({ tasks: [newTask, ...state.tasks] }))
-
-            // Spawn FFmpeg Sidecar
             try {
                 const cmd = await getFFmpegCommand(args, settings.binaryPathFfmpeg)
-                let durationSec = 0
-
-                cmd.stderr.on('data', (line) => {
-                    const str = typeof line === 'string' ? line : new TextDecoder().decode(line)
-                    const dur = parseFFmpegDuration(str)
-                    if (dur) durationSec = dur
-
-                    const prog = parseFFmpegProgress(str, durationSec)
-                    if (prog) updateTask(newId, { progress: prog.percent, speed: prog.speed, eta: prog.eta })
-                })
-
                 const child = await cmd.spawn()
-                activeProcessMap.set(newId, child)
-
-                updateTask(newId, { pid: child.pid, statusDetail: 'Encoding' })
+                activeCompressionMap.set(newId, child)
 
                 cmd.on('close', async (data) => {
-                    activeProcessMap.delete(newId)
+                    activeCompressionMap.delete(newId)
                     if (data.code === 0) {
                         let sizeBytes = 0
                         try {
                             const s = await stat(outputPath)
                             sizeBytes = s.size
                         } catch { /* ignore */ }
-                        updateTask(newId, {
-                            status: 'completed',
-                            progress: 100,
-                            filePath: outputPath,
-                            fileSize: formatBytes(sizeBytes),
-                            completedAt: Date.now()
-                        })
-                        notify.success("Compression Complete", { description: newTask.title })
+                        notify.success("Compression Complete", { description: `${outputPath} (${formatBytes(sizeBytes)})` })
                     } else {
-                        updateTask(newId, { status: 'error', log: `Exit Code ${data.code}` })
-                        get().addLog({ message: `Compression Failed: Exit Code ${data.code} for ${originalTask.title}`, type: 'error', source: 'ffmpeg' })
+                        notify.error("Compression Failed", { description: `Exit code ${data.code}` })
                     }
                 })
-
             } catch (e) {
-                updateTask(newId, { status: 'error', log: String(e) })
+                notify.error("Compression Start Failed", { description: String(e) })
             }
-        },
-
-        sanitizeTasks: () => {
-            set(state => ({
-                tasks: state.tasks.map(t => {
-                    if (t.status === 'fetching_info' || t.status === 'downloading') {
-                        return { ...t, status: 'stopped', statusDetail: 'Interrupted by Restart' }
-                    }
-                    return t
-                })
-            }))
-        },
-
-        /**
-         * Recover interrupted downloads (Parabolic feature)
-         * Re-queues all stopped/interrupted tasks for retry
-         * @returns Number of tasks recovered
-         */
-        recoverDownloads: () => {
-            const { tasks, processQueue } = get()
-            const interruptedTasks = tasks.filter(t =>
-                t.status === 'stopped' &&
-                t.statusDetail === 'Interrupted by Restart'
-            )
-
-            if (interruptedTasks.length === 0) return 0
-
-            // Re-queue interrupted tasks
-            set(state => ({
-                tasks: state.tasks.map(t => {
-                    if (t.status === 'stopped' && t.statusDetail === 'Interrupted by Restart') {
-                        return {
-                            ...t,
-                            status: 'pending',
-                            statusDetail: 'Recovered',
-                            progress: 0,
-                            speed: 'Queued...',
-                            eta: '-'
-                        }
-                    }
-                    return t
-                })
-            }))
-
-            // Start processing queue
-            processQueue()
-
-            get().addLog({
-                translationKey: 'recoveredDownloads',
-                params: { count: interruptedTasks.length },
-                type: 'success',
-                source: 'system'
-            })
-
-            return interruptedTasks.length
-        },
-
-        /**
-         * Retry all failed/error tasks (Parabolic feature)
-         * Batch retry for all tasks with error status
-         */
-        retryAllFailed: () => {
-            const { tasks, processQueue } = get()
-            const failedTasks = tasks.filter(t => t.status === 'error')
-
-            if (failedTasks.length === 0) return
-
-            set(state => ({
-                tasks: state.tasks.map(t => {
-                    if (t.status === 'error') {
-                        return {
-                            ...t,
-                            status: 'pending',
-                            progress: 0,
-                            speed: 'Retrying...',
-                            eta: '-',
-                            log: undefined
-                        }
-                    }
-                    return t
-                })
-            }))
-
-            processQueue()
-
-            get().addLog({
-                translationKey: 'retryingAllFailed',
-                params: { count: failedTasks.length },
-                type: 'info',
-                source: 'system'
-            })
-        },
-
-        /**
-         * Get count of interrupted tasks that can be recovered
-         */
-        getInterruptedCount: () => {
-            return get().tasks.filter(t =>
-                t.status === 'stopped' &&
-                t.statusDetail === 'Interrupted by Restart'
-            ).length
-        },
-
-        /**
-         * Cleanup old completed/stopped tasks based on retention policy
-         * Uses immutable filter pattern per Context7/Zustand best practices
-         * 
-         * @param retentionDays - Days to keep tasks (-1 = forever, 0 = delete all)
-         * @see Context7: "prefer immutable operations like filter(...)"
-         */
-        /**
-         * Cleanup old completed/stopped tasks based on retention policy
-         * Supports both Time-based (Days) and Count-based (Max Items) retention
-         */
-        cleanupOldTasks: (retentionDays: number) => {
-            const { settings } = get()
-            const maxItems = settings.maxHistoryItems ?? -1
-
-            set(state => {
-                let currentTasks = [...state.tasks]
-
-                // 1. Time-based Retention
-                if (retentionDays === 0) {
-                    currentTasks = currentTasks.filter(t => !['completed', 'stopped'].includes(t.status))
-                } else if (retentionDays > 0) {
-                    const cutoffTime = Date.now() - (retentionDays * 24 * 60 * 60 * 1000)
-                    currentTasks = currentTasks.filter(t => {
-                        if (!['completed', 'stopped'].includes(t.status)) return true
-                        const taskTime = t.completedAt || t.addedAt || 0
-                        return taskTime > cutoffTime
-                    })
-                }
-
-                // 2. Count-based Retention (Max Items)
-                if (maxItems >= 0) {
-                    const activeTasks = currentTasks.filter(t => !['completed', 'stopped'].includes(t.status))
-                    const historyTasks = currentTasks.filter(t => ['completed', 'stopped'].includes(t.status))
-
-                    // Sort history by date desc (newest first)
-                    historyTasks.sort((a, b) => {
-                        const timeA = a.completedAt || a.addedAt || 0
-                        const timeB = b.completedAt || b.addedAt || 0
-                        return timeB - timeA
-                    })
-
-                    // Keep only top N
-                    if (historyTasks.length > maxItems) {
-                        const keptHistory = historyTasks.slice(0, maxItems)
-                        currentTasks = [...activeTasks, ...keptHistory]
-                    }
-                }
-
-                return { tasks: currentTasks }
-            })
         }
     }
 }

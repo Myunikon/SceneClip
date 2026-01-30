@@ -16,7 +16,6 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
     // 1. Enforce Theme immediately
     useTheme({ theme: settings.theme, frontendFontSize: settings.frontendFontSize })
 
-    // Parabolic feature: Check for interrupted downloads on startup
     useRecovery()
 
     const [loading, setLoading] = useState(true)

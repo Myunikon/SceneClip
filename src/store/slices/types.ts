@@ -41,6 +41,7 @@ export interface DownloadTask {
   chapters?: VideoChapter[] // Store chapters for sequential splitting
   audioNormalization?: boolean // Persisted for UI indicator (Loudness Normalization applied)
   retryCount?: number // Auto-retry counter for transient network errors (max 3)
+  options?: DownloadOptions // Mapping from Backend 'options'
 }
 
 
@@ -110,6 +111,7 @@ export interface SystemSlice {
 
 export interface VideoSlice {
   tasks: DownloadTask[]
+  initializeQueue: () => Promise<void>
   addTask: (url: string, options: DownloadOptions) => Promise<void>
   stopTask: (id: string) => Promise<void>
   pauseTask: (id: string) => Promise<void>
@@ -123,7 +125,6 @@ export interface VideoSlice {
   importTasks: (tasks: DownloadTask[]) => void
   compressTask: (taskId: string, options: CompressionOptions) => Promise<void>
   sanitizeTasks: () => void
-  // Parabolic features: Recovery and Batch Retry
   recoverDownloads: () => number  // Returns count of recovered tasks
   retryAllFailed: () => void      // Retry all failed/stopped tasks
   getInterruptedCount: () => number // Count tasks that can be recovered

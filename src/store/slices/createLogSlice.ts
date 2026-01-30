@@ -9,7 +9,6 @@ export const createLogSlice: StateCreator<AppState, [], [], LogSlice> = (set) =>
             id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36),
             timestamp: Date.now()
         }]
-        // Limit log buffer to 500 entries to prevent memory growth
         if (newLogs.length > 500) {
             newLogs.shift()
         }

@@ -149,13 +149,10 @@ export interface DownloadOptions {
     forceTranscode?: boolean // Force re-encoding if native codec unavailable
     cookies?: string // Netscape formatted cookies content (or path)
     userAgent?: string // Custom User Agent
-    useAria2c?: boolean // Parabolic: Use external aria2c downloader
-    // GIF Options
+    useAria2c?: boolean
     gifFps?: number
     gifScale?: number
     gifQuality?: 'high' | 'fast'
-
-    // Post-Processing (Custom FFmpeg args from preset)
     postProcessorArgs?: string
 }
 
@@ -222,7 +219,6 @@ export interface AppSettings {
     visitorData: string
     useChromeCookieUnlock: boolean
 
-    // Parabolic Features
     enableDesktopNotifications: boolean // Send desktop notifications when app is in background
     preventSuspendDuringDownload: boolean // Prevent system sleep during active downloads
 
@@ -230,11 +226,7 @@ export interface AppSettings {
     postProcessorPresets: PostProcessorPreset[] // User-defined FFmpeg argument presets
 }
 
-/**
- * Post-Processor Preset
- * Inspired by Parabolic's PostProcessorArgument
- * Allows users to define reusable FFmpeg argument presets
- */
+
 export interface PostProcessorPreset {
     id: string
     name: string

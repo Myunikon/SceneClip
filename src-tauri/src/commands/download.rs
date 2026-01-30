@@ -79,11 +79,7 @@ pub async fn download_media_internal(
         title: None,
     });
 
-    let ytdlp_path = if settings.binary_path_yt_dlp.is_empty() {
-        "yt-dlp"
-    } else {
-        &settings.binary_path_yt_dlp
-    };
+    let ytdlp_path = ytdlp::resolve_ytdlp_path(&app, &settings.binary_path_yt_dlp);
 
     let _ = sender.send(DownloadEvent::Log {
         id: id.clone(),
@@ -103,10 +99,16 @@ pub async fn download_media_internal(
     // We spawn blocking for synchronous metadata check
     let meta_res = tauri::async_runtime::spawn_blocking(move || {
         // Use std::process::Command
-        let output = Command::new(&ytdlp_path_clone)
-            .args(&["--dump-json", "--no-playlist", &url_clone])
-            .output();
-        output
+        let mut cmd = Command::new(&ytdlp_path_clone);
+        cmd.args(&["--dump-json", "--no-playlist", &url_clone]);
+
+        #[cfg(target_os = "windows")]
+        {
+            use std::os::windows::process::CommandExt;
+            cmd.creation_flags(0x08000000);
+        }
+
+        cmd.output()
     })
     .await
     .map_err(|e| e.to_string())?;
@@ -338,9 +340,13 @@ pub async fn cancel_download(id: String) -> Result<(), String> {
         #[cfg(target_os = "windows")]
         {
             // Kill process tree on Windows
-            let _ = Command::new("taskkill")
-                .args(&["/F", "/PID", &p.to_string(), "/T"])
-                .output();
+            let mut cmd = Command::new("taskkill");
+            cmd.args(&["/F", "/PID", &p.to_string(), "/T"]);
+
+            use std::os::windows::process::CommandExt;
+            cmd.creation_flags(0x08000000);
+
+            let _ = cmd.output();
         }
         #[cfg(not(target_os = "windows"))]
         {
@@ -349,4 +355,51 @@ pub async fn cancel_download(id: String) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+/// Debug Support: Get the generated args for verification
+#[tauri::command]
+pub async fn get_download_args(
+    app: AppHandle,
+    url: String,
+    options: YtDlpOptions,
+    settings: AppSettings,
+    final_filename: String,
+    gpu_type: String,
+) -> Result<Vec<String>, String> {
+    let args =
+        ytdlp::build_ytdlp_args(&url, &options, &settings, &final_filename, &gpu_type, &app).await;
+    Ok(args)
+}
+
+/// Fetch video metadata (JSON)
+#[tauri::command]
+pub async fn get_video_metadata(
+    app: AppHandle,
+    url: String,
+    settings: AppSettings,
+) -> Result<serde_json::Value, String> {
+    let ytdlp_path = ytdlp::resolve_ytdlp_path(&app, &settings.binary_path_yt_dlp);
+
+    let mut cmd = Command::new(ytdlp_path);
+    cmd.args(&["--dump-json", "--no-playlist", "--no-warnings", &url]);
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000);
+    }
+
+    let output = cmd
+        .output()
+        .map_err(|e| format!("Failed to execute yt-dlp: {}", e))?;
+
+    if output.status.success() {
+        let json: serde_json::Value = serde_json::from_slice(&output.stdout)
+            .map_err(|e| format!("Failed to parse JSON: {}", e))?;
+        Ok(json)
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        Err(stderr.to_string())
+    }
 }

@@ -28,7 +28,7 @@ tauri-plugin-dialog = "2.4.2"
 tauri-plugin-notification = "2.3.3"
 system_shutdown = "4.0.1"
 tauri-plugin-http = "2.5.4"
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", features = ["json", "stream"] }
 tokio = { version = "1", features = ["full"] }
 futures = "0.3.31"
 tauri-plugin-clipboard-manager = "2"

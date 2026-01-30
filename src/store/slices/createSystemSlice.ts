@@ -6,7 +6,7 @@ import { isTauriAvailable } from '../../lib/platform'
 import { runBinaryValidation } from '../../lib/binary-validator'
 import { getBinaryVersion } from '../../lib/updater-service'
 import { translations } from '../../lib/locales'
-import { Command } from '@tauri-apps/plugin-shell'
+
 
 export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (set, get) => ({
     binariesReady: false,
@@ -42,24 +42,8 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
                 try {
                     const { invoke } = await import('@tauri-apps/api/core')
 
-                    // 1. CPU DIAGNOSTIC (First, as requested)
-                    try {
-                        const cmd = Command.create('run-powershell', [
-                            '-NoProfile',
-                            '-Command',
-                            "Get-CimInstance Win32_Processor | Select-Object Name, Manufacturer, NumberOfCores, NumberOfLogicalProcessors, MaxClockSpeed, L3CacheSize | Format-List"
-                        ])
-                        const output = await cmd.execute()
-                        const cpuLog = output.stdout || output.stderr
-
-                        get().addLog({ message: `[CPU DETECT DIAGNOSTIC]\n${cpuLog.trim()}`, type: 'info', source: 'system' })
-                    } catch (e) {
-                        console.warn("CPU Check failed:", e)
-                        get().addLog({ message: `[CPU Error] Failed to detect CPU details: ${e}`, type: 'error', source: 'system' })
-                    }
-
-                    // 2. GPU DIAGNOSTIC
-                    // Backend now returns GpuInfo struct
+                    // 1. CPU & GPU DIAGNOSTIC
+                    // Backend now returns GpuInfo struct with CPU info in debug_info
                     interface GpuInfo { vendor: string, model: string, renderer: string, debug_info: string }
                     const gpuInfo = await invoke<GpuInfo>('check_gpu_support')
 
@@ -104,6 +88,10 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
         if (get().listenersInitialized) {
             return
         }
+
+        // Setup Queue Listeners (Rust Backend)
+        get().initializeQueue()
+
         set({ listenersInitialized: true })
 
         // Check if running in Tauri context
@@ -193,16 +181,17 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
             const result = await checkForUpdates()
 
             set({
+                ytdlpNeedsUpdate: result.ytdlp.has_update,
                 ytdlpVersion: result.ytdlp.current,
                 ytdlpLatestVersion: result.ytdlp.latest,
-                ytdlpNeedsUpdate: result.ytdlp.hasUpdate,
+                ffmpegNeedsUpdate: result.ffmpeg.has_update,
                 ffmpegVersion: result.ffmpeg.current,
-                ffmpegLatestVersion: result.ffmpeg.latest,
-                ffmpegNeedsUpdate: result.ffmpeg.hasUpdate
+
+                isCheckingUpdates: false
             })
 
-            get().addLog({ message: `[Version Check] yt-dlp: ${result.ytdlp.current} → ${result.ytdlp.latest || 'N/A'} (Update: ${result.ytdlp.hasUpdate})`, type: 'info', source: 'system' })
-            get().addLog({ message: `[Version Check] FFmpeg: ${result.ffmpeg.current} → ${result.ffmpeg.latest || 'N/A'} (Update: ${result.ffmpeg.hasUpdate})`, type: 'info', source: 'system' })
+            get().addLog({ message: `[Version Check] yt-dlp: ${result.ytdlp.current} → ${result.ytdlp.latest || 'N/A'} (Update: ${result.ytdlp.has_update})`, type: 'info', source: 'system' })
+            get().addLog({ message: `[Version Check] FFmpeg: ${result.ffmpeg.current} → ${result.ffmpeg.latest || 'N/A'} (Update: ${result.ffmpeg.has_update})`, type: 'info', source: 'system' })
         } catch (e) {
             console.error('Version check failed:', e)
             const t = translations[get().settings.language as keyof typeof translations]?.errors || translations.en.errors

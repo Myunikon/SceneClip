@@ -1,15 +1,19 @@
 import { useEffect, useRef } from 'react'
 import { readText } from '@tauri-apps/plugin-clipboard-manager'
-import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification'
+import { isPermissionGranted, requestPermission, sendNotification, onAction } from '@tauri-apps/plugin-notification'
+import { platform } from '@tauri-apps/plugin-os'
 import { translations } from '../../lib/locales'
 import { useAppStore } from '../../store'
 import { isValidVideoUrl } from '../../lib/validators'
 
+console.log("[ClipboardListener] File Loaded (v10 - Stable)")
+
 interface ClipboardListenerProps {
     onFound?: (url: string) => void
+    onNotificationClick?: (url: string) => void
 }
 
-export function ClipboardListener({ onFound }: ClipboardListenerProps) {
+export function ClipboardListener({ onFound, onNotificationClick }: ClipboardListenerProps) {
     const settings = useAppStore((state) => state.settings)
 
     // Safe access to translations with fallback to English
@@ -20,27 +24,75 @@ export function ClipboardListener({ onFound }: ClipboardListenerProps) {
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
     const detectedUrlRef = useRef<string | null>(null)
 
+    // Handle Notification Clicks
+    useEffect(() => {
+        let unlisten: any = undefined
+
+        const setupListener = async () => {
+            try {
+                const currentPlatform = await platform()
+                console.log("[Notification] Initializing on platform:", currentPlatform)
+
+                // onAction is supported on Desktop (Windows/macOS/Linux)
+                unlisten = await onAction((notification) => {
+                    console.log("[Notification] ACTION EVENT:", notification)
+
+                    // Priority: extra.url > notification.body
+                    const url = (notification.extra?.url as string) || (notification.body as string)
+
+                    if (url && isValidVideoUrl(url)) {
+                        console.log("[Notification] Valid URL found in click:", url)
+                        if (onNotificationClick) {
+                            // 1. Trigger App logic
+                            onNotificationClick(url)
+
+                            // 2. Bring window to front
+                            import('@tauri-apps/api/window').then(async (m) => {
+                                try {
+                                    const win = m.getCurrentWindow()
+                                    await win.show()
+                                    await win.unminimize()
+                                    await win.setFocus()
+                                } catch (err) {
+                                    console.warn("[Notification] Window focus failed:", err)
+                                }
+                            })
+                        }
+                    } else {
+                        console.warn("[Notification] Click caught but no valid URL in notification:", notification)
+                        // At least focus the app even if no URL
+                        import('@tauri-apps/api/window').then(m => m.getCurrentWindow().setFocus())
+                    }
+                })
+            } catch (error) {
+                console.error("[Notification] Error setting up listener:", error)
+            }
+        }
+
+        setupListener()
+
+        return () => {
+            if (unlisten) {
+                console.log("[Notification] Cleaning up listener")
+                if (typeof unlisten === 'function') unlisten()
+                else if (unlisten && typeof unlisten.unlisten === 'function') unlisten.unlisten()
+            }
+        }
+    }, [onNotificationClick])
+
     useEffect(() => {
         const checkClipboard = async () => {
             try {
-                // If native notifications are disabled, we don't need to check actively
-                // unless we want to keep internal state, but for now we only care about notifying
                 if (!settings.enableDesktopNotifications) return
 
                 const text = await readText()
                 if (!text) return
-
-                // SAFETY GUARD: Ignore massive text blocks (novels, code dumps)
                 if (text.length > 500) return
-
-                // Ignore if same as last check
                 if (text === lastTextRef.current) return
 
                 lastTextRef.current = text
 
-                // Check if it's a video URL
                 if (isValidVideoUrl(text)) {
-                    // Ignore if we just detected this specific URL
                     if (detectedUrlRef.current === text) return
 
                     detectedUrlRef.current = text
@@ -57,11 +109,12 @@ export function ClipboardListener({ onFound }: ClipboardListenerProps) {
                     }
 
                     if (permissionGranted) {
+                        console.log("[Monitor] Sending notification for:", text)
                         sendNotification({
                             title: t.title,
                             body: text,
                             actionTypeId: 'DOWNLOAD_ACTION',
-                            extra: { url: text }
+                            extra: { url: text },
                         })
 
                         useAppStore.getState().addLog({
@@ -72,26 +125,17 @@ export function ClipboardListener({ onFound }: ClipboardListenerProps) {
                     }
                 }
             } catch (e) {
-                // Suppress common clipboard errors (empty, locked, format mismatch)
-                const msg = String(e)
-                if (msg.includes('empty') || msg.includes('not available')) {
-                    return
-                }
-                console.error("Clipboard Access Error:", e)
+                // Silently ignore clipboard errors
             }
         }
 
         // Poll every 3 seconds
         intervalRef.current = setInterval(checkClipboard, 3000)
 
-        // Setup Notification Click Listener
-        // Note: Future implementation for handling notification clicks can be added here
-        // currently we rely on default system behavior or simple app focus
-
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current)
         }
     }, [settings.enableDesktopNotifications, t.title, onFound])
 
-    return null // No UI component
+    return null
 }

@@ -201,6 +201,24 @@ export async function splitVideoByChapters(
   }
 }
 
+
+/**
+ * Creates a Sidecar Command for FFmpeg
+ * Wraps the Tauri Command.create logic for consistency.
+ */
+export async function getFFmpegCommand(args: string[], customBinaryPath?: string) {
+  const { Command } = await import('@tauri-apps/plugin-shell')
+
+  // Note: customBinaryPath support requires specific capability configuration in Tauri v2
+  // For now we default to the standard sidecar
+  if (customBinaryPath && customBinaryPath.trim().length > 0) {
+    // Warning: This path is currently ignored unless 'exec-mem-ffmpeg' or specific command is defined
+    // We stick to 'ffmpeg' command definition from tauri.conf.json
+  }
+
+  return Command.create('ffmpeg', args)
+}
+
 // Helper types for Channel (if not globally available)
 class Channel<T> {
   id: number;

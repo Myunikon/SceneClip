@@ -1,15 +1,3 @@
-/**
- * useRecovery Hook - Handle Download Recovery on App Startup
- *
- * Inspired by Parabolic's DownloadRecoveryQueue
- * - Checks for interrupted downloads on startup
- * - Prompts user to recover or dismiss
- * - Cleans up old completed tasks based on retention settings
- *
- * @see Parabolic: downloadrecoveryqueue.cpp, mainwindowcontroller.cpp
- * @see Context7: Zustand immutable array updates via filter()
- */
-
 import { useEffect, useRef } from 'react'
 import { useAppStore } from '../store'
 import { toast } from 'sonner'

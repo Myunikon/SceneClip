@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { notify } from '../../../lib/notify'
-import { parseYtDlpJson } from '../../../lib/ytdlp'
 import { VideoMeta } from '../../../types'
 import { useAppStore } from '../../../store'
 
@@ -24,18 +23,18 @@ export function useVideoMeta(url: string) {
 
         debounceRef.current = setTimeout(async () => {
             try {
-                // Use shared sidecar command factory
-                const { getYtDlpCommand } = await import('../../../lib/ytdlp')
+                // Use backend command
+                const { invoke } = await import('@tauri-apps/api/core')
                 const settings = useAppStore.getState().settings
-                const cmd = await getYtDlpCommand(['--dump-json', '--no-warnings', '--', url], settings.binaryPathYtDlp)
-                const output = await cmd.execute()
 
-                if (output.code === 0) {
-                    const data = parseYtDlpJson(output.stdout)
-                    setMeta(data)
-                } else {
-                    throw new Error(output.stderr)
-                }
+                // Backend returns generic JSON, we cast it to partial VideoMeta
+                // or just any if structure differs slightly, but VideoMeta is expected
+                const data = await invoke<VideoMeta>('get_video_metadata', {
+                    url,
+                    settings
+                })
+
+                setMeta(data)
             } catch (e: unknown) {
                 console.error("Metadata fetch failed", e)
                 notify.error("Failed to fetch video info", { description: e instanceof Error ? e.message : "Check URL and connection" })

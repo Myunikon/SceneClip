@@ -24,6 +24,7 @@ pub fn run() {
                     tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Webview),
                 ])
                 .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepAll)
+                .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
                 .build(),
         )
         .plugin(tauri_plugin_autostart::init(
@@ -62,7 +63,10 @@ pub fn run() {
             commands::keyring::get_credential,
             commands::keyring::delete_credential,
             commands::download::download_with_channel,
+            commands::download::get_download_args,
+            commands::download::get_download_args,
             commands::download::cancel_download,
+            commands::download::get_video_metadata,
             commands::filesystem::get_unique_filepath,
             commands::filesystem::save_temp_cookie_file,
             commands::ffmpeg::compress_media,
@@ -72,12 +76,17 @@ pub fn run() {
             commands::settings::is_youtube_url,
             commands::settings::validate_url,
             commands::settings::is_youtube_url,
-            // Queue Commands
             commands::queue::add_to_queue,
             commands::queue::remove_from_queue,
             commands::queue::pause_queue,
             commands::queue::resume_queue,
+            commands::queue::pause_task,
+            commands::queue::resume_task,
             commands::queue::get_queue_state,
+            commands::updater::check_updates,
+            commands::updater::update_binary,
+            commands::notifications::notify_background,
+            commands::io::parse_batch_file,
         ])
         .setup(|app| {
             let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
@@ -157,7 +166,9 @@ pub fn run() {
             app.manage(std::sync::Mutex::new(sys));
 
             // Queue System Init
-            let queue_state = std::sync::Arc::new(crate::download_queue::QueueState::new());
+            let queue_state = std::sync::Arc::new(crate::download_queue::QueueState::new(Some(
+                app.handle().clone(),
+            )));
             app.manage(queue_state.clone());
 
             // Spawn Background Queue Processor
@@ -167,6 +178,9 @@ pub fn run() {
             });
 
             server::init(app.handle().clone());
+
+            #[cfg(target_os = "windows")]
+            let _ = ensure_windows_shortcut(app);
 
             Ok(())
         })
@@ -199,4 +213,41 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(target_os = "windows")]
+fn ensure_windows_shortcut(_app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    use std::os::windows::process::CommandExt;
+
+    let app_name = "SceneClip";
+
+    let exe_path = std::env::current_exe()?;
+    let roaming_appdata = std::env::var("APPDATA")?;
+    let shortcut_path = std::path::Path::new(&roaming_appdata)
+        .join("Microsoft\\Windows\\Start Menu\\Programs")
+        .join(format!("{}.lnk", app_name));
+
+    if !shortcut_path.exists() {
+        log::info!(
+            "Creating Start Menu shortcut for portable support: {:?}",
+            shortcut_path
+        );
+
+        let ps_script = format!(
+            "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('{shortcut}');$s.TargetPath='{target}';$s.Save()",
+            shortcut = shortcut_path.to_string_lossy(),
+            target = exe_path.to_string_lossy()
+        );
+
+        let mut cmd = std::process::Command::new("powershell");
+        cmd.args(["-NoProfile", "-Command", &ps_script]);
+
+        // Hide terminal window
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+
+        cmd.output()?;
+        log::info!("Shortcut created successfully.");
+    }
+
+    Ok(())
 }

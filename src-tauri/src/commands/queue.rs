@@ -51,21 +51,7 @@ pub async fn remove_from_queue(
     id: String,
 ) -> Result<(), String> {
     // Scope the lock to ensure it is dropped before awaiting
-    let should_cancel = {
-        let mut tasks = state.tasks.lock().unwrap();
-        let mut order = state.queue_order.lock().unwrap();
-
-        // Remove from map
-        if tasks.remove(&id).is_some() {
-            // Remove from list
-            if let Some(pos) = order.iter().position(|x| *x == id) {
-                order.remove(pos);
-            }
-            true
-        } else {
-            false
-        }
-    };
+    let should_cancel = state.remove_task(&id);
 
     // Call cancellation outside the lock
     if should_cancel {
@@ -75,13 +61,24 @@ pub async fn remove_from_queue(
 }
 
 #[tauri::command]
+pub async fn pause_task(state: State<'_, Arc<QueueState>>, id: String) -> Result<(), String> {
+    state.pause_task(&id)
+}
+
+#[tauri::command]
+pub async fn resume_task(state: State<'_, Arc<QueueState>>, id: String) -> Result<(), String> {
+    state.resume_task(&id)
+}
+
+#[tauri::command]
 pub async fn pause_queue(_state: State<'_, Arc<QueueState>>) -> Result<(), String> {
-    // TODO: implement global pause flag in QueueState
+    // TODO: implement global pause
     Ok(())
 }
 
 #[tauri::command]
 pub async fn resume_queue(state: State<'_, Arc<QueueState>>) -> Result<(), String> {
+    // TODO: implement global resume
     state.notify.notify_one();
     Ok(())
 }

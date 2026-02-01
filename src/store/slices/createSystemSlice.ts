@@ -117,14 +117,9 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
         }
 
 
-        const { settings, setSetting, tasks, updateTask } = get()
+        const { settings, setSetting } = get()
 
-        // CRASH RECOVERY
-        tasks.forEach(t => {
-            if (t.status === 'downloading') {
-                updateTask(t.id, { status: 'paused', speed: '-', eta: 'Interrupted' })
-            }
-        })
+        // NOTE: Crash recovery is handled by Rust (download_queue.rs::load)
 
         if (!settings.downloadPath) {
             const defaultPath = await downloadDir()

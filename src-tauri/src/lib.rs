@@ -89,6 +89,8 @@ pub fn run() {
             commands::updater::install_app_update,
             commands::integrity::verify_binary_integrity,
             commands::notifications::notify_background,
+            commands::metadata::parse_video_metadata,
+            commands::analysis::estimate_export_size,
             commands::io::parse_batch_file,
         ])
         .setup(|app| {

@@ -3,22 +3,21 @@
 
 use crate::ytdlp::{self, AppSettings, YtDlpOptions};
 use serde::Serialize;
-use std::collections::HashMap;
-
-// use std::process::{Command, Stdio}; // Removed std::process
+use std::collections::VecDeque;
 use std::process::Stdio;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tauri::{ipc::Channel, AppHandle};
 use tokio::io::{AsyncBufReadExt, BufReader as AsyncBufReader};
-use tokio::process::Command; // Added tokio::process
+use tokio::process::Command;
 use tokio::sync::mpsc;
-// use std::os::windows::process::CommandExt; // Moved to inside function
 
-// Global Map to store child processes for cancellation
-// Using u32 for PID
-lazy_static::lazy_static! {
-    static ref ACTIVE_DOWNLOADS: Arc<Mutex<HashMap<String, u32>>> = Arc::new(Mutex::new(HashMap::new()));
-}
+// SCENECLIP_PROGRESS Format:
+// SCENECLIP_PROGRESS;<timestamp>;<downloaded_bytes>;<total_bytes>;<total_estimated>;<speed_bps>;<eta_seconds>
+const SCENECLIP_IDX_DOWNLOADED: usize = 2;
+const SCENECLIP_IDX_TOTAL: usize = 3;
+const SCENECLIP_IDX_TOTAL_EST: usize = 4;
+const SCENECLIP_IDX_SPEED: usize = 5;
+const SCENECLIP_IDX_ETA: usize = 6;
 
 /// Download event types for channel streaming
 #[derive(Clone, Serialize, Debug)]
@@ -106,16 +105,17 @@ pub async fn download_media_internal(
     let ytdlp_path_clone = ytdlp_path.to_string();
 
     // Async Metadata Fetch
-    // We use tokio::process::Command directly here too
     let meta_res = async {
-        let mut cmd = Command::new(&ytdlp_path_clone);
-        cmd.args(&["--dump-json", "--no-playlist", &url_clone]);
+        let mut std_cmd = std::process::Command::new(&ytdlp_path_clone);
+        std_cmd.args(&["--dump-json", "--no-playlist", &url_clone]);
 
         #[cfg(target_os = "windows")]
         {
-            // CREATE_NO_WINDOW
-            cmd.creation_flags(0x08000000);
+            use std::os::windows::process::CommandExt;
+            std_cmd.creation_flags(0x08000000);
         }
+
+        let mut cmd = Command::from(std_cmd);
 
         // IMPORTANT: Ensure it dies if we drop this future (cancellation)
         cmd.kill_on_drop(true);
@@ -138,7 +138,7 @@ pub async fn download_media_internal(
             } else {
                 let _ = sender.send(DownloadEvent::Log {
                     id: id.clone(),
-                    message: "Metadata fetch failed, proceeding with defaults.".to_string(),
+                    message: "Metadata fetch failed, proceeding with default values.".to_string(),
                     level: "warning".to_string(),
                 });
             }
@@ -193,14 +193,17 @@ pub async fn download_media_internal(
     });
 
     // 6. Spawn Process (Async)
-    let mut command = Command::new(&ytdlp_path);
+    let mut std_command = std::process::Command::new(&ytdlp_path);
 
     // Hide window on Windows
     #[cfg(target_os = "windows")]
     {
+        use std::os::windows::process::CommandExt;
         const CREATE_NO_WINDOW: u32 = 0x08000000;
-        command.creation_flags(CREATE_NO_WINDOW);
+        std_command.creation_flags(CREATE_NO_WINDOW);
     }
+
+    let mut command = Command::from(std_command);
 
     command.args(&args);
     command.stdout(Stdio::piped());
@@ -216,12 +219,6 @@ pub async fn download_media_internal(
 
     let pid = child.id().unwrap_or(0);
 
-    // Store PID for manual kill (redundant with kill_on_drop but good for backup)
-    {
-        let mut map = ACTIVE_DOWNLOADS.lock().unwrap();
-        map.insert(id.clone(), pid);
-    }
-
     let _ = sender.send(DownloadEvent::ProcessStarted {
         id: id.clone(),
         pid,
@@ -234,43 +231,96 @@ pub async fn download_media_internal(
     let id_clone = id.clone();
     let sender_stdout = sender.clone();
 
+    // Smart Capping: Expect post-processing for merges, audio extraction, or specific enhancements
+    let is_audio_mode = options.format.as_deref() == Some("audio")
+        || (options.format.is_none() && options.audio_format.is_some());
+    let expect_pp = is_audio_mode
+        || options.format.as_deref() == Some("gif")
+        || options.container.is_some()
+        || settings.embed_metadata
+        || settings.embed_thumbnail
+        || settings.embed_chapters
+        || options.subtitles.unwrap_or(false)
+        || options.audio_normalization.unwrap_or(false)
+        || options.format.is_none() // Default: bestvideo+bestaudio -> merge
+        || options.format.as_deref() == Some("best");
+
     // Spawn stdout handler
     let stdout_handle = tokio::spawn(async move {
         let reader = AsyncBufReader::new(stdout);
         let mut lines = reader.lines();
+        let mut is_post_processing = false;
+
         while let Ok(Some(line)) = lines.next_line().await {
-            if line.starts_with("SCENECLIP_PROGRESS;") {
+            if line.contains("SCENECLIP_DL;") {
                 let parts: Vec<&str> = line.split(';').collect();
                 if parts.len() >= 7 {
-                    let downloaded: f64 = parts[2].parse().unwrap_or(0.0);
-                    let total: f64 = parts[3].parse().unwrap_or(0.0); // "NA" -> 0
-                    let total_est: f64 = parts[4].parse().unwrap_or(0.0);
-                    let speed_val: f64 = parts[5].parse().unwrap_or(0.0);
-                    let eta_val: u64 = parts[6].parse().unwrap_or(0); // seconds
+                    let downloaded: f64 = parts[SCENECLIP_IDX_DOWNLOADED].parse().unwrap_or(0.0);
+                    let total: f64 = parts[SCENECLIP_IDX_TOTAL].parse().unwrap_or(0.0);
+                    let total_est: f64 = parts[SCENECLIP_IDX_TOTAL_EST].parse().unwrap_or(0.0);
+                    let speed_val: f64 = parts[SCENECLIP_IDX_SPEED].parse().unwrap_or(0.0);
+                    let eta_val: u64 = parts[SCENECLIP_IDX_ETA].parse().unwrap_or(0);
 
                     let final_total = if total > 0.0 { total } else { total_est };
-                    let percent = if final_total > 0.0 {
+                    let mut percent = if final_total > 0.0 {
                         (downloaded / final_total) * 100.0
                     } else {
                         0.0
                     };
 
+                    // ETA Lying Protection: If we expect a merge, add 30% buffer during download phase
+                    let mut total_eta = eta_val as f64;
+                    if expect_pp && !is_post_processing {
+                        total_eta *= 1.3;
+                    }
+
+                    // Cap at 90% during download if post-processing is expected
+                    if expect_pp && !is_post_processing && percent > 90.0 {
+                        percent = 90.0;
+                    }
+
                     let _ = sender_stdout.send(DownloadEvent::Progress {
                         id: id_clone.clone(),
                         percent,
                         speed: format!("{:.2} MiB/s", speed_val / 1024.0 / 1024.0),
-                        eta: format!("{}s", eta_val),
+                        eta: format!("{}s", total_eta as u64),
                         total_size: format!("{:.2} MiB", final_total / 1024.0 / 1024.0),
                         status: "downloading".to_string(),
                         speed_raw: Some(speed_val),
-                        eta_raw: Some(eta_val),
+                        eta_raw: Some(total_eta as u64),
                     });
                 }
-            } else if line.contains("ERROR:") {
+            } else if line.contains("SCENECLIP_PP;") {
+                is_post_processing = true;
+                let parts: Vec<&str> = line.split(';').collect();
+                if parts.len() >= 3 {
+                    let status_detail = parts[2].to_string();
+                    let display_status = match status_detail.as_str() {
+                        "FFmpegMerger" => "Merging streams...",
+                        "FFmpegExtractAudio" => "Extracting audio...",
+                        "FFmpegEmbedSubtitle" => "Embedding subtitles...",
+                        "FFmpegVideoConvertor" => "Converting video...",
+                        "FFmpegMetadata" => "Adding metadata...",
+                        _ => "Post-processing...",
+                    };
+
+                    let _ = sender_stdout.send(DownloadEvent::Progress {
+                        id: id_clone.clone(),
+                        percent: 95.0,
+                        speed: "N/A".to_string(),
+                        eta: "Calculating...".to_string(),
+                        total_size: "N/A".to_string(),
+                        status: display_status.to_string(),
+                        speed_raw: None,
+                        eta_raw: None,
+                    });
+                }
+            } else {
+                // Stream other messages (Extractor logs, warnings, etc) to UI
                 let _ = sender_stdout.send(DownloadEvent::Log {
                     id: id_clone.clone(),
                     message: line,
-                    level: "error".to_string(),
+                    level: "info".to_string(),
                 });
             }
         }
@@ -280,14 +330,14 @@ pub async fn download_media_internal(
     let stderr_handle = tokio::spawn(async move {
         let reader = AsyncBufReader::new(stderr);
         let mut lines = reader.lines();
-        let mut error_buffer: Vec<String> = Vec::new();
+        let mut error_buffer: VecDeque<String> = VecDeque::new();
 
         while let Ok(Some(line)) = lines.next_line().await {
             // Keep last 20 lines
             if error_buffer.len() >= 20 {
-                error_buffer.remove(0);
+                error_buffer.pop_front();
             }
-            error_buffer.push(line.clone());
+            error_buffer.push_back(line.clone());
         }
         error_buffer
     });
@@ -297,13 +347,9 @@ pub async fn download_media_internal(
 
     // Wait for streams (ignore errors from them closing)
     let _ = stdout_handle.await;
-    let stderr_lines = stderr_handle.await.unwrap_or_default();
+    let error_buffer = stderr_handle.await.unwrap_or_default();
 
-    // Cleanup PID
-    {
-        let mut map = ACTIVE_DOWNLOADS.lock().unwrap();
-        map.remove(&id);
-    }
+    // Status updates handle the rest
 
     match status_res {
         Ok(status) => {
@@ -314,10 +360,14 @@ pub async fn download_media_internal(
                 });
             } else {
                 // Construct error message from stderr
-                let error_msg = if stderr_lines.is_empty() {
+                let error_msg = if error_buffer.is_empty() {
                     format!("Process exited with code {:?}", status.code())
                 } else {
-                    stderr_lines.join("\n")
+                    error_buffer
+                        .iter()
+                        .cloned()
+                        .collect::<Vec<String>>()
+                        .join("\n")
                 };
 
                 let _ = sender.send(DownloadEvent::Error {
@@ -360,34 +410,26 @@ pub async fn download_with_channel(
     download_media_internal(app, url, id, options, settings, gpu_type, tx).await
 }
 
-#[tauri::command]
-pub async fn cancel_download(id: String) -> Result<(), String> {
-    let pid = {
-        let map = ACTIVE_DOWNLOADS.lock().unwrap();
-        map.get(&id).cloned()
-    };
-
-    if let Some(p) = pid {
-        #[cfg(target_os = "windows")]
-        {
-            // Kill process tree on Windows
-            let mut cmd = std::process::Command::new("taskkill");
-            cmd.args(&["/F", "/PID", &p.to_string(), "/T"]);
-
-            use std::os::windows::process::CommandExt;
-            cmd.creation_flags(0x08000000);
-
-            let _ = cmd.output();
-        }
-        #[cfg(not(target_os = "windows"))]
-        {
-            let _ = std::process::Command::new("kill")
-                .args(&["-9", &p.to_string()])
-                .output();
-        }
+pub async fn cancel_download_internal(
+    id: String,
+    state: Arc<crate::download_queue::QueueState>,
+) -> Result<(), String> {
+    let mut handles = state
+        .abort_handles
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    if let Some(handle) = handles.remove(&id) {
+        handle.abort();
     }
-
     Ok(())
+}
+
+#[tauri::command]
+pub async fn cancel_download(
+    id: String,
+    state: tauri::State<'_, Arc<crate::download_queue::QueueState>>,
+) -> Result<(), String> {
+    cancel_download_internal(id, state.inner().clone()).await
 }
 
 /// Debug Support: Get the generated args for verification

@@ -35,6 +35,14 @@ export type DownloadEvent =
             url: string;
             title: string | null;
             ytdlpCommand?: string;
+            filePath?: string;
+        };
+    }
+    | {
+        event: 'processStarted';
+        data: {
+            id: string;
+            pid: number;
         };
     }
     | {
@@ -44,17 +52,10 @@ export type DownloadEvent =
             percent: number;
             speed: string;       // Formatted string
             eta: string;         // Formatted string
-            total_size: string;  // Formatted string
+            totalSize: string;   // Was total_size
             status: string;
-            speed_raw?: number;
-            eta_raw?: number;
-        };
-    }
-    | {
-        event: 'processing';
-        data: {
-            id: string;
-            status: string;      // e.g., "Merging...", "Encoding..."
+            speedRaw?: number;   // Was speed_raw
+            etaRaw?: number;     // Was eta_raw
         };
     }
     | {
@@ -62,7 +63,7 @@ export type DownloadEvent =
         data: {
             id: string;
             filePath: string;
-            fileSize: number;
+            fileSize?: number;
         };
     }
     | {
@@ -117,19 +118,11 @@ export function createDownloadChannel(
                 onProgress(message.data.id, {
                     progress: message.data.percent,
                     speed: message.data.speed,
-                    speedRaw: message.data.speed_raw || 0,
+                    speedRaw: message.data.speedRaw || 0,
                     eta: message.data.eta,
-                    etaRaw: message.data.eta_raw || 0,
-                    totalSize: message.data.total_size,
+                    etaRaw: message.data.etaRaw || 0,
+                    totalSize: message.data.totalSize,
                     status: 'downloading'
-                });
-                break;
-
-            case 'processing':
-                onProgress(message.data.id, {
-                    progress: null, // Indeterminate
-                    status: 'processing',
-                    statusDetail: message.data.status
                 });
                 break;
 

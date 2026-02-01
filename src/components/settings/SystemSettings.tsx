@@ -8,7 +8,7 @@ import { SettingItem, SettingSection } from './SettingItem'
 import { ConfirmationModal } from '../dialogs'
 import { useState, useEffect } from 'react'
 import { notify } from '../../lib/notify'
-import { validateBinary, detectBinaryType } from '../../lib/binaryValidator'
+import { validateBinary, detectBinaryType } from '../../lib/binary-validator'
 import { cn } from '../../lib/utils'
 
 // @ts-ignore - Reserved for future type-specific logic

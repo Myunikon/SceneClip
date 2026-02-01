@@ -551,7 +551,8 @@ pub async fn build_ytdlp_args(
         "-N".to_string(), concurrent_fragments.to_string(),
         "--continue".to_string(),
         "--socket-timeout".to_string(), DEFAULTS_SOCKET_TIMEOUT.to_string(),
-        "--progress-template".to_string(), "SCENECLIP_PROGRESS;%(progress.status)s;%(progress.downloaded_bytes)s;%(progress.total_bytes)s;%(progress.total_bytes_estimate)s;%(progress.speed)s;%(progress.eta)s".to_string(),
+        "--progress-template".to_string(), "download:SCENECLIP_DL;%(progress.status)s;%(progress.downloaded_bytes)s;%(progress.total_bytes)s;%(progress.total_bytes_estimate)s;%(progress.speed)s;%(progress.eta)s".to_string(),
+        "--progress-template".to_string(), "postprocess:SCENECLIP_PP;%(progress.status)s;%(progress.postprocessor)s".to_string(),
         "--progress-delta".to_string(), "0.1".to_string(),
     ];
 

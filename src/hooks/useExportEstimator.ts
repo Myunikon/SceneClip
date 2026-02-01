@@ -1,6 +1,8 @@
-import { useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 
 interface EstimationParams {
+    filePath?: string | null
     originalSizeStr?: string
     mediaType: 'video' | 'audio' | 'image'
     preset: string
@@ -8,68 +10,54 @@ interface EstimationParams {
     audioBitrate: string
 }
 
-const COMPRESSION_RATIOS: Record<string, number> = {
-    // Audio Presets
-    audio_wa: 0.3,
-    audio_social: 0.7,
-    audio_archive: 1.0,
+/**
+ * Hook to estimate export size.
+ * Offloads heavy calculations and file probing to Rust.
+ * Handles race conditions using a sequence ID.
+ */
+export function useExportEstimator({ filePath, originalSizeStr, mediaType, preset, crf, audioBitrate }: EstimationParams) {
+    const [estimatedSize, setEstimatedSize] = useState<string | null>(null)
+    const requestIdCounter = useRef(0)
 
-    // Audio Bitrates
-    '320k': 1.0,
-    '128k': 0.7,
-    '64k': 0.3,
+    useEffect(() => {
+        const id = ++requestIdCounter.current
 
-    // Video CRF (Approximations)
-    crf_high: 0.15, // >= 35
-    crf_med: 0.3,   // >= 28
-    crf_std: 0.6,   // >= 23
-    crf_low: 0.95,  // >= 18
-    crf_lossless: 1.02
-}
-
-export function useExportEstimator({ originalSizeStr, mediaType, preset, crf, audioBitrate }: EstimationParams) {
-
-    const estimatedSize = useMemo(() => {
-        if (!originalSizeStr) return null
-
-        const sizeStr = originalSizeStr.toUpperCase()
-        const isGB = sizeStr.includes('GIB') || sizeStr.includes('GB')
-        const isMB = sizeStr.includes('MIB') || sizeStr.includes('MB')
-        const isKB = sizeStr.includes('KIB') || sizeStr.includes('KB')
-
-        const cleanVal = sizeStr.replace(/[^\d,.]/g, '').replace(',', '.')
-        let originalBytes = parseFloat(cleanVal)
-        if (isNaN(originalBytes)) return null
-
-        if (isGB) originalBytes *= 1024 * 1024 * 1024
-        else if (isMB) originalBytes *= 1024 * 1024
-        else if (isKB) originalBytes *= 1024
-
-        let ratio = 1.0
-
-        if (mediaType === 'audio') {
-            if (preset === 'wa') ratio = COMPRESSION_RATIOS.audio_wa
-            else if (preset === 'social') ratio = COMPRESSION_RATIOS.audio_social
-            else if (preset === 'archive') ratio = COMPRESSION_RATIOS.audio_archive
-            else {
-                const bit = parseInt(audioBitrate)
-                ratio = bit >= 320 ? 1.0 : bit >= 128 ? 0.7 : 0.4
+        const runEstimation = async () => {
+            if (!originalSizeStr && !filePath) {
+                setEstimatedSize(null)
+                return
             }
-        } else {
-            // Video Logic
-            const activeCrf = crf
-            if (activeCrf >= 35) ratio = COMPRESSION_RATIOS.crf_high
-            else if (activeCrf >= 28) ratio = COMPRESSION_RATIOS.crf_med
-            else if (activeCrf >= 23) ratio = COMPRESSION_RATIOS.crf_std
-            else if (activeCrf >= 18) ratio = COMPRESSION_RATIOS.crf_low
-            else ratio = COMPRESSION_RATIOS.crf_lossless
+
+            try {
+                const bytes = await invoke<number>('estimate_export_size', {
+                    params: {
+                        file_path: filePath || null,
+                        original_size_str: originalSizeStr || null,
+                        media_type: mediaType,
+                        preset,
+                        crf,
+                        audio_bitrate: audioBitrate
+                    }
+                })
+
+                // Only update if this is still the most recent request
+                if (id === requestIdCounter.current) {
+                    if (bytes === 0) {
+                        setEstimatedSize(null)
+                    } else {
+                        const mb = (bytes / (1024 * 1024)).toFixed(1)
+                        setEstimatedSize(`${mb} MB`)
+                    }
+                }
+            } catch (error) {
+                console.warn("[Estimator] Calculation skipped or failed:", error)
+            }
         }
 
-        const estBytes = originalBytes * ratio
-        const estMB = (estBytes / (1024 * 1024)).toFixed(1)
-        return `${estMB} MB`
-
-    }, [originalSizeStr, mediaType, preset, crf, audioBitrate])
+        runEstimation()
+    }, [filePath, originalSizeStr, mediaType, preset, crf, audioBitrate])
 
     return estimatedSize
 }
+
+

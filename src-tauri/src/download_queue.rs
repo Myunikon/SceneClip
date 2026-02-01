@@ -2,7 +2,10 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Mutex,
+};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_store::StoreExt; // Import Store trait
@@ -62,6 +65,8 @@ pub struct QueueState {
     pub abort_handles: Arc<Mutex<HashMap<String, tokio::task::AbortHandle>>>,
     pub notify: Arc<Notify>,
     pub app_handle: Option<AppHandle>, // Needed to resolve paths for auto-save
+    pub cached_prevent_suspend: Arc<Mutex<bool>>, // Caching settings to avoid I/O bombardment
+    pub dirty: Arc<AtomicBool>,        // Flag to indicate pending changes
 }
 
 impl QueueState {
@@ -72,9 +77,14 @@ impl QueueState {
             abort_handles: Arc::new(Mutex::new(HashMap::new())),
             notify: Arc::new(Notify::new()),
             app_handle,
+            cached_prevent_suspend: Arc::new(Mutex::new(true)), // Default to true
+            dirty: Arc::new(AtomicBool::new(false)),
         };
-        // Attempt to load existing queue
+        // Attempt to load existing queue and settings cache
         state.load();
+        state.refresh_settings_cache();
+
+        // Background saver is handled by start_queue_processor
         state
     }
 
@@ -86,9 +96,16 @@ impl QueueState {
     }
 
     pub fn save(&self) {
+        // Set dirty flag and notify background saver
+        self.dirty.store(true, Ordering::SeqCst);
+        self.notify.notify_one();
+    }
+
+    /// Force immediate save (for critical events like adding/removing tasks)
+    pub fn save_now(&self) {
         if let Some(path) = self.get_persistence_path() {
-            let tasks = self.tasks.lock().unwrap();
-            let order = self.queue_order.lock().unwrap();
+            let tasks = self.tasks.lock().unwrap_or_else(|e| e.into_inner());
+            let order = self.queue_order.lock().unwrap_or_else(|e| e.into_inner());
 
             let data = PersistedQueue {
                 tasks: tasks.clone(),
@@ -96,12 +113,29 @@ impl QueueState {
             };
 
             if let Ok(json) = serde_json::to_string_pretty(&data) {
-                // Ensure dir exists
                 if let Some(parent) = path.parent() {
                     let _ = fs::create_dir_all(parent);
                 }
-                let _ = fs::write(path, json);
+                if let Ok(_) = fs::write(path, json) {
+                    self.dirty.store(false, Ordering::SeqCst);
+                }
             }
+        }
+    }
+
+    pub fn refresh_settings_cache(&self) {
+        if let Some(app) = &self.app_handle {
+            let mut prevent_suspend = true;
+            if let Ok(store) = app.store("settings.json") {
+                if let Some(val) = store.get("preventSuspendDuringDownload") {
+                    prevent_suspend = val.as_bool().unwrap_or(true);
+                }
+            }
+            let mut cache = self
+                .cached_prevent_suspend
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
+            *cache = prevent_suspend;
         }
     }
 
@@ -110,8 +144,8 @@ impl QueueState {
             if path.exists() {
                 if let Ok(content) = fs::read_to_string(path) {
                     if let Ok(data) = serde_json::from_str::<PersistedQueue>(&content) {
-                        let mut tasks = self.tasks.lock().unwrap();
-                        let mut order = self.queue_order.lock().unwrap();
+                        let mut tasks = self.tasks.lock().unwrap_or_else(|e| e.into_inner());
+                        let mut order = self.queue_order.lock().unwrap_or_else(|e| e.into_inner());
                         *tasks = data.tasks;
                         *order = data.queue_order;
 
@@ -136,27 +170,33 @@ impl QueueState {
 
     pub fn add_task(&self, task: DownloadTask) {
         {
-            let mut tasks = self.tasks.lock().unwrap();
-            let mut order = self.queue_order.lock().unwrap();
+            let mut tasks = self.tasks.lock().unwrap_or_else(|e| e.into_inner());
+            let mut order = self.queue_order.lock().unwrap_or_else(|e| e.into_inner());
 
             if !tasks.contains_key(&task.id) {
                 order.push(task.id.clone());
             }
             tasks.insert(task.id.clone(), task);
         }
-        self.save();
+        self.save_now(); // Critical event: additive
         self.notify.notify_one();
     }
 
     pub fn update_task_status(&self, id: &str, status: TaskStatus, msg: Option<String>) {
         {
-            if let Some(task) = self.tasks.lock().unwrap().get_mut(id) {
+            if let Some(task) = self
+                .tasks
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .get_mut(id)
+            {
                 task.status = status;
                 if let Some(m) = msg {
                     task.error_message = Some(m);
                 }
             }
         }
+        // Status updates use regular save (debounced)
         self.save();
         self.notify.notify_one();
     }
@@ -167,10 +207,16 @@ impl QueueState {
         F: FnOnce(&mut DownloadTask),
     {
         {
-            if let Some(task) = self.tasks.lock().unwrap().get_mut(id) {
+            if let Some(task) = self
+                .tasks
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .get_mut(id)
+            {
                 f(task);
             }
         }
+        // Partial updates (like progress) use regular save (debounced)
         self.save();
         self.notify.notify_one();
     }
@@ -179,8 +225,8 @@ impl QueueState {
         let mut removed_task: Option<DownloadTask> = None;
         let mut removed = false;
         {
-            let mut tasks = self.tasks.lock().unwrap();
-            let mut order = self.queue_order.lock().unwrap();
+            let mut tasks = self.tasks.lock().unwrap_or_else(|e| e.into_inner());
+            let mut order = self.queue_order.lock().unwrap_or_else(|e| e.into_inner());
 
             if let Some(task) = tasks.remove(id) {
                 removed_task = Some(task);
@@ -193,15 +239,15 @@ impl QueueState {
 
         // Abort if running
         if removed {
-            let mut handles = self.abort_handles.lock().unwrap();
+            let mut handles = self.abort_handles.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(handle) = handles.remove(id) {
                 handle.abort();
             }
         }
 
         if removed {
-            self.save();
-            // Emit update explicitly to ensure UI reflects removal immediately
+            self.save_now(); // Critical event: destructive
+                             // Emit update explicitly to ensure UI reflects removal immediately
             if let Some(app) = &self.app_handle {
                 emit_queue_update(app, self);
             }
@@ -212,7 +258,7 @@ impl QueueState {
 
     pub fn pause_task(&self, id: &str) -> Result<(), String> {
         let res = {
-            let mut tasks = self.tasks.lock().unwrap();
+            let mut tasks = self.tasks.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(task) = tasks.get_mut(id) {
                 if let Some(pid) = task.pid {
                     // Call suspend from process commands
@@ -237,8 +283,8 @@ impl QueueState {
             self.save();
             // Emit update immediately
             if let Some(app) = &self.app_handle {
-                let tasks = self.tasks.lock().unwrap();
-                let order = self.queue_order.lock().unwrap();
+                let tasks = self.tasks.lock().unwrap_or_else(|e| e.into_inner());
+                let order = self.queue_order.lock().unwrap_or_else(|e| e.into_inner());
                 let mut ordered_tasks = Vec::new();
                 for id in order.iter() {
                     if let Some(t) = tasks.get(id) {
@@ -253,7 +299,7 @@ impl QueueState {
 
     pub fn resume_task(&self, id: &str) -> Result<(), String> {
         let res = {
-            let mut tasks = self.tasks.lock().unwrap();
+            let mut tasks = self.tasks.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(task) = tasks.get_mut(id) {
                 if let Some(pid) = task.pid {
                     match crate::commands::process::resume_process(pid) {
@@ -276,8 +322,8 @@ impl QueueState {
             self.save();
             // Emit update immediately
             if let Some(app) = &self.app_handle {
-                let tasks = self.tasks.lock().unwrap();
-                let order = self.queue_order.lock().unwrap();
+                let tasks = self.tasks.lock().unwrap_or_else(|e| e.into_inner());
+                let order = self.queue_order.lock().unwrap_or_else(|e| e.into_inner());
                 let mut ordered_tasks = Vec::new();
                 for id in order.iter() {
                     if let Some(t) = tasks.get(id) {
@@ -293,13 +339,13 @@ impl QueueState {
     pub fn cleanup_old_tasks(&self, retention_days: u32, max_items: i32) {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or_default()
             .as_secs();
 
         let mut removed = false;
         {
-            let mut tasks = self.tasks.lock().unwrap();
-            let mut order = self.queue_order.lock().unwrap();
+            let mut tasks = self.tasks.lock().unwrap_or_else(|e| e.into_inner());
+            let mut order = self.queue_order.lock().unwrap_or_else(|e| e.into_inner());
 
             // 1. Retention Days Cleanup
             if retention_days > 0 {
@@ -354,7 +400,7 @@ impl QueueState {
         }
 
         if removed {
-            self.save();
+            self.save_now(); // Critical: bulk cleanup
             if let Some(app) = &self.app_handle {
                 emit_queue_update(app, self);
             }
@@ -368,6 +414,9 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
         // 1. Wait for notification or timeout
         let _ =
             tokio::time::timeout(std::time::Duration::from_secs(2), state.notify.notified()).await;
+
+        // Sync settings cache periodically
+        state.refresh_settings_cache();
 
         // 2. Fetch Concurrency & History Settings from Store
         let (limit, retention_days, max_items) = {
@@ -398,10 +447,17 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
         // 3. Perform Auto-Cleanup
         state.cleanup_old_tasks(retention_days, max_items);
 
+        // EXTRA: DEBOUNCED SAVER LOGIC
+        // If dirty, we save every loop iteration (2s)
+        if state.dirty.load(Ordering::SeqCst) {
+            log::debug!("Queue is dirty, performing debounced save");
+            state.save_now();
+        }
+
         // 4. Check for eligible tasks
         let next_task_id = {
-            let tasks = state.tasks.lock().unwrap();
-            let order = state.queue_order.lock().unwrap();
+            let tasks = state.tasks.lock().unwrap_or_else(|e| e.into_inner());
+            let order = state.queue_order.lock().unwrap_or_else(|e| e.into_inner());
 
             let active_count = tasks
                 .values()
@@ -449,7 +505,7 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
             let app_handle = app.clone();
             let state_cloned = state.clone();
             let task_data = {
-                let tasks = state.tasks.lock().unwrap();
+                let tasks = state.tasks.lock().unwrap_or_else(|e| e.into_inner());
                 tasks.get(&id).cloned()
             };
 
@@ -627,14 +683,18 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                     let _ = monitor_handle.await;
 
                     // Cleanup handle on finish
-                    state_cloned.abort_handles.lock().unwrap().remove(&task.id);
+                    state_cloned
+                        .abort_handles
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner())
+                        .remove(&task.id);
                 });
 
                 // Store AbortHandle
                 state
                     .abort_handles
                     .lock()
-                    .unwrap()
+                    .unwrap_or_else(|e| e.into_inner())
                     .insert(id, join_handle.abort_handle());
             }
         }
@@ -642,12 +702,37 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
 }
 
 fn emit_queue_update(app: &AppHandle, state: &QueueState) {
-    let tasks = state.tasks.lock().unwrap();
-    let order = state.queue_order.lock().unwrap();
+    // SINGLE ATOMIC LOCK SCOPE to prevent TOCTOU race conditions
+    let tasks_guard = state.tasks.lock().unwrap_or_else(|e| e.into_inner());
+    let order_guard = state.queue_order.lock().unwrap_or_else(|e| e.into_inner());
 
+    // 1. Power Lock Check (Internal Logic)
+    let prevent_setting = *state
+        .cached_prevent_suspend
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+
+    if !prevent_setting {
+        let _ = crate::commands::power::set_inhibit(false);
+    } else {
+        let has_active = tasks_guard.values().any(|t| {
+            matches!(
+                t.status,
+                TaskStatus::Downloading
+                    | TaskStatus::FetchingInfo
+                    | TaskStatus::Processing
+                    | TaskStatus::Queued
+                    | TaskStatus::Pending
+                    | TaskStatus::Paused // FIX: Paused tasks should keep PC awake
+            )
+        });
+        let _ = crate::commands::power::set_inhibit(has_active);
+    }
+
+    // 2. Emit ordered tasks
     let mut ordered_tasks = Vec::new();
-    for id in order.iter() {
-        if let Some(t) = tasks.get(id) {
+    for id in order_guard.iter() {
+        if let Some(t) = tasks_guard.get(id) {
             ordered_tasks.push(t.clone());
         }
     }

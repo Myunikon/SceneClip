@@ -48,7 +48,8 @@ export const useAppStore = create<AppState>()(
         version: 8, // Bump to 8 to clear stale update flags
         storage: createJSONStorage(() => tauriStorage),
         partialize: (state) => ({
-          tasks: state.tasks,
+          // NOTE: 'tasks' is NOT persisted here. Rust (queue.json) is the source of truth.
+          // The queue is loaded via initializeQueue() -> get_queue_state command.
           settings: state.settings,
           gpuType: state.gpuType,
         }),

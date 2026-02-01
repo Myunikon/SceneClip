@@ -8,10 +8,17 @@ lazy_static! {
 
 #[tauri::command]
 pub fn prevent_suspend(prevent: bool) -> Result<(), String> {
+    set_inhibit(prevent)
+}
+
+/// Internal function to set sleep inhibition state.
+/// Can be called from other Rust modules.
+pub fn set_inhibit(prevent: bool) -> Result<(), String> {
     let mut keeper = KEEPER.lock().map_err(|e| e.to_string())?;
 
     if prevent {
         if keeper.is_none() {
+            log::info!("[Power] Inhibiting system sleep/suspend");
             let k = Builder::default()
                 .display(true)
                 .idle(true)
@@ -20,7 +27,8 @@ pub fn prevent_suspend(prevent: bool) -> Result<(), String> {
                 .map_err(|e| e.to_string())?;
             *keeper = Some(k);
         }
-    } else {
+    } else if keeper.is_some() {
+        log::info!("[Power] Releasing sleep/suspend inhibition");
         *keeper = None;
     }
     Ok(())

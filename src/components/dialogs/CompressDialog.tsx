@@ -48,12 +48,14 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
     // --- Hooks ---
     const form = useExportForm(mediaType)
     const estimatedSize = useExportEstimator({
+        filePath: resolvedPath,
         originalSizeStr: task?.fileSize,
         mediaType,
         preset: form.preset,
         crf: form.crf,
         audioBitrate: form.audioBitrate
     })
+
 
     // --- Drag & Drop Handler ---
     const handleDrop = (files: string[]) => {

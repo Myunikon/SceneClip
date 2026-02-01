@@ -18,6 +18,12 @@ export interface VideoChapter {
   end_time: number
 }
 
+export type FFmpegBackendEvent =
+  | { event: 'progress'; data: { percent: number; speed: string; eta: string } }
+  | { event: 'log'; data: { message: string; level: string } }
+  | { event: 'completed'; data: { outputPath: string } }
+  | { event: 'error'; data: { message: string } };
+
 // =============================================================================
 // Utilities (Exported)
 // =============================================================================
@@ -55,14 +61,8 @@ export async function compressMedia(
   const isAudio = /\.(mp3|m4a|wav|opus|ogg|flac)$/.test(lower);
   const isImage = /\.(gif|webp|png|jpg|jpeg)$/.test(lower);
 
-  interface FFmpegBackendEvent {
-    event: 'progress' | 'error' | 'completed' | 'log'
-    data: any // Keeping data as any is fine here since it varies per event, or we could union it
-  }
-
   const channel = new Channel<FFmpegBackendEvent>();
   channel.onmessage = (msg) => {
-    // msg structure matches FFmpegEvent in Rust: { event: "Progress", data: { ... } }
     const { event, data } = msg;
 
     if (event === 'progress') {
@@ -102,11 +102,6 @@ export async function splitVideoByChapters(
 ): Promise<void> {
   const settings = useAppStore.getState().settings;
 
-  interface FFmpegBackendEvent {
-    event: 'progress' | 'error' | 'completed' | 'log'
-    data: any // Keeping data as any is fine here since it varies per event, or we could union it
-  }
-
   const channel = new Channel<FFmpegBackendEvent>();
   channel.onmessage = (msg) => {
     if (msg.event === 'progress') {
@@ -127,7 +122,9 @@ export async function splitVideoByChapters(
   }
 }
 
-// Deprecated: Moving to Rust version
+/**
+ * @deprecated Use Rust version (compress_media or split_media_chapters) instead.
+ */
 export async function getFFmpegCommand(args: string[], _customBinaryPath?: string) {
   const { Command } = await import('@tauri-apps/plugin-shell')
   return Command.create('ffmpeg', args)

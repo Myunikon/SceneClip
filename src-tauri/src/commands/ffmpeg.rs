@@ -1,8 +1,17 @@
 use crate::ytdlp::AppSettings;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::io::{BufRead, BufReader};
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 use tauri::{ipc::Channel, AppHandle};
+use tokio::io::{AsyncBufReadExt, BufReader as AsyncBufReader};
+use tokio::process::Command;
+
+lazy_static::lazy_static! {
+    static ref DURATION_RE: Regex = Regex::new(r"Duration:\s+(\d+:\d+:\d+\.\d+)").unwrap();
+    static ref TIME_RE: Regex = Regex::new(r"time=(\d+:\d+:\d+\.\d+)").unwrap();
+    static ref SPEED_RE: Regex = Regex::new(r"speed=\s*(\d+\.\d+x)").unwrap();
+    static ref ETA_RE: Regex = Regex::new(r"ETA=\s*(\d+:\d+:\d+|\d+s)").unwrap();
+}
 
 // Reusing types from frontend
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -137,106 +146,85 @@ pub async fn compress_media(
     args.push(output_path.clone());
 
     // --- Execute ---
-    let mut command = Command::new(&ffmpeg_path);
+    let mut std_command = std::process::Command::new(&ffmpeg_path);
 
-    #[cfg(target_os = "windows")]
+    #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
-        command.creation_flags(0x08000000); // CREATE_NO_WINDOW
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        std_command.creation_flags(CREATE_NO_WINDOW);
     }
 
+    let mut command = Command::from(std_command);
     command.args(&args);
     command.stdout(Stdio::piped());
-    command.stderr(Stdio::piped()); // FFmpeg writes progress to stderr
+    command.stderr(Stdio::piped());
 
     let mut child = command
         .spawn()
         .map_err(|e| format!("Failed to spawn ffmpeg: {}", e))?;
 
-    // --- Progress Parsing ---
+    // --- Progress Parsing (Regex based) ---
     let stderr = child.stderr.take().ok_or("Failed to open stderr")?;
-    let reader = BufReader::new(stderr);
+    let reader = AsyncBufReader::new(stderr);
     let on_event_clone = on_event.clone();
 
-    tauri::async_runtime::spawn_blocking(move || {
+    tokio::spawn(async move {
         let mut total_duration_secs = 0.0;
         let mut last_percent = 0.0;
+        let mut lines = reader.lines();
 
-        for line in reader.lines() {
-            if let Ok(l) = line {
-                // Parse total duration from "Duration: HH:MM:SS.ss,"
-                if total_duration_secs == 0.0 {
-                    if let Some(idx) = l.find("Duration: ") {
-                        let sub = &l[idx + 10..];
-                        if let Some(comma) = sub.find(',') {
-                            let duration_str = &sub[0..comma];
-                            total_duration_secs = parse_time(duration_str);
-                        }
-                    }
+        while let Ok(Some(l)) = lines.next_line().await {
+            // 1. Parse Duration
+            if total_duration_secs == 0.0 {
+                if let Some(cap) = DURATION_RE.captures(&l) {
+                    total_duration_secs = parse_time(&cap[1]);
+                }
+            }
+
+            // 2. Parse Progress
+            if let Some(t_cap) = TIME_RE.captures(&l) {
+                let current_time_secs = parse_time(&t_cap[1]);
+                let mut percent = 0.0;
+                if total_duration_secs > 0.0 {
+                    percent = (current_time_secs / total_duration_secs) * 100.0;
                 }
 
-                // Parse current time, speed, and ETA from "time=HH:MM:SS.ss speed=X.X ETA=HH:MM:SS.ss"
-                if let Some(time_idx) = l.find("time=") {
-                    let time_str_start = time_idx + "time=".len();
-                    if let Some(time_str_end) = l[time_str_start..].find(' ') {
-                        let current_time_str = &l[time_str_start..time_str_start + time_str_end];
-                        let current_time_secs = parse_time(current_time_str);
+                let speed = SPEED_RE
+                    .captures(&l)
+                    .map(|c| c[1].to_string())
+                    .unwrap_or_else(|| "N/A".to_string());
 
-                        let mut percent = 0.0;
-                        if total_duration_secs > 0.0 {
-                            percent = (current_time_secs / total_duration_secs) * 100.0;
-                            if percent > 100.0 {
-                                percent = 100.0;
-                            }
-                        }
+                let eta = ETA_RE
+                    .captures(&l)
+                    .map(|c| c[1].to_string())
+                    .unwrap_or_else(|| "N/A".to_string());
 
-                        // Extract speed
-                        let speed = if let Some(speed_idx) = l.find("speed=") {
-                            let speed_str_start = speed_idx + "speed=".len();
-                            if let Some(speed_str_end) = l[speed_str_start..].find('x') {
-                                l[speed_str_start..speed_str_start + speed_str_end].to_string()
-                                    + "x"
-                            } else {
-                                "N/A".to_string()
-                            }
-                        } else {
-                            "N/A".to_string()
-                        };
-
-                        // Extract ETA
-                        let eta = if let Some(eta_idx) = l.find("ETA=") {
-                            let eta_str_start = eta_idx + "ETA=".len();
-                            if let Some(eta_str_end) = l[eta_str_start..].find(' ') {
-                                l[eta_str_start..eta_str_start + eta_str_end].to_string()
-                            } else {
-                                l[eta_str_start..].to_string() // Sometimes ETA is at the end of the line
-                            }
-                        } else {
-                            "N/A".to_string()
-                        };
-
-                        // Only send if percent has changed significantly to avoid spamming
-                        if (percent - last_percent).abs() > 0.1 || percent == 100.0 {
-                            let _ = on_event_clone.send(FFmpegEvent::Progress {
-                                percent,
-                                speed,
-                                eta,
-                            });
-                            last_percent = percent;
-                        }
-                    }
+                let threshold = if total_duration_secs < 30.0 {
+                    0.01 // 1% for short videos
                 } else {
-                    // Log other messages
-                    let _ = on_event_clone.send(FFmpegEvent::Log {
-                        message: l,
-                        level: "info".to_string(),
+                    0.1 // 0.1% for long videos
+                };
+
+                if (percent - last_percent).abs() > threshold || percent >= 100.0 {
+                    let _ = on_event_clone.send(FFmpegEvent::Progress {
+                        percent: percent.min(100.0),
+                        speed,
+                        eta,
                     });
+                    last_percent = percent;
                 }
+            } else {
+                // Log other messages
+                let _ = on_event_clone.send(FFmpegEvent::Log {
+                    message: l,
+                    level: "info".to_string(),
+                });
             }
         }
     });
 
-    let output = child.wait_with_output().map_err(|e| e.to_string())?;
+    let output = child.wait_with_output().await.map_err(|e| e.to_string())?;
 
     if output.status.success() {
         let _ = on_event.send(FFmpegEvent::Completed { output_path });
@@ -325,23 +313,26 @@ pub async fn split_media_chapters(
 
         #[cfg(target_os = "windows")]
         {
-            use std::os::windows::process::CommandExt;
-            command.creation_flags(0x08000000); // Windows: CREATE_NO_WINDOW
+            const CREATE_NO_WINDOW: u32 = 0x08000000;
+            command.creation_flags(CREATE_NO_WINDOW); // Windows: CREATE_NO_WINDOW
         }
 
         let output = command
             .args(&args)
             .output()
+            .await
             .map_err(|e| format!("Failed to split chapter {}: {}", index + 1, e))?;
 
         if !output.status.success() {
+            let err_msg = format!(
+                "Failed to split chapter {}: Exit code {:?}",
+                index + 1,
+                output.status.code()
+            );
             let _ = on_event.send(FFmpegEvent::Error {
-                message: format!(
-                    "Failed to split chapter {}: Exit code {:?}",
-                    index + 1,
-                    output.status.code()
-                ),
+                message: err_msg.clone(),
             });
+            return Err(err_msg); // P0 FIX: Fail entire operation
         }
 
         // Update Progress

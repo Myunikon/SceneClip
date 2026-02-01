@@ -58,7 +58,8 @@ pub async fn remove_from_queue(
 
     if let Some(task) = removed_task_opt {
         // 1. Process Cancellation (Force Kill)
-        let _ = crate::commands::download::cancel_download(id).await;
+        let _ =
+            crate::commands::download::cancel_download_internal(id, state.inner().clone()).await;
 
         // 2. File Cleanup (Absolute "Sisa Download" Removal)
         // We try to delete known artifacts: .part, .ytdl, or the file itself if incomplete

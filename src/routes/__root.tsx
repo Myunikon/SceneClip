@@ -24,7 +24,7 @@ import { AppLayout } from '../components/layout'
 import { ContextMenu } from '../components/common'
 import { TooltipProvider } from '../components/ui/tooltip'
 import { StatusFooter } from '../components/statusbar'
-import { usePowerManagement } from '../hooks/usePowerManagement'
+
 
 export const Route = createRootRoute({
     component: RootComponent,
@@ -52,7 +52,7 @@ function RootComponent() {
 
     // Custom Hooks Integration
     useTheme({ theme: settings.theme, frontendFontSize: settings.frontendFontSize })
-    usePowerManagement() // Prevent system sleep during active downloads
+
     const isOffline = useNetworkStatus()
 
     /* -------------------------------------------------------------------------- */

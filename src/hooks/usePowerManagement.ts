@@ -26,20 +26,26 @@ export function usePowerManagement() {
 
         if (hasActiveDownloads && !isInhibiting.current) {
             // Start inhibiting
+            isInhibiting.current = true // Set early to prevent double invoke
             invoke('prevent_suspend', { prevent: true })
                 .then(() => {
-                    isInhibiting.current = true
                     console.log('[PowerManagement] Preventing system suspend')
                 })
-                .catch(console.warn)
+                .catch((err) => {
+                    isInhibiting.current = false
+                    console.warn(err)
+                })
         } else if (!hasActiveDownloads && isInhibiting.current) {
             // Stop inhibiting
+            isInhibiting.current = false
             invoke('prevent_suspend', { prevent: false })
                 .then(() => {
-                    isInhibiting.current = false
                     console.log('[PowerManagement] Allowing system suspend')
                 })
-                .catch(console.warn)
+                .catch((err) => {
+                    isInhibiting.current = true
+                    console.warn(err)
+                })
         }
     }, [tasks, settings.preventSuspendDuringDownload])
 

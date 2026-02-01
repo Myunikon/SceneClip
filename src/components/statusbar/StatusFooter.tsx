@@ -5,6 +5,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { openPath } from '@tauri-apps/plugin-opener'
 import { ArrowDownToLine, Layers, HardDrive, FolderOpen } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { cn } from '../../lib/utils'
 import { NotificationCenter } from '../common'
 import { useAppStore } from '../../store'
 import { useShallow } from 'zustand/react/shallow'
@@ -151,7 +152,7 @@ export function StatusFooter() {
     const statusItemClass = "h-auto w-auto flex items-center gap-2 p-1 rounded-md transition-all duration-200 cursor-pointer text-muted-foreground/80 hover:text-foreground active:scale-95 active:opacity-70"
 
     return (
-        <div className={`${barClass} relative`}>
+        <div className={cn(barClass, "relative cq-footer")}>
             {/* Global Progress Bar - Slim & Elegant */}
             {activeDownloads.length > 0 && (
                 <div className="absolute top-0 left-0 right-0 h-[2px] bg-border/10 overflow-hidden">
@@ -183,7 +184,7 @@ export function StatusFooter() {
                                             <HardDrive className={`w-3.5 h-3.5 ${diskColor} opacity-80`} />
                                             <span className={`${diskColor} font-mono font-medium tracking-tight tabular-nums`}>
                                                 {formatBytes(displayDiskFree)}
-                                                <span className="text-[9px] opacity-50 uppercase tracking-widest ml-1 hidden lg:inline-block">
+                                                <span className="text-[9px] opacity-50 uppercase tracking-widest ml-1 footer-label">
                                                     {t('statusbar.available') || 'Free'}
                                                 </span>
                                             </span>

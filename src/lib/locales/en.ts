@@ -7,6 +7,9 @@ export const en = {
         terminal: "Terminal",
         keyring: "Keyring"
     },
+    common: {
+        copy_error: "Copy failed"
+    },
     error_boundary: {
         title: "Something went wrong.",
         reload: "Reload App"
@@ -162,6 +165,8 @@ export const en = {
             audio_normalization_desc: "EBU R128 Standard (-14 LUFS)",
             metadata_warning_title: "Note:",
             metadata_warning_desc: "These options are automatically disabled when using <1>Trim/Clip</1> to prevent incorrect video duration issues (e.g. 10s clip showing as 1hr).",
+            privacy_scrubbing: "Privacy Scrubbing",
+            privacy_scrubbing_desc: "Remove source URL, description, and comments from downloaded files.",
             presets: {
                 title: "Post-Processing Presets",
                 desc: "Manage custom FFmpeg argument presets",
@@ -217,7 +222,7 @@ export const en = {
 
             // New Network Keys
             manual_config: "Manual configuration mode.",
-            chunks_label: "{n} chunks",
+            chunks_label: "{{n}} chunks",
             perf_profile: "Performance Profile",
             custom: "Custom",
 
@@ -285,7 +290,7 @@ export const en = {
             alerts: {
                 export_success: "History exported successfully!",
                 export_fail: "Failed to export history: ",
-                import_success: "Successfully imported {n} tasks!",
+                import_success: "Successfully imported {{n}} tasks!",
                 import_fail: "Failed to import history: ",
                 invalid_backup: "Invalid backup file format",
                 confirm_reset: "Are you sure you want to reset all settings to defaults?",
@@ -381,7 +386,7 @@ export const en = {
             update_btn: "Check for Updates",
             updating: "Updating...",
             binary_versions: "Binary Versions",
-            check_updates: "Check for updates from GitHub",
+            check_updates: "Check for updates",
             current_ver: "Current",
             not_checked: "Not checked",
             unknown: "Unknown",
@@ -558,13 +563,13 @@ export const en = {
             trim_required: "Trim Required",
             max_duration: "Max 30s",
             trim_desc: "GIF format requires trimming. Select a short clip (max 30 seconds) for best results.",
-            too_long: "Clip is too long! Max {max}s for GIF. Current: {current}s"
+            too_long: "Clip is too long! Max {{max}}s for GIF. Current: {{current}}s",
         },
 
         // Clip section
         clip: {
-            duration: "Clip duration: {current}s",
-            duration_max: "Clip duration: {current}s / {max}s max",
+            duration: "Clip duration: {{current}}s",
+            duration_max: "Clip duration: {{current}}s / Max {{max}}s",
             to: "TO"
         },
 
@@ -577,7 +582,7 @@ export const en = {
             vp9: "YouTube Standard (4K)",
             av1: "AV1 saves space (Next-Gen).",
             warning_title: "Re-encoding Required",
-            warning_desc: "Source does not have {codec}. Quality may degrade slightly & download will take longer."
+            warning_desc: "The source file does not contain {{codec}}. Quality may be slightly reduced, and download time will be longer.",
         },
 
         // New UI Sections
@@ -619,9 +624,9 @@ export const en = {
             desc_wav: "Uncompressed (Editing)",
             desc: "Higher bitrate means clearer sound details.",
             upscale_title: "Upscaling Warning",
-            upscale_desc: "Source is compressed (Lossy). Converting to {fmt} increases size but NOT quality.",
+            upscale_desc: "Source file is compressed (lossy). Converting to {{fmt}} will increase file size WITHOUT improving quality.",
             reencode_title: "Re-encoding",
-            reencode_desc: "Conversion to {fmt} required."
+            reencode_desc: "Conversion to {{fmt}} is required.",
         },
         // Export
         compress: {
@@ -690,7 +695,7 @@ export const en = {
             quality_low: "Low"
         },
         logic_warnings: {
-            mov_reencode: "Format <strong>.MOV</strong> with <strong>{codec}</strong> requires re-encoding. This may take longer."
+            mov_reencode: "Using <strong>.MOV</strong> format with <strong>{{codec}}</strong> requires re-encoding. This may take longer.",
         },
 
         sequential_mode: "Sequential Mode: Will split after download",
@@ -741,7 +746,7 @@ export const en = {
         sort_asc: "Oldest First",
         sort_desc: "Newest First",
         scan_files: "Scan Files",
-        scan_missing_files: "Scan Complete: {count} missing files found",
+        scan_missing_files: "Scan Complete: {{count}} missing files found",
         scan_healthy_files: "Scan Complete: All files are healthy",
         recover: "Recover File",
         find_on_disk: "Find on Disk",
@@ -930,7 +935,7 @@ export const en = {
         available: "free"
     },
     errors: {
-        system_action: "System action failed: {action}",
+        system_action: "System action failed: {{action}}",
         listener_attach: "Failed to attach download listener",
         binary_validation: "Binary validation failed",
         update_check: "Failed to check for updates",
@@ -960,7 +965,7 @@ export const en = {
         copy: "Copy",
         copy_line: "Copy Line",
         ready: "System ready. Waiting for tasks...",
-        no_logs: "No {filter} logs found."
+        no_logs: "No {{filter}} logs found.",
     },
 
     empty_state: {

@@ -86,25 +86,41 @@ export interface SystemSlice {
   gpuModel?: string
   gpuRenderer?: string
 
+  // App Version Tracking (SceneClip)
+  appVersion: string | null
+  appLatestVersion: string | null
+  appNeedsUpdate: boolean
+  appUpdateError?: string
+
   // yt-dlp Version Tracking
   ytdlpVersion: string | null
   ytdlpLatestVersion: string | null
   ytdlpNeedsUpdate: boolean
+  ytdlpIntegrityValid: boolean
+  ytdlpUpdateError?: string
 
   // FFmpeg Version Tracking
   ffmpegVersion: string | null
   ffmpegLatestVersion: string | null
   ffmpegNeedsUpdate: boolean
+  ffmpegIntegrityValid: boolean
 
-  // Loading state for version check
+  // Progress Tracking
+  ytdlpUpdateProgress: number | null
+  ffmpegUpdateProgress: number | null
+  appUpdateProgress: number | null
   isCheckingUpdates: boolean
+  isCheckingAppUpdate: boolean
+  isCheckingYtdlpUpdate: boolean
 
   setBinariesReady: (ready: boolean) => void
 
   detectHardwareAccel: () => Promise<void>
   initListeners: () => void
-  checkBinaryUpdates: () => Promise<void> // Check for updates (replaces checkYtDlpUpdate + updateYtDlp)
-  updateBinary: (name: 'yt-dlp' | 'ffmpeg') => Promise<void> // Perform the update
+  checkBinaryUpdates: (scope?: 'app' | 'binaries' | 'all') => Promise<void>
+  updateBinary: (name: 'yt-dlp') => Promise<void> // Perform the update
+  installAppUpdate: () => Promise<void>
+  cancelUpdate: (name: string) => Promise<void>
   validateBinaries: () => Promise<void>
 }
 

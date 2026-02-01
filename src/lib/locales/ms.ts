@@ -161,6 +161,8 @@ export const ms = {
             audio_normalization_desc: "Piawaian EBU R128 (-14 LUFS)",
             metadata_warning_title: "Nota:",
             metadata_warning_desc: "Pilihan ini dilumpuhkan secara automatik apabila menggunakan <1>Potong/Klip</1> untuk mengelakkan isu durasi video yang tidak betul (cth. klip 10s dipaparkan sebagai 1j).",
+            privacy_scrubbing: "Pembersihan Privasi",
+            privacy_scrubbing_desc: "Alih keluar URL sumber, perihalan, dan ulasan daripada fail yang dimuat turun untuk privasi.",
             presets: {
                 title: "Pratetap Pasca-Pemprosesan",
                 desc: "Urus pratetap argumen FFmpeg tersuai",
@@ -214,7 +216,7 @@ export const ms = {
             aria2c_active: "Aria2c aktif. Tetapan 'Segmen Muat Turun' asal dilumpuhkan untuk mengelakkan konflik.",
 
             manual_config: "Mod konfigurasi manual.",
-            chunks_label: "{n} bahagian",
+            chunks_label: "{{n}} bahagian",
             perf_profile: "Profil Prestasi",
             custom: "Tersuai",
 
@@ -268,7 +270,7 @@ export const ms = {
             alerts: {
                 export_success: "Sejarah berjaya dieksport!",
                 export_fail: "Gagal mengeksport sejarah: ",
-                import_success: "Berjaya mengimport {n} tugasan!",
+                import_success: "Berjaya mengimport {{n}} tugasan!",
                 import_fail: "Gagal mengimport sejarah: ",
                 invalid_backup: "Format fail sandaran tidak sah",
                 confirm_reset: "Adakah anda pasti mahu menetapkan semula semua tetapan kepada lalai?",
@@ -348,7 +350,7 @@ export const ms = {
             update_btn: "Semak Kemas Kini",
             updating: "Sedang Mengemas Kini...",
             binary_versions: "Versi Binari",
-            check_updates: "Semak kemas kini dari GitHub",
+            check_updates: "Semak kemas kini",
             current_ver: "Semasa",
             not_checked: "Belum disemak",
             unknown: "Tidak diketahui",
@@ -520,13 +522,13 @@ export const ms = {
             trim_required: "Potong Diperlukan",
             max_duration: "Maks 30s",
             trim_desc: "Format GIF memerlukan pemotongan. Pilih klip pendek (maks 30 saat) untuk hasil terbaik.",
-            too_long: "Klip terlalu panjang! Maks {max}s untuk GIF. Semasa: {current}s"
+            too_long: "Klip terlalu panjang! Maks {{max}}s untuk GIF. Semasa: {{current}}s"
         },
 
         // Clip section
         clip: {
-            duration: "Tempoh klip: {current}s",
-            duration_max: "Tempoh klip: {current}s / {max}s maks",
+            duration: "Tempoh klip: {{current}}s",
+            duration_max: "Tempoh klip: {{current}}s / {{max}}s maks",
             to: "KE"
         },
 
@@ -539,7 +541,7 @@ export const ms = {
             vp9: "Piawaian YouTube (4K)",
             av1: "AV1 jimat ruang (Generasi Seterusnya).",
             warning_title: "Polengkodan Semula Diperlukan",
-            warning_desc: "Sumber tiada {codec}. Kualiti mungkin turun sedikit & muat turun lebih lama."
+            warning_desc: "Sumber tiada {{codec}}. Kualiti mungkin turun sedikit & muat turun lebih lama."
         },
 
         // Bagian UI Baru
@@ -581,9 +583,9 @@ export const ms = {
             desc_wav: "Tidak Dimampatkan (Editor)",
             desc: "Kadar bit lebih tinggi bermakna butiran bunyi lebih jelas.",
             upscale_title: "Amaran Upscaling",
-            upscale_desc: "Sumber mampat (Lossy). Menukar ke {fmt} menambah saiz fail tapi BUKAN kualiti.",
+            upscale_desc: "Sumber mampat (Lossy). Menukar ke {{fmt}} menambah saiz fail tapi BUKAN kualiti.",
             reencode_title: "Pengekodan Semula",
-            reencode_desc: "Penukaran ke {fmt} diperlukan."
+            reencode_desc: "Penukaran ke {{fmt}} diperlukan."
         },
         compress: {
             title_video: "Eksport Video",
@@ -645,7 +647,7 @@ export const ms = {
             quality_low: "Rendah"
         },
         logic_warnings: {
-            mov_reencode: "Format <strong>.MOV</strong> dengan <strong>{codec}</strong> memerlukan pengekodan semula. Ini mungkin ambil masa lebih lama."
+            mov_reencode: "Format <strong>.MOV</strong> dengan <strong>{{codec}}</strong> memerlukan pengekodan semula. Ini mungkin ambil masa lebih lama."
         },
 
         restart: "Mula Semula",
@@ -690,7 +692,7 @@ export const ms = {
         sort_asc: "Terlama",
         sort_desc: "Terbaru",
         scan_files: "Imbas Fail",
-        scan_missing_files: "Imbasan Selesai: {count} fail hilang dijumpai",
+        scan_missing_files: "Imbasan Selesai: {{count}} fail hilang dijumpai",
         scan_healthy_files: "Imbasan Selesai: Semua fail dalam keadaan baik",
         recover: "Pulihkan Fail",
         find_on_disk: "Cari di Cakera",
@@ -811,7 +813,7 @@ export const ms = {
         available: "kosong"
     },
     errors: {
-        system_action: "Tindakan sistem gagal: {action}",
+        system_action: "Tindakan sistem gagal: {{action}}",
         listener_attach: "Gagal menyambung pendengar muat turun",
         binary_validation: "Pengesahan binari gagal",
         update_check: "Gagal menyemak kemas kini",
@@ -933,7 +935,7 @@ export const ms = {
         copy: "Salin",
         copy_line: "Salin Baris",
         ready: "Sistem siap. Menunggu tugas...",
-        no_logs: "Tidak ada log {filter} ditemukan."
+        no_logs: "Tidak ada log {{filter}} ditemukan."
     },
 
     // ETA Human-Readable Translations (i18next pluralization)

@@ -85,12 +85,22 @@ export const TooltipTrigger = React.forwardRef<HTMLElement, React.HTMLProps<HTML
             }
         }, [context.refs, propRef, childrenRef])
 
+        const referenceProps = context.getReferenceProps(props)
+
+        // If asChild is true and children is a valid element, clone it with merged props
+        if (asChild && React.isValidElement(children)) {
+            return React.cloneElement(children as React.ReactElement<any>, {
+                ref,
+                ...referenceProps,
+                'data-state': context.open ? 'delayed-open' : 'closed',
+            })
+        }
 
         return (
             <div
                 ref={ref}
                 className="inline-block"
-                {...context.getReferenceProps(props)}
+                {...referenceProps}
                 data-state={context.open ? 'delayed-open' : 'closed'}
             >
                 {children}

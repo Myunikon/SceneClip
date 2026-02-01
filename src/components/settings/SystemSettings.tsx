@@ -359,7 +359,7 @@ export function SystemSettings({ settings, setSetting, updateSettings }: SystemS
                                     const data = JSON.parse(await readTextFile(path))
                                     if (data?.tasks) {
                                         useAppStore.getState().importTasks(data.tasks)
-                                        notify.success((t('settings.advanced.alerts.import_success') || "Successfully imported {n} tasks").replace('{n}', String(data.tasks.length)))
+                                        notify.success(t('settings.advanced.alerts.import_success', { n: data.tasks.length }))
                                     }
                                 }
                             } catch (e) { notify.error((t('settings.advanced.alerts.import_fail') || "Import failed: ") + e) }

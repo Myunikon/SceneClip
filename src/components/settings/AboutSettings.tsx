@@ -1,9 +1,11 @@
+import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Download, Terminal as TerminalIcon, Scissors, Zap, Globe, AlertCircle, ChevronRight, Layers, Waypoints, Languages, FileCode } from 'lucide-react'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { useTranslation, Trans } from 'react-i18next'
 import { Updater } from '../providers'
 import { AuroraText } from '@/registry/magicui/aurora-text'
+import { useAppStore } from '../../store'
 
 
 interface AboutSettingsProps {
@@ -13,6 +15,11 @@ interface AboutSettingsProps {
 
 export function AboutSettings({ addLog, setShowEasterEgg }: AboutSettingsProps) {
     const { t } = useTranslation()
+    const { checkBinaryUpdates } = useAppStore()
+
+    useEffect(() => {
+        checkBinaryUpdates()
+    }, [checkBinaryUpdates])
 
     const techItems = [
         { id: 'yt-dlp', name: 'yt-dlp', role: t('settings.about_page.role_core'), Icon: TerminalIcon, link: 'https://github.com/yt-dlp/yt-dlp', color: 'text-foreground' },
@@ -64,7 +71,7 @@ export function AboutSettings({ addLog, setShowEasterEgg }: AboutSettingsProps) 
                         Scene<AuroraText className="font-bold" stopAfter={10000}>Clip</AuroraText>
                     </h2>
                     <p className="text-sm font-medium text-muted-foreground">
-                        Version 1.0.1 (New)
+                        Version 1.5.0
                     </p>
                 </div>
 

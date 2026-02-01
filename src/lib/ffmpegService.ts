@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core'
+import { invoke, Channel } from '@tauri-apps/api/core'
 import { CompressionOptions } from '../store/slices/types'
 import { useAppStore } from '../store'
 
@@ -36,87 +36,6 @@ export function buildCompressedOutputPath(filePath: string): string {
   return `${filePath.substring(0, lastDot)}_compressed.mp4` // Default to mp4 for compressed video
 }
 
-export function parseFFmpegDuration(stderr: string): number {
-  // Duration: 00:00:30.50
-  const match = stderr.match(/Duration:\s*(\d{2}):(\d{2}):(\d{2}\.\d+)/)
-  if (match) {
-    const hours = parseFloat(match[1])
-    const minutes = parseFloat(match[2])
-    const seconds = parseFloat(match[3])
-    return (hours * 3600) + (minutes * 60) + seconds
-  }
-  return 0
-}
-
-export function parseFFmpegProgress(stderr: string, totalDuration: number): FFmpegProgressEvent | null {
-  // frame=  123 fps= 25 q=28.0 size=    1024kB time=00:00:05.12 bitrate=1638.4kbits/s speed=1.23x
-  const timeMatch = stderr.match(/time=(\d{2}):(\d{2}):(\d{2}\.\d+)/)
-  const speedMatch = stderr.match(/speed=\s*(\d+(\.\d+)?)x/)
-
-  if (timeMatch && totalDuration > 0) {
-    const hours = parseFloat(timeMatch[1])
-    const minutes = parseFloat(timeMatch[2])
-    const seconds = parseFloat(timeMatch[3])
-    const current = (hours * 3600) + (minutes * 60) + seconds
-
-    let percent = (current / totalDuration) * 100
-    if (percent > 100) percent = 100
-
-    const speedVal = speedMatch ? parseFloat(speedMatch[1]) : 1
-    const remaining = (totalDuration - current) / (speedVal > 0 ? speedVal : 1)
-
-    return {
-      percent: parseFloat(percent.toFixed(1)),
-      speed: speedMatch ? `${speedMatch[1]}x` : '1x',
-      eta: `${remaining.toFixed(0)}s`
-    }
-  }
-  return null
-}
-
-export function buildCompressionArgs(
-  inputPath: string,
-  outputPath: string,
-  options: CompressionOptions,
-  fileType: 'video' | 'audio' | 'image' | 'unknown'
-): string[] {
-  const args = ['-i', inputPath]
-
-  if (fileType === 'video') {
-    // Video Encoding Logic
-    // Apply options.resolution if not original
-    if (options.resolution !== 'Original') {
-      const h = options.resolution.replace('p', '')
-      args.push('-vf', `scale=-2:${h}`)
-    }
-
-    // Encoder logic
-    const encMap: any = {
-      'auto': 'libx264',
-      'cpu': 'libx264',
-      'nvenc': 'h264_nvenc',
-      'amf': 'h264_amf',
-      'qsv': 'h264_qsv'
-    }
-    const encoder = encMap[options.encoder] || 'libx264'
-    args.push('-c:v', encoder)
-
-    // Preset/CRF
-    if (encoder === 'libx264') {
-      args.push('-preset', options.speedPreset || 'medium')
-      args.push('-crf', String(options.crf))
-    } else {
-      // HW Accel args often differ, keeping simple for now
-      args.push('-cq', String(options.crf))
-    }
-
-    args.push('-c:a', 'aac', '-b:a', '128k') // Basic audio
-  }
-
-  args.push(outputPath)
-  return args
-}
-
 // =============================================================================
 // Rust Service Integration
 // =============================================================================
@@ -132,30 +51,33 @@ export async function compressMedia(
   onProgress: (event: FFmpegProgressEvent) => void
 ): Promise<void> {
   const settings = useAppStore.getState().settings;
-  // Simple heuristic for audio/image vs video
   const lower = inputPath.toLowerCase();
   const isAudio = /\.(mp3|m4a|wav|opus|ogg|flac)$/.test(lower);
   const isImage = /\.(gif|webp|png|jpg|jpeg)$/.test(lower);
 
+  interface FFmpegBackendEvent {
+    event: 'progress' | 'error' | 'completed' | 'log'
+    data: any // Keeping data as any is fine here since it varies per event, or we could union it
+  }
+
+  const channel = new Channel<FFmpegBackendEvent>();
+  channel.onmessage = (msg) => {
+    // msg structure matches FFmpegEvent in Rust: { event: "Progress", data: { ... } }
+    const { event, data } = msg;
+
+    if (event === 'progress') {
+      onProgress({
+        percent: data.percent,
+        speed: data.speed,
+        eta: data.eta
+      });
+    } else if (event === 'error') {
+      console.error("FFmpeg Rust Error:", data.message);
+    }
+  };
+
   try {
-    const channel = new Channel<any>();
-    channel.onmessage = (msg) => {
-      const event = msg.event; // 'Progress', 'Log', 'Completed', 'Error'
-      const data = msg.data;
-
-      if (event === 'Progress') {
-        onProgress({
-          percent: data.percent,
-          speed: data.speed,
-          eta: data.eta
-        });
-      } else if (event === 'Error') {
-        throw new Error(data.message);
-      }
-    };
-
     await invoke('compress_media', {
-      app: undefined, // Backend handles app handle
       inputPath,
       outputPath,
       options,
@@ -165,7 +87,7 @@ export async function compressMedia(
       onEvent: channel
     });
   } catch (e) {
-    console.error("Rust Compression Failed:", e);
+    console.error("Rust Compression Invoke Failed:", e);
     throw e;
   }
 }
@@ -180,10 +102,14 @@ export async function splitVideoByChapters(
 ): Promise<void> {
   const settings = useAppStore.getState().settings;
 
-  // Use Tauri Channel for progress
-  const channel = new Channel<any>();
+  interface FFmpegBackendEvent {
+    event: 'progress' | 'error' | 'completed' | 'log'
+    data: any // Keeping data as any is fine here since it varies per event, or we could union it
+  }
+
+  const channel = new Channel<FFmpegBackendEvent>();
   channel.onmessage = (msg) => {
-    if (msg.event === 'Progress') {
+    if (msg.event === 'progress') {
       onProgress(msg.data.percent);
     }
   };
@@ -201,36 +127,8 @@ export async function splitVideoByChapters(
   }
 }
 
-
-/**
- * Creates a Sidecar Command for FFmpeg
- * Wraps the Tauri Command.create logic for consistency.
- */
-export async function getFFmpegCommand(args: string[], customBinaryPath?: string) {
+// Deprecated: Moving to Rust version
+export async function getFFmpegCommand(args: string[], _customBinaryPath?: string) {
   const { Command } = await import('@tauri-apps/plugin-shell')
-
-  // Note: customBinaryPath support requires specific capability configuration in Tauri v2
-  // For now we default to the standard sidecar
-  if (customBinaryPath && customBinaryPath.trim().length > 0) {
-    // Warning: This path is currently ignored unless 'exec-mem-ffmpeg' or specific command is defined
-    // We stick to 'ffmpeg' command definition from tauri.conf.json
-  }
-
   return Command.create('ffmpeg', args)
-}
-
-// Helper types for Channel (if not globally available)
-class Channel<T> {
-  id: number;
-  onmessage: (response: T) => void = () => { };
-  constructor() {
-    this.id = Math.floor(Math.random() * 1000000);
-    // @ts-ignore - Internal Tauri API binding
-    window[`_${this.id}`] = (response: any) => {
-      this.onmessage(response);
-    };
-  }
-  toJSON() {
-    return `__CHANNEL__:${this.id}`;
-  }
 }

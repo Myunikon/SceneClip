@@ -11,7 +11,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
     downloadPath: '',
     alwaysAskPath: false,
-    filenameTemplate: '{Title}',
+    filenameTemplate: '{title}',
     resolution: 'Best',
     container: 'mp4',
     hardwareDecoding: false, // Default: OFF
@@ -31,6 +31,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
     binaryPathYtDlp: '',
     binaryPathFfmpeg: '',
     binaryPathFfprobe: '',
+    binaryPathAria2c: '',
+    binaryPathRsgain: '',
     binaryPathNode: '',
     embedMetadata: true, // Default: ON
     embedThumbnail: true, // Default: ON
@@ -53,6 +55,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
     enableDesktopNotifications: true, // Default: enabled
     preventSuspendDuringDownload: true, // Default: prevent sleep during downloads (ON)
+    removeSourceMetadata: false,
+    enabledPresetIds: [],
     postProcessorPresets: [
         // Built-in presets
         {
@@ -69,6 +73,22 @@ export const DEFAULT_SETTINGS: AppSettings = {
             description: 'Reduce file size with CRF 28',
             type: 'video',
             args: '-crf 28 -preset fast',
+            isDefault: false
+        },
+        {
+            id: 'audio-boost',
+            name: 'Audio Boost (1.5x)',
+            description: 'Increase audio volume by 50%',
+            type: 'audio',
+            args: '-af volume=1.5',
+            isDefault: false
+        },
+        {
+            id: 'smart-normalize',
+            name: 'Smart Normalize',
+            description: 'EBU R128 loudness normalization',
+            type: 'audio',
+            args: '-af loudnorm=I=-16:TP=-1.5:LRA=11',
             isDefault: false
         }
     ]

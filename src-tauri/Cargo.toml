@@ -1,6 +1,6 @@
 [package]
 name = "sceneclip"
-version = "1.0.0"
+version = "1.5.0"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
@@ -48,6 +48,11 @@ url = "2.5.8"
 uuid = { version = "1.10", features = ["v4"] }
 tauri-plugin-log = "2.8.0"
 log = "0.4.29"
+zip = "2.2.2"
+tar = "0.4.44"
+flate2 = "1.1.8"
+sha2 = "0.10"
+hex = "0.4.3"
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.58", features = ["Win32_System_Power"] }

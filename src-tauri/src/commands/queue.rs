@@ -38,6 +38,8 @@ pub async fn add_to_queue(
         file_path: None,
         scheduled_time: None,
         retry_count: Some(0),
+        ytdlp_command: None,
+        file_size: None,
         options,
     };
 
@@ -51,11 +53,46 @@ pub async fn remove_from_queue(
     id: String,
 ) -> Result<(), String> {
     // Scope the lock to ensure it is dropped before awaiting
-    let should_cancel = state.remove_task(&id);
+    // Now returns Option<DownloadTask> so we can cleanup files
+    let removed_task_opt = state.remove_task(&id);
 
-    // Call cancellation outside the lock
-    if should_cancel {
+    if let Some(task) = removed_task_opt {
+        // 1. Process Cancellation (Force Kill)
         let _ = crate::commands::download::cancel_download(id).await;
+
+        // 2. File Cleanup (Absolute "Sisa Download" Removal)
+        // We try to delete known artifacts: .part, .ytdl, or the file itself if incomplete
+        if let Some(path_str) = task.file_path {
+            let path = std::path::Path::new(&path_str);
+
+            // Construct potential partial filenames
+            let mut candidates = vec![
+                path.to_path_buf(), // The file itself (if it exists and is partial?)
+                path.with_extension(format!(
+                    "{}.part",
+                    path.extension().unwrap_or_default().to_str().unwrap_or("")
+                )), // file.ext.part
+                path.with_extension(format!(
+                    "{}.ytdl",
+                    path.extension().unwrap_or_default().to_str().unwrap_or("")
+                )), // file.ext.ytdl
+            ];
+
+            // Common yt-dlp pattern: "filename.mp4.part"
+            if let Some(file_name) = path.file_name() {
+                if let Some(parent) = path.parent() {
+                    let name_str = file_name.to_string_lossy();
+                    candidates.push(parent.join(format!("{}.part", name_str)));
+                    candidates.push(parent.join(format!("{}.ytdl", name_str)));
+                }
+            }
+
+            for p in candidates {
+                if p.exists() {
+                    let _ = std::fs::remove_file(p);
+                }
+            }
+        }
     }
     Ok(())
 }

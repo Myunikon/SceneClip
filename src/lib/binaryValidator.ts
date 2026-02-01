@@ -30,6 +30,27 @@ export async function validateBinary(path: string, type: BinaryType): Promise<Va
         // Success! Extract version string (usually the first line)
         const firstLine = output.split('\n')[0].trim();
 
+        // Enforce Essentials for FFmpeg if detected in first line or configuration
+        if (type === 'ffmpeg') {
+            const lowerLine = firstLine.toLowerCase();
+            const lowerOutput = output.toLowerCase();
+
+            // Check if it's an 'essential' build or at least not a 'full' build from Gyan.dev
+            // Gyan.dev usually puts build details in configuration
+            if (lowerOutput.includes('gyan.dev')) {
+                if (lowerOutput.includes('--enable-libxml2') || lowerOutput.includes('full')) {
+                    return {
+                        isValid: false,
+                        version: firstLine,
+                        error: 'Non-Essentials FFmpeg detected. Please use FFmpeg Essentials to save space.'
+                    };
+                }
+            }
+
+            // If it's BtbN (often Linux/ARM), it doesn't use 'essentials' nomenclature, 
+            // but for Windows we prioritize Essentials.
+        }
+
         return {
             isValid: true,
             version: firstLine || 'Unknown Version'

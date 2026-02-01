@@ -163,6 +163,8 @@ export const id = {
             audio_normalization_desc: "Standar EBU R128 (-14 LUFS)",
             metadata_warning_title: "Catatan:",
             metadata_warning_desc: "Opsi ini dinonaktifkan secara otomatis saat menggunakan <1>Potong Video</1> untuk mencegah kesalahan durasi video (contoh: klip 10 detik terbaca 1 jam).",
+            privacy_scrubbing: "Pembersihan Privasi",
+            privacy_scrubbing_desc: "Hapus URL sumber, deskripsi, dan komentar dari file yang diunduh untuk privasi.",
             presets: {
                 title: "Preset Pasca-Pemrosesan",
                 desc: "Kelola preset argumen FFmpeg kustom",
@@ -216,7 +218,7 @@ export const id = {
 
             // New Network Keys
             manual_config: "Mode konfigurasi manual.",
-            chunks_label: "{n} bagian (chunks)",
+            chunks_label: "{{n}} bagian (chunks)",
             perf_profile: "Profil Performa",
             custom: "Kustom",
 
@@ -286,7 +288,7 @@ export const id = {
             alerts: {
                 export_success: "Riwayat berhasil diekspor!",
                 export_fail: "Gagal mengekspor riwayat: ",
-                import_success: "Berhasil mengimpor {n} tugas!",
+                import_success: "Berhasil mengimpor {{n}} tugas!",
                 import_fail: "Gagal mengimpor riwayat: ",
                 invalid_backup: "Format file cadangan tidak valid",
                 confirm_reset: "Anda yakin ingin mereset semua pengaturan ke default?",
@@ -383,7 +385,7 @@ export const id = {
             update_btn: "Cek Pembaruan",
             updating: "Memperbarui...",
             binary_versions: "Versi Binari",
-            check_updates: "Periksa pembaruan dari GitHub",
+            check_updates: "Periksa pembaruan",
             current_ver: "Saat ini",
             not_checked: "Belum diperiksa",
             unknown: "Tidak diketahui",
@@ -511,7 +513,7 @@ export const id = {
         copy: "Salin",
         copy_line: "Salin Baris",
         ready: "Sistem siap. Menunggu tugas...",
-        no_logs: "Tidak ada log {filter} ditemukan."
+        no_logs: "Tidak ada log {{filter}} ditemukan."
     },
 
     onboarding: {
@@ -654,13 +656,13 @@ export const id = {
         trim_required: "Potong Diperlukan",
         max_duration: "Maks 30d",
         trim_desc: "Format GIF memerlukan pemotongan. Pilih klip pendek (maks 30 detik) untuk hasil terbaik.",
-        too_long: "Klip terlalu panjang! Maks {max}d untuk GIF. Saat ini: {current}d"
+        too_long: "Klip terlalu panjang! Maks {{max}}d untuk GIF. Saat ini: {{current}}d"
     },
 
     // Clip section
     clip: {
-        duration: "Durasi klip: {current}d",
-        duration_max: "Durasi klip: {current}d / {max}d maks",
+        duration: "Durasi klip: {{current}}d",
+        duration_max: "Durasi klip: {{current}}d / {{max}}d maks",
         to: "KE"
     },
 
@@ -673,7 +675,7 @@ export const id = {
         vp9: "Standar YouTube (4K)",
         av1: "AV1 hemat kuota (Next-Gen).",
         warning_title: "Re-encoding Diperlukan",
-        warning_desc: "Sumber tidak memiliki {codec}. Kualitas mungkin turun & proses lebih lama."
+        warning_desc: "Sumber tidak memiliki {{codec}}. Kualitas mungkin turun & proses lebih lama."
     },
 
     // Bagian UI Baru
@@ -715,9 +717,9 @@ export const id = {
         desc_wav: "Uncompressed (Editing)",
         desc: "Bitrate tinggi = detail suara lebih jernih.",
         upscale_title: "Peringatan Upscaling",
-        upscale_desc: "Sumber terkompresi (Lossy). Mengubah ke {fmt} memperbesar file tapi TIDAK kualitas.",
+        upscale_desc: "Sumber terkompresi (Lossy). Mengubah ke {{fmt}} memperbesar file tapi TIDAK kualitas.",
         reencode_title: "Re-encoding",
-        reencode_desc: "Konversi ke {fmt} diperlukan."
+        reencode_desc: "Konversi ke {{fmt}} diperlukan."
     },
     compress: {
         title_video: "Ekspor Video",
@@ -783,7 +785,7 @@ export const id = {
         approx: "~"
     },
     logic_warnings: {
-        mov_reencode: "Format <strong>.MOV</strong> dengan <strong>{codec}</strong> butuh re-encode. Proses akan lebih lama."
+        mov_reencode: "Format <strong>.MOV</strong> dengan <strong>{{codec}}</strong> butuh re-encode. Proses akan lebih lama."
     },
 
     not_available: "Tidak tersedia",
@@ -832,7 +834,7 @@ export const id = {
         sort_asc: "Terlama",
         sort_desc: "Terbaru",
         scan_files: "Pindai File",
-        scan_missing_files: "Pindaian Selesai: {count} file hilang ditemukan",
+        scan_missing_files: "Pindaian Selesai: {{count}} file hilang ditemukan",
         scan_healthy_files: "Pindaian Selesai: Semua file sehat",
         recover: "Pulihkan File",
         find_on_disk: "Cari di Disk",
@@ -954,7 +956,7 @@ export const id = {
         available: "kosong"
     },
     errors: {
-        system_action: "Aksi sistem gagal: {action}",
+        system_action: "Aksi sistem gagal: {{action}}",
         listener_attach: "Gagal menghubungkan pendengar unduhan",
         binary_validation: "Validasi biner gagal",
         update_check: "Gagal memeriksa pembaruan",

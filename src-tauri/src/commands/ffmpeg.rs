@@ -54,18 +54,17 @@ pub async fn compress_media(
     settings: AppSettings, // To get binary path
     on_event: Channel<FFmpegEvent>,
 ) -> Result<(), String> {
-    let ffmpeg_path = if settings.binary_path_ffmpeg.is_empty() {
-        "ffmpeg"
-    } else {
-        &settings.binary_path_ffmpeg
-    };
+    let ffmpeg_path = crate::ytdlp::resolve_ffmpeg_path(&_app, &settings.binary_path_ffmpeg);
 
-    let mut args = vec![
-        "-hide_banner".to_string(),
-        "-y".to_string(),
-        "-i".to_string(),
-        input_path.clone(),
-    ];
+    let mut args = vec!["-hide_banner".to_string(), "-y".to_string()];
+
+    if settings.hardware_decoding {
+        args.push("-hwaccel".to_string());
+        args.push("auto".to_string());
+    }
+
+    args.push("-i".to_string());
+    args.push(input_path.clone());
 
     // --- Build Arguments (Ported from TS) ---
     if is_audio {
@@ -138,7 +137,7 @@ pub async fn compress_media(
     args.push(output_path.clone());
 
     // --- Execute ---
-    let mut command = Command::new(ffmpeg_path);
+    let mut command = Command::new(&ffmpeg_path);
 
     #[cfg(target_os = "windows")]
     {
@@ -217,7 +216,7 @@ pub async fn compress_media(
                         };
 
                         // Only send if percent has changed significantly to avoid spamming
-                        if (percent - last_percent).abs() > 0.5 || percent == 100.0 {
+                        if (percent - last_percent).abs() > 0.1 || percent == 100.0 {
                             let _ = on_event_clone.send(FFmpegEvent::Progress {
                                 percent,
                                 speed,
@@ -278,11 +277,7 @@ pub async fn split_media_chapters(
     settings: AppSettings,
     on_event: Channel<FFmpegEvent>,
 ) -> Result<(), String> {
-    let ffmpeg_path = if settings.binary_path_ffmpeg.is_empty() {
-        "ffmpeg"
-    } else {
-        &settings.binary_path_ffmpeg
-    };
+    let ffmpeg_path = crate::ytdlp::resolve_ffmpeg_path(&_app, &settings.binary_path_ffmpeg);
 
     let path_obj = std::path::Path::new(&input_path);
     let parent = path_obj.parent().unwrap_or(std::path::Path::new(""));
@@ -310,23 +305,23 @@ pub async fn split_media_chapters(
         let output_name = format!("{} - {:02} - {}.{}", stem, index + 1, safe_title, ext);
         let output_path = parent.join(output_name);
 
-        let args = vec![
+        let mut args = vec![
             "-hide_banner".to_string(),
             "-y".to_string(),
             "-i".to_string(),
             input_path.clone(),
-            "-ss".to_string(),
-            chapter.start_time.to_string(),
-            "-to".to_string(),
-            chapter.end_time.to_string(),
-            "-c".to_string(),
-            "copy".to_string(),
-            "-map_metadata".to_string(),
-            "0".to_string(),
-            output_path.to_string_lossy().to_string(),
         ];
+        args.push("-ss".to_string());
+        args.push(chapter.start_time.to_string());
+        args.push("-to".to_string());
+        args.push(chapter.end_time.to_string());
+        args.push("-c".to_string());
+        args.push("copy".to_string());
+        args.push("-map_metadata".to_string());
+        args.push("0".to_string());
+        args.push(output_path.to_string_lossy().to_string());
 
-        let mut command = Command::new(ffmpeg_path);
+        let mut command = Command::new(&ffmpeg_path);
 
         #[cfg(target_os = "windows")]
         {
@@ -355,7 +350,7 @@ pub async fn split_media_chapters(
         let percent = (accumulated_time / total_duration) * 100.0;
 
         let _ = on_event.send(FFmpegEvent::Progress {
-            percent,
+            percent: percent.min(100.0),
             speed: "N/A".to_string(),
             eta: "N/A".to_string(),
         });

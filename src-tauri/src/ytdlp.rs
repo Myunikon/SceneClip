@@ -49,6 +49,32 @@ pub struct YtDlpOptions {
     pub js_runtime_path: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum PresetType {
+    Audio,
+    Video,
+    Metadata,
+    Subtitles,
+    General,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PostProcessorPreset {
+    #[serde(default)]
+    pub id: String,
+    #[serde(default)]
+    pub name: String,
+    #[serde(default)]
+    pub description: String,
+    pub r#type: PresetType,
+    #[serde(default)]
+    pub args: String,
+    #[serde(default)]
+    pub is_default: bool,
+}
+
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct AppSettings {
@@ -94,54 +120,106 @@ pub struct AppSettings {
 
     pub enable_desktop_notifications: bool,
     pub prevent_suspend_during_download: bool,
+
+    // Privacy & History
+    pub remove_source_metadata: bool,
+    pub history_retention_days: u32,
+    pub max_history_items: i32, // -1 for unlimited
+
+    // Performance & Quality (Advanced)
+    pub post_processor_presets: Vec<PostProcessorPreset>,
+    pub enabled_preset_ids: Vec<String>,
 }
 
 // --- Logic ---
+
+pub fn resolve_binary_path(app: &AppHandle, binary_name: &str) -> String {
+    // 1. Check AppLocalData (Writable Update Storage) - PRIORITY
+    if let Ok(local_dir) = app.path().app_local_data_dir() {
+        #[cfg(target_os = "windows")]
+        let exe_name = if binary_name.ends_with(".exe") {
+            binary_name.to_string()
+        } else {
+            format!("{}.exe", binary_name)
+        };
+        #[cfg(not(target_os = "windows"))]
+        let exe_name = binary_name.to_string();
+
+        let local_path = local_dir.join(&exe_name);
+        if local_path.exists() {
+            return local_path.to_string_lossy().to_string();
+        }
+    }
+
+    // 2. Attempt to find bundled sidecar
+    if let Ok(mut exe_path) = std::env::current_exe() {
+        exe_path.pop(); // Parent dir
+
+        #[cfg(target_os = "windows")]
+        let exe_name = if binary_name.ends_with(".exe") {
+            binary_name.to_string()
+        } else {
+            format!("{}.exe", binary_name)
+        };
+        #[cfg(not(target_os = "windows"))]
+        let exe_name = binary_name.to_string();
+
+        // Check flat in root (tauri dev/prod)
+        let flat_path = exe_path.join(&exe_name);
+        if flat_path.exists() {
+            return flat_path.to_string_lossy().to_string();
+        }
+
+        // Check bin/ subdir
+        let bin_path = exe_path.join("bin").join(&exe_name);
+        if bin_path.exists() {
+            return bin_path.to_string_lossy().to_string();
+        }
+
+        // Sidecar scan (for names like binary-triple.exe)
+        let binary_name_lower = binary_name.to_lowercase();
+        let scan_dirs = vec![exe_path.clone(), exe_path.join("bin")];
+
+        for dir in scan_dirs {
+            if let Ok(entries) = std::fs::read_dir(dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                        let stem_lower = stem.to_lowercase();
+                        if stem_lower.starts_with(&binary_name_lower) {
+                            #[cfg(target_os = "windows")]
+                            let is_exe = path
+                                .extension()
+                                .map_or(false, |e| e.to_ascii_lowercase() == "exe");
+                            #[cfg(not(target_os = "windows"))]
+                            let is_exe = true;
+
+                            if is_exe {
+                                return path.to_string_lossy().to_string();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Fallback to system PATH
+    binary_name.to_string()
+}
 
 pub fn resolve_ytdlp_path(app: &AppHandle, configured_path: &str) -> String {
     if !configured_path.is_empty() {
         return configured_path.to_string();
     }
+    resolve_binary_path(app, "yt-dlp")
+}
 
-    // 1. Check AppLocalData (Writable Update Storage) - PRIORITY
-    // This allows updates to override the bundled immutable binary.
-    if let Ok(local_dir) = app.path().app_local_data_dir() {
-        #[cfg(target_os = "windows")]
-        let binary_name = "yt-dlp.exe";
-        #[cfg(not(target_os = "windows"))]
-        let binary_name = "yt-dlp";
-
-        let local_path = local_dir.join(binary_name);
-        if local_path.exists() {
-            // Must return absolute path
-            return local_path.to_string_lossy().to_string();
-        }
+pub fn resolve_ffmpeg_path(app: &AppHandle, configured_path: &str) -> String {
+    if !configured_path.is_empty() {
+        return configured_path.to_string();
     }
-
-    // 2. Attempt to find bundled sidecar in current execution dir
-    if let Ok(mut exe_path) = std::env::current_exe() {
-        exe_path.pop(); // Parent dir
-
-        #[cfg(target_os = "windows")]
-        let binary_name = "yt-dlp.exe";
-        #[cfg(not(target_os = "windows"))]
-        let binary_name = "yt-dlp";
-
-        // Check flat in root (standard Tauri bundle behavior)
-        let flat_path = exe_path.join(binary_name);
-        if flat_path.exists() {
-            return flat_path.to_string_lossy().to_string();
-        }
-
-        // Check bin/ subdir (custom structure)
-        let bin_path = exe_path.join("bin").join(binary_name);
-        if bin_path.exists() {
-            return bin_path.to_string_lossy().to_string();
-        }
-    }
-
-    // Fallback to expecting it in PATH
-    "yt-dlp".to_string()
+    resolve_binary_path(app, "ffmpeg")
 }
 
 pub fn is_youtube_url(url: &str) -> bool {
@@ -166,6 +244,7 @@ pub fn sanitize_filename(
     let title_value = options
         .custom_filename
         .as_deref()
+        .filter(|s| !s.is_empty())
         .or_else(|| meta.get("title").and_then(|v| v.as_str()))
         .unwrap_or("Untitled");
 
@@ -176,7 +255,7 @@ pub fn sanitize_filename(
         if let Some(h) = meta.get("height").and_then(|v| v.as_u64()) {
             resolution = format!("{}p", h);
         } else if let Some(fmt) = &options.format {
-            if fmt != "best" {
+            if fmt != "best" && fmt != "Best" {
                 resolution = fmt.clone();
             }
         }
@@ -195,31 +274,33 @@ pub fn sanitize_filename(
         }
     }
 
-    let vars = vec![
-        ("{title}", title_value),
-        ("{Title}", title_value),
-        ("{TITLE}", title_value),
-        ("{res}", &resolution),
-        ("{Res}", &resolution),
-        ("{RES}", &resolution),
-        ("{source}", source),
-        ("{Source}", source),
-        ("{date}", &date),
-        ("{Date}", &date),
+    // Case-Insensitive Replacement for standard tokens
+    let standard_vars = vec![
+        ("title", title_value),
+        ("res", &resolution),
+        ("source", source),
+        ("date", &date),
+        ("id", meta.get("id").and_then(|v| v.as_str()).unwrap_or("")),
         (
-            "{id}",
-            meta.get("id").and_then(|v| v.as_str()).unwrap_or(""),
-        ),
-        (
-            "{author}",
+            "author",
             meta.get("uploader")
                 .and_then(|v| v.as_str())
                 .unwrap_or("Unknown"),
         ),
     ];
 
-    for (k, v) in vars {
-        final_name = final_name.replace(k, v);
+    for (k, v) in standard_vars {
+        // Given we want to be thorough:
+        final_name = final_name.replace(&format!("{{{}}}", k.to_lowercase()), v);
+        final_name = final_name.replace(&format!("{{{}}}", k.to_uppercase()), v);
+
+        // Capitalized (e.g. {Title})
+        let capitalized = k
+            .chars()
+            .next()
+            .map(|c| c.to_uppercase().collect::<String>() + &k[1..])
+            .unwrap_or_default();
+        final_name = final_name.replace(&format!("{{{}}}", capitalized), v);
     }
 
     // Legacy cleanup
@@ -267,27 +348,37 @@ pub fn sanitize_filename(
     }
 
     let expected_ext = format!(".{}", target_ext);
+    let expected_ext_lower = expected_ext.to_lowercase();
 
-    if final_name.to_lowercase().ends_with(&expected_ext) {
+    if final_name.to_lowercase().ends_with(&expected_ext_lower) {
+        // Already ends with the correct extension
     } else {
-        // Naive strip
-        if final_name.ends_with(".mp4")
-            || final_name.ends_with(".mp3")
-            || final_name.ends_with(".mkv")
-        {
-            final_name = final_name
-                .rsplitn(2, '.')
-                .nth(1)
-                .unwrap_or(&final_name)
-                .to_string();
+        // Naive strip of common extensions if they don't match expected_ext
+        let common_exts = [
+            ".mp4", ".mp3", ".mkv", ".webm", ".m4a", ".wav", ".gif", ".mov", ".avi", ".ts",
+        ];
+        let final_lower = final_name.to_lowercase();
+        for ext in common_exts {
+            if final_lower.ends_with(ext) {
+                final_name = final_name[..final_name.len() - ext.len()].to_string();
+                break;
+            }
         }
+
+        // Final safeguard: if stripping left us with nothing plus the extension, or just a dot
+        if final_name.is_empty() || final_name == "." {
+            final_name = sanitize_segment(title_value);
+        }
+
         final_name = format!("{}{}", final_name, expected_ext);
     }
 
-    if final_name.trim() == expected_ext.as_str() {
+    // Final check: if final_name is JUST the extension after all this, prepend the title
+    if final_name.trim() == expected_ext.as_str()
+        || final_name.trim() == expected_ext_lower.as_str()
+    {
         final_name = format!("{}{}", sanitize_segment(title_value), expected_ext);
     }
-
     final_name
 }
 
@@ -336,9 +427,26 @@ pub async fn build_ytdlp_args(
         "--continue".to_string(),
         "--socket-timeout".to_string(), DEFAULTS_SOCKET_TIMEOUT.to_string(),
         "--progress-template".to_string(), "SCENECLIP_PROGRESS;%(progress.status)s;%(progress.downloaded_bytes)s;%(progress.total_bytes)s;%(progress.total_bytes_estimate)s;%(progress.speed)s;%(progress.eta)s".to_string(),
-        "-S".to_string(), "res:2160,fps,br,size".to_string(),
-        "--ignore-config".to_string(),
+        "--progress-delta".to_string(), "0.1".to_string(),
     ];
+
+    // Extract resolution number from fmt (e.g. "1080p" -> "1080")
+    let res_num = fmt.chars().filter(|c| c.is_numeric()).collect::<String>();
+    let res_val = if res_num.is_empty() {
+        "2160".to_string()
+    } else {
+        res_num
+    };
+
+    let sort_string = if fmt == "gif" {
+        "res:720,ext:mp4,fps:30".to_string()
+    } else {
+        format!("+vcodec:av01,+vcodec:hev1,res:{},fps,br,size", res_val)
+    };
+    args.push("-S".to_string());
+    args.push(sort_string);
+
+    args.push("--ignore-config".to_string());
 
     // Plugins & JS Runtime
     {
@@ -462,13 +570,9 @@ pub async fn build_ytdlp_args(
         args.push("--audio-quality".to_string());
         args.push(quality.to_string());
 
-        if options.audio_normalization.unwrap_or(false) {
-            args.push("--postprocessor-args".to_string());
-            args.push("ffmpeg:-af loudnorm=I=-16:TP=-1.5:LRA=11".to_string());
-        }
+        // Redundant loudnorm removed here (handled in Consolidated FFmpeg Args section)
     } else if fmt == "gif" {
-        args.push("-S".to_string());
-        args.push("res:720,ext:mp4,fps:30".to_string());
+        // Redundant -S removed (now handled at the top)
 
         let fps = options.gif_fps.unwrap_or(15);
         let scale_height = options.gif_scale.unwrap_or(480);
@@ -509,8 +613,13 @@ pub async fn build_ytdlp_args(
         args.push("-f".to_string());
         args.push(format_string);
 
-        if options.force_transcode.unwrap_or(false) && codec != "auto" {
+        if options.force_transcode.unwrap_or(false) || options.audio_normalization.unwrap_or(false)
+        {
             let mut transcode_args = String::new();
+            let mut active_codec = codec;
+            if active_codec == "auto" {
+                active_codec = "h264";
+            }
 
             // Helper closure replacement
             let get_encoder =
@@ -554,10 +663,9 @@ pub async fn build_ytdlp_args(
                         transcode_args = format!("-c:v {} -q:v 65 {}", enc, audio_params);
                     }
                 } else {
-                    transcode_args =
-                        format!("-c:v {} -crf 23 -preset medium {}", enc, audio_params);
+                    transcode_args = format!("-c:v {} -crf 23 -preset fast {}", enc, audio_params);
                 }
-            } else if codec == "av1" {
+            } else if active_codec == "av1" {
                 let ap = if options.audio_normalization.unwrap_or(false) {
                     "-c:a libopus -b:a 128k"
                 } else {
@@ -685,15 +793,21 @@ pub async fn build_ytdlp_args(
         if !has_custom_audio {
             ffmpeg_args.push("-c:a aac -b:a 192k".to_string());
         }
-    } else if active_gpu_type != "cpu"
-        && fmt != "audio"
+    }
+
+    // NEW: Force video copy when clipping if no other video codec is specified
+    // EXCEPT if audio normalization is requested, as re-encoding might be preferred for quality/consistency
+    if is_clipping
         && fmt != "gif"
-        && !is_clipping
+        && fmt != "audio"
         && !options.force_transcode.unwrap_or(false)
+        && !options.audio_normalization.unwrap_or(false)
+        && active_gpu_type == "cpu"
+    // Only if not using GPU, as GPU logic handles its own codecs
     {
-        let has_custom_audio = ffmpeg_args.iter().any(|a| a.contains("-c:a "));
-        if !has_custom_audio {
-            ffmpeg_args.push("-c:a copy".to_string());
+        let has_video_codec = ffmpeg_args.iter().any(|a| a.contains("-c:v "));
+        if !has_video_codec {
+            ffmpeg_args.push("-c:v copy".to_string());
         }
     }
 
@@ -713,14 +827,10 @@ pub async fn build_ytdlp_args(
                 "ms" => "ms",
                 _ => "en",
             };
-            let priority = if app_lang == "en" {
-                "en-orig,en"
-            } else {
-                if app_lang == "id" {
-                    "id,id-orig,en-orig,en"
-                } else {
-                    "ms,ms-orig,en-orig,en"
-                }
+            let priority = match app_lang {
+                "en" => "en-orig,en",
+                "id" => "id,id-orig,en-orig,en",
+                _ => "ms,ms-orig,en-orig,en",
             };
             args.push("--write-subs".to_string());
             args.push("--write-auto-subs".to_string());
@@ -773,7 +883,7 @@ pub async fn build_ytdlp_args(
             let file_with_ext = &final_filename[idx + 1..];
             let file_base = file_with_ext.split('.').next().unwrap_or(file_with_ext);
             let tpl = format!(
-                "{}/[Chapters] {}/%(chapter_number)s - %(chapter)s.%(ext)s",
+                "chapter:{}/[Chapters] {}/%(chapter_number)s - %(chapter)s.%(ext)s",
                 dir, file_base
             );
             args.push("-o".to_string());
@@ -858,32 +968,133 @@ pub async fn build_ytdlp_args(
     }
     if settings.embed_thumbnail && !is_clipping {
         args.push("--embed-thumbnail".to_string());
+
+        // Aesthetic Fix: Auto-cropping (square) for audio thumbnails
+        if fmt == "mp3"
+            || fmt == "m4a"
+            || fmt == "flac"
+            || fmt == "wav"
+            || fmt == "opus"
+            || fmt == "aac"
+            || fmt == "audio"
+        {
+            args.push("--ppa".to_string());
+            args.push("ThumbnailsConvertor:-vf crop=min(iw\\,ih):min(iw\\,ih)".to_string());
+        }
     }
     if (settings.embed_chapters || settings.use_metadata_enhancer) && !is_clipping {
         args.push("--embed-chapters".to_string());
         if settings.use_metadata_enhancer {
+            // Enhanced metadata includes the full info json and extra flags
             args.push("--embed-info-json".to_string());
+            args.push("--add-metadata".to_string()); // Legacy but ensures uploader/comments etc in some formats
         }
     }
 
     if let Some(pp_args) = &options.post_processor_args {
         let trimmed = pp_args.trim();
         if !trimmed.is_empty() {
-            if !trimmed.starts_with("ffmpeg:")
-                && !trimmed.starts_with("sami:")
-                && !trimmed.starts_with("double_ffmpeg:")
+            let mut final_args = trimmed.to_string();
+            if !final_args.starts_with("ffmpeg:")
+                && !final_args.starts_with("sami:")
+                && !final_args.starts_with("double_ffmpeg:")
             {
+                final_args = format!("ffmpeg:{}", final_args);
+            }
+            args.push("--postprocessor-args".to_string());
+            args.push(final_args);
+        }
+    }
+
+    // Feature 5: Global Custom Post-Processor Presets
+    for preset_id in &settings.enabled_preset_ids {
+        if let Some(preset) = settings
+            .post_processor_presets
+            .iter()
+            .find(|p| &p.id == preset_id)
+        {
+            let mut pp_arg = preset.args.clone();
+
+            // Only apply if type matches or it is general
+            let is_match = match preset.r#type {
+                PresetType::Audio => fmt == "audio",
+                PresetType::Video => fmt != "audio",
+                _ => true,
+            };
+
+            if is_match && !pp_arg.trim().is_empty() {
+                if !pp_arg.starts_with("ffmpeg:")
+                    && !pp_arg.starts_with("sami:")
+                    && !pp_arg.starts_with("double_ffmpeg:")
+                {
+                    pp_arg = format!("ffmpeg:{}", pp_arg);
+                }
                 args.push("--postprocessor-args".to_string());
-                args.push(format!("ffmpeg:{}", trimmed));
-            } else {
-                args.push("--postprocessor-args".to_string());
-                args.push(trimmed.to_string());
+                args.push(pp_arg);
             }
         }
     }
 
+    // Privacy: Remove source metadata
+    if settings.remove_source_metadata {
+        args.push("--postprocessor-args".to_string());
+        args.push("ffmpeg:-metadata purl= -metadata description= -metadata synopsis= -metadata comment= -metadata source=".to_string());
+    }
+
+    // Hardware Acceleration (FFmpeg)
+    if settings.hardware_decoding {
+        args.push("--downloader-args".to_string());
+        args.push("ffmpeg:-hwaccel auto".to_string());
+        args.push("--postprocessor-args".to_string());
+        args.push("ffmpeg:-hwaccel auto".to_string());
+    }
+
+    // Sanitize and Add URL
+    let clean_url = sanitize_url(url);
     args.push("--".to_string());
-    args.push(url.to_string());
+    args.push(clean_url);
 
     args
+}
+
+pub fn sanitize_url(url: &str) -> String {
+    if let Ok(mut parsed) = url::Url::parse(url) {
+        let mut query: Vec<(String, String)> = parsed.query_pairs().into_owned().collect();
+
+        // 1. Blacklist for general tracking parameters
+        let blacklisted = [
+            "si",
+            "pp",
+            "list",
+            "index",
+            "feature",
+            "utm_source",
+            "utm_medium",
+            "utm_campaign",
+            "utm_term",
+            "utm_content",
+        ];
+        query.retain(|(k, _)| !blacklisted.contains(&k.as_str()));
+
+        // 2. Re-encode query
+        let mut query_str = String::new();
+        for (i, (k, v)) in query.iter().enumerate() {
+            if i > 0 {
+                query_str.push('&');
+            }
+            query_str.push_str(k);
+            query_str.push('=');
+            query_str.push_str(v);
+        }
+
+        if query_str.is_empty() {
+            parsed.set_query(None);
+        } else {
+            parsed.set_query(Some(&query_str));
+        }
+
+        parsed.to_string()
+    } else {
+        url.to_string()
+    }
 }

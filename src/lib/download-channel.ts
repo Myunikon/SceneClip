@@ -34,6 +34,7 @@ export type DownloadEvent =
             id: string;
             url: string;
             title: string | null;
+            ytdlpCommand?: string;
         };
     }
     | {
@@ -97,6 +98,7 @@ export function createDownloadChannel(
         statusDetail: string;
         filePath: string;
         totalSize: string;
+        ytdlpCommand: string;
     }>) => void
 ): Channel<DownloadEvent> {
     const channel = new Channel<DownloadEvent>();
@@ -106,7 +108,8 @@ export function createDownloadChannel(
             case 'started':
                 onProgress(message.data.id, {
                     status: 'fetching_info',
-                    statusDetail: message.data.title || 'Starting download...'
+                    statusDetail: message.data.title || 'Starting download...',
+                    ytdlpCommand: message.data.ytdlpCommand
                 });
                 break;
 

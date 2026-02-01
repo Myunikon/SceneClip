@@ -12,41 +12,59 @@ export function useFileDrop({ isOpen, onDrop }: UseFileDropProps) {
     useEffect(() => {
         if (!isOpen) return
 
-        let unlisten: (() => void) | undefined
+        let unlistenDrop: (() => void) | undefined
+        let unlistenHover: (() => void) | undefined
+        let unlistenCancel: (() => void) | undefined
 
-        const setupListener = async () => {
-            unlisten = await listen('tauri://file-drop', (event) => {
+        const setupListeners = async () => {
+            unlistenDrop = await listen('tauri://file-drop', (event) => {
                 const payload = event.payload as string[]
                 if (payload && payload.length > 0) {
                     onDrop(payload)
                 }
                 setIsDragging(false)
             })
+
+            unlistenHover = await listen('tauri://file-drop-hover', () => {
+                setIsDragging(true)
+            })
+
+            unlistenCancel = await listen('tauri://file-drop-cancelled', () => {
+                setIsDragging(false)
+            })
         }
 
-        setupListener()
+        setupListeners()
 
-        // Handle window drag events for visual feedback
-        const handleDragEnter = () => setIsDragging(true)
-        const handleDragLeave = (e: MouseEvent) => {
-            // Only clear if leaving window or strictly leaving the overlay logic if we implemented a specific overlay
-            // Ideally we check if relatedTarget is null (meaning left the window)
+        // Handle window drag events for visual feedback (Web layer)
+        const handleDragEnter = (e: DragEvent) => {
+            e.preventDefault()
+            setIsDragging(true)
+        }
+
+        const handleDragLeave = (e: DragEvent) => {
+            e.preventDefault()
+            // Only clear if leaving window
             if (e.clientX <= 0 || e.clientY <= 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight) {
                 setIsDragging(false)
             }
         }
 
-        // We also need to listen to 'tauri://file-drop-cancelled' inside Tauri usually, 
-        // but for web events:
-        window.addEventListener('dragenter', handleDragEnter)
-        window.addEventListener('dragleave', handleDragLeave)
-        // Also listen to 'drop' on window to prevent default browser behavior if needed, 
-        // though Tauri usually handles the file-drop event separatel.
+        const handleDragOver = (e: DragEvent) => {
+            e.preventDefault() // Required to allow drop
+        }
+
+        window.addEventListener('dragenter', handleDragEnter as any)
+        window.addEventListener('dragleave', handleDragLeave as any)
+        window.addEventListener('dragover', handleDragOver as any)
 
         return () => {
-            if (unlisten) unlisten()
-            window.removeEventListener('dragenter', handleDragEnter)
-            window.removeEventListener('dragleave', handleDragLeave)
+            if (unlistenDrop) unlistenDrop()
+            if (unlistenHover) unlistenHover()
+            if (unlistenCancel) unlistenCancel()
+            window.removeEventListener('dragenter', handleDragEnter as any)
+            window.removeEventListener('dragleave', handleDragLeave as any)
+            window.removeEventListener('dragover', handleDragOver as any)
         }
     }, [isOpen, onDrop])
 

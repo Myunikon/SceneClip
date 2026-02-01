@@ -1,6 +1,7 @@
 pub mod download;
 pub mod ffmpeg;
 pub mod filesystem;
+pub mod integrity;
 pub mod io;
 pub mod keyring;
 pub mod notifications;

@@ -45,6 +45,8 @@ pub struct DownloadTask {
     pub file_path: Option<String>,
     pub scheduled_time: Option<u64>,
     pub retry_count: Option<u32>,
+    pub ytdlp_command: Option<String>,
+    pub file_size: Option<String>,
     pub options: crate::ytdlp::YtDlpOptions,
 }
 
@@ -57,6 +59,7 @@ struct PersistedQueue {
 pub struct QueueState {
     pub tasks: Arc<Mutex<HashMap<String, DownloadTask>>>,
     pub queue_order: Arc<Mutex<Vec<String>>>,
+    pub abort_handles: Arc<Mutex<HashMap<String, tokio::task::AbortHandle>>>,
     pub notify: Arc<Notify>,
     pub app_handle: Option<AppHandle>, // Needed to resolve paths for auto-save
 }
@@ -66,6 +69,7 @@ impl QueueState {
         let state = Self {
             tasks: Arc::new(Mutex::new(HashMap::new())),
             queue_order: Arc::new(Mutex::new(Vec::new())),
+            abort_handles: Arc::new(Mutex::new(HashMap::new())),
             notify: Arc::new(Notify::new()),
             app_handle,
         };
@@ -171,25 +175,39 @@ impl QueueState {
         self.notify.notify_one();
     }
 
-    pub fn remove_task(&self, id: &str) -> bool {
+    pub fn remove_task(&self, id: &str) -> Option<DownloadTask> {
+        let mut removed_task: Option<DownloadTask> = None;
         let mut removed = false;
         {
             let mut tasks = self.tasks.lock().unwrap();
             let mut order = self.queue_order.lock().unwrap();
 
-            if tasks.remove(id).is_some() {
+            if let Some(task) = tasks.remove(id) {
+                removed_task = Some(task);
                 if let Some(pos) = order.iter().position(|x| *x == id) {
                     order.remove(pos);
                 }
                 removed = true;
             }
         }
+
+        // Abort if running
+        if removed {
+            let mut handles = self.abort_handles.lock().unwrap();
+            if let Some(handle) = handles.remove(id) {
+                handle.abort();
+            }
+        }
+
         if removed {
             self.save();
-            // We don't necessarily need to notify processor for removal, but consistency is good
+            // Emit update explicitly to ensure UI reflects removal immediately
+            if let Some(app) = &self.app_handle {
+                emit_queue_update(app, self);
+            }
             self.notify.notify_one();
         }
-        removed
+        removed_task
     }
 
     pub fn pause_task(&self, id: &str) -> Result<(), String> {
@@ -271,6 +289,77 @@ impl QueueState {
         }
         res
     }
+
+    pub fn cleanup_old_tasks(&self, retention_days: u32, max_items: i32) {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        let mut removed = false;
+        {
+            let mut tasks = self.tasks.lock().unwrap();
+            let mut order = self.queue_order.lock().unwrap();
+
+            // 1. Retention Days Cleanup
+            if retention_days > 0 {
+                let cutoff = now - (retention_days as u64 * 86400);
+                let to_remove: Vec<String> = tasks
+                    .iter()
+                    .filter(|(_, t)| {
+                        matches!(
+                            t.status,
+                            TaskStatus::Completed | TaskStatus::Error | TaskStatus::Stopped
+                        ) && t.added_at < cutoff
+                    })
+                    .map(|(id, _)| id.clone())
+                    .collect();
+
+                for id in to_remove {
+                    tasks.remove(&id);
+                    if let Some(pos) = order.iter().position(|x| *x == id) {
+                        order.remove(pos);
+                    }
+                    removed = true;
+                }
+            }
+
+            // 2. Max Items Cleanup
+            if max_items > 0 {
+                // Remove terminal tasks from the front if limit exceeded
+                while order.len() > max_items as usize {
+                    let mut terminal_idx = None;
+                    for (i, id) in order.iter().enumerate() {
+                        if let Some(task) = tasks.get(id) {
+                            if matches!(
+                                task.status,
+                                TaskStatus::Completed | TaskStatus::Error | TaskStatus::Stopped
+                            ) {
+                                terminal_idx = Some(i);
+                                break;
+                            }
+                        }
+                    }
+
+                    if let Some(idx) = terminal_idx {
+                        let id = order.remove(idx);
+                        tasks.remove(&id);
+                        removed = true;
+                    } else {
+                        // No more terminal tasks to remove to satisfy limit
+                        break;
+                    }
+                }
+            }
+        }
+
+        if removed {
+            self.save();
+            if let Some(app) = &self.app_handle {
+                emit_queue_update(app, self);
+            }
+        }
+    }
 }
 
 // Background Processor
@@ -280,26 +369,36 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
         let _ =
             tokio::time::timeout(std::time::Duration::from_secs(2), state.notify.notified()).await;
 
-        // 2. Fetch Concurrency Limit from Store
-        let limit = {
+        // 2. Fetch Concurrency & History Settings from Store
+        let (limit, retention_days, max_items) = {
             let mut conc = 3;
-            // Attempt to read settings.json
+            let mut days = 30;
+            let mut max = 100;
+
             if let Ok(store) = app.store("settings.json") {
-                // Keys are usually camelCase in JS store
                 if let Some(val) = store.get("concurrentDownloads") {
                     if let Some(v) = val.as_u64() {
                         conc = v as usize;
                     }
                 }
+                if let Some(val) = store.get("historyRetentionDays") {
+                    if let Some(v) = val.as_u64() {
+                        days = v as u32;
+                    }
+                }
+                if let Some(val) = store.get("maxHistoryItems") {
+                    if let Some(v) = val.as_i64() {
+                        max = v as i32;
+                    }
+                }
             }
-            if conc == 0 {
-                3
-            } else {
-                conc
-            }
+            (if conc == 0 { 3 } else { conc }, days, max)
         };
 
-        // 3. Check for eligible tasks
+        // 3. Perform Auto-Cleanup
+        state.cleanup_old_tasks(retention_days, max_items);
+
+        // 4. Check for eligible tasks
         let next_task_id = {
             let tasks = state.tasks.lock().unwrap();
             let order = state.queue_order.lock().unwrap();
@@ -355,7 +454,7 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
             };
 
             if let Some(task) = task_data {
-                tokio::spawn(async move {
+                let join_handle = tokio::spawn(async move {
                     // Start download logic here
                     // ... (existing logs) ...
 
@@ -394,11 +493,20 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                     emit_queue_update(&app_monitor, &state_monitor);
                                 }
                                 crate::commands::download::DownloadEvent::Started {
-                                    title, ..
+                                    title,
+                                    ytdlp_command,
+                                    file_path,
+                                    ..
                                 } => {
                                     state_monitor.update_task(&task_id, |t| {
                                         if let Some(ti) = title {
                                             t.title = ti;
+                                        }
+                                        if let Some(cmd) = ytdlp_command {
+                                            t.ytdlp_command = Some(cmd);
+                                        }
+                                        if let Some(fp) = file_path {
+                                            t.file_path = Some(fp);
                                         }
                                         t.status = TaskStatus::Downloading;
                                     });
@@ -432,6 +540,7 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                         t.status = TaskStatus::Completed;
                                         t.progress = 100.0;
                                         t.file_path = Some(file_path.clone());
+                                        t.file_size = t.total_size.clone(); // Capture the final total size
                                         t.status_detail = Some("Done".to_string());
                                         t.scheduled_time = None; // ensure no retry
                                     });
@@ -516,7 +625,17 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
 
                     // Ensure monitor finishes
                     let _ = monitor_handle.await;
+
+                    // Cleanup handle on finish
+                    state_cloned.abort_handles.lock().unwrap().remove(&task.id);
                 });
+
+                // Store AbortHandle
+                state
+                    .abort_handles
+                    .lock()
+                    .unwrap()
+                    .insert(id, join_handle.abort_handle());
             }
         }
     }

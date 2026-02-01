@@ -14,7 +14,7 @@ import { useTheme } from '../hooks/useTheme'
 import { useNetworkStatus } from '../hooks/useNetworkStatus'
 import { useDeepLinks } from '../hooks/useDeepLinks'
 import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts'
-import { AddDialog } from '../components/dialogs'
+import { AddDialog, AddDialogHandle } from '../components/dialogs'
 import { Onboarding } from '../components/providers'
 import { ClipboardListener } from '../components/providers'
 import { GuideModal, GuideModalRef } from '../components/dialogs'
@@ -46,7 +46,7 @@ function RootComponent() {
     const [showShortcuts, setShowShortcuts] = useState(false)
 
     // Dialog Refs
-    const addDialogRef = useRef<any>(null)
+    const addDialogRef = useRef<AddDialogHandle>(null)
     const guideModalRef = useRef<GuideModalRef>(null)
 
     // Custom Hooks Integration
@@ -63,7 +63,6 @@ function RootComponent() {
     const [clipboardEnd, setClipboardEnd] = useState<number | undefined>(undefined)
 
     const handleNewTask = useCallback(async (url?: string, cookies?: string, userAgent?: string, start?: number, end?: number) => {
-        // 1. Set State and Open Dialog
         if (url) {
             setClipboardUrl(url)
             setClipboardCookies(cookies)
@@ -77,11 +76,13 @@ function RootComponent() {
             setClipboardStart(undefined)
             setClipboardEnd(undefined)
         }
+        // Small delay to ensure state is set before dialog opens
         setTimeout(() => addDialogRef.current?.showModal(), 50)
     }, [])
 
     const addTask = (url: string, opts: any) => useAppStore.getState().addTask(url, opts)
     const openDialog = () => handleNewTask()
+
 
     /* -------------------------------------------------------------------------- */
     /* GLOBAL EVENT LISTENERS                                                     */
@@ -291,7 +292,7 @@ function RootComponent() {
                     </div>
                 </div>
 
-                <ClipboardListener onNotificationClick={handleNewTask} />
+                <ClipboardListener onFound={handleNewTask} onNotificationClick={handleNewTask} />
 
                 <AddDialog
                     ref={addDialogRef}

@@ -33,7 +33,7 @@ export function FilenameSettings({
                             </label>
                             <input
                                 className="w-full p-3.5 rounded-xl bg-white dark:bg-black/20 border border-border dark:border-white/10 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary/50 focus:ring-inset outline-none transition-all placeholder:text-muted-foreground/50 font-medium text-foreground shadow-sm"
-                                placeholder={meta?.title ? meta.title.replace(/[\\/:*?"<>|]/g, '_') : t('dialog.filename_placeholder')}
+                                placeholder={t('dialog.filename_placeholder') || "Custom filename (No extension)"}
                                 value={options.customFilename}
                                 onChange={e => setters.setCustomFilename(e.target.value)}
                             />

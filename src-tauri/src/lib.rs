@@ -1,7 +1,7 @@
 use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
-    Manager,
+    Emitter, Manager,
 };
 
 mod commands;
@@ -53,7 +53,6 @@ pub fn run() {
             commands::system::validate_binary,
             commands::system::open_log_dir,
             commands::process::suspend_process,
-            commands::process::suspend_process,
             commands::process::resume_process,
             commands::process::kill_process_tree,
             commands::power::prevent_suspend,
@@ -64,7 +63,6 @@ pub fn run() {
             commands::keyring::delete_credential,
             commands::download::download_with_channel,
             commands::download::get_download_args,
-            commands::download::get_download_args,
             commands::download::cancel_download,
             commands::download::get_video_metadata,
             commands::filesystem::get_unique_filepath,
@@ -72,8 +70,6 @@ pub fn run() {
             commands::ffmpeg::compress_media,
             commands::ffmpeg::split_media_chapters,
             commands::settings::validate_path,
-            commands::settings::validate_url,
-            commands::settings::is_youtube_url,
             commands::settings::validate_url,
             commands::settings::is_youtube_url,
             commands::queue::add_to_queue,
@@ -85,6 +81,11 @@ pub fn run() {
             commands::queue::get_queue_state,
             commands::updater::check_updates,
             commands::updater::update_binary,
+            commands::updater::cancel_update,
+            commands::updater::get_binary_version_local,
+            commands::updater::debug_binary_paths,
+            commands::updater::install_app_update,
+            commands::integrity::verify_binary_integrity,
             commands::notifications::notify_background,
             commands::io::parse_batch_file,
         ])
@@ -138,7 +139,14 @@ pub fn run() {
 
                 // --- 1. START MINIMIZED LOGIC ---
                 use tauri_plugin_store::StoreExt;
-                let store = app.store("settings.json")?; // Use ? to propagate error if store fails
+                let store = match app.store("settings.json") {
+                    Ok(s) => s,
+                    Err(e) => {
+                        log::error!("Failed to load settings store at startup: {}", e);
+                        // Prevent crash, continue with default window state (shown)
+                        return Ok(());
+                    }
+                };
 
                 // Check 'startMinimized' (default false)
                 let start_minimized = store
@@ -179,8 +187,48 @@ pub fn run() {
 
             server::init(app.handle().clone());
 
+            // --- CLIPBOARD LISTENER (Background) ---
+            let app_handle_cb = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                let mut last_clipboard = String::new();
+                loop {
+                    tokio::time::sleep(std::time::Duration::from_millis(1500)).await;
+
+                    use tauri_plugin_clipboard_manager::ClipboardExt;
+                    if let Ok(content) = app_handle_cb.clipboard().read_text() {
+                        let text = content.trim();
+                        if !text.is_empty() && text != last_clipboard {
+                            last_clipboard = text.to_string();
+
+                            // 1. Sanitize (Remove si, pp, etc)
+                            let sanitized = crate::ytdlp::sanitize_url(text);
+
+                            // 2. Validate (Basic Link check)
+                            if sanitized.starts_with("http")
+                                && (sanitized.contains("youtube.com")
+                                    || sanitized.contains("youtu.be")
+                                    || sanitized.contains("tiktok.com")
+                                    || sanitized.contains("instagram.com")
+                                    || sanitized.contains("x.com")
+                                    || sanitized.contains("twitter.com")
+                                    || sanitized.contains("vimeo.com")
+                                    || sanitized.contains("facebook.com"))
+                            {
+                                log::info!("Clipboard link detected & sanitized: {}", sanitized);
+                                let _ = app_handle_cb.emit("link-detected", sanitized);
+                            }
+                        }
+                    }
+                }
+            });
+
             #[cfg(target_os = "windows")]
             let _ = ensure_windows_shortcut(app);
+
+            // Cleanup local binaries to force use of bundled ones (except yt-dlp)
+            let _ = cleanup_local_binaries(app);
+            // Cleanup updater temp files (portable update leftovers)
+            let _ = cleanup_updater_temp_files(app);
 
             Ok(())
         })
@@ -249,5 +297,54 @@ fn ensure_windows_shortcut(_app: &tauri::App) -> Result<(), Box<dyn std::error::
         log::info!("Shortcut created successfully.");
     }
 
+    Ok(())
+}
+
+fn cleanup_local_binaries(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    let app_local_data = app.path().app_local_data_dir()?;
+    if !app_local_data.exists() {
+        return Ok(());
+    }
+
+    // LIST OF BINARIES TO FORCE CLEANUP (Everything except yt-dlp)
+    let binaries_to_remove = ["ffmpeg", "aria2c", "rsgain", "deno", "ffprobe"];
+
+    for binary in binaries_to_remove {
+        #[cfg(target_os = "windows")]
+        let filename = format!("{}.exe", binary);
+        #[cfg(not(target_os = "windows"))]
+        let filename = binary;
+
+        let path = app_local_data.join(filename);
+        if path.exists() {
+            log::info!(
+                "Removing local binary override to enforce bundled version: {:?}",
+                path
+            );
+            if let Err(e) = std::fs::remove_file(&path) {
+                log::warn!(
+                    "Could not remove local binary {:?}: {}. It may be in use.",
+                    path,
+                    e
+                );
+            }
+        }
+    }
+    Ok(())
+}
+
+fn cleanup_updater_temp_files(_app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(current_exe) = std::env::current_exe() {
+            let old_exe = current_exe.with_extension("old");
+            // Also check for other patterns if needed, but .old is what we use.
+            if old_exe.exists() {
+                log::info!("Cleaning up old update file: {:?}", old_exe);
+                // Best effort removal
+                let _ = std::fs::remove_file(old_exe);
+            }
+        }
+    }
     Ok(())
 }

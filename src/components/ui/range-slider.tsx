@@ -75,7 +75,7 @@ export function RangeSlider({ duration, start, end, onChange, disabled }: RangeS
                 {/* Thumb Start */}
                 <div
                     className={cn(
-                        "absolute top-1/2 -translate-y-1/2 -ml-2.5 w-5 h-5 bg-background border-2 border-primary rounded-full shadow-lg cursor-grab active:cursor-grabbing z-20 flex items-center justify-center transition-transform hover:scale-110",
+                        "group absolute top-1/2 -translate-y-1/2 -ml-2.5 w-5 h-5 bg-background border-2 border-primary rounded-full shadow-lg cursor-grab active:cursor-grabbing z-20 flex items-center justify-center transition-transform hover:scale-110",
                         dragging === 'start' && "scale-110 ring-4 ring-primary/20"
                     )}
                     style={{ left: `${startPct}%` }}
@@ -95,7 +95,7 @@ export function RangeSlider({ duration, start, end, onChange, disabled }: RangeS
                 {/* Thumb End */}
                 <div
                     className={cn(
-                        "absolute top-1/2 -translate-y-1/2 -ml-2.5 w-5 h-5 bg-background border-2 border-primary rounded-full shadow-lg cursor-grab active:cursor-grabbing z-20 flex items-center justify-center transition-transform hover:scale-110",
+                        "group absolute top-1/2 -translate-y-1/2 -ml-2.5 w-5 h-5 bg-background border-2 border-primary rounded-full shadow-lg cursor-grab active:cursor-grabbing z-20 flex items-center justify-center transition-transform hover:scale-110",
                         dragging === 'end' && "scale-110 ring-4 ring-primary/20"
                     )}
                     style={{ left: `${endPct}%` }}

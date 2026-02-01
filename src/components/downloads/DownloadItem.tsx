@@ -174,7 +174,7 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
 
                     {/* Progress Bar (Always visible if active) */}
                     {['downloading', 'paused', 'pending', 'fetching_info', 'processing'].includes(task.status) && (
-                        <div className="h-1 bg-secondary/80 w-full max-w-md rounded-full overflow-hidden">
+                        <div className="h-1 bg-secondary/80 w-full rounded-full overflow-hidden">
                             {/* Indeterminate shimmer for processing or null progress */}
                             {(task.status === 'processing' || task.progress === null) ? (
                                 <div

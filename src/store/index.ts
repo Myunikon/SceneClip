@@ -11,7 +11,7 @@ import { tauriStorage } from './storage'
 
 export type { DownloadTask, AppState, CompressionOptions } from './slices/types'
 
-// Helper for robust settings merging (Value preservation)
+
 const isObject = (item: any) => item && typeof item === 'object' && !Array.isArray(item);
 
 const deepMerge = (target: any, source: any): any => {
@@ -45,24 +45,34 @@ export const useAppStore = create<AppState>()(
       }),
       {
         name: 'app-storage-v5-clean',
-        version: 7, // Bumped to 7 for robust deep merging
+        version: 8, // Bump to 8 to clear stale update flags
         storage: createJSONStorage(() => tauriStorage),
         partialize: (state) => ({
           tasks: state.tasks,
-          settings: state.settings, // We persist the whole settings object
+          settings: state.settings,
           gpuType: state.gpuType,
         }),
         // Migration handles structural changes between versions
         migrate: (persistedState: unknown, version: number) => {
+          let state = persistedState as Record<string, unknown>;
+
           if (version < 6) {
             console.log('Migrating store to version 6 (Applying baseline defaults)');
-            const state = persistedState as Record<string, unknown>;
+            state = { ...state, settings: DEFAULT_SETTINGS };
+          }
+
+          if (version < 8) {
+            console.log('Migrating to v8: Clearing stale update status');
+            // Strip out any accidental SystemSlice persistence
+            // We only want to keep tasks, settings, and gpuType
             return {
-              ...state,
-              settings: DEFAULT_SETTINGS,
+              tasks: state.tasks,
+              settings: state.settings,
+              gpuType: state.gpuType
             };
           }
-          return persistedState;
+
+          return state;
         },
         // Merge handles combining defaults with persisted user data
         merge: (persistedState, currentState) => {

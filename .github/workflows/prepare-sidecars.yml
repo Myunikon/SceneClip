@@ -30,6 +30,12 @@ jobs:
       - name: Download All Binaries (Windows x64)
         run: node scripts/setup-binaries.js --target win-x64
 
+      - name: Download All Binaries (Windows ARM64)
+        run: node scripts/setup-binaries.js --target win-arm64
+
+      - name: Download All Binaries (Windows x86)
+        run: node scripts/setup-binaries.js --target win-x86
+
       - name: Download All Binaries (macOS x64)
         run: node scripts/setup-binaries.js --target mac-x64
 
@@ -40,7 +46,15 @@ jobs:
         run: node scripts/setup-binaries.js --target linux-x64
 
       - name: List Gathered Binaries
-        run: ls -lh src-tauri/bin/
+        run: |
+          ls -lh src-tauri/bin/
+          echo "Verifying coverage for all 6 required binaries..."
+          for arch in x86_64-pc-windows-msvc aarch64-pc-windows-msvc i686-pc-windows-msvc x86_64-apple-darwin aarch64-apple-darwin x86_64-unknown-linux-gnu; do
+            echo "Checking $arch..."
+            for bin in ffmpeg ffprobe yt-dlp aria2c deno; do
+              ls src-tauri/bin/${bin}-${arch}* || echo "!! MISSING: ${bin} for ${arch}"
+            done
+          done
 
       - name: Create 'binaries' Tag Release
         uses: softprops/action-gh-release@v1

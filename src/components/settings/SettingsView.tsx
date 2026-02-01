@@ -71,7 +71,7 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
     const activeTabLabel = tabs.find(t => t.id === activeTab)?.label
 
     return (
-        <div className="h-full flex flex-col md:flex-row overflow-hidden bg-background">
+        <div className="h-full flex flex-row overflow-hidden bg-background cq-settings-view">
             {/* Easter Egg Modal Overlay */}
             {showEasterEgg && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 text-center">
@@ -112,52 +112,32 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
                 </div>
             )}
 
-            {/* MOBILE: Horizontal Scroll Navigation */}
-            <div className="md:hidden flex overflow-x-auto pb-2 gap-2 scrollbar-hide p-2 snap-x border-b border-border/40 bg-secondary/10 shrink-0">
-                {tabs.map(tab => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={cn(
-                            "relative flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full z-10 whitespace-nowrap snap-start transition-all",
-                            activeTab === tab.id
-                                ? "text-background font-bold shadow-sm"
-                                : "bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                        )}
-                    >
-                        {activeTab === tab.id && (
-                            <motion.div
-                                layoutId="settings-pill-mobile"
-                                className="absolute inset-0 bg-foreground rounded-full -z-10 shadow-md"
-                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                            />
-                        )}
-                        <tab.icon className={cn("w-4 h-4 relative z-10 shrink-0", activeTab === tab.id ? "text-background" : "")} />
-                        <span className="relative z-10">{tab.label}</span>
-                    </button>
-                ))}
-            </div>
 
-            {/* DESKTOP: Native Sidebar */}
-            <div className="hidden md:flex flex-col w-64 bg-secondary/10 border-r border-border/40 shrink-0 backdrop-blur-xl pt-6 px-3">
-                <div className="px-3 mb-4">
-                    <h2 className="text-xl font-bold tracking-tight text-foreground/80">{t('settings.title') || "Settings"}</h2>
+
+            {/* FLUID ADAPTIVE SIDEBAR: Space-aware resizing */}
+            <div className="flex flex-col flex-shrink-0 flex-grow-0 sidebar-container cq-sidebar bg-secondary/10 border-r border-border/40 backdrop-blur-xl pt-6 px-3">
+                <div className="px-3 mb-6 sidebar-title">
+                    <h2 className="text-xl font-bold tracking-tight text-foreground/80 truncate">{t('settings.title') || "Settings"}</h2>
                 </div>
 
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1.5">
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={cn(
-                                "relative flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-left transition-colors duration-200",
+                                "relative flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl text-left transition-all duration-200 group sidebar-button",
                                 activeTab === tab.id
-                                    ? "bg-primary/10 text-primary"
+                                    ? "bg-primary/10 text-primary shadow-sm"
                                     : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground"
                             )}
+                            title={tab.label}
                         >
-                            <tab.icon className={cn("w-4 h-4 shrink-0 opacity-70", activeTab === tab.id ? "opacity-100" : "")} />
-                            <span>{tab.label}</span>
+                            <tab.icon className={cn(
+                                "w-5 h-5 shrink-0 transition-transform group-hover:scale-110",
+                                activeTab === tab.id ? "opacity-100" : "opacity-70"
+                            )} />
+                            <span className="sidebar-label truncate">{tab.label}</span>
                         </button>
                     ))}
                 </div>
@@ -166,7 +146,7 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col h-full overflow-hidden relative">
                 <div className={cn(
-                    "hidden md:flex items-center px-8 py-4 border-b transition-all duration-500 z-30 bg-background/40 backdrop-blur-xl absolute top-0 left-0 right-0 supports-[backdrop-filter]:bg-background/20",
+                    "flex items-center px-8 py-4 border-b transition-all duration-500 z-30 bg-background/40 backdrop-blur-xl absolute top-0 left-0 right-0 supports-[backdrop-filter]:bg-background/20",
                     isScrolled ? "border-border/40 h-14 shadow-sm translate-y-0 opacity-100" : "border-transparent h-14 -translate-y-full opacity-0 pointer-events-none"
                 )}>
                     <span className="font-semibold">{activeTabLabel}</span>
@@ -175,11 +155,11 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
                 <div
                     ref={scrollRef}
                     onScroll={handleScroll}
-                    className="flex-1 overflow-y-auto px-4 md:px-8 pb-20 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20"
+                    className="flex-1 overflow-y-auto px-4 sm:px-[clamp(1rem,5vw,2rem)] pb-20 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20"
                 >
                     <div className="max-w-4xl mx-auto w-full">
-                        <div className="pt-8 pb-6 md:pt-10 md:pb-8">
-                            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        <div className="pt-8 pb-6 sm:pt-10 sm:pb-8">
+                            <h1 className="text-3xl sm:text-[clamp(1.875rem,5vw,2.25rem)] font-bold tracking-tight text-foreground animate-in fade-in slide-in-from-bottom-2 duration-500">
                                 {activeTabLabel}
                             </h1>
                         </div>

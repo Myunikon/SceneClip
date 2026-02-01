@@ -60,7 +60,18 @@ export function MediaSettings({ settings, setSetting }: MediaSettingsProps) {
 
     const handleDeletePreset = (id: string) => {
         const current = settings.postProcessorPresets || []
+        const currentEnabled = settings.enabledPresetIds || []
         setSetting('postProcessorPresets', current.filter(p => p.id !== id))
+        setSetting('enabledPresetIds', currentEnabled.filter(eid => eid !== id))
+    }
+
+    const toggleGlobalPreset = (id: string) => {
+        const current = settings.enabledPresetIds || []
+        if (current.includes(id)) {
+            setSetting('enabledPresetIds', current.filter(eid => eid !== id))
+        } else {
+            setSetting('enabledPresetIds', [...current, id])
+        }
     }
 
     return (
@@ -178,6 +189,16 @@ export function MediaSettings({ settings, setSetting }: MediaSettingsProps) {
                             onCheckedChange={(val) => setSetting('useMetadataEnhancer', val)}
                         />
                     </SettingItem>
+
+                    <SettingItem
+                        title={t('settings.quality.privacy_scrubbing') || "Privacy Scrubbing"}
+                        description={t('settings.quality.privacy_scrubbing_desc') || "Remove source URL, description, and comments from downloaded files."}
+                    >
+                        <Switch
+                            checked={settings.removeSourceMetadata}
+                            onCheckedChange={(val) => setSetting('removeSourceMetadata', val)}
+                        />
+                    </SettingItem>
                 </div>
 
                 <div className="mt-4 p-3 rounded-lg bg-secondary/50 border border-border/50 flex gap-3">
@@ -238,13 +259,28 @@ export function MediaSettings({ settings, setSetting }: MediaSettingsProps) {
                                     {preset.args}
                                 </code>
                             </div>
-                            <button
-                                onClick={() => handleDeletePreset(preset.id)}
-                                className="opacity-0 group-hover:opacity-100 p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
-                                title={t('settings.quality.presets.delete_tooltip')}
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => toggleGlobalPreset(preset.id)}
+                                    className={cn(
+                                        "p-2 rounded-lg transition-all border",
+                                        settings.enabledPresetIds?.includes(preset.id)
+                                            ? "bg-primary/20 border-primary/50 text-primary shadow-[0_0_10px_rgba(var(--primary),0.2)]"
+                                            : "border-border/40 text-muted-foreground hover:border-border/80 hover:bg-secondary/50"
+                                    )}
+                                    title={settings.enabledPresetIds?.includes(preset.id) ? "Globally Enabled" : "Enable Globally"}
+                                >
+                                    <Check className={cn("w-4 h-4 transition-transform", settings.enabledPresetIds?.includes(preset.id) ? "scale-110" : "scale-90 opacity-40")} />
+                                </button>
+
+                                <button
+                                    onClick={() => handleDeletePreset(preset.id)}
+                                    className="opacity-0 group-hover:opacity-100 p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                                    title={t('settings.quality.presets.delete_tooltip')}
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
                         </div>
                     ))}
                 </div>

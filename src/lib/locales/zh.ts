@@ -159,6 +159,8 @@ export const zh = {
             audio_normalization_desc: "EBU R128 标准 (-14 LUFS)",
             metadata_warning_title: "注意:",
             metadata_warning_desc: "当使用 <1>剪辑/Trim</1> 功能时，这些选项会自动禁用，以防止出现视频时长错误（例如 10 秒的片段显示为 1 小时）。",
+            privacy_scrubbing: "隐私清理",
+            privacy_scrubbing_desc: "从下载的文件中删除源 URL、描述和注释，以保护隐私。",
             presets: {
                 title: "后处理预设",
                 desc: "管理自定义 FFmpeg 参数预设",
@@ -212,7 +214,7 @@ export const zh = {
             aria2c_active: "Aria2c 已激活。原生 '并行分片' 设置已禁用以防止冲突。",
 
             manual_config: "手动配置模式",
-            chunks_label: "{n} 分段",
+            chunks_label: "{{n}} 分段",
             perf_profile: "性能配置文件",
             custom: "自定义",
 
@@ -266,7 +268,7 @@ export const zh = {
             alerts: {
                 export_success: "历史记录导出成功！",
                 export_fail: "导出历史记录失败：",
-                import_success: "成功导入 {n} 个任务！",
+                import_success: "成功导入 {{n}} 个任务！",
 
                 invalid_backup: "无效的备份文件格式",
                 confirm_reset: "您确定要将所有设置重置为默认值吗？",
@@ -346,7 +348,7 @@ export const zh = {
             update_btn: "检查更新",
             updating: "更新中...",
             binary_versions: "二进制版本",
-            check_updates: "从 GitHub 检查更新",
+            check_updates: "检查更新",
             current_ver: "当前",
             not_checked: "未检查",
             unknown: "未知",
@@ -529,13 +531,13 @@ export const zh = {
             trim_required: "需要裁剪",
             max_duration: "最长30秒",
             trim_desc: "GIF格式需要裁剪。请选择短片段（最长30秒）以获得最佳效果。",
-            too_long: "片段太长！GIF最长{max}秒。当前：{current}秒"
+            too_long: "片段太长！GIF最长{{max}}秒。当前：{{current}}秒"
         },
 
         // Clip section
         clip: {
-            duration: "片段时长：{current}秒",
-            duration_max: "片段时长：{current}秒 / 最长{max}秒",
+            duration: "片段时长：{{current}}秒",
+            duration_max: "片段时长：{{current}}秒 / 最长{{max}}秒",
             to: "至"
         },
 
@@ -548,7 +550,7 @@ export const zh = {
             vp9: "YouTube 标准 (4K)",
             av1: "AV1 节省流量 (下一代)",
             warning_title: "需要重新编码",
-            warning_desc: "源文件不包含 {codec}。质量可能会略有下降，下载时间会变长。"
+            warning_desc: "源文件不包含 {{codec}}。质量可能会略有下降，下载时间会变长。"
         },
 
         // 新的 UI 部分
@@ -590,9 +592,9 @@ export const zh = {
             desc_wav: "未压缩 (编辑用)",
             desc: "比特率越高，声音细节越清晰。",
             upscale_title: "升频警告",
-            upscale_desc: "源文件已压缩 (有损)。转换为 {fmt} 会增加文件大小但不会提高质量。",
+            upscale_desc: "源文件已压缩 (有损)。转换为 {{fmt}} 会增加文件大小但不会提高质量。",
             reencode_title: "重新编码",
-            reencode_desc: "需要转换为 {fmt}。"
+            reencode_desc: "需要转换为 {{fmt}}。"
         },
         compress: {
             title_video: "导出视频",
@@ -654,7 +656,7 @@ export const zh = {
             quality_low: "低"
         },
         logic_warnings: {
-            mov_reencode: "使用 <strong>{codec}</strong> 的 <strong>.MOV</strong> 格式需要重新编码。这可能需要更长的时间。"
+            mov_reencode: "使用 <strong>{{codec}}</strong> 的 <strong>.MOV</strong> 格式需要重新编码。这可能需要更长的时间。"
         },
 
         restart: "重新开始",
@@ -699,7 +701,7 @@ export const zh = {
         sort_asc: "最早优先",
         sort_desc: "最新优先",
         scan_files: "扫描文件",
-        scan_missing_files: "扫描完成: 发现 {count} 个丢失文件",
+        scan_missing_files: "扫描完成: 发现 {{count}} 个丢失文件",
         scan_healthy_files: "扫描完成: 所有文件完好",
         recover: "恢复文件",
         find_on_disk: "在磁盘上查找",
@@ -809,7 +811,7 @@ export const zh = {
         available: "可用"
     },
     errors: {
-        system_action: "系统操作失败: {action}",
+        system_action: "系统操作失败: {{action}}",
         listener_attach: "无法绑定下载监听器",
         binary_validation: "程序验证失败",
         update_check: "检查更新失败",
@@ -931,7 +933,7 @@ export const zh = {
         copy: "复制",
         copy_line: "复制行",
         ready: "系统就绪。等待任务...",
-        no_logs: "未找到 {filter} 日志。"
+        no_logs: "未找到 {{filter}} 日志。"
     },
 
     // ETA Human-Readable Translations (i18next pluralization)

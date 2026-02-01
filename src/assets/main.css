@@ -142,6 +142,314 @@
 
 }
 
+@layer utilities {
+  .cq-settings-view {
+    container-type: inline-size;
+    container-name: settings-view;
+  }
+
+  /* Snappy Sidebar Width */
+  .sidebar-container {
+    width: 256px;
+    /* Base width */
+    transition: width 0.3s ease-in-out;
+  }
+
+  @container settings-view (max-width: 850px) {
+    .sidebar-container {
+      width: 64px !important;
+    }
+  }
+
+  .cq-sidebar {
+    container-type: inline-size;
+    container-name: sidebar;
+  }
+
+  @container sidebar (max-width: 180px) {
+    .sidebar-label {
+      display: none !important;
+      transition: none !important;
+    }
+
+    .sidebar-title {
+      display: none !important;
+      transition: none !important;
+    }
+
+    .sidebar-button {
+      justify-content: center !important;
+    }
+  }
+
+  @container sidebar (min-width: 181px) {
+    .sidebar-label {
+      display: inline !important;
+    }
+
+    .sidebar-title {
+      display: block !important;
+    }
+
+    .sidebar-button {
+      justify-content: flex-start !important;
+    }
+  }
+
+  .header-label,
+  .header-new-btn-label,
+  .header-branding-text,
+  .header-guide-btn,
+  .header-shortcut-btn {
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+      max-width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+      margin 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+      padding 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    display: inline-block;
+    white-space: nowrap;
+  }
+
+  .header-label,
+  .header-new-btn-label,
+  .header-branding-text {
+    max-width: 500px;
+    /* High enough to contain content */
+  }
+
+  .header-nav-item {
+    transition: padding 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      gap 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      background-color 0.2s ease;
+    flex-shrink: 0 !important;
+    padding-left: clamp(0.5rem, 2cqw, 1.25rem) !important;
+    padding-right: clamp(0.5rem, 2cqw, 1.25rem) !important;
+    gap: clamp(0rem, 1.5cqw, 0.5rem) !important;
+  }
+
+  .cq-header {
+    container-type: inline-size;
+    container-name: header;
+    padding-left: clamp(1rem, 4cqw, 2rem) !important;
+    padding-right: clamp(1rem, 4cqw, 2rem) !important;
+    display: grid !important;
+    grid-template-columns: minmax(auto, 1fr) auto minmax(auto, 1fr) !important;
+    align-items: center !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    gap: 1.5rem !important;
+  }
+
+  .header-branding,
+  .header-actions-container {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 0;
+  }
+
+  .header-branding {
+    justify-self: start;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: 400px;
+  }
+
+  .header-actions-container {
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    max-width: 400px;
+  }
+
+  /* Breakpoint 1: Hide navigation labels */
+  @container header (max-width: 1050px) {
+    .header-label {
+      opacity: 0;
+      max-width: 0;
+      pointer-events: none;
+      transform: translateX(-15px);
+      margin: 0 !important;
+    }
+
+    .header-nav-item {
+      gap: 0 !important;
+    }
+
+    .cq-header {
+      gap: 1rem !important;
+    }
+  }
+
+  /* Breakpoint 2: Hide New Download label */
+  @container header (max-width: 900px) {
+    .header-new-btn-label {
+      opacity: 0;
+      max-width: 0;
+      pointer-events: none;
+      transform: translateX(15px);
+      margin: 0 !important;
+    }
+
+    .header-new-btn {
+      padding: 0.6rem !important;
+      gap: 0 !important;
+      border-radius: 9999px !important;
+      min-width: 40px;
+    }
+
+    .header-actions-container {
+      max-width: 150px;
+      /* Tighter when labels are gone */
+    }
+  }
+
+  /* Breakpoint 3: Hide branding text */
+  @container header (max-width: 850px) {
+    .header-branding-text {
+      opacity: 0;
+      max-width: 0;
+      pointer-events: none;
+      transform: translateX(-15px);
+      margin: 0 !important;
+    }
+
+    .header-branding {
+      gap: 0;
+      max-width: 48px;
+      /* Compact branding column */
+    }
+
+    .cq-header {
+      /* Less "spring" on columns to centralize better without giant voids */
+      grid-template-columns: auto 1fr auto !important;
+      gap: 0.75rem !important;
+    }
+
+    .header-actions-container {
+      justify-self: end;
+    }
+  }
+
+  /* Breakpoint 4: Hide Guide button */
+  @container header (max-width: 550px) {
+    .header-guide-btn {
+      opacity: 0;
+      max-width: 0;
+      pointer-events: none;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+  }
+
+  /* Breakpoint 5: Hide Shortcut button */
+  @container header (max-width: 480px) {
+    .header-shortcut-btn {
+      opacity: 0;
+      max-width: 0;
+      pointer-events: none;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+  }
+
+  /* Breakpoint 6: Hide branding logo entirely for absolute minimum width */
+  @container header (max-width: 400px) {
+    .header-branding {
+      opacity: 0;
+      max-width: 0;
+      pointer-events: none;
+    }
+
+    .cq-header {
+      padding-left: 0.75rem !important;
+      padding-right: 0.75rem !important;
+      grid-template-columns: 0px auto 1fr !important;
+      gap: 0.5rem !important;
+    }
+  }
+
+  .header-new-btn-icon {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+  }
+
+  .cq-dialog {
+    container-type: inline-size;
+    container-name: dialog;
+  }
+
+  /* Narrow/Stacked Mode: Unified Scroll */
+  @container dialog (max-width: 800px) {
+    .dialog-split {
+      flex-direction: column !important;
+      overflow-y: auto !important;
+    }
+
+    .panel-left,
+    .panel-right {
+      width: 100% !important;
+      border-right: none !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+      overflow-y: visible !important;
+    }
+  }
+
+  /* Wide Mode: Independent Scroll */
+  @container dialog (min-width: 801px) {
+    .dialog-split {
+      flex-direction: row !important;
+      overflow-y: hidden !important;
+      height: 100% !important;
+    }
+
+    .panel-left {
+      height: 100% !important;
+      overflow-y: hidden !important;
+      /* Locked/Fixed */
+    }
+
+    .panel-right {
+      height: 100% !important;
+      overflow-y: auto !important;
+      /* Scrollable */
+      min-width: 25rem !important;
+    }
+  }
+
+  .cq-footer {
+    container-type: inline-size;
+    container-name: footer;
+  }
+
+  @container footer (max-width: 600px) {
+    .footer-label {
+      display: none;
+    }
+  }
+
+  .cq-history {
+    container-type: inline-size;
+    container-name: history;
+  }
+
+  @container history (max-width: 640px) {
+    .history-controls-row {
+      flex-direction: column-reverse !important;
+      align-items: stretch !important;
+    }
+
+    .history-search-container {
+      width: 100% !important;
+      max-width: none !important;
+    }
+
+    .history-segmented-container {
+      width: 100% !important;
+    }
+  }
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -307,6 +615,7 @@ body.low-perf-mode [class*="animate-["] {
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }

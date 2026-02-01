@@ -33,7 +33,7 @@ export function useExportForm(mediaType: 'video' | 'audio' | 'image') {
     // Form State
     const [crf, setCrf] = useState(23)
     const [resolution, setResolution] = useState('1080')
-    const [encoder] = useState<EncoderType>('auto')
+    const [encoder, setEncoder] = useState<EncoderType>('auto')
     const [speedPreset, setSpeedPreset] = useState('medium')
     const [audioBitrate, setAudioBitrate] = useState('128k')
 
@@ -61,6 +61,7 @@ export function useExportForm(mediaType: 'video' | 'audio' | 'image') {
         if (key === 'resolution') setResolution(value)
         if (key === 'speedPreset') setSpeedPreset(value)
         if (key === 'audioBitrate') setAudioBitrate(value)
+        if (key === 'encoder') setEncoder(value)
     }
 
     return {
@@ -80,6 +81,7 @@ export function useExportForm(mediaType: 'video' | 'audio' | 'image') {
         setResolution: (v: string) => updateManual('resolution', v),
         setSpeedPreset: (v: string) => updateManual('speedPreset', v),
         setAudioBitrate: (v: string) => updateManual('audioBitrate', v),
+        setEncoder: (v: EncoderType) => updateManual('encoder', v),
 
         // raw setters if needed (e.g. for simple toggles not affecting preset)
         toggleAdvanced: () => setIsAdvanced(prev => !prev)

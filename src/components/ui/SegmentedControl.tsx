@@ -1,5 +1,5 @@
 import { motion } from "framer-motion"
-import { ComponentType } from "react"
+import { ComponentType, useId } from "react"
 import { cn } from "../../lib/utils"
 
 interface Option {
@@ -16,6 +16,8 @@ interface SegmentedControlProps {
 }
 
 export function SegmentedControl({ options, value, onChange, className }: SegmentedControlProps) {
+    const instanceId = useId()
+
     return (
         <div className={cn("flex p-1 bg-secondary/40 backdrop-blur-md rounded-lg relative border border-black/5 dark:border-white/5", className)}>
             {options.map((opt) => {
@@ -33,7 +35,7 @@ export function SegmentedControl({ options, value, onChange, className }: Segmen
                     >
                         {isActive && (
                             <motion.div
-                                layoutId="activeSegment"
+                                layoutId={`activeSegment-${instanceId}`}
                                 className="absolute inset-0 bg-background shadow-sm shadow-black/5 ring-1 ring-black/5 dark:ring-white/5 rounded-[6px]"
                                 initial={false}
                                 transition={{ type: "spring", stiffness: 400, damping: 30 }}

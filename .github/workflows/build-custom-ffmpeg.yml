@@ -21,7 +21,6 @@ jobs:
             target_filename: ffmpeg-x86_64-pc-windows-msvc.exe 
             # Use MSYS2 shell
             shell_type: "msys2 {0}"
-            # Install MinGW versions of libraries
             install_cmd: >-
               pacman -S --noconfirm --needed 
               base-devel 
@@ -35,8 +34,7 @@ jobs:
               mingw-w64-x86_64-opus 
               mingw-w64-x86_64-svt-av1 
               mingw-w64-x86_64-zlib 
-              mingw-w64-x86_64-openssl 
-              upx
+              mingw-w64-x86_64-openssl
             configure_flags: >-
               --target-os=mingw32
               --arch=x86_64
@@ -47,7 +45,7 @@ jobs:
             target_filename: ffmpeg-aarch64-apple-darwin
             shell_type: bash
             install_cmd: |
-              brew install nasm yasm pkg-config x264 x265 libvpx lame opus svt-av1 openssl@3 upx
+              brew install nasm yasm pkg-config x264 x265 libvpx lame opus svt-av1 openssl@3
               export PKG_CONFIG_PATH="/opt/homebrew/opt/openssl@3/lib/pkgconfig:$PKG_CONFIG_PATH"
             configure_flags: >-
               --enable-videotoolbox
@@ -60,7 +58,7 @@ jobs:
             shell_type: bash
             install_cmd: |
               sudo apt-get update
-              sudo apt-get install -y build-essential nasm yasm pkg-config libx264-dev libx265-dev libnuma-dev libvpx-dev libmp3lame-dev libopus-dev libsvtav1-dev libssl-dev zlib1g-dev upx
+              sudo apt-get install -y build-essential nasm yasm pkg-config libx264-dev libx265-dev libnuma-dev libvpx-dev libmp3lame-dev libopus-dev libsvtav1-dev libssl-dev zlib1g-dev
             configure_flags: ""
 
     defaults:
@@ -122,7 +120,7 @@ jobs:
         working-directory: ffmpeg-src
         run: make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
 
-      - name: Strip & Compress
+      - name: Strip Binaries
         working-directory: ffmpeg-src
         run: |
           echo "Original Size:"
@@ -131,10 +129,7 @@ jobs:
           # Strip
           strip ffmpeg* || true
           
-          # UPX (Try best compression, fallback if fails)
-          upx --best -k ffmpeg* || echo "UPX failed or skipped"
-          
-          echo "Compressed Size:"
+          echo "Final Size:"
           ls -rhS ffmpeg*
 
       - name: Rename to Tauri Target

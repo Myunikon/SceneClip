@@ -21,10 +21,22 @@ const TARGETS = {
         triple: 'x86_64-pc-windows-msvc',
         platform: 'win32',
         arch: 'x64',
-        ffmpegUrl: 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip',
+        ffmpegUrl: 'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip',
+        denoUrl: 'https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip',
         ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe',
         aria2Url: 'https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0-win-64bit-build1.zip',
         rsgainUrl: 'https://github.com/complexlogic/rsgain/releases/download/v3.6/rsgain_3.6_win64.zip',
+        ext: '.exe'
+    },
+    'win-arm64': {
+        triple: 'aarch64-pc-windows-msvc',
+        platform: 'win32',
+        arch: 'arm64',
+        ffmpegUrl: 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-winarm64-gpl.zip',
+        denoUrl: 'https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip', // x64 via emulation
+        ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_arm64.exe',
+        aria2Url: 'https://github.com/minnyres/aria2-windows-arm64/releases/download/1.37.0/aria2_1.37.0_arm64.zip',
+        rsgainUrl: 'https://github.com/complexlogic/rsgain/releases/download/v3.6/rsgain_3.6_win64.zip', // Emulated x64
         ext: '.exe'
     },
     'win-x86': {
@@ -32,9 +44,10 @@ const TARGETS = {
         platform: 'win32',
         arch: 'x86',
         ffmpegUrl: 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win32-gpl.zip',
+        denoUrl: 'https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip', // Fallback to x64 if 32bit omitted
         ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_x86.exe',
         aria2Url: 'https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0-win-32bit-build1.zip',
-        rsgainUrl: null, // No 32-bit binary
+        rsgainUrl: null, // No 32-bit binary available
         ext: '.exe'
     },
     'mac-x64': {
@@ -42,6 +55,7 @@ const TARGETS = {
         platform: 'darwin',
         arch: 'x64',
         ffmpegUrl: 'https://evermeet.cx/ffmpeg/getrelease/zip',
+        denoUrl: 'https://github.com/denoland/deno/releases/latest/download/deno-x86_64-apple-darwin.zip',
         ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos',
         // Official Mac build (Intel). Runs via Rosetta on ARM.
         aria2Url: 'https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0-osx-darwin.tar.bz2',
@@ -54,6 +68,7 @@ const TARGETS = {
         arch: 'arm64',
         // Strategy: Use x64 build via Rosetta 2 (Standard practice for broad compat)
         ffmpegUrl: 'https://evermeet.cx/ffmpeg/getrelease/zip',
+        denoUrl: 'https://github.com/denoland/deno/releases/latest/download/deno-aarch64-apple-darwin.zip',
         // Strategy: Use Universal Binary (Native support for both)
         ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos',
         // Use Intel build via Rosetta
@@ -66,6 +81,7 @@ const TARGETS = {
         platform: 'linux',
         arch: 'x64',
         ffmpegUrl: 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz',
+        denoUrl: 'https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip',
         ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp',
         aria2Url: 'https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0-linux-gnu-64bit-build1.tar.bz2',
         rsgainUrl: null, // No static binary available for Linux. Use package manager.
@@ -77,7 +93,7 @@ const TARGETS = {
 const getCurrentTargetKey = () => {
     const p = process.platform;
     const a = process.arch;
-    if (p === 'win32') return 'win-x64';
+    if (p === 'win32') return a === 'arm64' ? 'win-arm64' : 'win-x64';
     if (p === 'linux') return 'linux-x64';
     if (p === 'darwin') return a === 'arm64' ? 'mac-arm64' : 'mac-x64';
     return null;
@@ -118,6 +134,21 @@ const downloadFile = (url, dest) => {
         };
         makeRequest(url);
     });
+};
+
+// Helper: Recursive search for a filename in a directory
+const findFile = (dir, filename) => {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+            const found = findFile(fullPath, filename);
+            if (found) return found;
+        } else if (entry.name === filename) {
+            return fullPath;
+        }
+    }
+    return null;
 };
 
 // Helper: Extract Archive
@@ -184,21 +215,7 @@ async function setupTarget(key, config) {
 
             await extractArchive(archivePath, tempDir);
 
-            // Find binary in extracted folders
-            // Recursive search for 'ffmpeg' or 'ffmpeg.exe'
-            const findFile = (dir, filename) => {
-                const entries = fs.readdirSync(dir, { withFileTypes: true });
-                for (const entry of entries) {
-                    const fullPath = path.join(dir, entry.name);
-                    if (entry.isDirectory()) {
-                        const found = findFile(fullPath, filename);
-                        if (found) return found;
-                    } else if (entry.name === filename) {
-                        return fullPath;
-                    }
-                }
-                return null;
-            };
+            // 2. Setup ffmpeg & ffprobe
 
             const targetBinaryName = config.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg';
             const foundBinary = findFile(tempDir, targetBinaryName);
@@ -207,11 +224,51 @@ async function setupTarget(key, config) {
                 fs.copyFileSync(foundBinary, ffmpegPath);
                 fs.chmodSync(ffmpegPath, 0o755);
                 console.log(`[OK] Saved ${ffmpegName}`);
+
+                // Also try to find ffprobe in the same archive
+                const ffprobeName = `ffprobe-${config.triple}${config.ext}`;
+                const ffprobePath = path.join(BIN_DIR, ffprobeName);
+                if (!fs.existsSync(ffprobePath)) {
+                    const targetProbeName = config.platform === 'win32' ? 'ffprobe.exe' : 'ffprobe';
+                    const foundProbe = findFile(tempDir, targetProbeName);
+                    if (foundProbe) {
+                        fs.copyFileSync(foundProbe, ffprobePath);
+                        fs.chmodSync(ffprobePath, 0o755);
+                        console.log(`[OK] Saved ${ffprobeName}`);
+                    }
+                }
             } else {
                 console.error(`[ERROR] Could not find ${targetBinaryName} in extracted archive for ${key}`);
             }
         } else {
             console.log(`[SKIP] ${ffmpegName} exists`);
+        }
+
+        // 2.1 Setup ffprobe (Independent check)
+        const ffprobeName = `ffprobe-${config.triple}${config.ext}`;
+        const ffprobePath = path.join(BIN_DIR, ffprobeName);
+        if (!fs.existsSync(ffprobePath)) {
+            console.log(`[RE-EXTRACT] ${ffprobeName} from ffmpeg archive...`);
+            // We need the archive again... let's just download it if missing or use same logic
+            // To keep it simple, if ffmpeg exists but ffprobe doesn't, we'll try to re-download/extract
+            // This is a rare edge case, but good for completeness.
+            let archiveName = 'ffmpeg_archive';
+            if (config.ffmpegUrl.endsWith('.zip') || config.ffmpegUrl.endsWith('/zip')) archiveName += '.zip';
+            else if (config.ffmpegUrl.endsWith('.tar.xz')) archiveName += '.tar.xz';
+
+            const archivePath = path.join(tempDir, archiveName);
+            await downloadFile(config.ffmpegUrl, archivePath);
+            await extractArchive(archivePath, tempDir);
+
+            const targetProbeName = config.platform === 'win32' ? 'ffprobe.exe' : 'ffprobe';
+            const foundProbe = findFile(tempDir, targetProbeName);
+            if (foundProbe) {
+                fs.copyFileSync(foundProbe, ffprobePath);
+                fs.chmodSync(ffprobePath, 0o755);
+                console.log(`[OK] Saved ${ffprobeName}`);
+            }
+        } else {
+            console.log(`[SKIP] ${ffprobeName} exists`);
         }
 
         // 3. Setup Aria2c
@@ -228,20 +285,7 @@ async function setupTarget(key, config) {
             await downloadFile(config.aria2Url, archivePath);
             await extractArchive(archivePath, tempDir);
 
-            // Find binary
-            const findFile = (dir, filename) => {
-                const entries = fs.readdirSync(dir, { withFileTypes: true });
-                for (const entry of entries) {
-                    const fullPath = path.join(dir, entry.name);
-                    if (entry.isDirectory()) {
-                        const found = findFile(fullPath, filename);
-                        if (found) return found;
-                    } else if (entry.name === filename) {
-                        return fullPath;
-                    }
-                }
-                return null;
-            };
+            // 3. Setup Aria2c
 
             const targetBinaryName = config.platform === 'win32' ? 'aria2c.exe' : 'aria2c';
             const foundBinary = findFile(tempDir, targetBinaryName);
@@ -271,20 +315,7 @@ async function setupTarget(key, config) {
                 await downloadFile(config.rsgainUrl, archivePath);
                 await extractArchive(archivePath, tempDir);
 
-                // Find binary
-                const findFile = (dir, filename) => {
-                    const entries = fs.readdirSync(dir, { withFileTypes: true });
-                    for (const entry of entries) {
-                        const fullPath = path.join(dir, entry.name);
-                        if (entry.isDirectory()) {
-                            const found = findFile(fullPath, filename);
-                            if (found) return found;
-                        } else if (entry.name === filename) {
-                            return fullPath;
-                        }
-                    }
-                    return null;
-                };
+                // 4. Setup rsgain
 
                 const targetBinaryName = config.platform === 'win32' ? 'rsgain.exe' : 'rsgain';
                 const foundBinary = findFile(tempDir, targetBinaryName);
@@ -301,6 +332,32 @@ async function setupTarget(key, config) {
             }
         } else if (config.platform === 'linux') {
             console.log('[INFO] Skipping rsgain (No static binary for Linux). Please install via package manager (apt install rsgain or equivalent).');
+        }
+
+        // 5. Setup Deno
+        if (config.denoUrl) {
+            const denoName = `deno-${config.triple}${config.ext}`;
+            const denoPath = path.join(BIN_DIR, denoName);
+
+            if (!fs.existsSync(denoPath)) {
+                const archivePath = path.join(tempDir, 'deno_archive.zip');
+                console.log(`[DOWNLOAD] deno from ${config.denoUrl}...`);
+                await downloadFile(config.denoUrl, archivePath);
+                await extractArchive(archivePath, tempDir);
+
+                const targetBinaryName = config.platform === 'win32' ? 'deno.exe' : 'deno';
+                const foundBinary = findFile(tempDir, targetBinaryName);
+
+                if (foundBinary) {
+                    fs.copyFileSync(foundBinary, denoPath);
+                    fs.chmodSync(denoPath, 0o755);
+                    console.log(`[OK] Saved ${denoName}`);
+                } else {
+                    console.error(`[ERROR] Could not find ${targetBinaryName} in extracted archive for ${key}`);
+                }
+            } else {
+                console.log(`[SKIP] ${denoName} exists`);
+            }
         }
 
     } catch (e) {

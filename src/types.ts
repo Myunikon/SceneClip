@@ -50,6 +50,24 @@ export interface DiskStats {
     disk_total: number
 }
 
+// Updater Types
+export interface UpdateInfo {
+    current: string | null;
+    latest: string | null;
+    has_update: boolean;
+    integrity_valid: boolean;
+    error: string | null;
+}
+
+export interface UpdaterStatus {
+    app_update: UpdateInfo;
+    ytdlp: UpdateInfo;
+    ffmpeg: UpdateInfo;
+    aria2c: UpdateInfo;
+    rsgain: UpdateInfo;
+    deno: UpdateInfo;
+}
+
 // Type for Translations (Inferred from English locale)
 export type AppTranslations = typeof translations['en']
 
@@ -201,6 +219,8 @@ export interface AppSettings {
     binaryPathYtDlp: string
     binaryPathFfmpeg: string
     binaryPathFfprobe: string
+    binaryPathAria2c: string
+    binaryPathRsgain: string
     binaryPathNode: string
     embedMetadata: boolean
     embedThumbnail: boolean
@@ -222,8 +242,12 @@ export interface AppSettings {
     enableDesktopNotifications: boolean // Send desktop notifications when app is in background
     preventSuspendDuringDownload: boolean // Prevent system sleep during active downloads
 
-    // Custom Post-Processor Presets (Feature 5)
+    // Privacy
+    removeSourceMetadata: boolean // Remove source URL, description, etc. from downloaded files
+
+    // Custom Post-Processor Presets
     postProcessorPresets: PostProcessorPreset[] // User-defined FFmpeg argument presets
+    enabledPresetIds: string[] // List of preset IDs to apply globally
 }
 
 

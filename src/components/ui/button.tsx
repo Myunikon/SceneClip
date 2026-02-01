@@ -73,21 +73,17 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             const x = event.clientX - rect.left - size / 2
             const y = event.clientY - rect.top - size / 2
 
-            const newRipple = { x, y, size, key: Date.now() }
+            const key = Date.now()
+            const newRipple = { x, y, size, key }
             setButtonRipples((prevRipples) => [...prevRipples, newRipple])
-        }
 
-        React.useEffect(() => {
-            if (buttonRipples.length > 0) {
-                const lastRipple = buttonRipples[buttonRipples.length - 1]
-                const timeout = setTimeout(() => {
-                    setButtonRipples((prevRipples) =>
-                        prevRipples.filter((ripple) => ripple.key !== lastRipple.key)
-                    )
-                }, parseInt(rippleDuration))
-                return () => clearTimeout(timeout)
-            }
-        }, [buttonRipples, rippleDuration])
+            // Each ripple manages its own cleanup timeout independently
+            setTimeout(() => {
+                setButtonRipples((prevRipples) =>
+                    prevRipples.filter((ripple) => ripple.key !== key)
+                )
+            }, parseInt(rippleDuration))
+        }
 
 
 

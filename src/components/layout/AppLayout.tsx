@@ -1,7 +1,7 @@
 import { ReactNode, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Background } from "../providers/Background";
-import { WifiOff, AlertTriangle } from "lucide-react";
+import { WifiOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "../../store";
 
@@ -12,7 +12,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ children, isOffline }: AppLayoutProps) {
   const { t } = useTranslation();
-  const { ytdlpNeedsUpdate, ytdlpLatestVersion, settings } = useAppStore();
+  const { settings } = useAppStore();
 
   // Handle Global Font Scale
   useEffect(() => {
@@ -56,18 +56,7 @@ export function AppLayout({ children, isOffline }: AppLayoutProps) {
       </AnimatePresence>
 
       {/* YT-DLP UPDATE AVAILABLE BANNER (Info Only) */}
-      {ytdlpNeedsUpdate && !isOffline && (
-        <div className="absolute top-16 left-0 right-0 z-40 bg-amber-500/10 border-b border-amber-500/20 text-amber-600 dark:text-amber-400 px-4 py-1.5 text-xs font-medium flex items-center justify-center gap-2 animate-in slide-in-from-top-2">
-          <AlertTriangle className="w-3.5 h-3.5" />
-          <span>
-            {t("updater_banner.update_available")}{" "}
-            <strong>{ytdlpLatestVersion}</strong>
-          </span>
-          <span className="text-muted-foreground/70">
-            (Manual update required)
-          </span>
-        </div>
-      )}
+
 
       {/* Content Container - Ensure above background */}
       <div className="relative z-10 w-full h-full flex flex-col">

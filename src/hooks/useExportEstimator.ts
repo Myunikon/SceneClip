@@ -24,7 +24,7 @@ const COMPRESSION_RATIOS: Record<string, number> = {
     crf_med: 0.3,   // >= 28
     crf_std: 0.6,   // >= 23
     crf_low: 0.95,  // >= 18
-    crf_lossless: 1.1
+    crf_lossless: 1.02
 }
 
 export function useExportEstimator({ originalSizeStr, mediaType, preset, crf, audioBitrate }: EstimationParams) {
@@ -37,7 +37,8 @@ export function useExportEstimator({ originalSizeStr, mediaType, preset, crf, au
         const isMB = sizeStr.includes('MIB') || sizeStr.includes('MB')
         const isKB = sizeStr.includes('KIB') || sizeStr.includes('KB')
 
-        let originalBytes = parseFloat(sizeStr)
+        const cleanVal = sizeStr.replace(/[^\d,.]/g, '').replace(',', '.')
+        let originalBytes = parseFloat(cleanVal)
         if (isNaN(originalBytes)) return null
 
         if (isGB) originalBytes *= 1024 * 1024 * 1024

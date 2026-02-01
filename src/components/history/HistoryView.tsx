@@ -213,7 +213,7 @@ export function HistoryView() {
     }, [])
 
     return (
-        <div className="flex flex-col h-full bg-background/50">
+        <div className="flex flex-col h-full bg-background/50 cq-history">
             {/* Header: Translucent Glass Effect */}
             <div className="shrink-0 z-30 bg-background/80 backdrop-blur-xl border-b border-white/10 supports-[backdrop-filter]:bg-background/60">
                 <div className="px-6 py-4 space-y-4 max-w-7xl mx-auto">
@@ -266,9 +266,9 @@ export function HistoryView() {
                     </div>
 
                     {/* Controls Row */}
-                    <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-4 justify-between flex-wrap">
+                    <div className="flex gap-4 justify-between flex-wrap history-controls-row">
                         {/* Segmented Control */}
-                        <div className="w-full sm:w-auto overflow-x-auto">
+                        <div className="overflow-x-auto history-segmented-container">
                             <SegmentedControl
                                 value={filterFormat}
                                 onChange={setFilterFormat}
@@ -281,8 +281,8 @@ export function HistoryView() {
                         </div>
 
                         {/* Search & Sort & Select */}
-                        <div className="flex gap-2 flex-1 sm:flex-none items-center">
-                            <div className="relative group flex-1 sm:w-60 max-w-md">
+                        <div className="flex gap-2 flex-1 items-center">
+                            <div className="relative group flex-1 max-w-md history-search-container">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 transition-colors" />
                                 <input
                                     type="text"

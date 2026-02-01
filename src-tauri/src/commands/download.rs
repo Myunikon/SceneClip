@@ -4,11 +4,15 @@
 use crate::ytdlp::{self, AppSettings, YtDlpOptions};
 use serde::Serialize;
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader};
-use std::process::{Command, Stdio};
+
+// use std::process::{Command, Stdio}; // Removed std::process
+use std::process::Stdio;
 use std::sync::{Arc, Mutex};
 use tauri::{ipc::Channel, AppHandle};
+use tokio::io::{AsyncBufReadExt, BufReader as AsyncBufReader};
+use tokio::process::Command; // Added tokio::process
 use tokio::sync::mpsc;
+// use std::os::windows::process::CommandExt; // Moved to inside function
 
 // Global Map to store child processes for cancellation
 // Using u32 for PID
@@ -26,6 +30,9 @@ pub enum DownloadEvent {
         id: String,
         url: String,
         title: Option<String>,
+        // NEW: Send generated command to frontend
+        ytdlp_command: Option<String>,
+        file_path: Option<String>,
     },
     /// Process spawned with PID
     #[serde(rename_all = "camelCase")]
@@ -77,6 +84,8 @@ pub async fn download_media_internal(
         id: id.clone(),
         url: url.clone(),
         title: None,
+        ytdlp_command: None,
+        file_path: None,
     });
 
     let ytdlp_path = ytdlp::resolve_ytdlp_path(&app, &settings.binary_path_yt_dlp);
@@ -96,34 +105,34 @@ pub async fn download_media_internal(
     let url_clone = url.clone();
     let ytdlp_path_clone = ytdlp_path.to_string();
 
-    // We spawn blocking for synchronous metadata check
-    let meta_res = tauri::async_runtime::spawn_blocking(move || {
-        // Use std::process::Command
+    // Async Metadata Fetch
+    // We use tokio::process::Command directly here too
+    let meta_res = async {
         let mut cmd = Command::new(&ytdlp_path_clone);
         cmd.args(&["--dump-json", "--no-playlist", &url_clone]);
 
         #[cfg(target_os = "windows")]
         {
-            use std::os::windows::process::CommandExt;
+            // CREATE_NO_WINDOW
             cmd.creation_flags(0x08000000);
         }
 
-        cmd.output()
-    })
+        // IMPORTANT: Ensure it dies if we drop this future (cancellation)
+        cmd.kill_on_drop(true);
+
+        cmd.output().await
+    }
     .await
     .map_err(|e| e.to_string())?;
 
     match meta_res {
-        Ok(output) => {
+        output => {
             if output.status.success() {
                 if let Ok(json) = serde_json::from_slice::<serde_json::Value>(&output.stdout) {
                     meta = json;
-                    if let Some(title) = meta.get("title").and_then(|t| t.as_str()) {
-                        let _ = sender.send(DownloadEvent::Started {
-                            id: id.clone(),
-                            url: url.clone(),
-                            title: Some(title.to_string()),
-                        });
+                    if let Some(_title) = meta.get("title").and_then(|t| t.as_str()) {
+                        // We check title, but we don't send Started again just yet
+                        // We will send Started with command later
                     }
                 }
             } else {
@@ -133,13 +142,6 @@ pub async fn download_media_internal(
                     level: "warning".to_string(),
                 });
             }
-        }
-        Err(e) => {
-            let _ = sender.send(DownloadEvent::Log {
-                id: id.clone(),
-                message: format!("Metadata fetch execution error: {}", e),
-                level: "warning".to_string(),
-            });
         }
     }
 
@@ -169,19 +171,33 @@ pub async fn download_media_internal(
     let args =
         ytdlp::build_ytdlp_args(&url, &options, &settings, &full_path_str, &gpu_type, &app).await;
 
+    // Construct full command string for UI
+    let full_command_string = format!("{} {}", ytdlp_path, args.join(" "));
+
+    // Send updated Started event with command
+    let _ = sender.send(DownloadEvent::Started {
+        id: id.clone(),
+        url: url.clone(),
+        title: meta
+            .get("title")
+            .and_then(|t| t.as_str())
+            .map(|t| t.to_string()),
+        ytdlp_command: Some(full_command_string),
+        file_path: Some(full_path_str.clone()),
+    });
+
     let _ = sender.send(DownloadEvent::Log {
         id: id.clone(),
         message: format!("Executing yt-dlp with {} args", args.len()),
         level: "info".to_string(),
     });
 
-    // 6. Spawn Process
+    // 6. Spawn Process (Async)
     let mut command = Command::new(&ytdlp_path);
 
     // Hide window on Windows
     #[cfg(target_os = "windows")]
     {
-        use std::os::windows::process::CommandExt;
         const CREATE_NO_WINDOW: u32 = 0x08000000;
         command.creation_flags(CREATE_NO_WINDOW);
     }
@@ -190,91 +206,98 @@ pub async fn download_media_internal(
     command.stdout(Stdio::piped());
     command.stderr(Stdio::piped());
 
+    // CRITICAL: This ensures that if the tokio task is aborted (cancelled),
+    // the child process is automatically killed.
+    command.kill_on_drop(true);
+
     let mut child = command
         .spawn()
         .map_err(|e| format!("Failed to spawn yt-dlp: {}", e))?;
-    let pid = child.id();
 
-    // Store PID
+    let pid = child.id().unwrap_or(0);
+
+    // Store PID for manual kill (redundant with kill_on_drop but good for backup)
     {
         let mut map = ACTIVE_DOWNLOADS.lock().unwrap();
         map.insert(id.clone(), pid);
     }
-
-    let _ = sender.send(DownloadEvent::Log {
-        id: id.clone(),
-        message: format!("Process started with PID {}", pid),
-        level: "info".to_string(),
-    });
 
     let _ = sender.send(DownloadEvent::ProcessStarted {
         id: id.clone(),
         pid,
     });
 
-    // Stream Output
+    // Stream Output (Concurrent stdout/stderr)
     let stdout = child.stdout.take().ok_or("Failed to open stdout")?;
+    let stderr = child.stderr.take().ok_or("Failed to open stderr")?;
 
-    let reader = BufReader::new(stdout);
     let id_clone = id.clone();
-    let on_event_clone = sender.clone();
+    let sender_stdout = sender.clone();
 
-    // Spawn thread for stdout
-    tauri::async_runtime::spawn_blocking(move || {
-        for line in reader.lines() {
-            if let Ok(l) = line {
-                // PARSING LOGIC
-                // SCENECLIP_PROGRESS;status;downloaded;total;total_estimate;speed;eta
-                if l.starts_with("SCENECLIP_PROGRESS;") {
-                    let parts: Vec<&str> = l.split(';').collect();
-                    if parts.len() >= 7 {
-                        let downloaded: f64 = parts[2].parse().unwrap_or(0.0);
-                        let total: f64 = parts[3].parse().unwrap_or(0.0); // "NA" -> 0
-                        let total_est: f64 = parts[4].parse().unwrap_or(0.0);
-                        let speed_val: f64 = parts[5].parse().unwrap_or(0.0);
-                        let eta_val: u64 = parts[6].parse().unwrap_or(0); // seconds
+    // Spawn stdout handler
+    let stdout_handle = tokio::spawn(async move {
+        let reader = AsyncBufReader::new(stdout);
+        let mut lines = reader.lines();
+        while let Ok(Some(line)) = lines.next_line().await {
+            if line.starts_with("SCENECLIP_PROGRESS;") {
+                let parts: Vec<&str> = line.split(';').collect();
+                if parts.len() >= 7 {
+                    let downloaded: f64 = parts[2].parse().unwrap_or(0.0);
+                    let total: f64 = parts[3].parse().unwrap_or(0.0); // "NA" -> 0
+                    let total_est: f64 = parts[4].parse().unwrap_or(0.0);
+                    let speed_val: f64 = parts[5].parse().unwrap_or(0.0);
+                    let eta_val: u64 = parts[6].parse().unwrap_or(0); // seconds
 
-                        let final_total = if total > 0.0 { total } else { total_est };
-                        let percent = if final_total > 0.0 {
-                            (downloaded / final_total) * 100.0
-                        } else {
-                            0.0
-                        };
+                    let final_total = if total > 0.0 { total } else { total_est };
+                    let percent = if final_total > 0.0 {
+                        (downloaded / final_total) * 100.0
+                    } else {
+                        0.0
+                    };
 
-                        // Send Progress
-                        let _ = on_event_clone.send(DownloadEvent::Progress {
-                            id: id_clone.clone(),
-                            percent,
-                            speed: format!("{:.2} MiB/s", speed_val / 1024.0 / 1024.0), // Simple format
-                            eta: format!("{}s", eta_val),
-                            total_size: format!("{:.2} MiB", final_total / 1024.0 / 1024.0),
-                            status: "downloading".to_string(),
-                            speed_raw: Some(speed_val),
-                            eta_raw: Some(eta_val),
-                        });
-                    }
-                } else if l.contains("[download] Destination:") {
-                    // Capture path if needed, but we already calculated it?
-                    // Yt-dlp might change extension (webm -> mkv merge)
-                    // Implementation Detail: We are not capturing "merged" filename back to Rust yet.
-                    // But we have full_path_str as target.
-                } else if l.contains("ERROR:") {
-                    let _ = on_event_clone.send(DownloadEvent::Log {
+                    let _ = sender_stdout.send(DownloadEvent::Progress {
                         id: id_clone.clone(),
-                        message: l,
-                        level: "error".to_string(),
+                        percent,
+                        speed: format!("{:.2} MiB/s", speed_val / 1024.0 / 1024.0),
+                        eta: format!("{}s", eta_val),
+                        total_size: format!("{:.2} MiB", final_total / 1024.0 / 1024.0),
+                        status: "downloading".to_string(),
+                        speed_raw: Some(speed_val),
+                        eta_raw: Some(eta_val),
                     });
                 }
+            } else if line.contains("ERROR:") {
+                let _ = sender_stdout.send(DownloadEvent::Log {
+                    id: id_clone.clone(),
+                    message: line,
+                    level: "error".to_string(),
+                });
             }
         }
     });
 
-    // We wait for child to finish here (async)
-    // but spawn_blocking takes closure
+    // Spawn stderr handler (Capture last lines)
+    let stderr_handle = tokio::spawn(async move {
+        let reader = AsyncBufReader::new(stderr);
+        let mut lines = reader.lines();
+        let mut error_buffer: Vec<String> = Vec::new();
 
-    let res = tauri::async_runtime::spawn_blocking(move || child.wait())
-        .await
-        .map_err(|e| e.to_string())?;
+        while let Ok(Some(line)) = lines.next_line().await {
+            // Keep last 20 lines
+            if error_buffer.len() >= 20 {
+                error_buffer.remove(0);
+            }
+            error_buffer.push(line.clone());
+        }
+        error_buffer
+    });
+
+    // Wait for process to exit
+    let status_res = child.wait().await;
+
+    // Wait for streams (ignore errors from them closing)
+    let _ = stdout_handle.await;
+    let stderr_lines = stderr_handle.await.unwrap_or_default();
 
     // Cleanup PID
     {
@@ -282,7 +305,7 @@ pub async fn download_media_internal(
         map.remove(&id);
     }
 
-    match res {
+    match status_res {
         Ok(status) => {
             if status.success() {
                 let _ = sender.send(DownloadEvent::Completed {
@@ -290,16 +313,24 @@ pub async fn download_media_internal(
                     file_path: full_path_str,
                 });
             } else {
+                // Construct error message from stderr
+                let error_msg = if stderr_lines.is_empty() {
+                    format!("Process exited with code {:?}", status.code())
+                } else {
+                    stderr_lines.join("\n")
+                };
+
                 let _ = sender.send(DownloadEvent::Error {
                     id: id.clone(),
-                    message: format!("Process exited with code {:?}", status.code()),
+                    message: error_msg,
                 });
             }
         }
         Err(e) => {
+            // In case of kill or error
             let _ = sender.send(DownloadEvent::Error {
                 id: id.clone(),
-                message: format!("Process execution error: {}", e),
+                message: format!("Process execution error or cancelled: {}", e),
             });
         }
     }
@@ -340,7 +371,7 @@ pub async fn cancel_download(id: String) -> Result<(), String> {
         #[cfg(target_os = "windows")]
         {
             // Kill process tree on Windows
-            let mut cmd = Command::new("taskkill");
+            let mut cmd = std::process::Command::new("taskkill");
             cmd.args(&["/F", "/PID", &p.to_string(), "/T"]);
 
             use std::os::windows::process::CommandExt;
@@ -350,7 +381,9 @@ pub async fn cancel_download(id: String) -> Result<(), String> {
         }
         #[cfg(not(target_os = "windows"))]
         {
-            let _ = Command::new("kill").args(&["-9", &p.to_string()]).output();
+            let _ = std::process::Command::new("kill")
+                .args(&["-9", &p.to_string()])
+                .output();
         }
     }
 
@@ -381,7 +414,7 @@ pub async fn get_video_metadata(
 ) -> Result<serde_json::Value, String> {
     let ytdlp_path = ytdlp::resolve_ytdlp_path(&app, &settings.binary_path_yt_dlp);
 
-    let mut cmd = Command::new(ytdlp_path);
+    let mut cmd = std::process::Command::new(ytdlp_path);
     cmd.args(&["--dump-json", "--no-playlist", "--no-warnings", &url]);
 
     #[cfg(target_os = "windows")]

@@ -3,15 +3,13 @@ import { StateCreator } from 'zustand'
 import { AppState, DownloadTask, VideoSlice } from './types'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
-import { getFFmpegCommand, buildCompressionArgs, buildCompressedOutputPath, detectFileType } from '../../lib/ffmpegService'
+import { buildCompressedOutputPath } from '../../lib/ffmpegService'
 import { getUniqueFilePath } from '../../lib/fileUtils'
 import { formatBytes } from '../../lib/utils'
-import { v4 as uuidv4 } from 'uuid'
 import { notify } from '../../lib/notify'
 import { stat } from '@tauri-apps/plugin-fs'
 
-// Helper for compression pid tracking
-const activeCompressionMap = new Map<string, any>()
+
 
 export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set, get) => {
 
@@ -142,46 +140,64 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
             // Implemented via backend retention later
         },
 
-        // --- COMPRESSION (Frontend managed) ---
-        // TODO: Move compression to Rust eventually
+        // --- COMPRESSION (Rust-backed) ---
         compressTask: async (taskId, options) => {
-            const { tasks, settings } = get()
+            const { tasks, updateTask } = get()
             const originalTask = tasks.find(t => t.id === taskId)
             if (!originalTask || !originalTask.filePath) return
 
-            const fileType = detectFileType(originalTask.filePath)
             let outputPath = buildCompressedOutputPath(originalTask.filePath)
-
             try {
                 outputPath = await getUniqueFilePath(outputPath)
             } catch { /* ignore */ }
 
-            const args = buildCompressionArgs(originalTask.filePath, outputPath, options, fileType)
-            const newId = uuidv4()
-
-            // Temporary Notification
-            notify.info("Compression Started", { description: "Running in background..." });
+            // Create a pseudo-task for UI tracking if it doesn't exist
+            // Or update the current one's status
+            updateTask(taskId, {
+                status: 'processing',
+                statusDetail: 'Initializing Compression...',
+                progress: 0
+            })
 
             try {
-                const cmd = await getFFmpegCommand(args, settings.binaryPathFfmpeg)
-                const child = await cmd.spawn()
-                activeCompressionMap.set(newId, child)
-
-                cmd.on('close', async (data) => {
-                    activeCompressionMap.delete(newId)
-                    if (data.code === 0) {
-                        let sizeBytes = 0
-                        try {
-                            const s = await stat(outputPath)
-                            sizeBytes = s.size
-                        } catch { /* ignore */ }
-                        notify.success("Compression Complete", { description: `${outputPath} (${formatBytes(sizeBytes)})` })
-                    } else {
-                        notify.error("Compression Failed", { description: `Exit code ${data.code}` })
+                const { compressMedia } = await import('../../lib/ffmpegService')
+                await compressMedia(
+                    originalTask.filePath,
+                    outputPath,
+                    options,
+                    (event) => {
+                        updateTask(taskId, {
+                            progress: event.percent,
+                            speed: event.speed,
+                            eta: event.eta,
+                            statusDetail: `Compressing... ${event.percent}%`
+                        })
                     }
+                )
+
+                let sizeBytes = 0
+                try {
+                    const s = await stat(outputPath)
+                    sizeBytes = s.size
+                } catch { /* ignore */ }
+
+                updateTask(taskId, {
+                    status: 'completed',
+                    progress: 100,
+                    statusDetail: 'Compression Complete',
+                    filePath: outputPath,
+                    fileSize: formatBytes(sizeBytes)
                 })
+
+                notify.success("Compression Complete", { description: `${outputPath} (${formatBytes(sizeBytes)})` })
+
             } catch (e) {
-                notify.error("Compression Start Failed", { description: String(e) })
+                console.error("Compression Failed:", e)
+                updateTask(taskId, {
+                    status: 'error',
+                    statusDetail: String(e)
+                })
+                notify.error("Compression Failed", { description: String(e) })
             }
         }
     }

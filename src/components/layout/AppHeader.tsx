@@ -1,4 +1,4 @@
-import { Download, History, Settings, HelpCircle, Plus, Keyboard, Lock } from 'lucide-react'
+import { Download, History, Settings, HelpCircle, PlusCircle, Keyboard, Lock } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from '@tanstack/react-router'
@@ -24,17 +24,17 @@ export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeade
                     : 'downloads';
 
     return (
-        <header data-tauri-drag-region className="relative h-16 border-b border-border/50 bg-background/95 shrink-0 flex items-center justify-between px-4 sm:px-6 z-50 gap-4">
-
-            <div className="flex items-center gap-3 shrink-0">
-                <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg shadow-lg shadow-orange-500/20 flex items-center justify-center">
+        <header data-tauri-drag-region className="relative h-16 border-b border-border/50 bg-background/95 shrink-0 grid grid-cols-[1fr_auto_1fr] items-center px-6 z-50 gap-4 cq-header">
+            {/* Left: Branding */}
+            <div className="flex justify-start items-center gap-3 w-full header-branding">
+                <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg shadow-lg shadow-orange-500/20 flex items-center justify-center shrink-0">
                     <Download className="w-5 h-5 text-white" />
                 </div>
-                <h1 className="font-bold text-lg tracking-tight hidden sm:block">Scene<span className="text-primary">Clip</span></h1>
+                <h1 className="font-bold text-lg tracking-tight header-title header-branding-text">Scene<span className="text-primary">Clip</span></h1>
             </div>
 
-            {/* Navigation - Absolute Center */}
-            <nav className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:flex items-center bg-secondary/50 rounded-full p-1 border overflow-hidden">
+            {/* Center: Navigation - Adaptive Desktop */}
+            <nav className="flex items-center bg-secondary/50 rounded-full p-1 border overflow-hidden shrink-0 z-10 header-nav-container">
                 {[
                     { id: 'downloads', path: '/', label: t('nav.downloads'), icon: Download },
                     { id: 'keyring', path: '/keyring', label: t('nav.keyring') || "Keyring", icon: Lock },
@@ -45,7 +45,7 @@ export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeade
                         key={tab.id}
                         to={tab.path}
                         className={cn(
-                            "relative px-4 py-1.5 rounded-full text-sm font-medium flex items-center gap-2 z-10 transition-colors whitespace-nowrap",
+                            "relative px-4 py-1.5 rounded-full text-sm font-medium flex items-center gap-2 z-10 transition-colors whitespace-nowrap header-nav-item",
                             activeTab === tab.id
                                 ? "text-primary"
                                 : "text-muted-foreground hover:text-foreground"
@@ -59,49 +59,20 @@ export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeade
                             />
                         )}
                         <tab.icon className="w-4 h-4 relative z-10" />
-                        <span className={cn("relative z-10 hidden lg:inline")}>{tab.label}</span>
+                        <span className="relative z-10 header-label">{tab.label}</span>
                     </Link>
                 ))}
             </nav>
 
-            {/* Mobile Navigation (Icon Only) - Visible on small screens */}
-            <nav className="md:hidden flex items-center bg-secondary/50 rounded-full p-1 border mx-auto">
-                {[
-                    { id: 'downloads', path: '/', label: t('nav.downloads'), icon: Download },
-                    { id: 'keyring', path: '/keyring', label: t('nav.keyring') || "Keyring", icon: Lock },
-                    { id: 'history', path: '/history', label: t('history.title'), icon: History },
-                    { id: 'settings', path: '/settings', label: t('nav.settings'), icon: Settings }
-                ].map((tab) => (
-                    <Link
-                        key={tab.id}
-                        to={tab.path}
-                        className={cn(
-                            "relative p-2 rounded-full flex items-center justify-center z-10 transition-colors",
-                            activeTab === tab.id
-                                ? "text-primary"
-                                : "text-muted-foreground hover:text-foreground"
-                        )}
-                    >
-                        {activeTab === tab.id && (
-                            <motion.div
-                                layoutId="nav-pill-mobile"
-                                className="absolute inset-0 bg-background rounded-full shadow-sm -z-10"
-                                transition={{ type: "spring", bounce: 0.2, duration: 0.7 }}
-                            />
-                        )}
-                        <tab.icon className="w-4 h-4 relative z-10" />
-                    </Link>
-                ))}
-            </nav>
-
-            <div className="flex items-center gap-1 shrink-0">
+            {/* Right: Actions */}
+            <div className="flex justify-end items-center gap-1 w-full header-actions-container">
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button
                                 variant="ghost"
                                 onClick={onOpenShortcuts}
-                                className="hidden md:flex h-auto w-auto p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground"
+                                className="flex h-auto w-auto p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground header-shortcut-btn"
                             >
                                 <Keyboard className="w-5 h-5" />
                             </Button>
@@ -117,7 +88,7 @@ export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeade
                             <Button
                                 variant="ghost"
                                 onClick={onOpenGuide}
-                                className="hidden md:flex h-auto w-auto p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground"
+                                className="flex h-auto w-auto p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground header-guide-btn"
                             >
                                 <HelpCircle className="w-5 h-5" />
                             </Button>
@@ -128,13 +99,21 @@ export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeade
                     </Tooltip>
                 </TooltipProvider>
 
-                <Button
-                    onClick={openDialog}
-                    className="h-auto w-auto bg-primary hover:bg-primary/90 text-primary-foreground p-2 lg:px-4 lg:py-2 rounded-full flex items-center gap-2 shadow-lg shadow-primary/20 text-sm font-bold whitespace-nowrap active:scale-95 transition-all aspect-square lg:aspect-auto justify-center"
-                >
-                    <Plus className="w-5 h-5 lg:w-4 lg:h-4" />
-                    <span className="hidden lg:inline">{t('downloads.new_download')}</span>
-                </Button>
+                <motion.div layout className="flex items-center">
+                    {(() => {
+                        const MotionButton = motion.create(Button)
+                        return (
+                            <MotionButton
+                                onClick={openDialog}
+                                layout
+                                className="h-auto w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-full flex items-center gap-2 shadow-lg shadow-primary/20 text-sm font-bold whitespace-nowrap active:scale-95 transition-all justify-center header-new-btn"
+                            >
+                                <span className="header-new-btn-label">{t('downloads.new_download')}</span>
+                                <PlusCircle className="w-4 h-4 header-new-btn-icon" />
+                            </MotionButton>
+                        )
+                    })()}
+                </motion.div>
             </div>
         </header>
     )

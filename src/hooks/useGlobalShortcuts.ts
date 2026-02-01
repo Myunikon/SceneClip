@@ -61,7 +61,7 @@ export function useGlobalShortcuts({ onNewTask, onSettings, onHistory, onDownloa
             const isF11 = e.key === 'F11'
             const isMacFullscreen = IS_MAC && e.metaKey && e.ctrlKey && e.key.toLowerCase() === 'f'
 
-            if (isF11 || isMacFullscreen) {
+            if ((isF11 || isMacFullscreen) && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
                 e.preventDefault() // prevent browser F11
                 const win = getCurrentWindow()
                 const isFull = await win.isFullscreen()

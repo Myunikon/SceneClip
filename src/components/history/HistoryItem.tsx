@@ -119,7 +119,7 @@ export const HistoryItem = memo(({
 
                 {/* Subtitle / Meta Line */}
                 <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/80 truncate">
-                    <span className="shrink-0">{task.fileSize || t('history.unknown_size') || "Unknown size"}</span>
+                    <span className="shrink-0">{task.fileSize || task.totalSize || t('history.unknown_size') || "Unknown size"}</span>
                     <span className="w-0.5 h-0.5 rounded-full bg-muted-foreground/40 shrink-0" />
 
                     {/* Localized Date */}
@@ -151,8 +151,8 @@ export const HistoryItem = memo(({
                     {/* Path */}
                     {task.path && (
                         <>
-                            <span className="w-px h-2.5 bg-border shrink-0 mx-0.5 hidden sm:block" />
-                            <span className="truncate font-mono opacity-50 max-w-[150px] hidden sm:block" title={task.path}>
+                            <span className="w-px h-2.5 bg-border shrink-0 mx-0.5" />
+                            <span className="truncate font-mono opacity-50 max-w-[400px] flex-shrink" title={task.path}>
                                 {task.path}
                             </span>
                         </>

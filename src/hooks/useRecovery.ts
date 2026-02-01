@@ -13,24 +13,24 @@ export function useRecovery() {
         settings
     } = useAppStore()
 
+    const mountedRef = useRef(true)
+    useEffect(() => {
+        return () => { mountedRef.current = false }
+    }, [])
+
     useEffect(() => {
         // Only run once on mount
         if (hasChecked.current) return
         hasChecked.current = true
 
-        // First, sanitize any tasks that were running when app closed
+        // Sanitize any stale task states
         sanitizeTasks()
 
-        // Cleanup old completed tasks based on retention setting
-        // Default: 30 days if not set
-        const retentionDays = settings.historyRetentionDays ?? 30
-        if (retentionDays > 0) {
-            cleanupOldTasks(retentionDays)
-        }
+        // Cleanup old completed/failed tasks based on retention policy
+        cleanupOldTasks(settings.historyRetentionDays)
 
         // Check for interrupted downloads
         const interruptedCount = getInterruptedCount()
-
         if (interruptedCount > 0) {
             // Show recovery prompt
             toast.info(
@@ -41,6 +41,7 @@ export function useRecovery() {
                     action: {
                         label: 'Recover',
                         onClick: () => {
+                            if (!mountedRef.current) return
                             const recovered = recoverDownloads()
                             if (recovered > 0) {
                                 toast.success(`Recovered ${recovered} download${recovered > 1 ? 's' : ''}`)
@@ -50,6 +51,7 @@ export function useRecovery() {
                     cancel: {
                         label: 'Dismiss',
                         onClick: () => {
+                            if (!mountedRef.current) return
                             // User chose not to recover - we could optionally clear these
                             toast.info('Interrupted downloads kept in queue')
                         }

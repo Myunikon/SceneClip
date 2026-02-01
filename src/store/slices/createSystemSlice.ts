@@ -14,18 +14,33 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
     hasNotifiedMissingBinaries: false,
     gpuType: 'cpu' as 'nvidia' | 'amd' | 'intel' | 'apple' | 'cpu',
 
+    // App Version Tracking
+    appVersion: null,
+    appLatestVersion: null,
+    appNeedsUpdate: false,
+    appUpdateError: undefined,
+
     // yt-dlp Version Tracking
     ytdlpVersion: null,
     ytdlpLatestVersion: null,
     ytdlpNeedsUpdate: false,
+    ytdlpIntegrityValid: true,
 
     // FFmpeg Version Tracking
     ffmpegVersion: null,
     ffmpegLatestVersion: null,
     ffmpegNeedsUpdate: false,
+    ffmpegIntegrityValid: true,
+
+
+    ytdlpUpdateProgress: null,
+    ffmpegUpdateProgress: null,
+    appUpdateProgress: null,
 
     // Loading state
     isCheckingUpdates: false,
+    isCheckingAppUpdate: false,
+    isCheckingYtdlpUpdate: false,
 
     // Keyring
     savedCredentials: [],
@@ -70,6 +85,7 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
                 } catch (e) {
                     console.error("GPU details fetch failed:", e)
                     get().addLog({ message: `[GPU Error] Backend check failed: ${e}`, type: 'error', source: 'system' })
+                    set({ gpuType: 'cpu' })
                 }
             }
         } catch (e) {
@@ -120,10 +136,18 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
             get().addLog({ message: 'Checking bundled binaries...', type: 'info', source: 'system' })
 
             // Essential Binaries (yt-dlp, ffmpeg)
-            const [ffVer, ytVer] = await Promise.all([
+            const [ffVer, ytVer, debugPaths] = await Promise.all([
                 getBinaryVersion('ffmpeg'),
-                getBinaryVersion('yt-dlp')
+                getBinaryVersion('yt-dlp'),
+                (async () => {
+                    try {
+                        const { invoke } = await import('@tauri-apps/api/core')
+                        return await invoke<string[]>('debug_binary_paths')
+                    } catch { return [] }
+                })()
             ])
+
+            console.log('Binary Path Debug Info:', debugPaths)
 
             // Log essential binaries
             console.log('==================================================')
@@ -143,28 +167,8 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
                 set({ binariesReady: false })
             }
 
-            // Optional Binaries (aria2c, rsgain) - Log only, no notification
-            const [aria2Ver, rsgainVer] = await Promise.all([
-                getBinaryVersion('aria2c'),
-                getBinaryVersion('rsgain')
-            ])
-
-            console.log(`  [DL] aria2c   : ${aria2Ver || '[WARN] Not bundled (download acceleration disabled)'}`)
-            console.log(`  [RG] rsgain   : ${rsgainVer || '[WARN] Not bundled (ReplayGain disabled)'}`)
+            // Optional Binaries - (Not needed for core functionality)
             console.log('==================================================')
-
-            // Log to app logs (terminal panel)
-            if (aria2Ver) {
-                get().addLog({ message: `aria2c detected: v${aria2Ver} (Download acceleration enabled)`, type: 'info', source: 'system' })
-            } else {
-                get().addLog({ message: `aria2c not found. Multi-threaded downloads disabled.`, type: 'warning', source: 'system' })
-            }
-
-            if (rsgainVer) {
-                get().addLog({ message: `rsgain detected: v${rsgainVer} (ReplayGain enabled)`, type: 'info', source: 'system' })
-            } else {
-                get().addLog({ message: `rsgain not found. ReplayGain normalization disabled.`, type: 'warning', source: 'system' })
-            }
 
         } catch (e) {
             console.error("Binary check failed:", e)
@@ -174,60 +178,137 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
         }
     },
 
-    checkBinaryUpdates: async () => {
-        set({ isCheckingUpdates: true })
+    checkBinaryUpdates: async (scope = 'all') => {
+        if (scope === 'app') set({ isCheckingAppUpdate: true })
+        else if (scope === 'binaries') set({ isCheckingYtdlpUpdate: true })
+        else set({ isCheckingUpdates: true })
+
         try {
             const { checkForUpdates } = await import('../../lib/updater-service')
-            const result = await checkForUpdates()
+            const result = await checkForUpdates(scope)
 
-            set({
-                ytdlpNeedsUpdate: result.ytdlp.has_update,
-                ytdlpVersion: result.ytdlp.current,
-                ytdlpLatestVersion: result.ytdlp.latest,
-                ffmpegNeedsUpdate: result.ffmpeg.has_update,
-                ffmpegVersion: result.ffmpeg.current,
+            const updates: Partial<SystemSlice> = {}
 
-                isCheckingUpdates: false
-            })
+            if (scope === 'app' || scope === 'all') {
+                updates.appVersion = result.app_update.current
+                updates.appLatestVersion = result.app_update.latest
+                updates.appNeedsUpdate = result.app_update.has_update
+                updates.appUpdateError = result.app_update.error
+            }
 
-            get().addLog({ message: `[Version Check] yt-dlp: ${result.ytdlp.current} → ${result.ytdlp.latest || 'N/A'} (Update: ${result.ytdlp.has_update})`, type: 'info', source: 'system' })
-            get().addLog({ message: `[Version Check] FFmpeg: ${result.ffmpeg.current} → ${result.ffmpeg.latest || 'N/A'} (Update: ${result.ffmpeg.has_update})`, type: 'info', source: 'system' })
+            if (scope === 'binaries' || scope === 'all') {
+                updates.ytdlpVersion = result.ytdlp.current
+                updates.ytdlpLatestVersion = result.ytdlp.latest
+                updates.ytdlpIntegrityValid = result.ytdlp.integrity_valid
+                updates.ytdlpUpdateError = result.ytdlp.error
+            }
+
+            set({ ...updates })
+
+            // Log warnings for specific failures
+            if (result.app_update.error) get().addLog({ message: `[Update Check] SceneClip Error: ${result.app_update.error}`, type: 'warning', source: 'system' })
+            else if (result.app_update.has_update) get().addLog({ message: `[Update Check] 🎉 SceneClip Update Available: ${result.app_update.latest}`, type: 'success', source: 'system' })
+
+            if (result.ytdlp.error) get().addLog({ message: `[Version Check] yt-dlp Error: ${result.ytdlp.error}`, type: 'warning', source: 'system' })
+            else get().addLog({ message: `[Version Check] yt-dlp: ${result.ytdlp.current} → ${result.ytdlp.latest || 'N/A'} (Update: ${result.ytdlp.has_update})`, type: 'info', source: 'system' })
+
         } catch (e) {
             console.error('Version check failed:', e)
             const t = translations[get().settings.language as keyof typeof translations]?.errors || translations.en.errors
             notify.error(t.update_check, { description: String(e) })
             get().addLog({ message: `[Version Check] Failed: ${e}`, type: 'error', source: 'system' })
         } finally {
-            set({ isCheckingUpdates: false })
+            set({
+                isCheckingUpdates: false,
+                isCheckingAppUpdate: false,
+                isCheckingYtdlpUpdate: false
+            })
+        }
+    },
+
+
+
+    installAppUpdate: async () => {
+        try {
+            get().addLog({ message: `Starting SceneClip update...`, type: 'info', source: 'system' })
+            const { invoke } = await import('@tauri-apps/api/core')
+            const { listen } = await import('@tauri-apps/api/event')
+
+            interface ProgressEvent {
+                binary: string
+                percent: number
+                downloaded: number
+                total: number
+            }
+
+            const unlisten = await listen<ProgressEvent>('update-progress', (event) => {
+                if (event.payload.binary === 'SceneClip') {
+                    set({ appUpdateProgress: event.payload.percent })
+                }
+            })
+
+            await invoke('install_app_update')
+
+            unlisten()
+        } catch (e) {
+            console.error("App update failed:", e)
+            notify.error(`App update failed: ${e}`)
+            get().addLog({ message: `App update failed: ${e}`, type: 'error', source: 'system' })
+            set({ appUpdateProgress: null })
         }
     },
 
     updateBinary: async (name) => {
+        if (name !== 'yt-dlp') {
+            notify.error("Updates are disabled for this component.")
+            return
+        }
+
         try {
             get().addLog({ message: `Starting update for ${name}...`, type: 'info', source: 'system' })
             const { updateBinary } = await import('../../lib/updater-service')
-            const newPath = await updateBinary(name)
+
+            // Callback to update progress state
+            const onProgress = (percent: number) => {
+                const s = {} as any
+                if (name === 'yt-dlp') s.ytdlpUpdateProgress = percent
+                set(s)
+            }
+
+            const newPath = await updateBinary(name, onProgress)
 
             // Save path to settings
             if (name === 'yt-dlp') {
                 get().setSetting('binaryPathYtDlp', newPath)
-                // Optimistic update
-                set({ ytdlpNeedsUpdate: false })
-            } else {
-                get().setSetting('binaryPathFfmpeg', newPath)
-                set({ ffmpegNeedsUpdate: false })
+                set({ ytdlpNeedsUpdate: false, ytdlpUpdateProgress: null })
             }
 
             notify.success(`${name} updated successfully!`)
             get().addLog({ message: `${name} updated to ${newPath}`, type: 'success', source: 'system' })
 
             // Re-check to confirm version
-            get().checkBinaryUpdates()
+            get().checkBinaryUpdates('binaries')
 
         } catch (e) {
             console.error("Update failed:", e)
             notify.error(`Update failed: ${e}`)
             get().addLog({ message: `Update failed: ${e}`, type: 'error', source: 'system' })
+
+            // Reset progress on error
+            if (name === 'yt-dlp') set({ ytdlpUpdateProgress: null })
         }
     },
+    cancelUpdate: async (name: string) => {
+        try {
+            const { invoke } = await import('@tauri-apps/api/core')
+            await invoke('cancel_update', { binary: name })
+            get().addLog({ message: `Updates cancelled for ${name}`, type: 'warning', source: 'system' })
+
+            // Reset progress
+            if (name === 'yt-dlp') set({ ytdlpUpdateProgress: null })
+
+        } catch (e) {
+            console.error("Failed to cancel update:", e)
+        }
+    }
 })

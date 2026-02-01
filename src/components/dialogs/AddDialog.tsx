@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useState, useEffect } from 'react'
+import { forwardRef, useImperativeHandle } from 'react'
 import { Download, HardDrive } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '../ui/button'
@@ -61,29 +61,22 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
 
     // Dialog class logic
     const hasMeta = !!meta
-    const dialogClass = `glass-strong relative z-10 w-full ${hasMeta ? 'md:max-w-5xl' : 'md:max-w-lg'} md:rounded-2xl rounded-t-2xl rounded-b-none md:rounded-b-2xl overflow-hidden shadow-2xl flex flex-col md:max-h-[90vh] max-h-[85vh] border border-white/10 mt-auto md:mt-0`
+    const dialogClass = cn(
+        "glass-strong relative z-10 w-full overflow-hidden shadow-2xl flex flex-col border border-white/10 shrink-0 cq-dialog transition-all duration-500",
+        hasMeta ? "max-w-5xl h-[85vh] min-h-[500px] max-h-[90vh]" : "max-w-lg",
+        "rounded-2xl mx-4"
+    )
 
     // Animation Variants
-    const desktopVariants = {
+    const dialogVariants = {
         initial: { opacity: 0, scale: 0.95, y: 10 },
         animate: { opacity: 1, scale: 1, y: 0 },
         exit: { opacity: 0, scale: 0.95, y: 10 }
     }
 
-    const mobileVariants = {
-        initial: { y: "100%" },
-        animate: { y: 0 },
-        exit: { y: "100%" }
-    }
 
-    // Determine if mobile (dynamic listener)
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
 
-    useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth < 768)
-        window.addEventListener('resize', handleResize)
-        return () => window.removeEventListener('resize', handleResize)
-    }, [])
+
 
 
     const formClass = 'flex flex-col flex-1 overflow-hidden bg-background dark:bg-background/40 dark:backdrop-blur-md'
@@ -97,7 +90,7 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
                     initial={{ opacity: 0, pointerEvents: 'none' }}
                     animate={{ opacity: 1, pointerEvents: 'auto' }}
                     exit={{ opacity: 0, pointerEvents: 'none' }}
-                    className="fixed inset-0 z-50 flex md:items-center items-end justify-center md:p-4 p-0"
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
                 >
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -108,7 +101,7 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
                     />
 
                     <motion.div
-                        variants={isMobile ? mobileVariants : desktopVariants}
+                        variants={dialogVariants}
                         initial="initial"
                         animate="animate"
                         exit="exit"
@@ -125,7 +118,7 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
                             </div>
 
                             {/* Main Split Layout */}
-                            <div className="flex flex-col lg:flex-row flex-1 lg:overflow-hidden overflow-y-auto scrollbar-thin">
+                            <div className="flex flex-1 dialog-split">
                                 <AddDialogProvider value={{
                                     url, setUrl,
                                     options, setters,

@@ -48,8 +48,8 @@ export function RightPanel() {
     }
 
     return (
-        <div className="lg:flex-1 min-w-0 relative z-0 flex flex-col bg-transparent dark:bg-black/20 lg:overflow-hidden">
-            <div className="lg:flex-1 lg:overflow-y-auto p-6 space-y-6 lg:min-w-[28rem]">
+        <div className="flex-1 min-w-0 relative z-0 flex flex-col bg-transparent dark:bg-black/20 panel-right">
+            <div className="flex-1 p-6 space-y-6 min-w-[300px]">
 
                 {/* 1. Global Tabs */}
                 <DownloadTypeTabs mode={mode} onChange={handleModeChange} t={t} />

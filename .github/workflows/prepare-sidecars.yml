@@ -56,10 +56,10 @@ jobs:
             done
           done
 
-      - name: Create 'binaries' Tag Release
+      - name: Create 'binaries-sidecars' Tag Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: binaries
+          tag_name: binaries-sidecars
           name: "Standard Sidecar Binaries"
           draft: false
           prerelease: true

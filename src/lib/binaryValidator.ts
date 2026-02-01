@@ -32,7 +32,7 @@ export async function validateBinary(path: string, type: BinaryType): Promise<Va
 
         // Enforce Essentials for FFmpeg if detected in first line or configuration
         if (type === 'ffmpeg') {
-            const lowerLine = firstLine.toLowerCase();
+            // const lowerOutput = output.toLowerCase();
             const lowerOutput = output.toLowerCase();
 
             // Check if it's an 'essential' build or at least not a 'full' build from Gyan.dev

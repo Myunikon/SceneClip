@@ -143,35 +143,6 @@ jobs:
               fi
             fi
 
-      # --- Fix macOS Universal Binaries ---
-      - name: Fix Sidecar Binaries (macOS Universal)
-        if: matrix.platform == 'macos-latest'
-        run: |
-          cd src-tauri/bin
-          # Duplicate x64 binaries as universal for sidecars that don't have native fat binaries or where one arch is sufficient
-          
-          SIDE_CARS=("yt-dlp" "ffmpeg" "aria2c" "rsgain" "deno" "ffprobe")
-          for bin in "${SIDE_CARS[@]}"; do
-            # 1. Create Universal Binary if both exist, or fallback to copy
-            if [ -f "${bin}-aarch64-apple-darwin" ] && [ -f "${bin}-x86_64-apple-darwin" ]; then
-              # Attempt to create a fat binary with lipo if they are compatible mach-o files
-              # If they are scripts or different types (like yt-dlp might be), copy x64 as default
-              lipo -create -output "${bin}-universal-apple-darwin" "${bin}-aarch64-apple-darwin" "${bin}-x86_64-apple-darwin" || \
-              cp "${bin}-x86_64-apple-darwin" "${bin}-universal-apple-darwin"
-            elif [ -f "${bin}-x86_64-apple-darwin" ]; then
-              cp "${bin}-x86_64-apple-darwin" "${bin}-universal-apple-darwin"
-            elif [ -f "${bin}-aarch64-apple-darwin" ]; then
-              cp "${bin}-aarch64-apple-darwin" "${bin}-universal-apple-darwin"
-            fi
-            
-            # 2. ALSO copy to the base name without triple if tauri.conf.json expects that 
-            # (Though sidecars usually require the triple, base names are often used for local dev)
-            # cp "${bin}-universal-apple-darwin" "${bin}" || true
-          done
-          
-          chmod +x *-universal-apple-darwin
-          ls -la
-
       # --- Build App ---
       - name: Build the app
         env:

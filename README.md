@@ -22,6 +22,7 @@
 <p align="center">
   <a href="#-quick-start">Quick Start</a> •
   <a href="#-features">Features</a> •
+  <a href="./supportedsites.md">Supported Sites</a> •
   <a href="#%EF%B8%8F-privacy--security">Privacy</a> •
   <a href="#-roadmap">Roadmap</a> •
   <a href="#-faq">FAQ</a>
@@ -268,6 +269,8 @@ Interested in contributing? Here is how to build from source.
 
 <p align="center">
   <sub>Made with ❤️ by <a href="https://github.com/Myunikon">Myunikon</a></sub>
+  <br/>
+  <sub><a href="./supportedsites.md">Check Supported Sites</a></sub>
   <br/>
   <sub>Distributed under MIT License</sub>
 </p>

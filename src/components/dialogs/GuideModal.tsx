@@ -2,7 +2,7 @@ import { useRef, forwardRef, useImperativeHandle, useState } from 'react'
 import {
     Rocket, Scissors, Terminal, AlertTriangle,
     BookOpen, MousePointerClick, CheckCircle2,
-    Clipboard, Settings
+    Clipboard, Settings, X
 } from 'lucide-react'
 
 import { useTranslation, Trans } from 'react-i18next'
@@ -37,46 +37,52 @@ export const GuideModal = forwardRef<GuideModalRef, unknown>((_, ref) => {
     return (
         <dialog
             ref={dialogRef}
-            className="fixed inset-0 m-auto bg-transparent p-0 backdrop:bg-black/80 w-full max-w-4xl h-[600px] rounded-2xl shadow-2xl open:animate-in open:fade-in open:zoom-in-95 backdrop:animate-in backdrop:fade-in outline-none"
+            className="fixed inset-0 m-auto bg-transparent p-0 backdrop:bg-black/80 w-[92vw] max-w-[850px] h-[min(650px,85vh)] rounded-2xl shadow-2xl open:animate-in open:fade-in open:zoom-in-95 backdrop:animate-in backdrop:fade-in outline-none"
             onClick={(e) => {
                 if (e.target === dialogRef.current) dialogRef.current.close()
             }}
         >
-            <div className="flex h-full bg-background/95 backdrop-blur-xl text-foreground rounded-2xl overflow-hidden border border-white/10 glass-panel">
+            <div className="flex flex-col sm:flex-row h-full bg-background/95 backdrop-blur-xl text-foreground rounded-2xl overflow-hidden border border-white/10 glass-panel">
 
-                {/* --- LEFT SIDEBAR --- */}
-                <div className="w-64 bg-secondary/30 border-r border-white/5 flex flex-col">
-                    <div className="p-6 border-b border-white/5">
+                {/* --- SIDEBAR / TOP NAV --- */}
+                <div className="w-full sm:w-60 bg-secondary/30 border-b sm:border-b-0 sm:border-r border-white/5 flex flex-col shrink-0 transition-all duration-300">
+                    <div className="p-4 sm:p-6 border-b border-white/5 flex items-center justify-between sm:block">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-primary/10 rounded-lg">
+                            <div className="p-2 bg-primary/10 rounded-lg shrink-0">
                                 <BookOpen className="w-5 h-5 text-primary" />
                             </div>
-                            <div>
-                                <h2 className="font-bold text-sm">{t('guide_content.help_center')}</h2>
-                                <p className="text-xs text-muted-foreground">SceneClip v1.0</p>
+                            <div className="min-w-0">
+                                <h2 className="font-bold text-sm truncate">{t('guide_content.help_center')}</h2>
+                                <p className="text-[10px] sm:text-xs text-muted-foreground">SceneClip v1.0</p>
                             </div>
                         </div>
+                        <button
+                            onClick={() => dialogRef.current?.close()}
+                            className="sm:hidden p-2 text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
                     </div>
 
-                    <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+                    <nav className="flex flex-row sm:flex-col p-2 sm:p-4 gap-1 overflow-x-auto sm:overflow-y-auto custom-scrollbar-hide bg-black/5 sm:bg-transparent">
                         {sections.map((section) => (
                             <button
                                 key={section.id}
                                 onClick={() => setActiveSection(section.id as GuideSection)}
                                 className={cn(
-                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                                    "flex items-center gap-2 sm:gap-3 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap sm:w-full min-w-fit",
                                     activeSection === section.id
                                         ? "bg-primary text-primary-foreground shadow-md"
                                         : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
                                 )}
                             >
                                 <section.icon className="w-4 h-4" />
-                                {section.label}
+                                <span className="sm:block">{section.label}</span>
                             </button>
                         ))}
                     </nav>
 
-                    <div className="p-4 border-t border-white/5">
+                    <div className="hidden sm:block p-4 border-t border-white/5 mt-auto">
                         <button
                             onClick={() => dialogRef.current?.close()}
                             className="w-full py-2 bg-secondary hover:bg-secondary/80 rounded-lg text-xs font-bold transition-colors"
@@ -86,8 +92,8 @@ export const GuideModal = forwardRef<GuideModalRef, unknown>((_, ref) => {
                     </div>
                 </div>
 
-                {/* --- RIGHT CONTENT AREA --- */}
-                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar relative">
+                {/* --- CONTENT AREA --- */}
+                <div className="flex-1 overflow-y-auto p-5 sm:p-8 custom-scrollbar relative">
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={activeSection}

@@ -6,6 +6,7 @@ import { AppSettings } from '../../store/slices/types'
 import { PostProcessorPreset } from '../../types'
 import { SettingItem, SettingSection } from './SettingItem'
 import { Check, Plus, Trash2, X, Sliders } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipTrigger, OverflowTooltip } from '../ui/tooltip'
 import { cn } from '../../lib/utils'
 
 
@@ -218,13 +219,19 @@ export function MediaSettings({ settings, setSetting }: MediaSettingsProps) {
                     <div className="flex items-center justify-between w-full">
                         <span>{t('settings.quality.presets.title')}</span>
                         {!isAddingPreset && (
-                            <button
-                                onClick={() => setIsAddingPreset(true)}
-                                className="text-primary hover:bg-primary/10 p-1.5 rounded-md transition-colors"
-                                title={t('settings.quality.presets.add_tooltip')}
-                            >
-                                <Plus className="w-4 h-4" />
-                            </button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => setIsAddingPreset(true)}
+                                        className="text-primary hover:bg-primary/10 p-1.5 rounded-md transition-colors"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>{t('settings.quality.presets.add_tooltip')}</p>
+                                </TooltipContent>
+                            </Tooltip>
                         )}
                     </div>
                 }
@@ -242,9 +249,11 @@ export function MediaSettings({ settings, setSetting }: MediaSettingsProps) {
                         <div key={preset.id} className="group flex items-center justify-between p-3.5 hover:bg-secondary/30 transition-colors">
                             <div className="min-w-0 flex-1 mr-4">
                                 <div className="flex items-center gap-2 mb-0.5">
-                                    <span className="font-medium text-sm truncate">{preset.name}</span>
+                                    <OverflowTooltip content={preset.name} className="font-medium text-sm">
+                                        {preset.name}
+                                    </OverflowTooltip>
                                     <span className={cn(
-                                        "text-[10px] px-1.5 py-0.5 rounded-full border uppercase font-bold tracking-wider",
+                                        "text-[10px] px-1.5 py-0.5 rounded-full border uppercase font-bold tracking-wider shrink-0",
                                         preset.type === 'audio' ? "text-purple-500 border-purple-500/20 bg-purple-500/5" :
                                             preset.type === 'video' ? "text-blue-500 border-blue-500/20 bg-blue-500/5" :
                                                 "text-gray-500 border-gray-500/20 bg-gray-500/5"
@@ -252,34 +261,49 @@ export function MediaSettings({ settings, setSetting }: MediaSettingsProps) {
                                         {preset.type}
                                     </span>
                                 </div>
-                                <div className="text-xs text-muted-foreground truncate opacity-80 mb-1.5">
+                                <OverflowTooltip
+                                    content={preset.description || t('settings.quality.presets.desc_label')}
+                                    className="text-xs text-muted-foreground opacity-80 mb-1.5"
+                                >
                                     {preset.description || t('settings.quality.presets.desc_label')}
-                                </div>
+                                </OverflowTooltip>
                                 <code className="text-[10px] bg-secondary/50 px-1.5 py-0.5 rounded text-muted-foreground font-mono inline-block">
                                     {preset.args}
                                 </code>
                             </div>
                             <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => toggleGlobalPreset(preset.id)}
-                                    className={cn(
-                                        "p-2 rounded-lg transition-all border",
-                                        settings.enabledPresetIds?.includes(preset.id)
-                                            ? "bg-primary/20 border-primary/50 text-primary shadow-[0_0_10px_rgba(var(--primary),0.2)]"
-                                            : "border-border/40 text-muted-foreground hover:border-border/80 hover:bg-secondary/50"
-                                    )}
-                                    title={settings.enabledPresetIds?.includes(preset.id) ? "Globally Enabled" : "Enable Globally"}
-                                >
-                                    <Check className={cn("w-4 h-4 transition-transform", settings.enabledPresetIds?.includes(preset.id) ? "scale-110" : "scale-90 opacity-40")} />
-                                </button>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            onClick={() => toggleGlobalPreset(preset.id)}
+                                            className={cn(
+                                                "p-2 rounded-lg transition-all border",
+                                                settings.enabledPresetIds?.includes(preset.id)
+                                                    ? "bg-primary/20 border-primary/50 text-primary shadow-[0_0_10px_rgba(var(--primary),0.2)]"
+                                                    : "border-border/40 text-muted-foreground hover:border-border/80 hover:bg-secondary/50"
+                                            )}
+                                        >
+                                            <Check className={cn("w-4 h-4 transition-transform", settings.enabledPresetIds?.includes(preset.id) ? "scale-110" : "scale-90 opacity-40")} />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{settings.enabledPresetIds?.includes(preset.id) ? "Globally Enabled" : "Enable Globally"}</p>
+                                    </TooltipContent>
+                                </Tooltip>
 
-                                <button
-                                    onClick={() => handleDeletePreset(preset.id)}
-                                    className="opacity-0 group-hover:opacity-100 p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
-                                    title={t('settings.quality.presets.delete_tooltip')}
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            onClick={() => handleDeletePreset(preset.id)}
+                                            className="opacity-0 group-hover:opacity-100 p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{t('settings.quality.presets.delete_tooltip')}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
                         </div>
                     ))}

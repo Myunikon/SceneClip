@@ -12,6 +12,7 @@ import tiktokIcon from '../../assets/platforms/tiktok.png'
 import facebookIcon from '../../assets/platforms/facebook.png'
 import xIcon from '../../assets/platforms/x.png'
 import { Globe } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipTrigger, OverflowTooltip } from '../ui/tooltip'
 import { open as openUrl } from '@tauri-apps/plugin-shell'
 import { getProxiedSrc } from '../../lib/image-proxy'
 
@@ -110,12 +111,15 @@ export const HistoryItem = memo(({
             {/* 2. Main Content Area */}
             <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
                 {/* Title */}
-                <h3 className={cn(
-                    "font-medium text-[13px] leading-none text-foreground truncate",
-                    isMissing && "decoration-red-500/50 line-through decoration-2"
-                )} title={task.title}>
+                <OverflowTooltip
+                    content={task.title}
+                    className={cn(
+                        "font-medium text-[13px] leading-none text-foreground",
+                        isMissing && "decoration-red-500/50 line-through decoration-2"
+                    )}
+                >
                     {task.title || t('history.untitled') || "Untitled"}
-                </h3>
+                </OverflowTooltip>
 
                 {/* Subtitle / Meta Line */}
                 <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/80 truncate">
@@ -141,10 +145,17 @@ export const HistoryItem = memo(({
                     {task.range && task.range !== 'Full' && (
                         <>
                             <span className="w-px h-2.5 bg-border shrink-0 mx-0.5" />
-                            <span className="text-purple-500 flex items-center gap-0.5" title="Clipped Video">
-                                <Minimize2 className="w-3 h-3" />
-                                {formatRange(task.range)}
-                            </span>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <span className="text-purple-500 flex items-center gap-0.5">
+                                        <Minimize2 className="w-3 h-3" />
+                                        {formatRange(task.range)}
+                                    </span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Clipped Video</p>
+                                </TooltipContent>
+                            </Tooltip>
                         </>
                     )}
 
@@ -152,9 +163,12 @@ export const HistoryItem = memo(({
                     {task.path && (
                         <>
                             <span className="w-px h-2.5 bg-border shrink-0 mx-0.5" />
-                            <span className="truncate font-mono opacity-50 max-w-[400px] flex-shrink" title={task.path}>
+                            <OverflowTooltip
+                                content={<p className="max-w-[500px] break-all font-mono text-[10px]">{task.path}</p>}
+                                className="font-mono opacity-50 max-w-[400px] flex-shrink"
+                            >
                                 {task.path}
-                            </span>
+                            </OverflowTooltip>
                         </>
                     )}
                 </div>
@@ -228,15 +242,21 @@ function IconButton({ onClick, icon: Icon, title, color }: IconButtonProps) {
     }
 
     return (
-        <button
-            onClick={(e) => { e.stopPropagation(); onClick() }}
-            className={cn(
-                "p-1.5 rounded-lg transition-all active:scale-95",
-                colors[color]
-            )}
-            title={title}
-        >
-            <Icon className="w-4 h-4" />
-        </button>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button
+                    onClick={(e) => { e.stopPropagation(); onClick() }}
+                    className={cn(
+                        "p-1.5 rounded-lg transition-all active:scale-95",
+                        colors[color]
+                    )}
+                >
+                    <Icon className="w-4 h-4" />
+                </button>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>{title}</p>
+            </TooltipContent>
+        </Tooltip>
     )
 }

@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+use std::sync::Arc;
 use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
@@ -187,8 +189,33 @@ pub fn run() {
 
             server::init(app.handle().clone());
 
+            // --- SUPPORTED SITES INIT ---
+            let mut sites = crate::ytdlp::SupportedSites::new();
+
+            // Try various paths to find supportedsites.md
+            let paths = vec![
+                app.path()
+                    .resource_dir()
+                    .map(|p| p.join("supportedsites.md"))
+                    .ok(),
+                Some(PathBuf::from("..").join("supportedsites.md")), // Dev root
+                Some(PathBuf::from("supportedsites.md")),            // Current dir
+            ];
+
+            for path in paths.into_iter().flatten() {
+                if path.exists() {
+                    log::info!("Loading supported sites from: {:?}", path);
+                    let _ = sites.load_from_file(path);
+                    break;
+                }
+            }
+
+            let sites_arc = Arc::new(sites);
+            app.manage(sites_arc.clone());
+
             // --- CLIPBOARD LISTENER (Background) ---
             let app_handle_cb = app.handle().clone();
+            let sites_cb = sites_arc.clone();
             tauri::async_runtime::spawn(async move {
                 let mut last_clipboard = String::new();
                 loop {
@@ -203,17 +230,8 @@ pub fn run() {
                             // 1. Sanitize (Remove si, pp, etc)
                             let sanitized = crate::ytdlp::sanitize_url(text);
 
-                            // 2. Validate (Basic Link check)
-                            if sanitized.starts_with("http")
-                                && (sanitized.contains("youtube.com")
-                                    || sanitized.contains("youtu.be")
-                                    || sanitized.contains("tiktok.com")
-                                    || sanitized.contains("instagram.com")
-                                    || sanitized.contains("x.com")
-                                    || sanitized.contains("twitter.com")
-                                    || sanitized.contains("vimeo.com")
-                                    || sanitized.contains("facebook.com"))
-                            {
+                            // 2. Validate (Check against supported sites whitelist)
+                            if sanitized.starts_with("http") && sites_cb.matches(&sanitized) {
                                 log::info!("Clipboard link detected & sanitized: {}", sanitized);
                                 let _ = app_handle_cb.emit("link-detected", sanitized);
                             }

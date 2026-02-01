@@ -2,7 +2,7 @@ import { Download, History, Settings, HelpCircle, PlusCircle, Keyboard, Lock } f
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from '@tanstack/react-router'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 import { Button } from '../ui/button'
 import { cn } from '../../lib/utils'
 
@@ -66,38 +66,35 @@ export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeade
 
             {/* Right: Actions */}
             <div className="flex justify-end items-center gap-1 w-full header-actions-container">
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                onClick={onOpenShortcuts}
-                                className="flex h-auto w-auto p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground header-shortcut-btn"
-                            >
-                                <Keyboard className="w-5 h-5" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>{t('guide.sections.shortcuts') || 'Keyboard Shortcuts'}</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                onClick={onOpenGuide}
-                                className="flex h-auto w-auto p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground header-guide-btn"
-                            >
-                                <HelpCircle className="w-5 h-5" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>{t('guide.title')}</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            onClick={onOpenShortcuts}
+                            className="flex h-auto w-auto p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground header-shortcut-btn"
+                        >
+                            <Keyboard className="w-5 h-5" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>{t('guide.sections.shortcuts') || 'Keyboard Shortcuts'}</p>
+                    </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            onClick={onOpenGuide}
+                            className="flex h-auto w-auto p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground header-guide-btn"
+                        >
+                            <HelpCircle className="w-5 h-5" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>{t('guide.title')}</p>
+                    </TooltipContent>
+                </Tooltip>
 
                 <motion.div layout className="flex items-center">
                     {(() => {

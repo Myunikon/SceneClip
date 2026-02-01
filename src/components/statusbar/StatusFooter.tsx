@@ -9,7 +9,7 @@ import { cn } from '../../lib/utils'
 import { NotificationCenter } from '../common'
 import { useAppStore } from '../../store'
 import { useShallow } from 'zustand/react/shallow'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 
 interface DiskInfo {
     name: string
@@ -174,45 +174,41 @@ export function StatusFooter() {
                     {stats && !error ? (
                         <>
                             {/* Disk Space (Target Only) - CLICKABLE */}
-                            <TooltipProvider>
-                                <Tooltip side="top" delayDuration={300}>
-                                    <TooltipTrigger asChild>
-                                        <button
-                                            onClick={() => navigateToSettings('downloads')}
-                                            className={statusItemClass}
-                                        >
-                                            <HardDrive className={`w-3.5 h-3.5 ${diskColor} opacity-80`} />
-                                            <span className={`${diskColor} font-mono font-medium tracking-tight tabular-nums`}>
-                                                {formatBytes(displayDiskFree)}
-                                                <span className="text-[9px] opacity-50 uppercase tracking-widest ml-1 footer-label">
-                                                    {t('statusbar.available') || 'Free'}
-                                                </span>
+                            <Tooltip side="top">
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => navigateToSettings('downloads')}
+                                        className={statusItemClass}
+                                    >
+                                        <HardDrive className={`w-3.5 h-3.5 ${diskColor} opacity-80`} />
+                                        <span className={`${diskColor} font-mono font-medium tracking-tight tabular-nums`}>
+                                            {formatBytes(displayDiskFree)}
+                                            <span className="text-[9px] opacity-50 uppercase tracking-widest ml-1 footer-label">
+                                                {t('statusbar.available') || 'Free'}
                                             </span>
-                                        </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent className="bg-background/80 backdrop-blur-xl border-white/10">
-                                        <p className="text-xs font-medium">{`${t('statusbar.disk_free')}: ${currentDisk?.mount_point || ''} (Click to manage)`}</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
+                                        </span>
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-background/80 backdrop-blur-xl border-white/10">
+                                    <p className="text-xs font-medium">{`${t('statusbar.disk_free')}: ${currentDisk?.mount_point || ''} (Click to manage)`}</p>
+                                </TooltipContent>
+                            </Tooltip>
 
                             {/* Download Speed - CLICKABLE */}
-                            <TooltipProvider>
-                                <Tooltip side="top" delayDuration={300}>
-                                    <TooltipTrigger asChild>
-                                        <button
-                                            onClick={() => navigateToSettings('network')}
-                                            className={statusItemClass}
-                                        >
-                                            <ArrowDownToLine className="w-3.5 h-3.5 text-blue-400 opacity-80" />
-                                            <span className="text-blue-400 font-mono font-medium tracking-tight tabular-nums">{formatSpeed(stats.download_speed)}</span>
-                                        </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent className="bg-background/80 backdrop-blur-xl border-white/10">
-                                        <p className="text-xs font-medium">{`${t('statusbar.download_speed')} (Click to set limits)`}</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
+                            <Tooltip side="top">
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => navigateToSettings('network')}
+                                        className={statusItemClass}
+                                    >
+                                        <ArrowDownToLine className="w-3.5 h-3.5 text-blue-400 opacity-80" />
+                                        <span className="text-blue-400 font-mono font-medium tracking-tight tabular-nums">{formatSpeed(stats.download_speed)}</span>
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-background/80 backdrop-blur-xl border-white/10">
+                                    <p className="text-xs font-medium">{`${t('statusbar.download_speed')} (Click to set limits)`}</p>
+                                </TooltipContent>
+                            </Tooltip>
                         </>
                     ) : (
                         <span className="text-muted-foreground/20 italic text-[10px] uppercase tracking-widest font-medium">{t('statusbar.stats_unavailable')}</span>
@@ -226,96 +222,90 @@ export function StatusFooter() {
                 >
                     {/* Queue */}
                     {/* Queue - Smart Tooltip & Status */}
-                    <TooltipProvider>
-                        <Tooltip side="top" delayDuration={300}>
-                            <TooltipTrigger asChild>
-                                <div className={`flex items-center gap-2 cursor-help transition-all duration-300 ${tasks.some(t => t.status === 'downloading' || t.status === 'pending') ? 'opacity-100' : 'opacity-40 hover:opacity-80'}`}>
-                                    <Layers className={`w-3.5 h-3.5 ${tasks.some(t => t.status === 'downloading') ? 'text-indigo-400' : 'text-muted-foreground'}`} />
-                                    <span>
-                                        {(() => {
-                                            const activeCount = tasks.filter(task => task.status === 'downloading' || task.status === 'pending').length
-                                            return activeCount > 0 && (
-                                                <span className="text-indigo-300 font-mono font-bold text-[10px] absolute -top-1 -right-2 bg-indigo-500/10 px-1 rounded-full">{activeCount}</span>
-                                            )
-                                        })()}
-                                    </span>
-                                </div>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-background/80 backdrop-blur-xl border-white/10 p-3">
-                                {(() => {
-                                    const activeTasks = tasks.filter(task => task.status === 'downloading')
-                                    const pendingTasks = tasks.filter(task => task.status === 'pending')
-                                    const totalActive = activeTasks.length + pendingTasks.length
+                    <Tooltip side="top">
+                        <TooltipTrigger asChild>
+                            <div className={`flex items-center gap-2 cursor-help transition-all duration-300 ${tasks.some(t => t.status === 'downloading' || t.status === 'pending') ? 'opacity-100' : 'opacity-40 hover:opacity-80'}`}>
+                                <Layers className={`w-3.5 h-3.5 ${tasks.some(t => t.status === 'downloading') ? 'text-indigo-400' : 'text-muted-foreground'}`} />
+                                <span>
+                                    {(() => {
+                                        const activeCount = tasks.filter(task => task.status === 'downloading' || task.status === 'pending').length
+                                        return activeCount > 0 && (
+                                            <span className="text-indigo-300 font-mono font-bold text-[10px] absolute -top-1 -right-2 bg-indigo-500/10 px-1 rounded-full">{activeCount}</span>
+                                        )
+                                    })()}
+                                </span>
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-background/80 backdrop-blur-xl border-white/10 p-3">
+                            {(() => {
+                                const activeTasks = tasks.filter(task => task.status === 'downloading')
+                                const pendingTasks = tasks.filter(task => task.status === 'pending')
+                                const totalActive = activeTasks.length + pendingTasks.length
 
-                                    if (totalActive === 0) {
-                                        return <p className="text-xs font-medium text-muted-foreground">{t('statusbar.idle')}</p>
-                                    }
+                                if (totalActive === 0) {
+                                    return <p className="text-xs font-medium text-muted-foreground">{t('statusbar.idle')}</p>
+                                }
 
-                                    return (
-                                        <div className="flex flex-col gap-2 min-w-[200px]">
-                                            <p className="text-xs font-bold text-foreground border-b border-white/10 pb-1 mb-1">
-                                                {t('statusbar.active_downloads')} ({totalActive})
-                                            </p>
+                                return (
+                                    <div className="flex flex-col gap-2 min-w-[200px]">
+                                        <p className="text-xs font-bold text-foreground border-b border-white/10 pb-1 mb-1">
+                                            {t('statusbar.active_downloads')} ({totalActive})
+                                        </p>
 
-                                            {/* List up to 3 active downloads */}
-                                            {activeTasks.slice(0, 3).map(task => (
-                                                <div key={task.id} className="flex items-center justify-between text-[11px] gap-4">
-                                                    <span className="truncate max-w-[120px] text-muted-foreground">{task.title || 'Unknown Video'}</span>
-                                                    <span className="font-mono text-indigo-400">{Math.round(task.progress || 0)}%</span>
-                                                </div>
-                                            ))}
+                                        {/* List up to 3 active downloads */}
+                                        {activeTasks.slice(0, 3).map(task => (
+                                            <div key={task.id} className="flex items-center justify-between text-[11px] gap-4">
+                                                <span className="truncate max-w-[120px] text-muted-foreground">{task.title || 'Unknown Video'}</span>
+                                                <span className="font-mono text-indigo-400">{Math.round(task.progress || 0)}%</span>
+                                            </div>
+                                        ))}
 
-                                            {/* Show overflow count */}
-                                            {activeTasks.length > 3 && (
-                                                <p className="text-[10px] text-muted-foreground italic">+ {activeTasks.length - 3} more downloading...</p>
-                                            )}
+                                        {/* Show overflow count */}
+                                        {activeTasks.length > 3 && (
+                                            <p className="text-[10px] text-muted-foreground italic">+ {activeTasks.length - 3} more downloading...</p>
+                                        )}
 
-                                            {/* Pending summary */}
-                                            {pendingTasks.length > 0 && (
-                                                <div className="pt-1 border-t border-white/5 mt-1">
-                                                    <p className="text-[10px] text-muted-foreground">{pendingTasks.length} queued</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )
-                                })()}
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
+                                        {/* Pending summary */}
+                                        {pendingTasks.length > 0 && (
+                                            <div className="pt-1 border-t border-white/5 mt-1">
+                                                <p className="text-[10px] text-muted-foreground">{pendingTasks.length} queued</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })()}
+                        </TooltipContent>
+                    </Tooltip>
 
                     {/* GPU Status - Non-interactive indicator -> CLICKABLE */}
-                    <TooltipProvider>
-                        <Tooltip side="top" delayDuration={300}>
-                            <TooltipTrigger asChild>
-                                <button
-                                    onClick={() => navigateToSettings('advanced')}
-                                    className={`${statusItemClass} hover:opacity-100 opacity-80`}
-                                >
-                                    <GpuIndicator gpuType={gpuType as "nvidia" | "amd" | "intel" | "apple" | "cpu"} hardwareDecoding={settings.hardwareDecoding} />
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-background/80 backdrop-blur-xl border-white/10">
-                                <p className="text-xs font-medium">{settings.hardwareDecoding ? `${t('statusbar.hw_accel')} (Click to configure)` : "Software Decoding (Click to enable GPU)"}</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
+                    <Tooltip side="top">
+                        <TooltipTrigger asChild>
+                            <button
+                                onClick={() => navigateToSettings('advanced')}
+                                className={`${statusItemClass} hover:opacity-100 opacity-80`}
+                            >
+                                <GpuIndicator gpuType={gpuType as "nvidia" | "amd" | "intel" | "apple" | "cpu"} hardwareDecoding={settings.hardwareDecoding} />
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-background/80 backdrop-blur-xl border-white/10">
+                            <p className="text-xs font-medium">{settings.hardwareDecoding ? `${t('statusbar.hw_accel')} (Click to configure)` : "Software Decoding (Click to enable GPU)"}</p>
+                        </TooltipContent>
+                    </Tooltip>
 
                     {/* Open Folder */}
-                    <TooltipProvider>
-                        <Tooltip side="top" delayDuration={300}>
-                            <TooltipTrigger asChild>
-                                <button
-                                    onClick={() => settings.downloadPath && openPath(settings.downloadPath)}
-                                    className={`${statusItemClass} text-muted-foreground hover:text-amber-400`}
-                                >
-                                    <FolderOpen className="w-4 h-4" />
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-background/80 backdrop-blur-xl border-white/10">
-                                <p className="text-xs font-medium">{t('statusbar.open_folder')}</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
+                    <Tooltip side="top">
+                        <TooltipTrigger asChild>
+                            <button
+                                onClick={() => settings.downloadPath && openPath(settings.downloadPath)}
+                                className={`${statusItemClass} text-muted-foreground hover:text-amber-400`}
+                            >
+                                <FolderOpen className="w-4 h-4" />
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-background/80 backdrop-blur-xl border-white/10">
+                            <p className="text-xs font-medium">{t('statusbar.open_folder')}</p>
+                        </TooltipContent>
+                    </Tooltip>
 
                     <NotificationCenter />
                 </div>

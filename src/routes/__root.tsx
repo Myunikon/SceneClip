@@ -22,6 +22,7 @@ import { ShortcutsPopover } from '../components/common'
 import { AppHeader } from '../components/layout'
 import { AppLayout } from '../components/layout'
 import { ContextMenu } from '../components/common'
+import { TooltipProvider } from '../components/ui/tooltip'
 import { StatusFooter } from '../components/statusbar'
 import { usePowerManagement } from '../hooks/usePowerManagement'
 
@@ -274,49 +275,51 @@ function RootComponent() {
 
 
     return (
-        <MotionConfig>
-            <AppLayout isOffline={isOffline}>
-                <AppHeader
-                    openDialog={openDialog}
-                    onOpenGuide={() => guideModalRef.current?.showModal()}
-                    onOpenShortcuts={() => setShowShortcuts(true)}
-                />
+        <TooltipProvider delayDuration={400} skipDelayDuration={500}>
+            <MotionConfig>
+                <AppLayout isOffline={isOffline}>
+                    <AppHeader
+                        openDialog={openDialog}
+                        onOpenGuide={() => guideModalRef.current?.showModal()}
+                        onOpenShortcuts={() => setShowShortcuts(true)}
+                    />
 
-                <ShortcutsPopover isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
+                    <ShortcutsPopover isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
 
-                {/* MAIN CONTENT OUTLET */}
-                <div className="flex-1 overflow-hidden relative flex flex-col">
-                    <div className="absolute top-0 left-0 w-full h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2"></div>
-                    <div className="relative z-10 h-full overflow-hidden grid grid-cols-1 grid-rows-1">
-                        <Outlet />
+                    {/* MAIN CONTENT OUTLET */}
+                    <div className="flex-1 overflow-hidden relative flex flex-col">
+                        <div className="absolute top-0 left-0 w-full h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2"></div>
+                        <div className="relative z-10 h-full overflow-hidden grid grid-cols-1 grid-rows-1">
+                            <Outlet />
+                        </div>
                     </div>
-                </div>
 
-                <ClipboardListener onFound={handleNewTask} onNotificationClick={handleNewTask} />
+                    <ClipboardListener onFound={handleNewTask} onNotificationClick={handleNewTask} />
 
-                <AddDialog
-                    ref={addDialogRef}
-                    addTask={addTask}
-                    initialUrl={clipboardUrl}
-                    initialCookies={clipboardCookies}
-                    initialUserAgent={clipboardUA}
-                    initialStart={clipboardStart}
-                    initialEnd={clipboardEnd}
-                    isOffline={isOffline}
-                />
-                <GuideModal ref={guideModalRef} />
-                <Onboarding />
+                    <AddDialog
+                        ref={addDialogRef}
+                        addTask={addTask}
+                        initialUrl={clipboardUrl}
+                        initialCookies={clipboardCookies}
+                        initialUserAgent={clipboardUA}
+                        initialStart={clipboardStart}
+                        initialEnd={clipboardEnd}
+                        isOffline={isOffline}
+                    />
+                    <GuideModal ref={guideModalRef} />
+                    <Onboarding />
 
-                <ContextMenu
-                    x={contextMenu.x}
-                    y={contextMenu.y}
-                    visible={contextMenu.visible}
-                    onClose={() => setContextMenu(c => ({ ...c, visible: false }))}
-                />
+                    <ContextMenu
+                        x={contextMenu.x}
+                        y={contextMenu.y}
+                        visible={contextMenu.visible}
+                        onClose={() => setContextMenu(c => ({ ...c, visible: false }))}
+                    />
 
-                <StatusFooter />
-                <Toaster position="bottom-right" theme={settings.theme as any} richColors expand={true} className="!z-[9999]" toastOptions={{ style: { marginBottom: '28px', marginRight: '2px' } }} />
-            </AppLayout>
-        </MotionConfig>
+                    <StatusFooter />
+                    <Toaster position="bottom-right" theme={settings.theme as any} richColors expand={true} className="!z-[9999]" toastOptions={{ style: { marginBottom: '28px', marginRight: '2px' } }} />
+                </AppLayout>
+            </MotionConfig>
+        </TooltipProvider>
     )
 }

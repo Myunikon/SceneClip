@@ -1,4 +1,6 @@
+use crate::ytdlp::SupportedSites;
 use std::path::Path;
+use std::sync::Arc;
 use url::Url;
 
 #[tauri::command]
@@ -10,7 +12,7 @@ pub fn validate_path(path: String) -> bool {
 }
 
 #[tauri::command]
-pub fn validate_url(url: String) -> bool {
+pub fn validate_url(url: String, sites: tauri::State<Arc<SupportedSites>>) -> bool {
     if url.len() > 2000 {
         return false;
     }
@@ -21,7 +23,12 @@ pub fn validate_url(url: String) -> bool {
                 return false;
             }
             if let Some(host) = parsed.host_str() {
-                return host.contains('.');
+                if !host.contains('.') {
+                    return false;
+                }
+
+                // Check against the dynamic whitelist
+                return sites.matches(&url);
             }
             false
         }

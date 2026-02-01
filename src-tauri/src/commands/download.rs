@@ -411,7 +411,12 @@ pub async fn get_video_metadata(
     app: AppHandle,
     url: String,
     settings: AppSettings,
+    sites: tauri::State<'_, Arc<crate::ytdlp::SupportedSites>>,
 ) -> Result<serde_json::Value, String> {
+    // Whitelist check
+    if !sites.matches(&url) {
+        return Err("URL not in supported sites list".to_string());
+    }
     let ytdlp_path = ytdlp::resolve_ytdlp_path(&app, &settings.binary_path_yt_dlp);
 
     let mut cmd = std::process::Command::new(ytdlp_path);

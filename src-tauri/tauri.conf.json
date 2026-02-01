@@ -59,7 +59,8 @@
       "bin/ffprobe"
     ],
     "resources": [
-      "resources/plugins"
+      "resources/plugins",
+      "../supportedsites.md"
     ]
   }
 }

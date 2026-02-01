@@ -1,4 +1,5 @@
 import { Terminal, History, Database, Monitor, Music, FolderOpen, Loader2, X } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 import { useTranslation } from 'react-i18next'
 import { Select, Switch, Button } from '../ui'
 import { AppSettings } from '../../store/slices/types'
@@ -138,16 +139,22 @@ function BinaryPathInput({ label, value, onChange, description, expectedType }: 
                     />
                     <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
                         {value && !value.includes('Auto-managed') && (
-                            <button
-                                onClick={() => {
-                                    onChange('')
-                                    setStatus({ isValid: null, version: null, loading: false })
-                                }}
-                                className="p-1 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
-                                title={t('settings.advanced.clear_path')}
-                            >
-                                <X className="w-3 h-3" />
-                            </button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => {
+                                            onChange('')
+                                            setStatus({ isValid: null, version: null, loading: false })
+                                        }}
+                                        className="p-1 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>{t('settings.advanced.clear_path')}</p>
+                                </TooltipContent>
+                            </Tooltip>
                         )}
                         {status.loading && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
                     </div>

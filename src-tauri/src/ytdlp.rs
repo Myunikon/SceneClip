@@ -1,5 +1,10 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+use std::fs;
+use std::io::{BufRead, BufReader};
+use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
+use url::Url;
 
 // --- Constants ---
 const BINARIES_DENO: &str = "bin/deno";
@@ -129,6 +134,126 @@ pub struct AppSettings {
     // Performance & Quality (Advanced)
     pub post_processor_presets: Vec<PostProcessorPreset>,
     pub enabled_preset_ids: Vec<String>,
+}
+
+pub struct SupportedSites {
+    pub domains: HashSet<String>,
+    pub keywords: HashSet<String>,
+}
+
+impl SupportedSites {
+    pub fn new() -> Self {
+        Self {
+            domains: HashSet::new(),
+            keywords: HashSet::new(),
+        }
+    }
+
+    pub fn load_from_file(&mut self, path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+        if !path.exists() {
+            return Err("File not found".into());
+        }
+
+        let file = fs::File::open(path)?;
+        let reader = BufReader::new(file);
+
+        self.domains.clear();
+        self.keywords.clear();
+
+        for line in reader.lines() {
+            let line = line?;
+            if !line.starts_with(" - **") {
+                continue;
+            }
+
+            // Extract parts between ** and **
+            if let Some(start) = line.find("**") {
+                if let Some(end) = line[start + 2..].find("**") {
+                    let name = &line[start + 2..start + 2 + end];
+                    self.process_token(name);
+                }
+            }
+
+            // Extract parts between [* and *]
+            if let Some(start) = line.find("[*") {
+                if let Some(end) = line[start + 2..].find("*]") {
+                    let name = &line[start + 2..start + 2 + end];
+                    self.process_token(name);
+                }
+            }
+
+            // Extract anything that looks like a domain in the rest of the line
+            // e.g. "1News: 1news.co.nz article videos"
+            for token in line.split_whitespace() {
+                let token =
+                    token.trim_matches(|c: char| !c.is_alphanumeric() && c != '.' && c != '-');
+                if token.contains('.') && token.chars().filter(|&c| c == '.').count() >= 1 {
+                    self.process_token(token);
+                }
+            }
+        }
+
+        log::info!(
+            "Loaded {} supported domains/keywords from file",
+            self.domains.len() + self.keywords.len()
+        );
+        Ok(())
+    }
+
+    fn process_token(&mut self, token: &str) {
+        let token = token.to_lowercase();
+        if token.is_empty() {
+            return;
+        }
+
+        if token.contains('.') {
+            // Likely a domain
+            self.domains.insert(token);
+        } else {
+            // Split by colon to handle things like "youtube:clip" -> "youtube"
+            for part in token.split(':') {
+                // Skip generic words to avoid false positives
+                let part = part.trim();
+                if part.len() >= 3
+                    && part != "video"
+                    && part != "videos"
+                    && part != "audio"
+                    && part != "embed"
+                    && part != "clip"
+                {
+                    self.keywords.insert(part.to_string());
+                }
+            }
+        }
+    }
+
+    pub fn matches(&self, url_str: &str) -> bool {
+        let parsed = match Url::parse(url_str) {
+            Ok(u) => u,
+            Err(_) => return false,
+        };
+
+        let host = match parsed.host_str() {
+            Some(h) => h.to_lowercase(),
+            None => return false,
+        };
+
+        // 1. Check exact domain match or subdomain match
+        for domain in &self.domains {
+            if host == *domain || host.ends_with(&format!(".{}", domain)) {
+                return true;
+            }
+        }
+
+        // 2. Check keyword match in host
+        for keyword in &self.keywords {
+            if host.contains(keyword) {
+                return true;
+            }
+        }
+
+        false
+    }
 }
 
 // --- Logic ---

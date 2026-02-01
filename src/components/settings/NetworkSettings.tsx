@@ -4,6 +4,7 @@ import { Switch, Select, Slider, Button } from '../ui'
 import { AppSettings } from '../../store/slices/types'
 import { SettingItem, SettingSection } from './SettingItem'
 import { Key, FolderOpen, X } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 import { cn } from '../../lib/utils'
 
 import { validateUrlBackend } from '../../lib/validators'
@@ -218,13 +219,24 @@ export function NetworkSettings({ settings, setSetting }: NetworkSettingsProps) 
                                             placeholder={t('settings.advanced.no_file')}
                                         />
                                         {settings.cookiePath && (
-                                            <button
-                                                onClick={() => setSetting('cookiePath', '')}
-                                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-muted rounded-md transition-all text-muted-foreground hover:text-red-500 active:scale-90"
-                                                title={t('settings.advanced.clear_path')}
-                                            >
-                                                <X className="w-3.5 h-3.5" />
-                                            </button>
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                setSetting('cookiePath', '')
+                                                            }}
+                                                            className="p-1 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
+                                                        >
+                                                            <X className="w-3 h-3" />
+                                                        </button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>{t('settings.advanced.clear_path')}</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </div>
                                         )}
                                     </div>
                                     <Button

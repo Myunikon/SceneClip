@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Pause, Play, StopCircle, Trash2, FolderOpen, RefreshCcw, Terminal, FileVideo, FileAudio, FileImage, Copy, Check } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger, OverflowTooltip } from '../ui/tooltip'
 import { openPath } from '@tauri-apps/plugin-opener'
 import { writeText } from '@tauri-apps/plugin-clipboard-manager'
 import { useTranslation } from 'react-i18next'
@@ -146,25 +146,17 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
                 {/* 2. Unified Info Block */}
                 <div className="flex-1 min-w-0 flex flex-col justify-center gap-1.5">
                     {/* Title */}
-                    <div className="flex items-center gap-2">
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <span
-                                        className={cn(
-                                            "font-medium truncate text-[13px] text-foreground/90",
-                                            task.status === 'completed' && "cursor-pointer"
-                                        )}
-                                        onClick={task.status === 'completed' ? handleOpenFile : undefined}
-                                    >
-                                        {task.title || t('downloads.fetching_info')}
-                                    </span>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p className="max-w-[300px] break-words">{task.title || t('downloads.fetching_info')}</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
+                    <div className="flex items-center gap-2 min-w-0">
+                        <OverflowTooltip
+                            content={task.title || t('downloads.fetching_info')}
+                            className={cn(
+                                "font-medium text-[13px] text-foreground/90",
+                                task.status === 'completed' && "cursor-pointer"
+                            )}
+                            onClick={task.status === 'completed' ? handleOpenFile : undefined}
+                        >
+                            {task.title || t('downloads.fetching_info')}
+                        </OverflowTooltip>
                         {isClipped && (
                             <span className="text-[10px] font-medium bg-amber-500/10 text-amber-600 px-1.5 py-px rounded-[4px] border border-amber-500/10">
                                 Clip: {formatRange(task.range || '')}
@@ -203,16 +195,22 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
                                 <span className="flex-1 select-text cursor-text break-words whitespace-normal leading-relaxed hover:text-destructive/90">
                                     {task.log || 'Download failed'}
                                 </span>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleCopyError()
-                                    }}
-                                    className="shrink-0 p-1 hover:bg-destructive/10 rounded-md transition-colors text-destructive/70 hover:text-destructive"
-                                    title={t('common.copy_error') || "Copy Error"}
-                                >
-                                    {isCopying ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                                </button>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                handleCopyError()
+                                            }}
+                                            className="shrink-0 p-1 hover:bg-destructive/10 rounded-md transition-colors text-destructive/70 hover:text-destructive"
+                                        >
+                                            {isCopying ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{t('common.copy_error') || "Copy Error"}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
                         ) : (
                             getStatusText()
@@ -225,46 +223,81 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
                     {/* Only show primary action + 'More' for others eventually, or minimal set */}
 
                     {task.status === 'downloading' && (
-                        <button onClick={() => isClipped ? setShowClipPauseWarning(true) : pauseTask(task.id)} className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-foreground/80">
-                            <Pause className="w-4 h-4 fill-current" />
-                        </button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button onClick={() => isClipped ? setShowClipPauseWarning(true) : pauseTask(task.id)} className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-foreground/80">
+                                    <Pause className="w-4 h-4 fill-current" />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>{t('common.pause') || 'Pause'}</p></TooltipContent>
+                        </Tooltip>
                     )}
                     {task.status === 'paused' && (
-                        <button onClick={() => resumeTask(task.id)} className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-foreground/80">
-                            <Play className="w-4 h-4 fill-current" />
-                        </button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button onClick={() => resumeTask(task.id)} className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-foreground/80">
+                                    <Play className="w-4 h-4 fill-current" />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>{t('common.resume') || 'Resume'}</p></TooltipContent>
+                        </Tooltip>
                     )}
 
                     {['downloading', 'paused'].includes(task.status) && (
-                        <button onClick={() => setShowCancelConfirm(true)} className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive">
-                            <StopCircle className="w-4 h-4" />
-                        </button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button onClick={() => setShowCancelConfirm(true)} className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive">
+                                    <StopCircle className="w-4 h-4" />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>{t('common.cancel') || 'Cancel'}</p></TooltipContent>
+                        </Tooltip>
                     )}
 
                     {task.status === 'completed' && (
-                        <button onClick={handleOpenFolder} className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-blue-500">
-                            <FolderOpen className="w-4 h-4" />
-                        </button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button onClick={handleOpenFolder} className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-blue-500">
+                                    <FolderOpen className="w-4 h-4" />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>{t('common.open_folder') || 'Open Folder'}</p></TooltipContent>
+                        </Tooltip>
                     )}
 
                     {['error', 'stopped'].includes(task.status) && (
-                        <button onClick={() => retryTask(task.id)} className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-foreground/80">
-                            <RefreshCcw className="w-4 h-4" />
-                        </button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button onClick={() => retryTask(task.id)} className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-foreground/80">
+                                    <RefreshCcw className="w-4 h-4" />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>{t('common.retry') || 'Retry'}</p></TooltipContent>
+                        </Tooltip>
                     )}
 
                     {/* Clear/Delete (Always available for inactive) */}
                     {['completed', 'error', 'stopped', 'pending'].includes(task.status) && (
-                        <button onClick={() => clearTask(task.id)} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
-                            <Trash2 className="w-4 h-4" />
-                        </button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button onClick={() => clearTask(task.id)} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>{t('common.remove') || 'Remove'}</p></TooltipContent>
+                        </Tooltip>
                     )}
 
                     {/* Logs - Strictly for Developer Mode */}
                     {settings.developerMode && (
-                        <button onClick={() => setShowCommandModal(true)} className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground">
-                            <Terminal className="w-4 h-4" />
-                        </button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button onClick={() => setShowCommandModal(true)} className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground">
+                                    <Terminal className="w-4 h-4" />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>{t('common.logs') || 'View Logs'}</p></TooltipContent>
+                        </Tooltip>
                     )}
                 </div>
 

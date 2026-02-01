@@ -15,6 +15,7 @@ import { MediaSettings } from './MediaSettings'
 import { NetworkSettings } from './NetworkSettings'
 import { SystemSettings } from './SystemSettings'
 import { AboutSettings } from './AboutSettings'
+import { OverflowTooltip } from '../ui/tooltip'
 
 export interface SettingsViewProps {
     initialTab?: 'general' | 'downloads' | 'media' | 'network' | 'system' | 'about' | 'logs'
@@ -131,13 +132,18 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
                                     ? "bg-primary/10 text-primary shadow-sm"
                                     : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground"
                             )}
-                            title={tab.label}
                         >
                             <tab.icon className={cn(
                                 "w-5 h-5 shrink-0 transition-transform group-hover:scale-110",
                                 activeTab === tab.id ? "opacity-100" : "opacity-70"
                             )} />
-                            <span className="sidebar-label truncate">{tab.label}</span>
+                            <OverflowTooltip
+                                content={tab.label}
+                                className="sidebar-label flex-1"
+                                openDelay={500}
+                            >
+                                {tab.label}
+                            </OverflowTooltip>
                         </button>
                     ))}
                 </div>

@@ -163,3 +163,55 @@ export const TooltipContent = React.forwardRef<HTMLDivElement, TooltipContentPro
     }
 )
 TooltipContent.displayName = "TooltipContent"
+
+/**
+ * A tooltip that only appears if the child (text) is truncated by overflow.
+ */
+export function OverflowTooltip({
+    children,
+    content,
+    className,
+    openDelay,
+    closeDelay,
+    side,
+    sideOffset,
+    ...props
+}: any) {
+    const [isOverflowing, setIsOverflowing] = React.useState(false)
+    const triggerRef = React.useRef<any>(null)
+
+    const checkOverflow = React.useCallback(() => {
+        const el = triggerRef.current
+        if (el) {
+            // Use a 1px threshold to avoid tooltips on sub-pixel differences
+            const hasOverflow = el.scrollWidth > el.clientWidth + 1
+            setIsOverflowing(hasOverflow)
+        }
+    }, [])
+
+    React.useLayoutEffect(() => {
+        checkOverflow()
+        const observer = new ResizeObserver(checkOverflow)
+        if (triggerRef.current) observer.observe(triggerRef.current)
+        return () => observer.disconnect()
+    }, [checkOverflow, children])
+
+    return (
+        <Tooltip
+            open={isOverflowing ? undefined : false}
+            openDelay={openDelay}
+            closeDelay={closeDelay}
+            side={side}
+            sideOffset={sideOffset}
+        >
+            <TooltipTrigger asChild ref={triggerRef}>
+                <div className={cn("truncate", className)} {...props}>
+                    {children}
+                </div>
+            </TooltipTrigger>
+            <TooltipContent>
+                {content}
+            </TooltipContent>
+        </Tooltip>
+    )
+}

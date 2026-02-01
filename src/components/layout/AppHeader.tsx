@@ -13,6 +13,9 @@ interface AppHeaderProps {
 }
 
 
+const MotionButton = motion.create(Button)
+
+
 export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeaderProps) {
     const { t } = useTranslation();
     const location = useLocation();
@@ -26,7 +29,7 @@ export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeade
     return (
         <header data-tauri-drag-region className="relative h-16 border-b border-border/50 bg-background/95 shrink-0 grid grid-cols-[1fr_auto_1fr] items-center px-6 z-50 gap-4 cq-header">
             {/* Left: Branding */}
-            <div className="flex justify-start items-center gap-3 w-full header-branding">
+            <div className="flex justify-start items-center gap-3 header-branding">
                 <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg shadow-lg shadow-orange-500/20 flex items-center justify-center shrink-0">
                     <Download className="w-5 h-5 text-white" />
                 </div>
@@ -55,7 +58,7 @@ export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeade
                             <motion.div
                                 layoutId="nav-pill"
                                 className="absolute inset-0 bg-background rounded-full shadow-sm -z-10"
-                                transition={{ type: "spring", bounce: 0.2, duration: 0.7 }}
+                                transition={{ type: "spring", bounce: 0, duration: 0.3 }}
                             />
                         )}
                         <tab.icon className="w-4 h-4 relative z-10" />
@@ -65,7 +68,7 @@ export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeade
             </nav>
 
             {/* Right: Actions */}
-            <div className="flex justify-end items-center gap-1 w-full header-actions-container">
+            <div className="flex justify-end items-center gap-1 header-actions-container">
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button
@@ -96,21 +99,17 @@ export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeade
                     </TooltipContent>
                 </Tooltip>
 
-                <motion.div layout className="flex items-center">
-                    {(() => {
-                        const MotionButton = motion.create(Button)
-                        return (
-                            <MotionButton
-                                onClick={openDialog}
-                                layout
-                                className="h-auto w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-full flex items-center gap-2 shadow-lg shadow-primary/20 text-sm font-bold whitespace-nowrap active:scale-95 transition-all justify-center header-new-btn"
-                            >
-                                <span className="header-new-btn-label">{t('downloads.new_download')}</span>
-                                <PlusCircle className="w-4 h-4 header-new-btn-icon" />
-                            </MotionButton>
-                        )
-                    })()}
-                </motion.div>
+                <div className="flex items-center">
+                    <MotionButton
+                        onClick={openDialog}
+                        layout="position"
+                        transition={{ duration: 0.2 }}
+                        className="h-auto w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-full flex items-center gap-2 shadow-lg shadow-primary/20 text-sm font-bold whitespace-nowrap active:scale-95 transition-shadow justify-center header-new-btn"
+                    >
+                        <span className="header-new-btn-label">{t('downloads.new_download')}</span>
+                        <PlusCircle className="w-4 h-4 header-new-btn-icon" />
+                    </MotionButton>
+                </div>
             </div>
         </header>
     )

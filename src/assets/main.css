@@ -196,55 +196,93 @@
     }
   }
 
+  /* --- Layout & Visibility Transitions --- */
   .header-label,
   .header-new-btn-label,
   .header-branding-text,
   .header-guide-btn,
   .header-shortcut-btn {
-    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      max-width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      margin 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      padding 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      max-width 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      margin 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      padding 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
     display: inline-block;
     white-space: nowrap;
-  }
-
-  .header-label,
-  .header-new-btn-label,
-  .header-branding-text {
     max-width: 500px;
-    /* High enough to contain content */
+    opacity: 1;
   }
 
-  .header-nav-item {
-    transition: padding 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-      gap 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-      background-color 0.2s ease;
-    flex-shrink: 0 !important;
-    padding-left: clamp(0.5rem, 2cqw, 1.25rem) !important;
-    padding-right: clamp(0.5rem, 2cqw, 1.25rem) !important;
-    gap: clamp(0rem, 1.5cqw, 0.5rem) !important;
+  .header-new-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 9999px !important;
+    min-width: 0;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
+  /* --- Responsive Adaptive Logic (Container Queries) --- */
+  /* Using discrete breakpoints for stability, while keeping transitions snappy */
+
+  @container header (max-width: 1200px) {
+    .cq-header {
+      /* Focus on centering nav when space is limited */
+      grid-template-columns: auto 1fr auto !important;
+      gap: 1.5rem !important;
+    }
+
+    .header-nav-container {
+      justify-self: center;
+    }
+  }
+
+  @container header (max-width: 1000px) {
+    .header-label {
+      opacity: 0;
+      max-width: 0;
+      margin: 0 !important;
+      transform: translateX(-10px);
+    }
+
+    .header-nav-item {
+      gap: 0 !important;
+    }
+  }
+
+  @container header (max-width: 850px) {
+    .header-new-btn-label {
+      opacity: 0;
+      max-width: 0;
+      margin: 0 !important;
+    }
+
+    .header-new-btn {
+      padding: 0.6rem !important;
+      gap: 0 !important;
+      min-width: 40px;
+    }
+  }
+
+  /* --- Header Base Styles --- */
   .cq-header {
     container-type: inline-size;
     container-name: header;
     padding-left: clamp(1rem, 4cqw, 2rem) !important;
     padding-right: clamp(1rem, 4cqw, 2rem) !important;
     display: grid !important;
-    /* Wide screens: Perfect mathematical centering */
     grid-template-columns: 1fr auto 1fr !important;
     align-items: center !important;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    /* Dynamic gap: shrinks as window shrinks */
+    transition: gap 0.15s cubic-bezier(0.4, 0, 0.2, 1), padding 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     gap: clamp(1rem, 5cqw, 3rem) !important;
   }
 
   .header-branding,
   .header-actions-container {
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     min-width: 0;
   }
 
@@ -263,15 +301,25 @@
   }
 
   .header-nav-container {
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: padding 0.15s cubic-bezier(0.4, 0, 0.2, 1), margin 0.15s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease;
   }
 
-  /* Compact Strategy: Eliminate Voids while maintaining balanced centering */
+  .header-nav-item {
+    transition: padding 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+      gap 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+      background-color 0.15s ease;
+    flex-shrink: 0 !important;
+    padding-left: clamp(0.5rem, 2cqw, 1.25rem) !important;
+    padding-right: clamp(0.5rem, 2cqw, 1.25rem) !important;
+    gap: clamp(0rem, 1.5cqw, 0.5rem) !important;
+  }
+
+  /* --- Responsive Adaptive Logic (Container Queries) --- */
+
   @container header (max-width: 1200px) {
     .cq-header {
-      /* Middle column takes all remaining space, Nav centers inside it */
       grid-template-columns: auto 1fr auto !important;
-      gap: clamp(0.75rem, 3cqw, 1.5rem) !important;
+      gap: 1.5rem !important;
     }
 
     .header-nav-container {
@@ -279,14 +327,12 @@
     }
   }
 
-  /* Breakpoint 1: Hide navigation labels */
-  @container header (max-width: 1050px) {
+  @container header (max-width: 1000px) {
     .header-label {
       opacity: 0;
       max-width: 0;
-      pointer-events: none;
-      transform: translateX(-15px);
       margin: 0 !important;
+      transform: translateX(-10px);
     }
 
     .header-nav-item {
@@ -294,74 +340,58 @@
     }
   }
 
-  /* Breakpoint 2: Hide New Download label */
-  @container header (max-width: 900px) {
+  @container header (max-width: 850px) {
     .header-new-btn-label {
       opacity: 0;
       max-width: 0;
-      pointer-events: none;
-      transform: translateX(15px);
       margin: 0 !important;
     }
 
     .header-new-btn {
       padding: 0.6rem !important;
       gap: 0 !important;
-      border-radius: 9999px !important;
       min-width: 40px;
-    }
-
-    .header-actions-container {
-      max-width: 150px;
-      /* Tighter when labels are gone */
     }
   }
 
-  /* Breakpoint 3: Hide branding text */
-  @container header (max-width: 850px) {
+  @container header (max-width: 700px) {
     .header-branding-text {
       opacity: 0;
       max-width: 0;
-      pointer-events: none;
-      transform: translateX(-15px);
       margin: 0 !important;
+      transform: translateX(-10px);
     }
 
     .header-branding {
       gap: 0;
-      max-width: 48px;
-      /* Compact branding column */
-    }
-
-    .header-actions-container {
-      justify-self: end;
     }
   }
 
-  /* Breakpoint 4: Hide Guide button */
   @container header (max-width: 550px) {
     .header-guide-btn {
       opacity: 0;
       max-width: 0;
-      pointer-events: none;
       margin: 0 !important;
       padding: 0 !important;
+      pointer-events: none;
     }
   }
 
-  /* Breakpoint 5: Hide Shortcut button */
-  @container header (max-width: 480px) {
+  @container header (max-width: 450px) {
     .header-shortcut-btn {
       opacity: 0;
       max-width: 0;
-      pointer-events: none;
       margin: 0 !important;
       padding: 0 !important;
+      pointer-events: none;
+    }
+
+    .cq-header {
+      gap: 0.5rem !important;
     }
   }
 
-  /* Breakpoint 6: Hide branding logo entirely for absolute minimum width */
-  @container header (max-width: 400px) {
+  @container header (max-width: 380px) {
     .header-branding {
       opacity: 0;
       max-width: 0;
@@ -369,12 +399,31 @@
     }
 
     .cq-header {
-      padding-left: 0.75rem !important;
-      padding-right: 0.75rem !important;
-      grid-template-columns: 0px auto 1fr !important;
-      gap: 0.5rem !important;
+      grid-template-columns: 0px 1fr auto !important;
     }
   }
+
+  .header-branding {
+    justify-self: start;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .header-actions-container {
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .header-nav-container {
+    transition: padding 0.15s cubic-bezier(0.4, 0, 0.2, 1), margin 0.15s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease;
+  }
+
+
+
+
 
   .header-new-btn-icon {
     width: 1.25rem !important;

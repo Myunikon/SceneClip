@@ -9,7 +9,7 @@ import { useAppStore } from '../../store'
 
 
 interface AboutSettingsProps {
-    addLog: (entry: { message: string, type: 'info' | 'error' | 'success', source: 'system' | 'ytdlp' | 'ffmpeg' }) => void
+    addLog: (entry: { message: string, level: 'info' | 'error' | 'success' | 'debug', source: 'system' | 'ytdlp' | 'ffmpeg' | 'ui' }) => void
     setShowEasterEgg: (show: boolean) => void
 }
 
@@ -56,7 +56,7 @@ export function AboutSettings({ addLog, setShowEasterEgg }: AboutSettingsProps) 
                     onClick={() => {
                         const newCount = (window as any)._ee_count = ((window as any)._ee_count || 0) + 1
                         if (newCount === 5) {
-                            addLog({ message: "🎉 EASTER EGG FOUND!", type: 'success', source: 'system' })
+                            addLog({ message: "🎉 EASTER EGG FOUND!", level: 'success', source: 'system' })
                             setShowEasterEgg(true)
                                 ; (window as any)._ee_count = 0
                         }

@@ -357,7 +357,7 @@ pub fn sanitize_filename(
     options: &YtDlpOptions,
 ) -> String {
     let sanitize_segment = |s: &str| -> String {
-        s.replace(|c: char| "\\/:*?\"<>|".contains(c), "_")
+        s.replace(|c: char| "\\/:*?\"<>|%".contains(c), "_")
             .replace("..", "")
             .trim()
             .to_string()
@@ -515,7 +515,11 @@ pub async fn build_ytdlp_args(
     gpu_type: &str,
     app_handle: &AppHandle,
 ) -> Vec<String> {
-    // Logic matching TS buildYtDlpArgs
+    log::info!(
+        "Building yt-dlp arguments for: {} (File: {})",
+        url,
+        final_filename
+    );
 
     let is_audio_mode = options.format.as_deref() == Some("audio")
         || (options.format.is_none() && options.audio_format.is_some());
@@ -546,7 +550,7 @@ pub async fn build_ytdlp_args(
         "--newline".to_string(),
         "--no-colors".to_string(),
         "--no-playlist".to_string(),
-        "--force-overwrites".to_string(),
+        "--no-overwrites".to_string(), // Safer default
         "--encoding".to_string(), "utf-8".to_string(),
         "-N".to_string(), concurrent_fragments.to_string(),
         "--continue".to_string(),
@@ -877,7 +881,6 @@ pub async fn build_ytdlp_args(
         && fmt != "audio"
         && fmt != "gif"
         && !options.force_transcode.unwrap_or(false)
-        && !is_clipping
     {
         let encoder = match active_gpu_type {
             "nvidia" => Some("h264_nvenc"),
@@ -1180,6 +1183,7 @@ pub async fn build_ytdlp_args(
     args.push("--".to_string());
     args.push(clean_url);
 
+    log::debug!("Finalized yt-dlp arguments: {:?}", args);
     args
 }
 

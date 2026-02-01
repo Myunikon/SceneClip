@@ -164,11 +164,11 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
                         )}
                     </div>
 
-                    {/* Progress Bar (Always visible if active) */}
-                    {['downloading', 'paused', 'pending', 'fetching_info', 'processing'].includes(task.status) && (
+                    {/* Progress Bar (Always visible if active or error) */}
+                    {['downloading', 'paused', 'pending', 'fetching_info', 'processing', 'error'].includes(task.status) && (
                         <div className="h-1 bg-secondary/80 w-full rounded-full overflow-hidden">
                             {/* Indeterminate shimmer for processing or null progress */}
-                            {(task.status === 'processing' || task.progress === null) ? (
+                            {(task.status === 'processing' || (task.progress === null && task.status !== 'error')) ? (
                                 <div
                                     className="h-full w-full bg-gradient-to-r from-transparent via-blue-500/60 to-transparent animate-shimmer"
                                     style={{ backgroundSize: '200% 100%' }}
@@ -177,7 +177,8 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
                                 <div
                                     className={cn(
                                         "h-full transition-all duration-300",
-                                        task.status === 'paused' ? "bg-yellow-500" : "bg-blue-500"
+                                        task.status === 'paused' ? "bg-yellow-500" :
+                                            task.status === 'error' ? "bg-destructive/50" : "bg-blue-500"
                                     )}
                                     style={{ width: `${Math.min(100, Math.max(0, task.progress ?? 0))}%` }}
                                 />

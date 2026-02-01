@@ -127,6 +127,7 @@ async fn handle_download(
         retry_count: Some(0),
         ytdlp_command: None,
         file_size: None,
+        completed_at: None,
         options,
     };
 

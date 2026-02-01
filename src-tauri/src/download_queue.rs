@@ -50,6 +50,7 @@ pub struct DownloadTask {
     pub retry_count: Option<u32>,
     pub ytdlp_command: Option<String>,
     pub file_size: Option<String>,
+    pub completed_at: Option<u64>,
     pub options: crate::ytdlp::YtDlpOptions,
 }
 
@@ -190,9 +191,24 @@ impl QueueState {
                 .unwrap_or_else(|e| e.into_inner())
                 .get_mut(id)
             {
-                task.status = status;
+                task.status = status.clone();
                 if let Some(m) = msg {
                     task.error_message = Some(m);
+                }
+
+                // Set completed_at for terminal states if not already set
+                if matches!(
+                    status,
+                    TaskStatus::Completed | TaskStatus::Stopped | TaskStatus::Error
+                ) {
+                    if task.completed_at.is_none() {
+                        task.completed_at = Some(
+                            std::time::SystemTime::now()
+                                .duration_since(std::time::UNIX_EPOCH)
+                                .unwrap_or_default()
+                                .as_millis() as u64,
+                        );
+                    }
                 }
             }
         }
@@ -596,9 +612,27 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                         t.status = TaskStatus::Completed;
                                         t.progress = 100.0;
                                         t.file_path = Some(file_path.clone());
-                                        t.file_size = t.total_size.clone(); // Capture the final total size
                                         t.status_detail = Some("Done".to_string());
+                                        t.completed_at = Some(
+                                            std::time::SystemTime::now()
+                                                .duration_since(std::time::UNIX_EPOCH)
+                                                .unwrap_or_default()
+                                                .as_millis()
+                                                as u64,
+                                        );
                                         t.scheduled_time = None; // ensure no retry
+
+                                        // Try to get real file size from disk
+                                        if let Ok(metadata) = std::fs::metadata(&file_path) {
+                                            let size_bytes = metadata.len();
+                                            // Format to MiB for consistency with progress
+                                            t.file_size = Some(format!(
+                                                "{:.2} MiB",
+                                                size_bytes as f64 / 1024.0 / 1024.0
+                                            ));
+                                        } else if t.file_size.is_none() {
+                                            t.file_size = t.total_size.clone(); // Fallback to last known progress size
+                                        }
                                     });
                                     emit_queue_update(&app_monitor, &state_monitor);
 

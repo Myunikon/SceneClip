@@ -86,7 +86,7 @@ export function ClipboardListener({ onFound, onNotificationClick }: ClipboardLis
 
                 useAppStore.getState().addLog({
                     message: `[Monitor] URL detected from backend: ${url}`,
-                    type: 'info',
+                    level: 'info',
                     source: 'system'
                 })
             }

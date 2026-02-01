@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand'
-import { AppState, SystemSlice } from './types'
+import { AppState, SystemSlice, LogLevel } from './types'
 import { downloadDir } from '@tauri-apps/api/path'
 import { notify } from '../../lib/notify'
 import { isTauriAvailable } from '../../lib/platform'
@@ -68,8 +68,8 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
                     } else {
                         logMsg += ` [Renderer: ${gpuInfo.renderer}]`
                     }
-                    get().addLog({ message: logMsg, type: 'info', source: 'system' })
-                    get().addLog({ message: `[GPU DETECT DIAGNOSTIC]\n${gpuInfo.debug_info}`, type: 'info', source: 'system' })
+                    get().addLog({ message: logMsg, level: 'info', source: 'system' })
+                    get().addLog({ message: `[GPU DETECT DIAGNOSTIC]\n${gpuInfo.debug_info}`, level: 'info', source: 'system' })
 
 
                     // Validate against known types (including Apple Silicon/VideoToolbox)
@@ -84,7 +84,7 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
                     })
                 } catch (e) {
                     console.error("GPU details fetch failed:", e)
-                    get().addLog({ message: `[GPU Error] Backend check failed: ${e}`, type: 'error', source: 'system' })
+                    get().addLog({ message: `[GPU Error] Backend check failed: ${e}`, level: 'error', source: 'system' })
                     set({ gpuType: 'cpu' })
                 }
             }
@@ -103,6 +103,42 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
         // Guard to prevent multiple calls
         if (get().listenersInitialized) {
             return
+        }
+
+        // 0. Setup Global Logging Listener (Backend -> UI)
+        try {
+            const { listen } = await import('@tauri-apps/api/event')
+            const logLevels: Record<number, LogLevel> = {
+                1: 'error',
+                2: 'warning',
+                3: 'info',
+                4: 'debug',
+                5: 'trace'
+            }
+
+            listen<any>('log://log', (event) => {
+                const { level, message, target } = event.payload
+                let type: LogLevel = logLevels[level] || 'info'
+
+                // Map Success if message matches
+                const successMarkers = ['[SUCCESS]', 'successfully', '[OK]', 'Done', 'Finished', '100%'];
+                if (successMarkers.some(m => message.includes(m) || message.toLowerCase().includes(m.toLowerCase()))) {
+                    type = 'success'
+                }
+
+                let source: 'system' | 'ytdlp' | 'ffmpeg' | 'ui' = 'system'
+                if (target.includes('ytdlp')) source = 'ytdlp'
+                else if (target.includes('ffmpeg')) source = 'ffmpeg'
+                else if (target === 'ui') source = 'ui'
+
+                get().addLog({
+                    message: `[${target}] ${message}`,
+                    level: type,
+                    source
+                })
+            })
+        } catch (e) {
+            console.warn("Failed to attach log listener:", e)
         }
 
         // Setup Queue Listeners (Rust Backend)
@@ -128,7 +164,7 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
 
         // Check for Binaries (Sidecar Check)
         try {
-            get().addLog({ message: 'Checking bundled binaries...', type: 'info', source: 'system' })
+            get().addLog({ message: 'Checking bundled binaries...', level: 'info', source: 'system' })
 
             // Essential Binaries (yt-dlp, ffmpeg)
             const [ffVer, ytVer, debugPaths] = await Promise.all([
@@ -152,12 +188,12 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
             console.log(`  [OK] ffmpeg   : ${ffVer || '[ERROR] NOT FOUND'}`)
 
             if (ffVer && ytVer) {
-                get().addLog({ message: `Essential Binaries: ffmpeg=${ffVer}, yt-dlp=${ytVer}`, type: 'success', source: 'system' })
+                get().addLog({ message: `Essential Binaries: ffmpeg=${ffVer}, yt-dlp=${ytVer}`, level: 'success', source: 'system' })
                 set({ binariesReady: true, ytdlpVersion: ytVer })
                 get().detectHardwareAccel()
             } else {
                 // If sidecar check fails, it means they are missing or permission denied
-                get().addLog({ message: `Missing essential binaries! ffmpeg=${ffVer}, yt-dlp=${ytVer}`, type: 'error', source: 'system' })
+                get().addLog({ message: `Missing essential binaries! ffmpeg=${ffVer}, yt-dlp=${ytVer}`, level: 'error', source: 'system' })
                 notify.error("Critical Error: Bundled binaries missing or not executable.")
                 set({ binariesReady: false })
             }
@@ -169,7 +205,7 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
             console.error("Binary check failed:", e)
             const t = translations[get().settings.language as keyof typeof translations]?.errors || translations.en.errors
             notify.error(t.binary_validation, { description: String(e) })
-            get().addLog({ message: `Binary check failed: ${e}`, type: 'error', source: 'system' })
+            get().addLog({ message: `Binary check failed: ${e}`, level: 'error', source: 'system' })
         }
     },
 
@@ -201,17 +237,17 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
             set({ ...updates })
 
             // Log warnings for specific failures
-            if (result.app_update.error) get().addLog({ message: `[Update Check] SceneClip Error: ${result.app_update.error}`, type: 'warning', source: 'system' })
-            else if (result.app_update.has_update) get().addLog({ message: `[Update Check] 🎉 SceneClip Update Available: ${result.app_update.latest}`, type: 'success', source: 'system' })
+            if (result.app_update.error) get().addLog({ message: `[Update Check] SceneClip Error: ${result.app_update.error}`, level: 'warning', source: 'system' })
+            else if (result.app_update.has_update) get().addLog({ message: `[Update Check] 🎉 SceneClip Update Available: ${result.app_update.latest}`, level: 'success', source: 'system' })
 
-            if (result.ytdlp.error) get().addLog({ message: `[Version Check] yt-dlp Error: ${result.ytdlp.error}`, type: 'warning', source: 'system' })
-            else get().addLog({ message: `[Version Check] yt-dlp: ${result.ytdlp.current} → ${result.ytdlp.latest || 'N/A'} (Update: ${result.ytdlp.has_update})`, type: 'info', source: 'system' })
+            if (result.ytdlp.error) get().addLog({ message: `[Version Check] yt-dlp Error: ${result.ytdlp.error}`, level: 'warning', source: 'system' })
+            else get().addLog({ message: `[Version Check] yt-dlp: ${result.ytdlp.current} → ${result.ytdlp.latest || 'N/A'} (Update: ${result.ytdlp.has_update})`, level: 'info', source: 'system' })
 
         } catch (e) {
             console.error('Version check failed:', e)
             const t = translations[get().settings.language as keyof typeof translations]?.errors || translations.en.errors
             notify.error(t.update_check, { description: String(e) })
-            get().addLog({ message: `[Version Check] Failed: ${e}`, type: 'error', source: 'system' })
+            get().addLog({ message: `[Version Check] Failed: ${e}`, level: 'error', source: 'system' })
         } finally {
             set({
                 isCheckingUpdates: false,
@@ -225,7 +261,7 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
 
     installAppUpdate: async () => {
         try {
-            get().addLog({ message: `Starting SceneClip update...`, type: 'info', source: 'system' })
+            get().addLog({ message: `Starting SceneClip update...`, level: 'info', source: 'system' })
             const { invoke } = await import('@tauri-apps/api/core')
             const { listen } = await import('@tauri-apps/api/event')
 
@@ -248,7 +284,7 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
         } catch (e) {
             console.error("App update failed:", e)
             notify.error(`App update failed: ${e}`)
-            get().addLog({ message: `App update failed: ${e}`, type: 'error', source: 'system' })
+            get().addLog({ message: `App update failed: ${e}`, level: 'error', source: 'system' })
             set({ appUpdateProgress: null })
         }
     },
@@ -260,7 +296,7 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
         }
 
         try {
-            get().addLog({ message: `Starting update for ${name}...`, type: 'info', source: 'system' })
+            get().addLog({ message: `Starting update for ${name}...`, level: 'info', source: 'system' })
             const { updateBinary } = await import('../../lib/updater-service')
 
             // Callback to update progress state
@@ -279,7 +315,7 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
             }
 
             notify.success(`${name} updated successfully!`)
-            get().addLog({ message: `${name} updated to ${newPath}`, type: 'success', source: 'system' })
+            get().addLog({ message: `${name} updated to ${newPath}`, level: 'success', source: 'system' })
 
             // Re-check to confirm version
             get().checkBinaryUpdates('binaries')
@@ -287,7 +323,7 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
         } catch (e) {
             console.error("Update failed:", e)
             notify.error(`Update failed: ${e}`)
-            get().addLog({ message: `Update failed: ${e}`, type: 'error', source: 'system' })
+            get().addLog({ message: `Update failed: ${e}`, level: 'error', source: 'system' })
 
             // Reset progress on error
             if (name === 'yt-dlp') set({ ytdlpUpdateProgress: null })
@@ -297,7 +333,7 @@ export const createSystemSlice: StateCreator<AppState, [], [], SystemSlice> = (s
         try {
             const { invoke } = await import('@tauri-apps/api/core')
             await invoke('cancel_update', { binary: name })
-            get().addLog({ message: `Updates cancelled for ${name}`, type: 'warning', source: 'system' })
+            get().addLog({ message: `Updates cancelled for ${name}`, level: 'warning', source: 'system' })
 
             // Reset progress
             if (name === 'yt-dlp') set({ ytdlpUpdateProgress: null })

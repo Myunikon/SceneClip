@@ -56,22 +56,22 @@ export const formatRange = (range: string) => {
 
 export const parseSize = (sizeStr: string): number => {
     if (!sizeStr) return 0
-    const str = sizeStr.toUpperCase().replace(/,/g, '') // Remove commas if any
+    const str = sizeStr.toUpperCase().replace(/,/g, '').trim()
 
-    // Find basic number
-    const match = str.match(/([0-9.]+)\s*([A-Z]+)/)
+    // Find number and optional unit
+    const match = str.match(/([0-9.]+)\s*([A-Z]*)/)
     if (!match) return 0
 
     const val = parseFloat(match[1])
-    const unit = match[2]
+    const unit = match[2] || ''
 
-    // Find power
-    // Simple fallback: check standard units
+    if (isNaN(val)) return 0
+
     let power = 0
     if (unit.includes('KB') || unit.includes('K')) power = 1
-    if (unit.includes('MB') || unit.includes('M')) power = 2
-    if (unit.includes('GB') || unit.includes('G')) power = 3
-    if (unit.includes('TB') || unit.includes('T')) power = 4
+    else if (unit.includes('MB') || unit.includes('M')) power = 2
+    else if (unit.includes('GB') || unit.includes('G')) power = 3
+    else if (unit.includes('TB') || unit.includes('T')) power = 4
 
     return val * Math.pow(1024, power)
 }

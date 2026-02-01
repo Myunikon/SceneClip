@@ -7,6 +7,11 @@ export const ms = {
         terminal: "Terminal",
         keyring: "Sandi"
     },
+    common: {
+        copy_error: "Gagal menyalin",
+        pause: "Jeda",
+        cancel: "Batal"
+    },
     error_boundary: {
         title: "Ada masalah berlaku.",
         reload: "Muat Semula Apl"

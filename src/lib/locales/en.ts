@@ -8,7 +8,9 @@ export const en = {
         keyring: "Keyring"
     },
     common: {
-        copy_error: "Copy failed"
+        copy_error: "Copy failed",
+        pause: "Pause",
+        cancel: "Cancel"
     },
     error_boundary: {
         title: "Something went wrong.",
@@ -959,6 +961,8 @@ export const en = {
     terminal: {
         filter_all: "All",
         filter_system: "System",
+        filter_ytdlp: "yt-dlp",
+        filter_ffmpeg: "FFmpeg",
         copy_all: "Copy All",
         clear_all: "Clear All",
         copied: "Copied!",

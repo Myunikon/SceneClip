@@ -53,13 +53,17 @@ export interface UISlice {
   respondBinaryConfirmation: (answer: boolean) => void
 }
 
+export type LogLevel = 'trace' | 'debug' | 'info' | 'success' | 'warning' | 'error'
+
 export interface LogEntry {
   id: string // Unique ID for diffing
   message?: string // Fallback or raw message
   translationKey?: string
   params?: Record<string, string | number>
-  type: 'info' | 'success' | 'warning' | 'error'
-  source: 'system' | 'ytdlp' | 'ffmpeg'
+  level: LogLevel
+  source: 'system' | 'ytdlp' | 'ffmpeg' | 'ui'
+  context?: string // Additional context (user action, file path, etc)
+  stackTrace?: string // For errors
   timestamp: number
 }
 

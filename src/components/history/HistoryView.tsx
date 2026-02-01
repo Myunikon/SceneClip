@@ -3,6 +3,7 @@ import { notify } from '../../lib/notify'
 import { useAppStore, DownloadTask } from '../../store'
 import { useShallow } from 'zustand/react/shallow'
 import { useTranslation } from 'react-i18next'
+import { invoke } from '@tauri-apps/api/core'
 import {
     Search,
     Filter,
@@ -103,8 +104,19 @@ export function HistoryView() {
         }
     }, [selectedIds, clearTask, t])
 
+    useEffect(() => {
+        const refreshSizes = async () => {
+            try {
+                await invoke('verify_file_sizes')
+            } catch (e) {
+                console.error('Failed to verify sizes:', e)
+            }
+        }
+        refreshSizes()
+    }, [])
+
     const historyTasks = useMemo(() => {
-        const realTasks = tasks.filter(t => t.status === 'completed' || t.status === 'stopped')
+        const realTasks = tasks.filter(t => t.status === 'completed' || t.status === 'stopped' || t.status === 'error')
         const allTasks = [...realTasks] // Purely real tasks
 
         let filtered = allTasks
@@ -121,14 +133,15 @@ export function HistoryView() {
             })
         }
 
-        filtered.sort((a, b) => {
+        // Create a new array for sorting to avoid mutating the original
+        const sorted = [...filtered].sort((a, b) => {
             let valA: number | string = 0
             let valB: number | string = 0
 
             switch (filterType) {
                 case 'size':
-                    valA = parseSize(a.fileSize || '0')
-                    valB = parseSize(b.fileSize || '0')
+                    valA = parseSize(a.fileSize || a.totalSize || '0')
+                    valB = parseSize(b.fileSize || b.totalSize || '0')
                     break
                 case 'source':
                     try {
@@ -141,8 +154,9 @@ export function HistoryView() {
                     break
                 case 'date':
                 default:
-                    valA = a.completedAt || 0
-                    valB = b.completedAt || 0
+                    // Use completedAt if available, otherwise fallback to addedAt for older tasks
+                    valA = a.completedAt || a.addedAt || 0
+                    valB = b.completedAt || b.addedAt || 0
                     break
             }
 
@@ -151,7 +165,7 @@ export function HistoryView() {
             return 0
         })
 
-        return filtered
+        return sorted
     }, [tasks, searchQuery, filterType, sortOrder, filterFormat])
 
     // Verification State
@@ -168,7 +182,6 @@ export function HistoryView() {
 
         for (const chunk of chunks) {
             await Promise.all(chunk.map(async (task) => {
-
                 if (task.filePath) {
                     try {
                         const fileExists = await exists(task.filePath)
@@ -184,6 +197,8 @@ export function HistoryView() {
         if (missing.size > 0) notify.warning(t('history.scan_missing_files', { count: missing.size }), { duration: 4000 })
         else notify.success(t('history.scan_healthy_files'), { duration: 3000 })
     }
+
+
 
     const handleOpenFolder = useCallback(async (path: string) => {
         try { await openPath(path); } catch {
@@ -266,7 +281,7 @@ export function HistoryView() {
                     </div>
 
                     {/* Controls Row */}
-                    <div className="flex gap-4 justify-between flex-wrap history-controls-row">
+                    <div className="flex gap-6 items-center justify-between flex-wrap history-controls-row">
                         {/* Segmented Control */}
                         <div className="overflow-x-auto history-segmented-container">
                             <SegmentedControl
@@ -280,9 +295,9 @@ export function HistoryView() {
                             />
                         </div>
 
-                        {/* Search & Sort & Select */}
-                        <div className="flex gap-2 flex-1 items-center">
-                            <div className="relative group flex-1 max-w-md history-search-container">
+                        {/* Search & Actions Group (Pushed to end) */}
+                        <div className="flex gap-2 flex-1 items-center justify-end ml-auto min-w-[300px]">
+                            <div className="relative group flex-1 max-w-sm history-search-container">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 transition-colors" />
                                 <input
                                     type="text"
@@ -293,60 +308,67 @@ export function HistoryView() {
                                 />
                             </div>
 
-                            {/* Select Mode Toggle */}
-                            <button
-                                onClick={toggleSelectionMode}
-                                className={cn(
-                                    "h-9 w-9 flex items-center justify-center rounded-lg transition-all border outline-none",
-                                    isSelectionMode
-                                        ? "bg-primary text-primary-foreground border-transparent shadow-sm"
-                                        : "bg-secondary/50 border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary"
-                                )}
-                                title={isSelectionMode ? t('history_menu.cancel') : t('history_menu.select')}
-                            >
-                                <ListChecks className="w-5 h-5" />
-                            </button>
-
-                            {/* Sort Dropdown */}
-                            <div className="relative shrink-0" ref={menuRef}>
+                            {/* Actions Group */}
+                            <div className="flex items-center gap-2 shrink-0">
+                                {/* Select Mode Toggle */}
                                 <button
-                                    onClick={() => setShowMenu(!showMenu)}
+                                    onClick={toggleSelectionMode}
                                     className={cn(
-                                        "p-2 rounded-lg border transition-all text-muted-foreground hover:text-foreground",
-                                        showMenu ? "bg-secondary text-foreground border-border/50" : "border-transparent hover:bg-secondary/50"
+                                        "h-9 w-9 flex items-center justify-center rounded-lg transition-all border outline-none",
+                                        isSelectionMode
+                                            ? "bg-primary text-primary-foreground border-transparent shadow-sm"
+                                            : "bg-secondary/50 border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary"
                                     )}
+                                    title={isSelectionMode ? t('history_menu.cancel') : t('history_menu.select')}
                                 >
-                                    <Filter className="w-4 h-4" />
+                                    <ListChecks className="w-5 h-5" />
                                 </button>
-                                {showMenu && (
-                                    <div className="absolute right-0 top-full mt-2 w-56 bg-card/95 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 p-1.5">
-                                        <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">Sort By</div>
-                                        {['date', 'size'].map(type => (
-                                            <button
-                                                key={type}
-                                                onClick={() => {
-                                                    if (filterType === type) setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
-                                                    else setFilterType(type)
-                                                }}
-                                                className={cn("flex w-full items-center justify-between px-2 py-1.5 text-xs rounded-lg transition-colors capitalize", filterType === type ? "bg-primary/10 text-primary font-bold" : "hover:bg-muted")}
-                                            >
-                                                {type}
-                                                <div className="flex items-center">
-                                                    {filterType === type && sortOrder === 'asc' && <ArrowUp className="w-3 h-3 mr-1" />}
-                                                    {filterType === type && sortOrder === 'desc' && <ArrowDown className="w-3 h-3 mr-1" />}
-                                                    {filterType === type && <CheckCircle2 className="w-3 h-3" />}
-                                                </div>
+
+                                {/* Sort Dropdown */}
+                                <div className="relative" ref={menuRef}>
+                                    <button
+                                        onClick={() => setShowMenu(!showMenu)}
+                                        className={cn(
+                                            "p-2 rounded-lg border transition-all text-muted-foreground hover:text-foreground",
+                                            showMenu ? "bg-secondary text-foreground border-border/50" : "border-transparent hover:bg-secondary/50"
+                                        )}
+                                    >
+                                        <Filter className="w-4 h-4" />
+                                    </button>
+                                    {showMenu && (
+                                        <div className="absolute right-0 top-full mt-2 w-48 bg-card/95 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 p-1.5">
+                                            <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">Sort By</div>
+                                            {['date', 'size'].map(type => (
+                                                <button
+                                                    key={type}
+                                                    onClick={() => {
+                                                        if (filterType === type) setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+                                                        else setFilterType(type)
+                                                    }}
+                                                    className={cn(
+                                                        "flex w-full items-center justify-between px-2 py-1.5 text-xs rounded-lg transition-colors capitalize",
+                                                        filterType === type ? "bg-primary/10 text-primary font-bold" : "hover:bg-muted"
+                                                    )}
+                                                >
+                                                    {type}
+                                                    <div className="flex items-center gap-1">
+                                                        {filterType === type && (
+                                                            sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                                                        )}
+                                                        {filterType === type && <CheckCircle2 className="w-4 h-4" />}
+                                                    </div>
+                                                </button>
+                                            ))}
+                                            <div className="h-px bg-border/50 my-1" />
+                                            <button onClick={handleVerifyFiles} className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium hover:bg-muted rounded-lg transition-colors">
+                                                <RefreshCw className={cn("w-3.5 h-3.5", isVerifying && "animate-spin")} /> Verify Integrity
                                             </button>
-                                        ))}
-                                        <div className="h-px bg-border/50 my-1" />
-                                        <button onClick={handleVerifyFiles} className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium hover:bg-muted rounded-lg">
-                                            <RefreshCw className={cn("w-3.5 h-3.5", isVerifying && "animate-spin")} /> Verify Integrity
-                                        </button>
-                                        <button onClick={() => { if (confirm("Delete all?")) deleteHistory() }} className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium text-red-500 hover:bg-red-500/10 rounded-lg">
-                                            <Trash2 className="w-3.5 h-3.5" /> Delete History
-                                        </button>
-                                    </div>
-                                )}
+                                            <button onClick={() => { if (confirm("Delete all history?")) deleteHistory() }} className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
+                                                <Trash2 className="w-3.5 h-3.5" /> Delete History
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

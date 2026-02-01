@@ -109,12 +109,12 @@ export const HistoryItem = memo(({
             </div>
 
             {/* 2. Main Content Area */}
-            <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+            <div className="flex-1 min-w-0 flex flex-col justify-center gap-1.5">
                 {/* Title */}
                 <OverflowTooltip
                     content={task.title}
                     className={cn(
-                        "font-medium text-[13px] leading-none text-foreground",
+                        "font-medium text-[13.5px] leading-tight text-foreground",
                         isMissing && "decoration-red-500/50 line-through decoration-2"
                     )}
                 >
@@ -122,24 +122,30 @@ export const HistoryItem = memo(({
                 </OverflowTooltip>
 
                 {/* Subtitle / Meta Line */}
-                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/80 truncate">
+                <div className="flex items-center gap-2 text-[11px] text-muted-foreground/70 truncate">
                     <span className="shrink-0">{task.fileSize || task.totalSize || t('history.unknown_size') || "Unknown size"}</span>
-                    <span className="w-0.5 h-0.5 rounded-full bg-muted-foreground/40 shrink-0" />
 
-                    {/* Localized Date */}
-                    <span className="shrink-0">{completedDate}</span>
-                    <span className="w-px h-2.5 bg-border shrink-0 mx-0.5" />
+                    {completedDate && (
+                        <>
+                            <span className="w-1 h-1 rounded-full bg-muted-foreground/20 shrink-0" />
+                            <span className="shrink-0">{completedDate}</span>
+                        </>
+                    )}
+
+                    <span className="w-1 h-1 rounded-full bg-muted-foreground/20 shrink-0" />
 
                     {/* Tech Badges */}
-                    <span className="uppercase font-semibold tracking-wider text-foreground/70">{task.format || "UNK"}</span>
-                    {task._options?.videoCodec && (
-                        <span className={cn(
-                            "uppercase font-mono",
-                            task._options.videoCodec.includes('av1') ? "text-green-600 dark:text-green-400 font-bold" : "opacity-75"
-                        )}>
-                            {task._options.videoCodec.split('.')[0]}
-                        </span>
-                    )}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="uppercase font-bold tracking-tight text-foreground/80">{task.format || "UNK"}</span>
+                        {task._options?.videoCodec && (
+                            <span className={cn(
+                                "uppercase font-mono text-[9px] px-1 rounded bg-secondary/50",
+                                task._options.videoCodec.includes('av1') ? "text-green-600 dark:text-green-400 font-bold" : "opacity-60"
+                            )}>
+                                {task._options.videoCodec.split('.')[0]}
+                            </span>
+                        )}
+                    </div>
 
                     {/* Range Badge */}
                     {task.range && task.range !== 'Full' && (
@@ -147,7 +153,7 @@ export const HistoryItem = memo(({
                             <span className="w-px h-2.5 bg-border shrink-0 mx-0.5" />
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <span className="text-purple-500 flex items-center gap-0.5">
+                                    <span className="text-purple-500 font-medium flex items-center gap-0.5">
                                         <Minimize2 className="w-3 h-3" />
                                         {formatRange(task.range)}
                                     </span>
@@ -162,13 +168,16 @@ export const HistoryItem = memo(({
                     {/* Path */}
                     {task.path && (
                         <>
-                            <span className="w-px h-2.5 bg-border shrink-0 mx-0.5" />
-                            <OverflowTooltip
-                                content={<p className="max-w-[500px] break-all font-mono text-[10px]">{task.path}</p>}
-                                className="font-mono opacity-50 max-w-[400px] flex-shrink"
-                            >
-                                {task.path}
-                            </OverflowTooltip>
+                            <span className="w-px h-3 bg-border shrink-0 mx-1" />
+                            <div className="flex items-center gap-1 min-w-0 opacity-40 hover:opacity-100 transition-opacity">
+                                <FolderOpen className="w-3 h-3 shrink-0" />
+                                <OverflowTooltip
+                                    content={<p className="max-w-[500px] break-all font-mono text-[10px]">{task.path}</p>}
+                                    className="truncate flex-1 font-mono text-[10px]"
+                                >
+                                    {task.path}
+                                </OverflowTooltip>
+                            </div>
                         </>
                     )}
                 </div>

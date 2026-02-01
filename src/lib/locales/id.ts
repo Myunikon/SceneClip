@@ -7,6 +7,11 @@ export const id = {
         terminal: "Terminal",
         keyring: "Sandi"
     },
+    common: {
+        copy_error: "Gagal menyalin",
+        pause: "Jeda",
+        cancel: "Batal"
+    },
     error_boundary: {
         title: "Ada yang salah nih.",
         reload: "Muat Ulang Aplikasi"
@@ -507,6 +512,8 @@ export const id = {
     terminal: {
         filter_all: "Semua",
         filter_system: "Sistem",
+        filter_ytdlp: "yt-dlp",
+        filter_ffmpeg: "FFmpeg",
         copy_all: "Salin Semua",
         clear_all: "Bersihkan Semua",
         copied: "Disalin!",

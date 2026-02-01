@@ -66,7 +66,7 @@ export function detectBinaryType(filename: string): BinaryType | null {
 /**
  * Validates sidecar binaries using behavioral checks for logging.
  */
-export async function runBinaryValidation(addLog: (entry: { message: string, type: 'info' | 'warning' | 'error' | 'success', source: 'system' | 'ytdlp' | 'ffmpeg' }) => void, language: string = 'en'): Promise<void> {
+export async function runBinaryValidation(addLog: (entry: { message: string, level: 'info' | 'warning' | 'error' | 'success', source: 'system' | 'ytdlp' | 'ffmpeg' }) => void, language: string = 'en'): Promise<void> {
     try {
         const settings = useAppStore.getState().settings
 
@@ -76,12 +76,12 @@ export async function runBinaryValidation(addLog: (entry: { message: string, typ
             const res = await validateBinary(ffPath, 'ffmpeg')
 
             if (res.isValid && res.version?.toLowerCase().includes('ffmpeg')) {
-                addLog({ message: "[Security] FFmpeg check passed (valid output).", type: 'success', source: 'system' })
+                addLog({ message: "[Security] FFmpeg check passed (valid output).", level: 'success', source: 'system' })
             } else {
-                addLog({ message: `[Security] WARNING: FFmpeg check returned unexpected output: ${res.error || 'Identity mismatch'}`, type: 'warning', source: 'system' })
+                addLog({ message: `[Security] WARNING: FFmpeg check returned unexpected output: ${res.error || 'Identity mismatch'}`, level: 'warning', source: 'system' })
             }
         } catch (e) {
-            addLog({ message: `[Security] FFmpeg validation error: ${e}`, type: 'warning', source: 'system' })
+            addLog({ message: `[Security] FFmpeg validation error: ${e}`, level: 'warning', source: 'system' })
         }
 
         // yt-dlp Validation
@@ -90,18 +90,18 @@ export async function runBinaryValidation(addLog: (entry: { message: string, typ
             const res = await validateBinary(ytPath, 'ytdlp')
 
             if (res.isValid && res.version && /^\d{4}\.\d{2}\.\d{2}/.test(res.version.trim())) {
-                addLog({ message: `[Security] yt-dlp check passed (version: ${res.version.trim()}).`, type: 'success', source: 'system' })
+                addLog({ message: `[Security] yt-dlp check passed (version: ${res.version.trim()}).`, level: 'success', source: 'system' })
             } else {
-                addLog({ message: `[Security] WARNING: yt-dlp output format mismatch or invalid.`, type: 'warning', source: 'system' })
+                addLog({ message: `[Security] WARNING: yt-dlp output format mismatch or invalid.`, level: 'warning', source: 'system' })
             }
         } catch (e) {
-            addLog({ message: `[Security] yt-dlp validation error: ${e}`, type: 'warning', source: 'system' })
+            addLog({ message: `[Security] yt-dlp validation error: ${e}`, level: 'warning', source: 'system' })
         }
 
     } catch (e: unknown) {
         console.error("Binary validation failed", e)
         const t = translations[language as keyof typeof translations]?.errors || translations.en.errors
         notify.error(t.binary_crash, { description: e instanceof Error ? e.message : undefined })
-        addLog({ message: `[Security] Binary validation failed: ${e instanceof Error ? e.message : e}`, type: 'error', source: 'system' })
+        addLog({ message: `[Security] Binary validation failed: ${e instanceof Error ? e.message : e}`, level: 'error', source: 'system' })
     }
 }

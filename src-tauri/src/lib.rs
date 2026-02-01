@@ -81,6 +81,7 @@ pub fn run() {
             commands::queue::pause_task,
             commands::queue::resume_task,
             commands::queue::get_queue_state,
+            commands::queue::verify_file_sizes,
             commands::updater::check_updates,
             commands::updater::update_binary,
             commands::updater::cancel_update,
@@ -326,10 +327,7 @@ fn cleanup_local_binaries(app: &tauri::App) -> Result<(), Box<dyn std::error::Er
         return Ok(());
     }
 
-    // LIST OF BINARIES TO FORCE CLEANUP (Everything except yt-dlp)
-    let binaries_to_remove = ["ffmpeg", "aria2c", "rsgain", "deno", "ffprobe"];
-
-    for binary in binaries_to_remove {
+    for binary in ["ffmpeg", "aria2c", "rsgain", "deno", "ffprobe"] {
         #[cfg(target_os = "windows")]
         let filename = format!("{}.exe", binary);
         #[cfg(not(target_os = "windows"))]

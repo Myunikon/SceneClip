@@ -7,6 +7,11 @@ export const zh = {
         terminal: "终端",
         keyring: "密钥环"
     },
+    common: {
+        copy_error: "复制失败",
+        pause: "暂停",
+        cancel: "取消"
+    },
     error_boundary: {
         title: "出了点问题。",
         reload: "重新加载应用"

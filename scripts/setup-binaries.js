@@ -18,7 +18,7 @@ if (!fs.existsSync(BIN_DIR)) {
 // Configuration for all supported targets
 const TARGETS = {
     'win-x64': {
-        triple: 'x86_64-pc-windows-gnu', // Use -gnu for MinGW consistency
+        triple: 'x86_64-pc-windows-msvc', // Use -msvc to match GitHub Actions default toolchain
         platform: 'win32',
         arch: 'x64',
         ffmpegUrl: 'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip',

@@ -33,7 +33,7 @@ const TARGETS = {
         platform: 'win32',
         arch: 'arm64',
         ffmpegUrl: 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-winarm64-gpl.zip',
-        denoUrl: 'https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip', // x64 via emulation
+        denoUrl: 'https://github.com/denoland/deno/releases/latest/download/deno-aarch64-pc-windows-msvc.zip', // Native ARM64
         ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_arm64.exe',
         aria2Url: 'https://github.com/minnyres/aria2-windows-arm64/releases/download/1.37.0/aria2_1.37.0_arm64.zip',
         rsgainUrl: 'https://github.com/complexlogic/rsgain/releases/download/v3.6/rsgain_3.6_win64.zip', // Emulated x64
@@ -85,6 +85,17 @@ const TARGETS = {
         ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp',
         aria2Url: 'https://github.com/aria2/aria2/releases/download/release-1.36.0/aria2-1.36.0-linux-gnu-64bit-build1.tar.bz2',
         rsgainUrl: null, // No static binary available for Linux. Use package manager.
+        ext: ''
+    },
+    'linux-arm64': {
+        triple: 'aarch64-unknown-linux-gnu',
+        platform: 'linux',
+        arch: 'arm64',
+        ffmpegUrl: 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-arm64-static.tar.xz',
+        denoUrl: 'https://github.com/denoland/deno/releases/latest/download/deno-aarch64-unknown-linux-gnu.zip',
+        ytdlpUrl: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux_aarch64',
+        aria2Url: null, // No official ARM64 release. Build from source or use package manager.
+        rsgainUrl: null, // No static binary available for Linux ARM. Use package manager.
         ext: ''
     }
 };

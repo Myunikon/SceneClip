@@ -43,6 +43,9 @@ jobs:
           - platform: windows-latest
             args: "--target aarch64-pc-windows-msvc"
             name: "win-arm64"
+          - platform: windows-latest
+            args: "--target i686-pc-windows-msvc"
+            name: "win-x86"
 
     runs-on: ${{ matrix.platform }}
     env:
@@ -64,6 +67,12 @@ jobs:
         if: matrix.platform == 'windows-latest' && matrix.args == '--target aarch64-pc-windows-msvc'
         run: |
           rustup target add aarch64-pc-windows-msvc
+
+      # --- Windows Setup for x86 Build ---
+      - name: Setup Windows x86 Build
+        if: matrix.platform == 'windows-latest' && matrix.args == '--target i686-pc-windows-msvc'
+        run: |
+          rustup target add i686-pc-windows-msvc
 
       # --- macOS Setup for Universal Build ---
       - name: Setup macOS Universal Build
@@ -149,30 +158,40 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx tauri build ${{ matrix.args }}
 
-      # --- Create Browser Extension ZIP ---
-      - name: Create Browser Extension ZIP
-        if: matrix.platform == 'windows-latest'
-        run: |
-          Compress-Archive -Path "browser_extension/*" -DestinationPath "SceneClip_browser_extension.zip"
-        shell: pwsh
 
       # --- Create Portable ZIP (Windows) ---
       - name: Create Portable ZIP (Windows)
         if: matrix.platform == 'windows-latest'
         run: |
           $version = "${{ github.ref_name }}".TrimStart('v')
-          $isArm64 = "${{ matrix.name }}" -eq "win-arm64"
-          if ($isArm64) {
-            $archSuffix = "aarch64-pc-windows-msvc"
-            $portableDir = "SceneClip_${version}_arm64_portable"
-          } else {
-            $archSuffix = "x86_64-pc-windows-gnu"
-            $portableDir = "SceneClip_${version}_x64_portable"
+          $matrixName = "${{ matrix.name }}"
+          
+          # Determine architecture suffix based on matrix name
+          switch ($matrixName) {
+            "win-arm64" {
+              $archSuffix = "aarch64-pc-windows-msvc"
+              $portableDir = "SceneClip_${version}_arm64_portable"
+            }
+            "win-x86" {
+              $archSuffix = "i686-pc-windows-msvc"
+              $portableDir = "SceneClip_${version}_x86_portable"
+            }
+            default {
+              $archSuffix = "x86_64-pc-windows-msvc"
+              $portableDir = "SceneClip_${version}_x64_portable"
+            }
           }
           
           New-Item -ItemType Directory -Force -Path $portableDir
           
-          $nsisDir = "src-tauri/target/release"
+          # Determine target directory based on build args
+          if ("${{ matrix.args }}" -ne "") {
+            $targetArg = "${{ matrix.args }}".Replace("--target ", "")
+            $nsisDir = "src-tauri/target/$targetArg/release"
+          } else {
+            $nsisDir = "src-tauri/target/release"
+          }
+          
           Copy-Item "$nsisDir/SceneClip.exe" "$portableDir/"
           
           # Copy sidecars if they exist in release folder (Tauri bundler usually puts them there)
@@ -244,4 +263,3 @@ jobs:
             src-tauri/target/**/bundle/rpm/*.rpm
             src-tauri/target/**/bundle/appimage/*.AppImage
             ${{ env.PORTABLE_ZIP }}
-            SceneClip_browser_extension.zip

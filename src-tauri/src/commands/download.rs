@@ -139,6 +139,10 @@ pub async fn download_media_internal(
                     }
                 }
             } else {
+                log::warn!(
+                    "[Download] Metadata fetch failed for URL: {}, using defaults",
+                    url
+                );
                 let _ = sender.send(DownloadEvent::Log {
                     id: id.clone(),
                     message: "Metadata fetch failed, proceeding with default values.".to_string(),
@@ -391,6 +395,7 @@ pub async fn download_media_internal(
                         .join("\n")
                 };
 
+                log::error!("[Download] Failed (ID: {}): {}", id, error_msg);
                 let _ = sender.send(DownloadEvent::Error {
                     id: id.clone(),
                     message: error_msg,
@@ -399,6 +404,7 @@ pub async fn download_media_internal(
         }
         Err(e) => {
             // In case of kill or error
+            log::warn!("[Download] Process cancelled or killed (ID: {}): {}", id, e);
             let _ = sender.send(DownloadEvent::Error {
                 id: id.clone(),
                 message: format!("Process execution error or cancelled: {}", e),

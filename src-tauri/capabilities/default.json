@@ -271,6 +271,7 @@
       ]
     },
     "deep-link:default",
+    "log:default",
     "store:default"
   ]
 }

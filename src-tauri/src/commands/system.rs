@@ -21,6 +21,7 @@ pub fn perform_system_action(action: String, confirm: bool) -> Result<(), String
 
 #[command]
 pub fn force_exit(_app_handle: AppHandle) {
+    log::info!("[System] Force exit requested by user");
     // We use std::process::exit to guarantee immediate termination,
     // bypassing any potential recursive CloseRequested checks.
     std::process::exit(0);
@@ -295,13 +296,19 @@ pub async fn validate_binary(path: String, flag: String) -> Result<String, Strin
 }
 #[command]
 pub async fn open_log_dir(app_handle: AppHandle) -> Result<(), String> {
+    log::info!("[System] Opening log directory");
     use tauri_plugin_opener::OpenerExt;
-    let log_dir = app_handle.path().app_log_dir().map_err(|e| e.to_string())?;
+    let log_dir = app_handle.path().app_log_dir().map_err(|e| {
+        log::error!("[System] Failed to get log directory: {}", e);
+        e.to_string()
+    })?;
 
     if !log_dir.exists() {
+        log::warn!("[System] Log directory does not exist: {:?}", log_dir);
         return Err("Log directory does not exist".to_string());
     }
 
+    log::debug!("[System] Opening path: {:?}", log_dir);
     app_handle
         .opener()
         .open_path(log_dir.to_string_lossy().to_string(), None::<String>)

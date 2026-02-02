@@ -14,6 +14,7 @@ import { useTheme } from '../hooks/useTheme'
 import { useNetworkStatus } from '../hooks/useNetworkStatus'
 import { useDeepLinks } from '../hooks/useDeepLinks'
 import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts'
+import { useBackendLogs } from '../hooks/useBackendLogs'
 import { AddDialog, AddDialogHandle } from '../components/dialogs'
 import { Onboarding } from '../components/providers'
 import { ClipboardListener } from '../components/providers'
@@ -52,6 +53,7 @@ function RootComponent() {
 
     // Custom Hooks Integration
     useTheme({ theme: settings.theme, frontendFontSize: settings.frontendFontSize })
+    useBackendLogs() // Bridge backend logs to frontend when developerMode is enabled
 
     const isOffline = useNetworkStatus()
 

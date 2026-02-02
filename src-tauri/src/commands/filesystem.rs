@@ -3,6 +3,7 @@ use tauri::{AppHandle, Manager};
 
 #[tauri::command]
 pub fn get_unique_filepath(file_path: String) -> Result<String, String> {
+    log::debug!("[Filesystem] Generating unique path for: {}", file_path);
     let path = Path::new(&file_path);
     let parent = path.parent().unwrap_or(Path::new(""));
     let file_stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("file");
@@ -50,17 +51,28 @@ pub fn save_temp_cookie_file(
     content: String,
     id: String,
 ) -> Result<String, String> {
+    log::debug!("[Filesystem] Saving temp cookie file for task: {}", id);
     let file_name = format!("cookies_{}.txt", id);
 
     // Resolve AppLocalData directory
-    let app_local_data = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
+    let app_local_data = app.path().app_local_data_dir().map_err(|e| {
+        log::error!("[Filesystem] Failed to get app local data dir: {}", e);
+        e.to_string()
+    })?;
 
     if !app_local_data.exists() {
-        std::fs::create_dir_all(&app_local_data).map_err(|e| e.to_string())?;
+        std::fs::create_dir_all(&app_local_data).map_err(|e| {
+            log::error!("[Filesystem] Failed to create app local data dir: {}", e);
+            e.to_string()
+        })?;
     }
 
     let path = app_local_data.join(file_name);
-    std::fs::write(&path, content).map_err(|e| e.to_string())?;
+    std::fs::write(&path, content).map_err(|e| {
+        log::error!("[Filesystem] Failed to write cookie file: {}", e);
+        e.to_string()
+    })?;
 
+    log::debug!("[Filesystem] Cookie file saved: {:?}", path);
     Ok(path.to_string_lossy().to_string())
 }

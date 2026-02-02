@@ -7,7 +7,6 @@ use tauri::{AppHandle, Manager};
 use url::Url;
 
 // --- Constants ---
-const BINARIES_DENO: &str = "bin/deno";
 const DEFAULTS_SOCKET_TIMEOUT: &str = "15";
 
 // --- Structs ---
@@ -784,14 +783,12 @@ pub async fn build_ytdlp_args(
             }
         });
 
+        // Try to find Deno sidecar using proper resolution (handles platform suffix)
         if active_js_path.is_none() {
-            if let Ok(sidecar_path) = app_handle
-                .path()
-                .resolve(BINARIES_DENO, tauri::path::BaseDirectory::Resource)
-            {
-                if sidecar_path.exists() {
-                    active_js_path = Some(sidecar_path.to_string_lossy().to_string());
-                }
+            let deno_path = resolve_binary_path(app_handle, "deno");
+            // Only use if we found a real path (not just "deno" fallback)
+            if deno_path != "deno" && std::path::Path::new(&deno_path).exists() {
+                active_js_path = Some(deno_path);
             }
         }
 

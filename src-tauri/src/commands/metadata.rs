@@ -49,10 +49,23 @@ struct YtDlpMetadata {
 
 #[tauri::command]
 pub fn parse_video_metadata(raw_json: serde_json::Value) -> Result<ParsedMetadata, String> {
-    let meta: YtDlpMetadata = serde_json::from_value(raw_json)
-        .map_err(|e| format!("Failed to parse yt-dlp JSON: {}", e))?;
+    log::debug!("[Metadata] Parsing video metadata from JSON...");
 
-    let title = meta.title.unwrap_or_else(|| "Unknown Video".to_string());
+    let meta: YtDlpMetadata = serde_json::from_value(raw_json).map_err(|e| {
+        log::error!("[Metadata] Failed to parse yt-dlp JSON: {}", e);
+        format!("Failed to parse yt-dlp JSON: {}", e)
+    })?;
+
+    let title = meta
+        .title
+        .clone()
+        .unwrap_or_else(|| "Unknown Video".to_string());
+    log::info!(
+        "[Metadata] Parsed video: \"{}\" (duration: {:.1}s)",
+        title,
+        meta.duration.unwrap_or(0.0)
+    );
+
     let duration = meta.duration.unwrap_or(0.0);
 
     let mut resolutions = Vec::new();

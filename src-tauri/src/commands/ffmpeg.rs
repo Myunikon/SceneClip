@@ -63,6 +63,13 @@ pub async fn compress_media(
     settings: AppSettings, // To get binary path
     on_event: Channel<FFmpegEvent>,
 ) -> Result<(), String> {
+    log::info!(
+        "[FFmpeg] Starting compression: {} -> {}",
+        input_path,
+        output_path
+    );
+    log::debug!("[FFmpeg] Options: {:?}", options);
+
     let ffmpeg_path = crate::ytdlp::resolve_ffmpeg_path(&_app, &settings.binary_path_ffmpeg);
 
     let mut args = vec!["-hide_banner".to_string(), "-y".to_string()];
@@ -251,10 +258,15 @@ pub async fn compress_media(
     let _ = parser_handle.await; // Wait for cleanup
 
     if output.status.success() {
+        log::info!(
+            "[FFmpeg] Compression completed successfully: {}",
+            output_path
+        );
         let _ = on_event.send(FFmpegEvent::Completed { output_path });
         Ok(())
     } else {
         let error_message = String::from_utf8_lossy(&output.stderr).to_string();
+        log::error!("[FFmpeg] Compression failed: {}", error_message);
         let _ = on_event.send(FFmpegEvent::Error {
             message: error_message.clone(),
         });

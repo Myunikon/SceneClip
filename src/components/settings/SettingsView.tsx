@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Globe, Palette, HardDrive, Film, Info, FileClock, Cpu } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
@@ -15,7 +15,76 @@ import { MediaSettings } from './MediaSettings'
 import { NetworkSettings } from './NetworkSettings'
 import { SystemSettings } from './SystemSettings'
 import { AboutSettings } from './AboutSettings'
-import { OverflowTooltip } from '../ui/tooltip'
+// import { OverflowTooltip } from '../ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
+
+interface SidebarButtonProps {
+    tab: { id: string; label: string; icon: React.ComponentType<{ className?: string }> }
+    isActive: boolean
+    onClick: () => void
+}
+
+function SidebarButton({ tab, isActive, onClick }: SidebarButtonProps) {
+    const [isEnabled, setIsEnabled] = useState(false)
+    const buttonRef = useRef<HTMLButtonElement>(null)
+    const textRef = useRef<HTMLSpanElement>(null)
+
+    useEffect(() => {
+        const check = () => {
+            const btn = buttonRef.current
+            const txt = textRef.current
+            if (!btn || !txt) return
+
+            // 1. Check if "Icon Mode" (collapsed)
+            // A simple heuristic: if button width is small (e.g. < 100px), we assume icon mode.
+            const isIconMode = btn.offsetWidth < 100
+
+            // 2. Check if text truncated
+            const isTruncated = txt.scrollWidth > txt.clientWidth + 1
+
+            // Enable tooltip if either condition is met
+            setIsEnabled(isIconMode || isTruncated)
+        }
+
+        check()
+        const observer = new ResizeObserver(check)
+        if (buttonRef.current) observer.observe(buttonRef.current)
+        if (textRef.current) observer.observe(textRef.current)
+
+        return () => observer.disconnect()
+    }, [tab.label])
+
+    return (
+        <Tooltip side="right" open={isEnabled ? undefined : false}>
+            <TooltipTrigger asChild>
+                <button
+                    ref={buttonRef}
+                    onClick={onClick}
+                    className={cn(
+                        "relative flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl text-left transition-all duration-200 group sidebar-button",
+                        isActive
+                            ? "bg-primary/10 text-primary shadow-sm"
+                            : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground"
+                    )}
+                >
+                    <tab.icon className={cn(
+                        "w-5 h-5 shrink-0 transition-transform group-hover:scale-110",
+                        isActive ? "opacity-100" : "opacity-70"
+                    )} />
+                    <span
+                        ref={textRef}
+                        className="sidebar-label flex-1 truncate text-left"
+                    >
+                        {tab.label}
+                    </span>
+                </button>
+            </TooltipTrigger>
+            <TooltipContent>
+                {tab.label}
+            </TooltipContent>
+        </Tooltip>
+    )
+}
 
 export interface SettingsViewProps {
     initialTab?: 'general' | 'downloads' | 'media' | 'network' | 'system' | 'about' | 'logs'
@@ -34,7 +103,7 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
 
     // Auto-Save
     const setSetting = <K extends keyof AppSettings>(key: K, val: AppSettings[K]) => {
-        updateSettings({ ...settings, [key]: val })
+        updateSettings({ [key]: val })
     }
 
     const [activeTab, setActiveTab] = useState<'general' | 'downloads' | 'media' | 'network' | 'system' | 'about' | 'logs'>('general')
@@ -123,28 +192,12 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
 
                 <div className="flex flex-col gap-1.5">
                     {tabs.map(tab => (
-                        <button
+                        <SidebarButton
                             key={tab.id}
+                            tab={tab}
+                            isActive={activeTab === tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={cn(
-                                "relative flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl text-left transition-all duration-200 group sidebar-button",
-                                activeTab === tab.id
-                                    ? "bg-primary/10 text-primary shadow-sm"
-                                    : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground"
-                            )}
-                        >
-                            <tab.icon className={cn(
-                                "w-5 h-5 shrink-0 transition-transform group-hover:scale-110",
-                                activeTab === tab.id ? "opacity-100" : "opacity-70"
-                            )} />
-                            <OverflowTooltip
-                                content={tab.label}
-                                className="sidebar-label flex-1"
-                                openDelay={500}
-                            >
-                                {tab.label}
-                            </OverflowTooltip>
-                        </button>
+                        />
                     ))}
                 </div>
             </div>

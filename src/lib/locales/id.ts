@@ -51,11 +51,11 @@ export const id = {
             title: "Judul Video",
             uploader: "Nama Pengunggah",
             id: "ID Video",
-            res: "Resolusi (cth. 1080p)",
-            source: "Nama Sumber (cth. YouTube)",
+            res: "Resolusi",
+            source: "Nama Sumber",
             site: "Situs",
             author: "Pengunggah",
-            date: "Tanggal Upload (DD-MM-YYYY)"
+            date: "Tgl Upload"
         },
         example_note: "* Pratinjau video sampel",
 
@@ -83,7 +83,7 @@ export const id = {
         cancel_confirm_desc: "Ini akan menghentikan proses unduhan dan Anda mungkin harus mengulang dari awal.",
         confirm: "Ya, Batal",
         keep_downloading: "Lanjutkan Mengunduh",
-        clip_pause_title: "⚠️ Jeda Unduhan Klip?",
+        clip_pause_title: "Jeda Unduhan Klip?",
         clip_pause_desc: "Ini download KLIP. Karena batasan teknis, resume akan MULAI ULANG dari 0%.",
         clip_pause_confirm: "Pause Saja"
     },
@@ -498,7 +498,7 @@ export const id = {
         subtitle_settings: "Pengaturan Subtitle",
         schedule_time: "Waktu Jadwal",
         embed_subs: "Sematkan ke file video",
-        clip_pause_title: "⚠️ Jeda Unduhan Klip?",
+        clip_pause_title: "Jeda Unduhan Klip?",
         clip_pause_desc: "Ini download KLIP. Karena batasan teknis, resume akan MULAI ULANG dari 0%.",
         clip_pause_confirm: "Pause Saja",
         fetching_info: "Mengambil info..."

@@ -3,14 +3,14 @@ import { AlertCircle } from 'lucide-react'
 import { useAppStore } from '../../store'
 import { NativeLoader } from './NativeLoader'
 import { useRecovery } from '../../hooks/useRecovery'
-import { useTheme } from '../../hooks/useTheme' // Added import for useTheme
+import { useTheme } from '../../hooks/useTheme'
 import i18n from '../../lib/i18n'
 
 export function AppGuard({ children }: { children: React.ReactNode }) {
     const {
         initListeners,
         binariesReady,
-        settings // Added settings to destructuring
+        settings
     } = useAppStore()
 
     // 1. Enforce Theme immediately
@@ -20,11 +20,17 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
 
     const [loading, setLoading] = useState(true)
     const [initError, setInitError] = useState<string | null>(null)
+    const [isRefresh, setIsRefresh] = useState(false)
 
     // Prevent double initialization race condition
     const initStartedRef = useRef(false)
 
     useEffect(() => {
+        // Move sessionStorage access to effect to avoid hydration mismatch/render blocking
+        if (typeof sessionStorage !== 'undefined') {
+            setIsRefresh(!!sessionStorage.getItem('app_initialized'))
+        }
+
         const init = async () => {
             if (initStartedRef.current) return
             initStartedRef.current = true
@@ -32,25 +38,30 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
             setLoading(true)
 
             // Skip fast loading simulation if already initialized in this session
-            const hasInitialized = sessionStorage.getItem('app_initialized')
+            const hasInitialized = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('app_initialized')
             const minTime = hasInitialized ? 0 : 1000
 
             const minLoad = new Promise(resolve => setTimeout(resolve, minTime))
 
             try {
-                // Sync Language from Store to i18n
-                const storedLang = settings.language // Changed to use settings from hook
+                // Sync Language (awaiting it to prevent racing)
+                const storedLang = settings.language
                 if (storedLang && i18n.language !== storedLang) {
-                    i18n.changeLanguage(storedLang)
+                    await i18n.changeLanguage(storedLang)
                 }
 
                 await Promise.all([initListeners(), minLoad])
 
-                sessionStorage.setItem('app_initialized', 'true')
+                if (typeof sessionStorage !== 'undefined') {
+                    sessionStorage.setItem('app_initialized', 'true')
+                }
                 setLoading(false)
             } catch (e: unknown) {
                 console.error("AppGuard Init Error:", e)
-                setInitError(e instanceof Error ? e.message : "Failed to initialize application")
+                // Sanitize error message to hide potential local paths
+                const rawMessage = e instanceof Error ? e.message : "Failed to initialize application"
+                const sanitizedMessage = rawMessage.replace(/[a-zA-Z]:\\[^ ]+/g, '[PATH]').replace(/\/Users\/[^/]+/g, '[HOME]')
+                setInitError(sanitizedMessage)
                 setLoading(false)
             }
         }
@@ -77,6 +88,7 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
                 <button
                     onClick={() => window.location.reload()}
                     className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
+                    type="button"
                 >
                     Retry
                 </button>
@@ -85,11 +97,7 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
     }
 
     if (loading) {
-        // 2. On refresh (already initialized), show blank screen (respecting theme bg) instead of loader
-        // This avoids the "spinner flash" user complained about.
-        // sessionStorage check sync for render logic
-        const isRefresh = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('app_initialized')
-
+        // 2. On refresh (already initialized), show blank screen
         if (isRefresh) {
             return null // Invisible loading for refresh
         }

@@ -73,16 +73,27 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             const x = event.clientX - rect.left - size / 2
             const y = event.clientY - rect.top - size / 2
 
-            const key = Date.now()
+            const key = Date.now() + Math.random() // Avoid collision
             const newRipple = { x, y, size, key }
             setButtonRipples((prevRipples) => [...prevRipples, newRipple])
+
+            // Parse duration efficiently
+            let durationMs = 600
+            if (rippleDuration.endsWith('ms')) {
+                durationMs = parseInt(rippleDuration)
+            } else if (rippleDuration.endsWith('s')) {
+                durationMs = parseFloat(rippleDuration) * 1000
+            } else {
+                const parsed = parseInt(rippleDuration)
+                if (!isNaN(parsed)) durationMs = parsed
+            }
 
             // Each ripple manages its own cleanup timeout independently
             setTimeout(() => {
                 setButtonRipples((prevRipples) =>
                     prevRipples.filter((ripple) => ripple.key !== key)
                 )
-            }, parseInt(rippleDuration))
+            }, durationMs)
         }
 
 

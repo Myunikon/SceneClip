@@ -6,11 +6,10 @@ interface NativeLoaderProps {
     text?: string;
 }
 
-export function NativeLoader({ className, size = "md", text }: NativeLoaderProps) {
-    // macOS/iOS Style "Flower" / "Blade" Spinner
-    // 12 blades, rotating with fading opacity
+// 12 blades, rotating with fading opacity
+const blades = Array.from({ length: 12 });
 
-    const blades = Array.from({ length: 12 });
+export function NativeLoader({ className, size = "md", text }: NativeLoaderProps) {
 
     const sizeClasses = {
         sm: "w-4 h-4",

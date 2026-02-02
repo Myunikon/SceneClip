@@ -1,93 +1,93 @@
-import { Package, RefreshCw, CheckCircle, ArrowDownCircle, ExternalLink, Terminal } from 'lucide-react'
+import { Package, RefreshCw, CheckCircle, ArrowDownCircle, ExternalLink, Terminal, X } from 'lucide-react'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../store'
+import { useShallow } from 'zustand/react/shallow'
 
 export function Updater() {
-    const {
-        appVersion, appLatestVersion, appNeedsUpdate, appUpdateError, appUpdateProgress, installAppUpdate,
-        ytdlpVersion, ytdlpLatestVersion, ytdlpNeedsUpdate, ytdlpIntegrityValid, ytdlpUpdateError, ytdlpUpdateProgress,
-        checkBinaryUpdates, isCheckingAppUpdate, isCheckingYtdlpUpdate, updateBinary, cancelUpdate
-    } = useAppStore()
-
     const { t } = useTranslation()
 
-    // Auto-check removed per user request to save rate limits.
-    // User must manually click "Check for updates".
+    const {
+        appState,
+        ytdlpState,
+        isCheckingAppUpdate,
+        isCheckingYtdlpUpdate,
+        checkBinaryUpdates,
+        installAppUpdate,
+        updateBinary,
+        cancelUpdate
+    } = useAppStore(useShallow(state => ({
+        appState: {
+            version: state.appVersion,
+            latest: state.appLatestVersion,
+            needsUpdate: state.appNeedsUpdate,
+            error: state.appUpdateError,
+            progress: state.appUpdateProgress
+        },
+        ytdlpState: {
+            version: state.ytdlpVersion,
+            latest: state.ytdlpLatestVersion,
+            needsUpdate: state.ytdlpNeedsUpdate,
+            error: state.ytdlpUpdateError,
+            progress: state.ytdlpUpdateProgress,
+            integrityValid: state.ytdlpIntegrityValid
+        },
+        isCheckingAppUpdate: state.isCheckingAppUpdate,
+        isCheckingYtdlpUpdate: state.isCheckingYtdlpUpdate,
+        checkBinaryUpdates: state.checkBinaryUpdates,
+        installAppUpdate: state.installAppUpdate,
+        updateBinary: state.updateBinary,
+        cancelUpdate: state.cancelUpdate
+    })))
 
     return (
         <div className="flex flex-col space-y-6">
-
             {/* 1. Application Version Card */}
-            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-                <div className="flex items-center justify-between border-b border-border/50 bg-muted/30 px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                        <Package className="h-4 w-4 text-muted-foreground/70" />
-                        <span className="text-sm font-medium text-foreground">Application</span>
-                    </div>
-
-                    {/* Check Updates Button */}
-                    <button
-                        onClick={() => checkBinaryUpdates('app')}
-                        disabled={isCheckingAppUpdate}
-                        className="group flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-background hover:text-foreground hover:shadow-sm disabled:opacity-50 transition-all"
-                    >
-                        <RefreshCw className={`h-3 w-3 ${isCheckingAppUpdate ? 'animate-spin' : ''}`} />
-                        <span>{isCheckingAppUpdate ? t('settings.updater.checking') : t('settings.updater.check_updates')}</span>
-                    </button>
-                </div>
-
-                <div className="divide-y divide-border/50 bg-card/50">
-                    <BinaryRow
-                        name="SceneClip"
-                        version={appVersion}
-                        latest={appLatestVersion}
-                        needsUpdate={appNeedsUpdate}
-                        error={appUpdateError}
-                        progress={appUpdateProgress}
-                        onUpdate={() => installAppUpdate()}
-                        onCancel={() => { }}
-                        sourceUrl="https://github.com/Myunikon/SceneClip/releases"
-                        t={t}
-                    />
-                </div>
-            </div>
+            <BinaryCard
+                title="Application"
+                icon={Package}
+                isChecking={isCheckingAppUpdate}
+                onCheck={() => checkBinaryUpdates('app')}
+                checkingText={t('settings.updater.checking')}
+                checkText={t('settings.updater.check_updates')}
+            >
+                <BinaryRow
+                    name="SceneClip"
+                    version={appState.version}
+                    latest={appState.latest}
+                    needsUpdate={appState.needsUpdate}
+                    error={appState.error}
+                    progress={appState.progress}
+                    onUpdate={installAppUpdate}
+                    onCancel={() => cancelUpdate('app')}
+                    sourceUrl="https://github.com/Myunikon/SceneClip/releases"
+                    t={t}
+                />
+            </BinaryCard>
 
             {/* 2. Binary Versions Card */}
-            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-                <div className="flex items-center justify-between border-b border-border/50 bg-muted/30 px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                        <Terminal className="h-4 w-4 text-muted-foreground/70" />
-                        <span className="text-sm font-medium text-foreground">{t('settings.updater.binary_versions')}</span>
-                    </div>
-
-                    {/* Check Binaries Button */}
-                    <button
-                        onClick={() => checkBinaryUpdates('binaries')}
-                        disabled={isCheckingYtdlpUpdate}
-                        className="group flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-background hover:text-foreground hover:shadow-sm disabled:opacity-50 transition-all"
-                    >
-                        <RefreshCw className={`h-3 w-3 ${isCheckingYtdlpUpdate ? 'animate-spin' : ''}`} />
-                        <span>{isCheckingYtdlpUpdate ? t('settings.updater.checking') : t('settings.updater.check_updates')}</span>
-                    </button>
-                </div>
-
-                <div className="divide-y divide-border/50 bg-card/50">
-                    <BinaryRow
-                        name="yt-dlp"
-                        version={ytdlpVersion}
-                        latest={ytdlpLatestVersion}
-                        needsUpdate={ytdlpNeedsUpdate}
-                        integrityValid={ytdlpIntegrityValid}
-                        error={ytdlpUpdateError}
-                        progress={ytdlpUpdateProgress}
-                        onUpdate={() => updateBinary('yt-dlp')}
-                        onCancel={() => cancelUpdate('yt-dlp')}
-                        sourceUrl="https://github.com/yt-dlp/yt-dlp/releases"
-                        t={t}
-                    />
-                </div>
-            </div>
+            <BinaryCard
+                title={t('settings.updater.binary_versions')}
+                icon={Terminal}
+                isChecking={isCheckingYtdlpUpdate}
+                onCheck={() => checkBinaryUpdates('binaries')}
+                checkingText={t('settings.updater.checking')}
+                checkText={t('settings.updater.check_updates')}
+            >
+                <BinaryRow
+                    name="yt-dlp"
+                    version={ytdlpState.version}
+                    latest={ytdlpState.latest}
+                    needsUpdate={ytdlpState.needsUpdate}
+                    integrityValid={ytdlpState.integrityValid}
+                    error={ytdlpState.error}
+                    progress={ytdlpState.progress}
+                    onUpdate={() => updateBinary('yt-dlp')}
+                    onCancel={() => cancelUpdate('yt-dlp')}
+                    sourceUrl="https://github.com/yt-dlp/yt-dlp/releases"
+                    t={t}
+                />
+            </BinaryCard>
 
             {/* Footer Note */}
             <p className="px-2 text-center text-[11px] text-muted-foreground/50">
@@ -97,29 +97,53 @@ export function Updater() {
     )
 }
 
+function BinaryCard({ title, icon: Icon, isChecking, onCheck, checkingText, checkText, children }: any) {
+    return (
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+            <div className="flex items-center justify-between border-b border-border/50 bg-muted/30 px-4 py-3">
+                <div className="flex items-center gap-2.5">
+                    <Icon className="h-4 w-4 text-muted-foreground/70" />
+                    <span className="text-sm font-medium text-foreground">{title}</span>
+                </div>
+                <button
+                    onClick={onCheck}
+                    disabled={isChecking}
+                    className="group flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-background hover:text-foreground hover:shadow-sm disabled:opacity-50 transition-all"
+                >
+                    <RefreshCw className={`h-3 w-3 ${isChecking ? 'animate-spin' : ''}`} />
+                    <span>{isChecking ? checkingText : checkText}</span>
+                </button>
+            </div>
+            <div className="divide-y divide-border/50 bg-card/50">
+                {children}
+            </div>
+        </div>
+    )
+}
 
-
-function BinaryRow({ name, version, latest, needsUpdate, integrityValid = true, error, progress, onUpdate, onCancel, sourceUrl, allowUpdate = true, t }: {
-    name: string,
-    version: string | null,
-    latest: string | null,
-    needsUpdate: boolean,
-    integrityValid?: boolean,
-    error?: string,
-    progress: number | null,
-    onUpdate: () => void,
-    onCancel: () => void,
-    sourceUrl: string,
-    allowUpdate?: boolean,
+interface BinaryRowProps {
+    name: string
+    version: string | null
+    latest: string | null
+    needsUpdate: boolean
+    integrityValid?: boolean
+    error?: string | null
+    progress: number | null
+    onUpdate: () => void
+    onCancel: () => void
+    sourceUrl: string
     t: any
-}) {
+}
+
+function BinaryRow({ name, version, latest, needsUpdate, integrityValid = true, error, progress, onUpdate, onCancel, sourceUrl, t }: BinaryRowProps) {
+    const isUpdating = progress !== null
+
     return (
         <div className="flex items-center justify-between px-4 py-3.5 hover:bg-muted/20 transition-colors group">
             <div className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-foreground">{name}</span>
 
-                    {/* Source Link */}
                     <button
                         onClick={() => openUrl(sourceUrl)}
                         className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary"
@@ -128,28 +152,30 @@ function BinaryRow({ name, version, latest, needsUpdate, integrityValid = true, 
                         <ExternalLink className="h-3 w-3" />
                     </button>
 
-                    {needsUpdate && !error && allowUpdate && (
+                    {/* Status Badges */}
+                    {needsUpdate && !error && (
                         <span className="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400">
-                            Update Available
+                            {t('settings.updater.update_available') || 'Update Available'}
                         </span>
                     )}
 
                     {!integrityValid && (
-                        <span className="inline-flex items-center rounded-full bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-600 dark:text-orange-400" title="Binary may be corrupted or missing.">
+                        <span className="inline-flex items-center rounded-full bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-600 dark:text-orange-400">
                             Corrupted
                         </span>
                     )}
 
                     {error && (
-                        <span className="inline-flex items-center rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold text-red-600 dark:text-red-400" title={error}>
+                        <span className="inline-flex items-center rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold text-red-600 dark:text-red-400">
                             Check Failed
                         </span>
                     )}
                 </div>
+
                 <div className="flex items-center gap-2 text-xs">
                     <span className="font-mono text-muted-foreground">{version || t('settings.updater.unknown')}</span>
 
-                    {needsUpdate && latest && !error && allowUpdate && (
+                    {needsUpdate && latest && !error && (
                         <div className="flex items-center gap-1.5 animate-pulse">
                             <span className="text-muted-foreground/40">→</span>
                             <span className="font-mono font-bold text-blue-600 dark:text-blue-400">
@@ -164,25 +190,12 @@ function BinaryRow({ name, version, latest, needsUpdate, integrityValid = true, 
                             <span>{t('settings.updater.up_to_date')}</span>
                         </span>
                     )}
-
-                    {!integrityValid && (
-                        <span className="text-orange-500 dark:text-orange-400 font-medium">
-                            Health Check Failed
-                        </span>
-                    )}
-
-                    {error && (
-                        <span className="text-red-500 dark:text-red-400 font-medium">
-                            {/* Shorten error message for UI */}
-                            {error.includes("403") ? "Rate Limited" : "Network Error"}
-                        </span>
-                    )}
                 </div>
             </div>
 
-            {/* Right Side Actions */}
+            {/* Actions */}
             <div className="min-w-[120px] flex justify-end">
-                {progress !== null ? (
+                {isUpdating ? (
                     <div className="flex items-center gap-3 w-full max-w-[140px]">
                         <div className="flex-1 flex flex-col gap-1">
                             <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -198,23 +211,27 @@ function BinaryRow({ name, version, latest, needsUpdate, integrityValid = true, 
                         <button
                             onClick={onCancel}
                             className="p-1 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                            title={t('common.cancel') || "Cancel"}
+                            title={t('common.cancel')}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                            <X className="h-3.5 w-3.5" />
                         </button>
                     </div>
-                ) : (needsUpdate || !integrityValid) && !error && allowUpdate ? (
-                    <button
-                        onClick={onUpdate}
-                        className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-white shadow-sm transition-all hover:shadow active:scale-95 ${!integrityValid ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'}`}
-                    >
-                        <ArrowDownCircle className="h-3.5 w-3.5" />
-                        {!integrityValid ? 'Repair' : t('updater_banner.update_now')}
-                    </button>
                 ) : (
-                    <span className="text-xs font-medium text-muted-foreground/40 text-right min-w-[60px]">
-                        {error ? '' : (latest && allowUpdate ? '' : (!integrityValid && allowUpdate ? '' : (allowUpdate ? t('settings.updater.latest') : 'Bundled')))}
-                    </span>
+                    <>
+                        {(needsUpdate || !integrityValid) && !error ? (
+                            <button
+                                onClick={onUpdate}
+                                className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-white shadow-sm transition-all hover:shadow active:scale-95 ${!integrityValid ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'}`}
+                            >
+                                <ArrowDownCircle className="h-3.5 w-3.5" />
+                                <span>{!integrityValid ? 'Repair' : t('updater_banner.update_now')}</span>
+                            </button>
+                        ) : (
+                            <span className="text-xs font-medium text-muted-foreground/40 text-right min-w-[60px]">
+                                {error ? (error.includes("403") ? "Rate Limited" : "Error") : t('settings.updater.latest')}
+                            </span>
+                        )}
+                    </>
                 )}
             </div>
         </div>

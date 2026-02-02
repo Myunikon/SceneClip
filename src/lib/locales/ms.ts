@@ -81,7 +81,7 @@ export const ms = {
         cancel_confirm_desc: "Ini akan menghentikan muat turun dan anda mungkin perlu bermula dari awal.",
         confirm: "Ya, Batal",
         keep_downloading: "Kekal Muat Turun",
-        clip_pause_title: "⚠️ Jeda Muat Turun Klip?",
+        clip_pause_title: "Jeda Muat Turun Klip?",
         clip_pause_desc: "Ini adalah muat turun KLIP. Disebabkan had teknikal, menyambung semula akan BERMULA dari 0%.",
         clip_pause_confirm: "Jeda Sahaja"
     },
@@ -461,7 +461,7 @@ export const ms = {
         subtitle_settings: "Tetapan Sarikata",
         schedule_time: "Masa Jadual",
         embed_subs: "Benamkan ke dalam fail video",
-        clip_pause_title: "⚠️ Jeda Muat Turun Klip?",
+        clip_pause_title: "Jeda Muat Turun Klip?",
         clip_pause_desc: "Ini adalah muat turun KLIP. Disebabkan had teknikal, menyambung semula akan BERMULA dari 0%.",
         clip_pause_confirm: "Jeda Sahaja",
         cancel_confirm_title: "Batal Muat Turun?",

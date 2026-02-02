@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
-import { listen } from '@tauri-apps/api/event'
+import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { isPermissionGranted, requestPermission, sendNotification, onAction } from '@tauri-apps/plugin-notification'
 import { translations } from '../../lib/locales'
 import { useAppStore } from '../../store'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 
 interface ClipboardListenerProps {
     onFound?: (url: string) => void
@@ -14,90 +15,114 @@ export function ClipboardListener({ onFound, onNotificationClick }: ClipboardLis
     const language = settings?.language || 'en'
     const t = (translations[language as keyof typeof translations] || translations.en).monitor
 
+    // 1. Notification Action Listener (Click on notification)
     useEffect(() => {
-        let unlisten: { unregister: () => Promise<void> } | undefined
-        let mounted = true
+        let unlisten: { unregister: () => void | Promise<void> } | undefined
+        let isMounted = true
 
         const setupActionListener = async () => {
             try {
-                // Check if notifications are enabled first
-                const permissionGranted = await isPermissionGranted()
-                if (!permissionGranted) return
+                // Unified Permission Check
+                let permission = await isPermissionGranted()
+                if (!permission) {
+                    const status = await requestPermission()
+                    permission = status === 'granted'
+                }
+
+                if (!permission) {
+                    console.debug('[ClipboardListener] Permission denied for notifications.')
+                    return
+                }
 
                 const u = await onAction((notification) => {
                     const url = (notification.extra?.url as string) || (notification.body as string)
-                    if (url) {
-                        if (onNotificationClick) {
-                            onNotificationClick(url)
-                            import('@tauri-apps/api/window').then(async (m) => {
-                                try {
-                                    const win = m.getCurrentWindow()
-                                    await win.show()
-                                    await win.unminimize()
-                                    await win.setFocus()
-                                } catch (err) { /* ignore */ }
-                            })
-                        }
+                    if (url && onNotificationClick) {
+                        onNotificationClick(url)
+                        const win = getCurrentWindow()
+                        win.show().catch(() => { })
+                        win.unminimize().catch(() => { })
+                        win.setFocus().catch(() => { })
                     }
                 })
 
-                if (mounted) unlisten = u
-                else u.unregister()
+                if (isMounted) {
+                    unlisten = u
+                } else {
+                    u.unregister()
+                }
             } catch (err) {
-                // Notification listener not available or permission denied - ignore gracefully
-                console.debug('[Notification] Action listener not available:', err)
+                console.debug('[Notification] Action listener failed:', err)
             }
         }
 
         setupActionListener()
 
         return () => {
-            mounted = false
+            isMounted = false
             if (unlisten) unlisten.unregister()
         }
     }, [onNotificationClick])
 
     // 2. Listen for Backend 'link-detected' Event
     useEffect(() => {
-        let unlisten: (() => void) | undefined
-        let mounted = true
+        if (!settings.enableDesktopNotifications) return
 
-        listen<string>('link-detected', async (event) => {
-            const url = event.payload
-            if (!settings.enableDesktopNotifications) return
+        let unlistenFn: UnlistenFn | undefined
+        let isMounted = true
 
-            // Trigger UI (AddDialog)
-            if (onFound) onFound(url)
+        const setupBackendListener = async () => {
+            try {
+                const u = await listen<string>('link-detected', async (event) => {
+                    const url = event.payload
 
-            // Send Native Notification
-            let permissionGranted = await isPermissionGranted()
-            if (!permissionGranted) {
-                const permission = await requestPermission()
-                permissionGranted = permission === 'granted'
-            }
+                    // Basic URL validation
+                    try {
+                        new URL(url)
+                    } catch {
+                        console.warn('[ClipboardListener] Invalid URL received:', url)
+                        return
+                    }
 
-            if (permissionGranted) {
-                sendNotification({
-                    title: t.title,
-                    body: url,
-                    actionTypeId: 'DOWNLOAD_ACTION',
-                    extra: { url },
+                    if (onFound) onFound(url)
+
+                    // Send Native Notification
+                    let permission = await isPermissionGranted()
+                    if (!permission) {
+                        const status = await requestPermission()
+                        permission = status === 'granted'
+                    }
+
+                    if (permission) {
+                        sendNotification({
+                            title: t.title,
+                            body: url,
+                            actionTypeId: 'DOWNLOAD_ACTION',
+                            extra: { url },
+                        })
+
+                        useAppStore.getState().addLog({
+                            message: `[Monitor] URL detected: ${url}`,
+                            level: 'info',
+                            source: 'system'
+                        })
+                    }
                 })
 
-                useAppStore.getState().addLog({
-                    message: `[Monitor] URL detected from backend: ${url}`,
-                    level: 'info',
-                    source: 'system'
-                })
+                if (isMounted) {
+                    unlistenFn = u
+                } else {
+                    u()
+                }
+            } catch (error) {
+                console.error("Failed to setup link-detected listener:", error)
             }
-        }).then((u) => {
-            if (mounted) unlisten = u
-            else u()
-        })
+        }
+
+        setupBackendListener()
 
         return () => {
-            mounted = false
-            if (unlisten) unlisten()
+            isMounted = false
+            if (unlistenFn) unlistenFn()
         }
     }, [settings.enableDesktopNotifications, t.title, onFound])
 

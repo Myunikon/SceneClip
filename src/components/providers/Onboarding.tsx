@@ -11,7 +11,10 @@ export function Onboarding() {
     setSetting("hasSeenOnboarding", true);
   }, [setSetting]);
 
-  if (settings.hasSeenOnboarding) return null;
+  // Escape Hatch: ?reset-onboarding=true
+  const forceShow = typeof window !== 'undefined' && window.location.search.includes('reset-onboarding')
+
+  if (settings.hasSeenOnboarding && !forceShow) return null;
 
   const FEATURES = [
     {

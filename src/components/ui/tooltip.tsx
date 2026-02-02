@@ -3,6 +3,20 @@ import { AnimatePresence, motion } from "framer-motion"
 import { useFloating, autoUpdate, offset, flip, shift, useHover, useFocus, useDismiss, useRole, useInteractions, FloatingPortal } from '@floating-ui/react'
 import { cn } from "../../lib/utils"
 
+// --- Contexts ---
+
+interface ProviderContextType {
+    delayDuration: number
+    skipDelayDuration: number
+    disableHoverableContent: boolean
+}
+
+const ProviderContext = React.createContext<ProviderContextType>({
+    delayDuration: 700,
+    skipDelayDuration: 300,
+    disableHoverableContent: false
+})
+
 interface TooltipContextType {
     open: boolean
     setOpen: (open: boolean) => void
@@ -20,18 +34,61 @@ const TooltipContext = React.createContext<TooltipContextType>(null!)
 export const useTooltip = () => {
     const context = React.useContext(TooltipContext)
     if (!context) {
-        throw new Error("useTooltip must be used within a TooltipProvider & Tooltip")
+        throw new Error("useTooltip must be used within a Tooltip")
     }
     return context
 }
 
 // --- Components ---
 
-export function TooltipProvider({ children }: { children: React.ReactNode, delayDuration?: number, skipDelayDuration?: number, disableHoverableContent?: boolean, openDelay?: number, closeDelay?: number }) {
-    return <>{children}</>
+interface TooltipProviderProps {
+    children: React.ReactNode
+    delayDuration?: number
+    skipDelayDuration?: number
+    disableHoverableContent?: boolean
 }
 
-export function Tooltip({ children, open: controlledOpen, onOpenChange: setControlledOpen, openDelay = 300, closeDelay = 200, side = 'top', sideOffset = 4 }: any) {
+export function TooltipProvider({
+    children,
+    delayDuration = 700,
+    skipDelayDuration = 300,
+    disableHoverableContent = false
+}: TooltipProviderProps) {
+    const contextValue = React.useMemo(() => ({
+        delayDuration,
+        skipDelayDuration,
+        disableHoverableContent
+    }), [delayDuration, skipDelayDuration, disableHoverableContent])
+
+    return (
+        <ProviderContext.Provider value={contextValue}>
+            {children}
+        </ProviderContext.Provider>
+    )
+}
+
+interface TooltipProps {
+    children: React.ReactNode
+    open?: boolean
+    onOpenChange?: (open: boolean) => void
+    openDelay?: number
+    closeDelay?: number
+    side?: 'top' | 'right' | 'bottom' | 'left'
+    sideOffset?: number
+}
+
+export function Tooltip({
+    children,
+    open: controlledOpen,
+    onOpenChange: setControlledOpen,
+    openDelay: propOpenDelay,
+    closeDelay = 200,
+    side = 'top',
+    sideOffset = 4
+}: TooltipProps) {
+    const providerContext = React.useContext(ProviderContext)
+    const openDelay = propOpenDelay ?? providerContext.delayDuration
+
     const [uncontrolledOpen, setUncontrolledOpen] = React.useState(false)
 
     const open = controlledOpen ?? uncontrolledOpen
@@ -69,28 +126,32 @@ export function Tooltip({ children, open: controlledOpen, onOpenChange: setContr
     )
 }
 
+// Helper for safe ref merging
+function useMergeRefs<T>(...refs: (React.Ref<T> | undefined)[]) {
+    return React.useMemo(() => {
+        if (refs.every((ref) => ref == null)) return null
+        return (node: T) => {
+            refs.forEach((ref) => {
+                if (typeof ref === 'function') ref(node)
+                else if (ref != null) (ref as React.MutableRefObject<T | null>).current = node
+            })
+        }
+    }, [refs])
+}
+
 export const TooltipTrigger = React.forwardRef<HTMLElement, React.HTMLProps<HTMLElement> & { asChild?: boolean }>(
     ({ children, asChild, ...props }, propRef) => {
         const context = useTooltip()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         const childrenRef = (children as any).ref
-        const ref = React.useMemo(() => {
-            // Merge refs: context.refs.setReference, propRef, and children's ref
-            return (node: HTMLElement) => {
-                context.refs.setReference(node)
-                if (typeof propRef === 'function') propRef(node)
-                else if (propRef) (propRef as any).current = node
-
-                if (typeof childrenRef === 'function') childrenRef(node)
-                else if (childrenRef) childrenRef.current = node
-            }
-        }, [context.refs, propRef, childrenRef])
+        const mergedRef = useMergeRefs(context.refs.setReference, propRef, childrenRef)
 
         const referenceProps = context.getReferenceProps(props)
 
         // If asChild is true and children is a valid element, clone it with merged props
         if (asChild && React.isValidElement(children)) {
             return React.cloneElement(children as React.ReactElement<any>, {
-                ref,
+                ref: mergedRef,
                 ...referenceProps,
                 'data-state': context.open ? 'delayed-open' : 'closed',
             })
@@ -98,7 +159,7 @@ export const TooltipTrigger = React.forwardRef<HTMLElement, React.HTMLProps<HTML
 
         return (
             <div
-                ref={ref}
+                ref={mergedRef}
                 className="inline-block"
                 {...referenceProps}
                 data-state={context.open ? 'delayed-open' : 'closed'}
@@ -114,26 +175,17 @@ interface TooltipContentProps extends React.HTMLAttributes<HTMLDivElement> {
     sideOffset?: number
 }
 
-
-
 export const TooltipContent = React.forwardRef<HTMLDivElement, TooltipContentProps>(
     ({ className, children, ...props }, propRef) => {
         const { refs, strategy, x, y, getFloatingProps, open } = useTooltip()
-
-        const ref = React.useMemo(() => {
-            return (node: HTMLDivElement) => {
-                refs.setFloating(node)
-                if (typeof propRef === 'function') propRef(node)
-                else if (propRef) (propRef as any).current = node
-            }
-        }, [refs, propRef])
+        const mergedRef = useMergeRefs(refs.setFloating, propRef)
 
         return (
             <FloatingPortal>
                 <AnimatePresence>
                     {open && (
                         <div
-                            ref={ref}
+                            ref={mergedRef}
                             style={{
                                 position: strategy,
                                 top: y ?? 0,
@@ -196,9 +248,16 @@ export function OverflowTooltip({
         return () => observer.disconnect()
     }, [checkOverflow, children])
 
+    if (!isOverflowing) {
+        return (
+            <div ref={triggerRef} className={cn("truncate", className)} {...props}>
+                {children}
+            </div>
+        )
+    }
+
     return (
         <Tooltip
-            open={isOverflowing ? undefined : false}
             openDelay={openDelay}
             closeDelay={closeDelay}
             side={side}

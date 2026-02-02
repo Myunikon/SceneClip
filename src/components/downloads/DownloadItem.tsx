@@ -321,7 +321,7 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
                     setShowClipPauseWarning(false)
                     pauseTask(task.id)
                 }}
-                title={t('downloads.clip_pause_title') || "⚠️ Pause Clipped Download?"}
+                title={t('downloads.clip_pause_title') || "Pause Clipped Download?"}
                 description={`${t('downloads.clip_pause_desc')} (${task.range})`}
                 confirmLabel={t('downloads.clip_pause_confirm')}
                 cancelLabel={t('downloads.keep_downloading')}

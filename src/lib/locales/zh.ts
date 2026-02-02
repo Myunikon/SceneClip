@@ -79,7 +79,7 @@ export const zh = {
         cancel_confirm_desc: "这将停止下载，您可能需要从头开始。",
         confirm: "是的，取消",
         keep_downloading: "继续下载",
-        clip_pause_title: "⚠️ 暂停剪辑下载?",
+        clip_pause_title: "暂停剪辑下载?",
         clip_pause_desc: "这是一个剪辑下载。由于技术限制，继续下载将从 0% 开始。",
         clip_pause_confirm: "仍然暂停"
     },
@@ -470,7 +470,7 @@ export const zh = {
         subtitle_settings: "字幕设置",
         schedule_time: "计划时间",
         embed_subs: "嵌入到视频文件",
-        clip_pause_title: "⚠️ 暂停剪辑下载?",
+        clip_pause_title: "暂停剪辑下载?",
         clip_pause_desc: "这是一个剪辑下载。由于技术限制，继续下载将从 0% 开始。",
         clip_pause_confirm: "仍然暂停",
         cancel_confirm_title: "取消下载?",

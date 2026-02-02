@@ -51,11 +51,11 @@ export const en = {
             title: "Video Title",
             uploader: "Uploader Name",
             id: "Video ID",
-            res: "Resolution (e.g. 1080p)",
-            source: "Source Name (e.g. YouTube)",
+            res: "Resolution",
+            source: "Source Name",
             site: "Source",
             author: "Uploader",
-            date: "Upload Date (DD-MM-YYYY)"
+            date: "Upload Date"
         },
         example_note: "* Preview based on sample video",
 
@@ -83,7 +83,7 @@ export const en = {
         cancel_confirm_desc: "This will stop the download and you may need to restart from the beginning.",
         confirm: "Yes, Cancel",
         keep_downloading: "Keep Downloading",
-        clip_pause_title: "⚠️ Pause Clipped Download?",
+        clip_pause_title: "Pause Clipped Download?",
         clip_pause_desc: "This is a CLIPPED download. Due to technical limitations, resuming will RESTART from 0%.",
         clip_pause_confirm: "Pause Anyway"
     },
@@ -501,7 +501,7 @@ export const en = {
         trim_desc: "Cut specific portion of the video",
         schedule_time: "Schedule Time",
         embed_subs: "Embed into video file",
-        clip_pause_title: "⚠️ Pause Clipped Download?",
+        clip_pause_title: "Pause Clipped Download?",
         clip_pause_desc: "This is a CLIPPED download. Due to technical limitations, resuming will RESTART from 0%.",
         clip_pause_confirm: "Pause Anyway",
         cancel_confirm_title: "Cancel Download?",

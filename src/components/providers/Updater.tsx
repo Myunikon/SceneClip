@@ -224,7 +224,7 @@ function BinaryRow({ name, version, latest, needsUpdate, integrityValid = true, 
                                 className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-white shadow-sm transition-all hover:shadow active:scale-95 ${!integrityValid ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'}`}
                             >
                                 <ArrowDownCircle className="h-3.5 w-3.5" />
-                                <span>{!integrityValid ? 'Repair' : t('updater_banner.update_now')}</span>
+                                <span>{!integrityValid ? 'Repair' : t('settings.updater.update_now')}</span>
                             </button>
                         ) : (
                             <span className="text-xs font-medium text-muted-foreground/40 text-right min-w-[60px]">

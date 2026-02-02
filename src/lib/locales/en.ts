@@ -395,7 +395,8 @@ export const en = {
             update_available: "Update Available",
             up_to_date: "Up to date",
             binary_bundled: "Binaries are bundled as sidecar. Manual update required if outdated.",
-            latest_prefix: "Latest: "
+            latest_prefix: "Latest: ",
+            update_now: "Update Now"
         },
         setup: {
             title: "Additional Setup Required",

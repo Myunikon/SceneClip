@@ -20,8 +20,10 @@ pub fn perform_system_action(action: String, confirm: bool) -> Result<(), String
 }
 
 #[command]
-pub fn force_exit(app_handle: AppHandle) {
-    app_handle.exit(0);
+pub fn force_exit(_app_handle: AppHandle) {
+    // We use std::process::exit to guarantee immediate termination,
+    // bypassing any potential recursive CloseRequested checks.
+    std::process::exit(0);
 }
 
 #[derive(serde::Serialize)]

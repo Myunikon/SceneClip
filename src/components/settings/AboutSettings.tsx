@@ -1,11 +1,9 @@
-// import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Download, Terminal as TerminalIcon, Scissors, Zap, Globe, AlertCircle, ChevronRight, Layers, Waypoints, Languages } from 'lucide-react'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { useTranslation, Trans } from 'react-i18next'
 import { Updater } from '../providers'
 import { AuroraText } from '@/registry/magicui/aurora-text'
-// import { useAppStore } from '../../store'
 
 
 interface AboutSettingsProps {
@@ -66,7 +64,6 @@ export function AboutSettings({ addLog, setShowEasterEgg }: AboutSettingsProps) 
 
             <Updater />
 
-            {/* Tech Stack */}
             {/* Tech Stack */}
             <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider ml-4">

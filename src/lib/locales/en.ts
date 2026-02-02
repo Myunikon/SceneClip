@@ -1075,5 +1075,12 @@ export const en = {
         seconds_other: "{{count}} seconds",
         and: "and",
         remaining: "{{time}} remaining"
+    },
+    exit_guard: {
+        title: "Download in Progress",
+        desc: "Active downloads are running in the background. Exiting now will forcefully stop them.",
+        confirm: "Yes, Exit",
+        cancel: "Cancel",
+        refresh_msg: "Downloads are active! Reloading will disrupt the user interface state. Are you sure?"
     }
 }

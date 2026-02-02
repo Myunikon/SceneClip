@@ -19,6 +19,11 @@ pub fn perform_system_action(action: String, confirm: bool) -> Result<(), String
     }
 }
 
+#[command]
+pub fn force_exit(app_handle: AppHandle) {
+    app_handle.exit(0);
+}
+
 #[derive(serde::Serialize)]
 pub struct GpuInfo {
     vendor: String,

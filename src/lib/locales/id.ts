@@ -993,5 +993,12 @@ export const id = {
         seconds_other: "{{count}} detik",
         and: "dan",
         remaining: "{{time}} tersisa"
+    },
+    exit_guard: {
+        title: "Unduhan Sedang Berjalan",
+        desc: "Ada unduhan yang masih aktif. Keluar sekarang akan menghentikan proses secara paksa.",
+        confirm: "Ya, Keluar",
+        cancel: "Batal",
+        refresh_msg: "Unduhan masih berjalan! Reload akan mengganggu tampilan antarmuka. Yakin?"
     }
 }

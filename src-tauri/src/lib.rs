@@ -50,6 +50,7 @@ pub fn run() {
         .plugin(tauri_plugin_deep_link::init())
         .invoke_handler(tauri::generate_handler![
             commands::system::perform_system_action,
+            commands::system::force_exit,
             commands::system::check_gpu_support,
             commands::system::set_window_effects,
             commands::system::validate_binary,
@@ -277,8 +278,34 @@ pub fn run() {
         // --- 2. CLOSE TO TRAY LOGIC ---
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                // We need to check settings to see if we should Minimize to Tray or full Quit
                 let app = window.app_handle();
+
+                // 1. Check for Active Downloads (Exit Guard)
+                let queue_state = app.state::<std::sync::Arc<crate::download_queue::QueueState>>();
+                let has_active_downloads = {
+                    let tasks = queue_state.tasks.lock().unwrap();
+                    tasks.values().any(|t| {
+                        matches!(
+                            t.status,
+                            crate::download_queue::TaskStatus::Downloading
+                                | crate::download_queue::TaskStatus::FetchingInfo
+                                | crate::download_queue::TaskStatus::Processing
+                                | crate::download_queue::TaskStatus::Queued
+                        )
+                    })
+                };
+
+                if has_active_downloads {
+                    log::info!("Close requested but downloads are active. Triggering Exit Guard.");
+                    api.prevent_close();
+                    if let Err(e) = window.emit("request-close-confirmation", ()) {
+                        log::error!("Failed to emit exit confirmation event: {}", e);
+                    }
+                    let _ = window.set_focus();
+                    return;
+                }
+
+                // 2. Normal Close Logic (Check Settings)
                 use tauri_plugin_store::StoreExt;
 
                 // We attempt to load store differently depending on context

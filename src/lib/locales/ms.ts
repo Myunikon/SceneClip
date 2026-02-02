@@ -954,6 +954,13 @@ export const ms = {
         seconds_other: "{{count}} saat",
         and: "dan",
         remaining: "{{time}} lagi"
+    },
+    exit_guard: {
+        title: "Muat Turun Sedang Berjalan",
+        desc: "Muat turun aktif sedang berjalan di latar belakang. Keluar sekarang akan menghentikannya secara paksa.",
+        confirm: "Ya, Keluar",
+        cancel: "Batal",
+        refresh_msg: "Muat turun aktif! Memuat semula akan mengganggu keadaan antara muka. Anda pasti?"
     }
 }
 

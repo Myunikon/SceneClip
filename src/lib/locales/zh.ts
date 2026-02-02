@@ -952,6 +952,13 @@ export const zh = {
         seconds_other: "{{count}} 秒",
         and: "",
         remaining: "剩余 {{time}}"
+    },
+    exit_guard: {
+        title: "下载正在进行中",
+        desc: "后台有正在进行的下载任务。现在退出将强制停止它们。",
+        confirm: "是的，退出",
+        cancel: "取消",
+        refresh_msg: "下载仍在进行中！重新加载将中断界面状态。确定要刷新吗？"
     }
 }
 

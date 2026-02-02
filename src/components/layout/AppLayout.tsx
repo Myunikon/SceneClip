@@ -1,9 +1,12 @@
 import { ReactNode, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Background } from "../providers/Background";
-import { WifiOff } from "lucide-react";
+import { WifiOff, AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "../../store";
+import { listen } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
+import { useState, useCallback } from "react";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -12,7 +15,46 @@ interface AppLayoutProps {
 
 export function AppLayout({ children, isOffline }: AppLayoutProps) {
   const { t } = useTranslation();
-  const { settings } = useAppStore();
+  const { settings, tasks } = useAppStore();
+  const [showExitDialog, setShowExitDialog] = useState(false);
+
+  // --- EXIT GUARD LOGIC ---
+  // 1. Listen for backend "request-close-confirmation" event (Close Button)
+  useEffect(() => {
+    const unlisten = listen("request-close-confirmation", () => {
+      setShowExitDialog(true);
+    });
+    return () => {
+      unlisten.then((f) => f());
+    };
+  }, []);
+
+  // 2. Prevent Refresh (F5 / Ctrl+R) if active downloads exist
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const hasActive = tasks.some((task) =>
+        ["downloading", "fetching_info", "processing", "queued"].includes(
+          task.status
+        )
+      );
+
+      if (hasActive) {
+        // Trigger browser's native "Reload site?" warning
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [tasks]);
+
+  const handleConfirmExit = useCallback(async () => {
+    await invoke("force_exit");
+  }, []);
+
 
   // Handle Global Font Scale
   useEffect(() => {
@@ -55,6 +97,58 @@ export function AppLayout({ children, isOffline }: AppLayoutProps) {
         )}
       </AnimatePresence>
 
+      {/* EXIT GUARD DIALOG */}
+      <AnimatePresence>
+        {showExitDialog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setShowExitDialog(false)} // Close on click outside
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              transition={{ type: "spring", duration: 0.4, bounce: 0.2 }}
+              className="bg-background border border-border w-full max-w-md rounded-xl shadow-2xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()} // Prevent closing when clicking card
+            >
+              <div className="p-6 space-y-4">
+                <div className="flex items-center gap-3 text-amber-500">
+                  <div className="p-2.5 bg-amber-500/10 rounded-full shrink-0">
+                    <AlertTriangle className="w-6 h-6" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-foreground">
+                    {t("exit_guard.title")}
+                  </h2>
+                </div>
+
+                <p className="text-muted-foreground leading-relaxed">
+                  {t("exit_guard.desc")}
+                </p>
+
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    onClick={() => setShowExitDialog(false)}
+                    className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-muted transition-colors text-foreground"
+                  >
+                    {t("exit_guard.cancel")}
+                  </button>
+                  <button
+                    onClick={handleConfirmExit}
+                    className="px-4 py-2 text-sm font-medium rounded-lg bg-red-600 hover:bg-red-700 text-white shadow-sm transition-all hover:shadow-md"
+                  >
+                    {t("exit_guard.confirm")}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* YT-DLP UPDATE AVAILABLE BANNER (Info Only) */}
 
 
@@ -62,6 +156,6 @@ export function AppLayout({ children, isOffline }: AppLayoutProps) {
       <div className="relative z-10 w-full h-full flex flex-col">
         {children}
       </div>
-    </div>
+    </div >
   );
 }

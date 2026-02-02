@@ -180,6 +180,10 @@ impl QueueState {
             tasks.insert(task.id.clone(), task);
         }
         self.save_now(); // Critical event: additive
+                         // Instant UI Update
+        if let Some(app) = &self.app_handle {
+            emit_queue_update(app, self);
+        }
         self.notify.notify_one();
     }
 
@@ -214,6 +218,9 @@ impl QueueState {
         }
         // Status updates use regular save (debounced)
         self.save();
+        if let Some(app) = &self.app_handle {
+            emit_queue_update(app, self);
+        }
         self.notify.notify_one();
     }
 
@@ -488,15 +495,26 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                 })
                 .count();
 
-            // Simple FIFO picking of 'Pending' tasks
-            // The `limit` variable is already defined above.
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs();
 
+            // Pick next task: Either 'Pending' or 'Scheduled' (if time hit)
             let next = if active_count < limit {
                 order
                     .iter()
                     .find(|id| {
                         if let Some(t) = tasks.get(*id) {
-                            t.status == TaskStatus::Pending && t.scheduled_time.is_none()
+                            // Case 1: Regular Pending task
+                            let is_pending =
+                                t.status == TaskStatus::Pending && t.scheduled_time.is_none();
+                            // Case 2: Scheduled task that hit its time
+                            let is_scheduled_hit = t.status == TaskStatus::Pending
+                                && t.scheduled_time.is_some()
+                                && t.scheduled_time.unwrap() <= now;
+
+                            is_pending || is_scheduled_hit
                         } else {
                             false
                         }

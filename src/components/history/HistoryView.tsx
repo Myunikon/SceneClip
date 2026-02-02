@@ -16,7 +16,6 @@ import {
     RefreshCw,
     Trash2,
     ListChecks,
-    RotateCcw,
     AlertTriangle
 } from 'lucide-react'
 import { openPath } from '@tauri-apps/plugin-opener'
@@ -30,13 +29,12 @@ import { HistoryItem } from './HistoryItem'
 
 
 export function HistoryView() {
-    const { tasks, deleteHistory, clearTask, retryTask, retryAllFailed, recoverDownloads, getInterruptedCount, settings } = useAppStore(
+    const { tasks, deleteHistory, clearTask, retryTask, recoverDownloads, getInterruptedCount, settings } = useAppStore(
         useShallow((s) => ({
             tasks: s.tasks,
             deleteHistory: s.deleteHistory,
             clearTask: s.clearTask,
             retryTask: s.retryTask,
-            retryAllFailed: s.retryAllFailed,
             recoverDownloads: s.recoverDownloads,
             getInterruptedCount: s.getInterruptedCount,
             settings: s.settings
@@ -238,46 +236,7 @@ export function HistoryView() {
                             {t('history.title')}
                         </h2>
 
-                        {/* Action Buttons */}
-                        <div className="flex items-center gap-2">
-                            {/* Retry All Failed Button */}
-                            {(() => {
-                                const failedCount = tasks.filter(t => t.status === 'error').length
-                                if (failedCount === 0) return null
-                                return (
-                                    <button
-                                        onClick={() => {
-                                            retryAllFailed()
-                                            notify.success(`Retrying ${failedCount} failed download${failedCount > 1 ? 's' : ''}`)
-                                        }}
-                                        className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 rounded-lg text-sm font-medium transition-colors"
-                                    >
-                                        <RotateCcw className="w-4 h-4" />
-                                        Retry All ({failedCount})
-                                    </button>
-                                )
-                            })()}
-
-                            {/* Recover Interrupted Button */}
-                            {(() => {
-                                const interruptedCount = getInterruptedCount()
-                                if (interruptedCount === 0) return null
-                                return (
-                                    <button
-                                        onClick={() => {
-                                            const recovered = recoverDownloads()
-                                            if (recovered > 0) {
-                                                notify.success(`Recovered ${recovered} download${recovered > 1 ? 's' : ''}`)
-                                            }
-                                        }}
-                                        className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 rounded-lg text-sm font-medium transition-colors"
-                                    >
-                                        <AlertTriangle className="w-4 h-4" />
-                                        Recover ({interruptedCount})
-                                    </button>
-                                )
-                            })()}
-                        </div>
+                        {/* Action Buttons Removed (moved to menu) */}
                     </div>
 
                     {/* Controls Row */}
@@ -360,6 +319,19 @@ export function HistoryView() {
                                                 </button>
                                             ))}
                                             <div className="h-px bg-border/50 my-1" />
+                                            {getInterruptedCount() > 0 && (
+                                                <button
+                                                    onClick={() => {
+                                                        const recovered = recoverDownloads()
+                                                        if (recovered > 0) {
+                                                            notify.success(`Recovered ${recovered} download${recovered > 1 ? 's' : ''}`)
+                                                        }
+                                                    }}
+                                                    className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
+                                                >
+                                                    <AlertTriangle className="w-3.5 h-3.5" /> Recover ({getInterruptedCount()})
+                                                </button>
+                                            )}
                                             <button onClick={handleVerifyFiles} className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium hover:bg-muted rounded-lg transition-colors">
                                                 <RefreshCw className={cn("w-3.5 h-3.5", isVerifying && "animate-spin")} /> Verify Integrity
                                             </button>

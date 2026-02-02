@@ -127,14 +127,24 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
             // Backend handled
         },
 
-        recoverDownloads: () => 0, // Backend handles this on startup
-        retryAllFailed: () => {
-            const failed = get().tasks.filter(t => t.status === 'error');
-            failed.forEach(t => {
-                invoke('add_to_queue', { url: t.url, options: t.options || t._options || {} });
+        recoverDownloads: () => {
+            const interrupted = get().tasks.filter(t =>
+                t.status === 'stopped' && (t.statusDetail === 'Interrupted by Restart' || t.statusDetail?.includes('Interrupted'))
+            );
+            interrupted.forEach(t => {
+                invoke('add_to_queue', {
+                    url: t.url,
+                    options: t.options || t._options || {}
+                });
             });
+            return interrupted.length;
         },
-        getInterruptedCount: () => 0,
+
+        getInterruptedCount: () => {
+            return get().tasks.filter(t =>
+                t.status === 'stopped' && (t.statusDetail === 'Interrupted by Restart' || t.statusDetail?.includes('Interrupted'))
+            ).length;
+        },
         sanitizeTasks: () => { },
         cleanupOldTasks: (_days) => {
             // Implemented via backend retention later

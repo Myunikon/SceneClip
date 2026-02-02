@@ -158,25 +158,8 @@ function RootComponent() {
         root.style.fontSize = targetSize
     }, [settings.frontendFontSize])
 
-    // Scheduler Logic: Check every 10s
-    useEffect(() => {
-        const interval = setInterval(() => {
-            const { tasks, updateTask, processQueue } = useAppStore.getState()
-            const now = Date.now()
-            let needsProcessing = false
-            tasks.forEach(task => {
-                if (task.status === 'scheduled' && task.scheduledTime) {
-                    const scheduledTimeMs = new Date(task.scheduledTime).getTime()
-                    if (scheduledTimeMs <= now) {
-                        updateTask(task.id, { status: 'pending', scheduledTime: undefined, log: 'Scheduled start triggered' })
-                        needsProcessing = true
-                    }
-                }
-            })
-            if (needsProcessing) processQueue()
-        }, 10000)
-        return () => clearInterval(interval)
-    }, [])
+    // Scheduler Logic: Moved to Backend (download_queue.rs)
+    // The backend now handles picking up tasks that hit their scheduled time.
 
     // Global Shortcuts
     useGlobalShortcuts({
@@ -265,7 +248,7 @@ function RootComponent() {
         const timer = setTimeout(async () => {
             const { runBinaryValidation } = await import('../lib/binary-validator')
             runBinaryValidation((entry) => {
-                if (entry.type === 'error' || entry.type === 'warning') {
+                if (entry.level === 'error' || entry.level === 'warning') {
                     console.debug(`[LazyValidator] ${entry.message}`)
                 }
             }, settings.language)
@@ -276,7 +259,7 @@ function RootComponent() {
 
     return (
         <TooltipProvider delayDuration={400} skipDelayDuration={500}>
-            <MotionConfig>
+            <MotionConfig transition={{ duration: 0.15, ease: "easeInOut" }}>
                 <AppLayout isOffline={isOffline}>
                     <AppHeader
                         openDialog={openDialog}

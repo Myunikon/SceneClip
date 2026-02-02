@@ -146,7 +146,6 @@ export interface VideoSlice {
   compressTask: (taskId: string, options: CompressionOptions) => Promise<void>
   sanitizeTasks: () => void
   recoverDownloads: () => number  // Returns count of recovered tasks
-  retryAllFailed: () => void      // Retry all failed/stopped tasks
   getInterruptedCount: () => number // Count tasks that can be recovered
   cleanupOldTasks: (retentionDays: number) => void // Remove old completed tasks
 }

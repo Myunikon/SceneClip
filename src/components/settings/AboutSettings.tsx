@@ -1,6 +1,6 @@
 // import { useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Download, Terminal as TerminalIcon, Scissors, Zap, Globe, AlertCircle, ChevronRight, Layers, Waypoints, Languages, FileCode } from 'lucide-react'
+import { Download, Terminal as TerminalIcon, Scissors, Zap, Globe, AlertCircle, ChevronRight, Layers, Waypoints, Languages } from 'lucide-react'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { useTranslation, Trans } from 'react-i18next'
 import { Updater } from '../providers'
@@ -25,7 +25,6 @@ export function AboutSettings({ addLog, setShowEasterEgg }: AboutSettingsProps) 
         { id: 'zustand', name: 'Zustand', role: t('settings.about_page.role_state'), Icon: Layers, link: 'https://zustand-demo.pmnd.rs', color: 'text-orange-500' },
         { id: 'router', name: 'TanStack Router', role: t('settings.about_page.role_routing'), Icon: Waypoints, link: 'https://tanstack.com/router', color: 'text-emerald-500' },
         { id: 'i18next', name: 'i18next', role: t('settings.about_page.role_i18n'), Icon: Languages, link: 'https://www.i18next.com', color: 'text-teal-500' },
-        { id: 'typescript', name: 'TypeScript', role: t('settings.about_page.role_lang'), Icon: FileCode, link: 'https://www.typescriptlang.org', color: 'text-blue-600' },
         { id: 'lucide', name: 'Lucide', role: t('settings.about_page.role_icon'), Icon: Globe, link: 'https://lucide.dev', color: 'text-pink-600 dark:text-pink-400' },
         { id: 'sponsorblock', name: 'SponsorBlock', role: t('settings.about_page.role_api'), Icon: AlertCircle, link: 'https://sponsor.ajay.app', color: 'text-red-600 dark:text-red-400' },
     ]

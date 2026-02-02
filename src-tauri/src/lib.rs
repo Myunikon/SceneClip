@@ -195,7 +195,7 @@ pub fn run() {
             server::init(app.handle().clone());
 
             // --- SUPPORTED SITES INIT ---
-            let mut sites = crate::ytdlp::SupportedSites::new();
+            let sites = crate::ytdlp::SupportedSites::new();
 
             // Try various paths to find supportedsites.md
             let paths = vec![
@@ -217,6 +217,25 @@ pub fn run() {
 
             let sites_arc = Arc::new(sites);
             app.manage(sites_arc.clone());
+
+            // --- DYNAMIC EXTRACTOR LOADING (Background) ---
+            // This ensures 100% parity with yt-dlp's supported sites list (1800+)
+            let sites_bg = sites_arc.clone();
+            let app_handle_bg = app.handle().clone();
+            
+            tauri::async_runtime::spawn(async move {
+                // Wait a bit for startup to settle
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
+                // Resolve yt-dlp path using existing settings logic
+                let settings = crate::ytdlp::load_settings(&app_handle_bg);
+                let binary_path = crate::ytdlp::resolve_ytdlp_path(&app_handle_bg, &settings.binary_path_yt_dlp);
+
+                // Run the heavy lifting
+                if let Err(e) = sites_bg.load_from_ytdlp(&binary_path) {
+                    log::warn!("Dynamic yt-dlp extractor loading failed: {}", e);
+                }
+            });
 
             // --- CLIPBOARD LISTENER (Background) ---
             let app_handle_cb = app.handle().clone();

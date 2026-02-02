@@ -136,20 +136,23 @@ pub struct AppSettings {
     pub enabled_preset_ids: Vec<String>,
 }
 
+use std::process::Command;
+use std::sync::RwLock;
+
 pub struct SupportedSites {
-    pub domains: HashSet<String>,
-    pub keywords: HashSet<String>,
+    pub domains: RwLock<HashSet<String>>,
+    pub keywords: RwLock<HashSet<String>>,
 }
 
 impl SupportedSites {
     pub fn new() -> Self {
         Self {
-            domains: HashSet::new(),
-            keywords: HashSet::new(),
+            domains: RwLock::new(HashSet::new()),
+            keywords: RwLock::new(HashSet::new()),
         }
     }
 
-    pub fn load_from_file(&mut self, path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn load_from_file(&self, path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         if !path.exists() {
             return Err("File not found".into());
         }
@@ -157,8 +160,11 @@ impl SupportedSites {
         let file = fs::File::open(path)?;
         let reader = BufReader::new(file);
 
-        self.domains.clear();
-        self.keywords.clear();
+        let mut domains = self.domains.write().unwrap();
+        let mut keywords = self.keywords.write().unwrap();
+
+        domains.clear();
+        keywords.clear();
 
         for line in reader.lines() {
             let line = line?;
@@ -170,7 +176,7 @@ impl SupportedSites {
             if let Some(start) = line.find("**") {
                 if let Some(end) = line[start + 2..].find("**") {
                     let name = &line[start + 2..start + 2 + end];
-                    self.process_token(name);
+                    self.process_token(name, &mut domains, &mut keywords);
                 }
             }
 
@@ -178,24 +184,73 @@ impl SupportedSites {
             if let Some(start) = line.find("[*") {
                 if let Some(end) = line[start + 2..].find("*]") {
                     let name = &line[start + 2..start + 2 + end];
-                    self.process_token(name);
+                    self.process_token(name, &mut domains, &mut keywords);
                 }
             }
-
-            // Disable "rest of line" scanning as it picks up description words causing false positives
-            // (e.g. "supports google.com" adds "google.com" but "supports foo" adds "foo")
         }
 
         log::info!(
             "Loaded {} supported domains/keywords from file. Domains: {}, Keywords: {}",
-            self.domains.len() + self.keywords.len(),
-            self.domains.len(),
-            self.keywords.len()
+            domains.len() + keywords.len(),
+            domains.len(),
+            keywords.len()
         );
         Ok(())
     }
 
-    fn process_token(&mut self, token: &str) {
+    /// Tier 2: Dynamic loading from `yt-dlp --list-extractors`
+    pub fn load_from_ytdlp(&self, ytdlp_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        log::info!("Starting dynamic extractor loading from: {}", ytdlp_path);
+
+        // Run yt-dlp --list-extractors
+        // Use standard Command here since we are in a background thread context usually
+        // and we want simple blocking output capture for parsing.
+        #[cfg(target_os = "windows")]
+        use std::os::windows::process::CommandExt;
+
+        let mut cmd = Command::new(ytdlp_path);
+        cmd.arg("--list-extractors");
+
+        #[cfg(target_os = "windows")]
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+
+        let output = cmd.output()?;
+
+        if !output.status.success() {
+            return Err(format!("yt-dlp failed with status: {}", output.status).into());
+        }
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+
+        let mut domains = self.domains.write().unwrap();
+        let mut keywords = self.keywords.write().unwrap();
+
+        let initial_count = domains.len() + keywords.len();
+
+        for line in stdout.lines() {
+            let token = line.trim();
+            if !token.is_empty() {
+                self.process_token(token, &mut domains, &mut keywords);
+            }
+        }
+
+        let new_count = domains.len() + keywords.len();
+
+        log::info!(
+            "Dynamic loading complete. Total sites: {} (Added: {})",
+            new_count,
+            new_count.saturating_sub(initial_count)
+        );
+
+        Ok(())
+    }
+
+    fn process_token(
+        &self,
+        token: &str,
+        domains: &mut HashSet<String>,
+        keywords: &mut HashSet<String>,
+    ) {
         let token = token.to_lowercase();
         if token.is_empty() {
             return;
@@ -203,7 +258,7 @@ impl SupportedSites {
 
         if token.contains('.') {
             // Likely a domain
-            self.domains.insert(token);
+            domains.insert(token);
         } else {
             // Split by colon to handle things like "youtube:clip" -> "youtube"
             for part in token.split(':') {
@@ -255,6 +310,8 @@ impl SupportedSites {
                     && part != "posts"
                     && part != "feed"
                     && part != "feeds"
+                    && part != "tab"
+                    && part != "recommended"
                     // News / Media
                     && part != "news"
                     && part != "music"
@@ -267,11 +324,35 @@ impl SupportedSites {
                     && part != "unknown"
                     && part != "watch"
                     && part != "link"
+                    && part != "share"
                 {
-                    self.keywords.insert(part.to_string());
+                    keywords.insert(part.to_string());
                 }
             }
         }
+    }
+
+    /// Tier 1: Instant VIP Check
+    pub fn is_vip(&self, domain: &str) -> bool {
+        let vips = [
+            "youtube.com",
+            "youtu.be",
+            "music.youtube.com",
+            "instagram.com",
+            "tiktok.com",
+            "facebook.com",
+            "twitter.com",
+            "x.com",
+            "twitch.tv",
+            "vimeo.com",
+            "soundcloud.com",
+            "dailymotion.com",
+            "reddit.com",
+            "threads.net",
+        ];
+
+        vips.iter()
+            .any(|vip| domain == *vip || domain.ends_with(&format!(".{}", vip)))
     }
 
     pub fn matches(&self, url: &str) -> bool {
@@ -280,13 +361,24 @@ impl SupportedSites {
             Err(_) => return false,
         };
 
-        for d in &self.domains {
+        // Tier 1: Check VIP first (0ms lock-free-ish path if we used constants, but here simple array iter)
+        if self.is_vip(&domain) {
+            return true;
+        }
+
+        // Tier 2 & 3: Check dynamic Lists
+        let domains = self.domains.read().unwrap();
+        for d in domains.iter() {
+            // Check if domain exactly matches OR if it is a subdomain (ends with .domain)
+            // e.g. music.youtube.com ends with .youtube.com
             if domain == *d || domain.ends_with(&format!(".{}", d)) {
                 return true;
             }
         }
+        drop(domains); // Release read lock
 
-        for keyword in &self.keywords {
+        let keywords = self.keywords.read().unwrap();
+        for keyword in keywords.iter() {
             if domain.contains(keyword) {
                 return true;
             }
@@ -1282,17 +1374,20 @@ pub fn sanitize_url(url: &str) -> String {
         let mut query: Vec<(String, String)> = parsed.query_pairs().into_owned().collect();
 
         // 1. Blacklist for general tracking parameters
+        // We removed 'list', 'index' from blacklist to support playlists
+        // We keep tracking params
         let blacklisted = [
             "si",
             "pp",
-            "list",
-            "index",
             "feature",
             "utm_source",
             "utm_medium",
             "utm_campaign",
             "utm_term",
             "utm_content",
+            "gclid",
+            "fbclid",
+            "igshid",
         ];
         query.retain(|(k, _)| !blacklisted.contains(&k.as_str()));
 

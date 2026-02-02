@@ -73,7 +73,8 @@ pub fn parse_video_metadata(raw_json: serde_json::Value) -> Result<ParsedMetadat
             if let Some(abr) = f.abr {
                 if f.acodec.as_deref().unwrap_or("none") != "none" {
                     let bitrate = abr.round() as u32;
-                    // Bucket logic (from TS)
+                    // Bucket logic: Snaps actual bitrate to nearest standard value (64, 128, etc.)
+                    // This creates clean UI options instead of showing raw values like 127kbps, 129kbps
                     let buckets: [u32; 5] = [64, 128, 192, 256, 320];
                     let closest = buckets
                         .into_iter()

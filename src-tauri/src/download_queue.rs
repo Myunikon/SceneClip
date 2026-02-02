@@ -8,7 +8,7 @@ use std::sync::{
 };
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_notification::NotificationExt;
-use tauri_plugin_store::StoreExt; // Import Store trait
+use tauri_plugin_store::StoreExt;
 use tokio::sync::Notify;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -65,35 +65,41 @@ pub struct QueueState {
     pub queue_order: Arc<Mutex<Vec<String>>>,
     pub abort_handles: Arc<Mutex<HashMap<String, tokio::task::AbortHandle>>>,
     pub notify: Arc<Notify>,
-    pub app_handle: Option<AppHandle>, // Needed to resolve paths for auto-save
-    pub cached_prevent_suspend: Arc<Mutex<bool>>, // Caching settings to avoid I/O bombardment
-    pub dirty: Arc<AtomicBool>,        // Flag to indicate pending changes
+    pub persistence_path: Option<PathBuf>, // FIX: Store Path, NOT AppHandle
+    pub cached_prevent_suspend: Arc<Mutex<bool>>,
+    pub dirty: Arc<AtomicBool>,
 }
 
 impl QueueState {
     pub fn new(app_handle: Option<AppHandle>) -> Self {
+        let persistence_path = app_handle
+            .as_ref()
+            .and_then(|app| app.path().app_data_dir().ok())
+            .map(|dir| dir.join("queue.json"));
+
         let state = Self {
             tasks: Arc::new(Mutex::new(HashMap::new())),
             queue_order: Arc::new(Mutex::new(Vec::new())),
             abort_handles: Arc::new(Mutex::new(HashMap::new())),
             notify: Arc::new(Notify::new()),
-            app_handle,
-            cached_prevent_suspend: Arc::new(Mutex::new(true)), // Default to true
+            persistence_path,
+            cached_prevent_suspend: Arc::new(Mutex::new(true)),
             dirty: Arc::new(AtomicBool::new(false)),
         };
-        // Attempt to load existing queue and settings cache
+        // Attempt to load existing queue
         state.load();
-        state.refresh_settings_cache();
 
-        // Background saver is handled by start_queue_processor
+        // We can't refresh cache here because we don't store app handle,
+        // but normally refresh_settings_cache is called by processor which has handle
+        if let Some(app) = &app_handle {
+            state.refresh_settings_cache(app);
+        }
+
         state
     }
 
     fn get_persistence_path(&self) -> Option<PathBuf> {
-        self.app_handle
-            .as_ref()
-            .and_then(|app| app.path().app_data_dir().ok())
-            .map(|dir| dir.join("queue.json"))
+        self.persistence_path.clone()
     }
 
     pub fn save(&self) {
@@ -124,20 +130,18 @@ impl QueueState {
         }
     }
 
-    pub fn refresh_settings_cache(&self) {
-        if let Some(app) = &self.app_handle {
-            let mut prevent_suspend = true;
-            if let Ok(store) = app.store("settings.json") {
-                if let Some(val) = store.get("preventSuspendDuringDownload") {
-                    prevent_suspend = val.as_bool().unwrap_or(true);
-                }
+    pub fn refresh_settings_cache(&self, app: &AppHandle) {
+        let mut prevent_suspend = true;
+        if let Ok(store) = app.store("settings.json") {
+            if let Some(val) = store.get("preventSuspendDuringDownload") {
+                prevent_suspend = val.as_bool().unwrap_or(true);
             }
-            let mut cache = self
-                .cached_prevent_suspend
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
-            *cache = prevent_suspend;
         }
+        let mut cache = self
+            .cached_prevent_suspend
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        *cache = prevent_suspend;
     }
 
     pub fn load(&self) {
@@ -149,6 +153,11 @@ impl QueueState {
                         let mut order = self.queue_order.lock().unwrap_or_else(|e| e.into_inner());
                         *tasks = data.tasks;
                         *order = data.queue_order;
+                        log::info!(
+                            "Queue loaded successfully. Tasks: {}, Ordered: {}",
+                            tasks.len(),
+                            order.len()
+                        );
 
                         // Reset 'Downloading' tasks to 'Pending' or 'Stopped' on startup/reload
                         for task in tasks.values_mut() {
@@ -169,7 +178,7 @@ impl QueueState {
         }
     }
 
-    pub fn add_task(&self, task: DownloadTask) {
+    pub fn add_task(&self, task: DownloadTask, app: &AppHandle) {
         {
             let mut tasks = self.tasks.lock().unwrap_or_else(|e| e.into_inner());
             let mut order = self.queue_order.lock().unwrap_or_else(|e| e.into_inner());
@@ -181,13 +190,17 @@ impl QueueState {
         }
         self.save_now(); // Critical event: additive
                          // Instant UI Update
-        if let Some(app) = &self.app_handle {
-            emit_queue_update(app, self);
-        }
+        emit_queue_update(app, self);
         self.notify.notify_one();
     }
 
-    pub fn update_task_status(&self, id: &str, status: TaskStatus, msg: Option<String>) {
+    pub fn update_task_status(
+        &self,
+        id: &str,
+        status: TaskStatus,
+        msg: Option<String>,
+        app: &AppHandle,
+    ) {
         {
             if let Some(task) = self
                 .tasks
@@ -218,9 +231,7 @@ impl QueueState {
         }
         // Status updates use regular save (debounced)
         self.save();
-        if let Some(app) = &self.app_handle {
-            emit_queue_update(app, self);
-        }
+        emit_queue_update(app, self);
         self.notify.notify_one();
     }
 
@@ -244,7 +255,7 @@ impl QueueState {
         self.notify.notify_one();
     }
 
-    pub fn remove_task(&self, id: &str) -> Option<DownloadTask> {
+    pub fn remove_task(&self, id: &str, app: &AppHandle) -> Option<DownloadTask> {
         let mut removed_task: Option<DownloadTask> = None;
         let mut removed = false;
         {
@@ -271,15 +282,13 @@ impl QueueState {
         if removed {
             self.save_now(); // Critical event: destructive
                              // Emit update explicitly to ensure UI reflects removal immediately
-            if let Some(app) = &self.app_handle {
-                emit_queue_update(app, self);
-            }
+            emit_queue_update(app, self);
             self.notify.notify_one();
         }
         removed_task
     }
 
-    pub fn pause_task(&self, id: &str) -> Result<(), String> {
+    pub fn pause_task(&self, id: &str, app: &AppHandle) -> Result<(), String> {
         let res = {
             let mut tasks = self.tasks.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(task) = tasks.get_mut(id) {
@@ -305,22 +314,20 @@ impl QueueState {
         if res.is_ok() {
             self.save();
             // Emit update immediately
-            if let Some(app) = &self.app_handle {
-                let tasks = self.tasks.lock().unwrap_or_else(|e| e.into_inner());
-                let order = self.queue_order.lock().unwrap_or_else(|e| e.into_inner());
-                let mut ordered_tasks = Vec::new();
-                for id in order.iter() {
-                    if let Some(t) = tasks.get(id) {
-                        ordered_tasks.push(t.clone());
-                    }
+            let tasks = self.tasks.lock().unwrap_or_else(|e| e.into_inner());
+            let order = self.queue_order.lock().unwrap_or_else(|e| e.into_inner());
+            let mut ordered_tasks = Vec::new();
+            for id in order.iter() {
+                if let Some(t) = tasks.get(id) {
+                    ordered_tasks.push(t.clone());
                 }
-                let _ = app.emit("queue_update", ordered_tasks);
             }
+            let _ = app.emit("queue_update", ordered_tasks);
         }
         res
     }
 
-    pub fn resume_task(&self, id: &str) -> Result<(), String> {
+    pub fn resume_task(&self, id: &str, app: &AppHandle) -> Result<(), String> {
         let res = {
             let mut tasks = self.tasks.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(task) = tasks.get_mut(id) {
@@ -344,22 +351,20 @@ impl QueueState {
         if res.is_ok() {
             self.save();
             // Emit update immediately
-            if let Some(app) = &self.app_handle {
-                let tasks = self.tasks.lock().unwrap_or_else(|e| e.into_inner());
-                let order = self.queue_order.lock().unwrap_or_else(|e| e.into_inner());
-                let mut ordered_tasks = Vec::new();
-                for id in order.iter() {
-                    if let Some(t) = tasks.get(id) {
-                        ordered_tasks.push(t.clone());
-                    }
+            let tasks = self.tasks.lock().unwrap_or_else(|e| e.into_inner());
+            let order = self.queue_order.lock().unwrap_or_else(|e| e.into_inner());
+            let mut ordered_tasks = Vec::new();
+            for id in order.iter() {
+                if let Some(t) = tasks.get(id) {
+                    ordered_tasks.push(t.clone());
                 }
-                let _ = app.emit("queue_update", ordered_tasks);
             }
+            let _ = app.emit("queue_update", ordered_tasks);
         }
         res
     }
 
-    pub fn cleanup_old_tasks(&self, retention_days: u32, max_items: i32) {
+    pub fn cleanup_old_tasks(&self, retention_days: u32, max_items: i32, app: &AppHandle) {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
@@ -423,10 +428,9 @@ impl QueueState {
         }
 
         if removed {
+            log::info!("Auto-cleanup executed. Removed old/excess tasks.");
             self.save_now(); // Critical: bulk cleanup
-            if let Some(app) = &self.app_handle {
-                emit_queue_update(app, self);
-            }
+            emit_queue_update(app, self);
         }
     }
 }
@@ -438,8 +442,11 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
         let _ =
             tokio::time::timeout(std::time::Duration::from_secs(2), state.notify.notified()).await;
 
+        // Log heartbeat at TRACE level only
+        log::trace!("Queue processor heartbeat");
+
         // Sync settings cache periodically
-        state.refresh_settings_cache();
+        state.refresh_settings_cache(&app);
 
         // 2. Fetch Concurrency & History Settings from Store
         let (limit, retention_days, max_items) = {
@@ -468,7 +475,7 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
         };
 
         // 3. Perform Auto-Cleanup
-        state.cleanup_old_tasks(retention_days, max_items);
+        state.cleanup_old_tasks(retention_days, max_items, &app);
 
         // EXTRA: DEBOUNCED SAVER LOGIC
         // If dirty, we save every loop iteration (2s)
@@ -530,7 +537,7 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
         // 4. Start Task
         if let Some(id) = next_task_id {
             // Mark as queued/starting to prevent double-pick
-            state.update_task_status(&id, TaskStatus::Queued, None);
+            state.update_task_status(&id, TaskStatus::Queued, None, &app);
 
             log::info!("[Queue] Picking task {} to start", id);
 
@@ -551,7 +558,12 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                     // ... (existing logs) ...
 
                     // Update to downloading
-                    state_cloned.update_task_status(&task.id, TaskStatus::Downloading, None);
+                    state_cloned.update_task_status(
+                        &task.id,
+                        TaskStatus::Downloading,
+                        None,
+                        &app_handle,
+                    );
                     emit_queue_update(&app_handle, &state_cloned);
 
                     log::info!("Starting headless download for {}", task.url);
@@ -731,6 +743,7 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                                 &id_retry,
                                                 TaskStatus::Pending,
                                                 None,
+                                                &app_retry,
                                             );
                                             emit_queue_update(&app_retry, &state_retry);
                                         });

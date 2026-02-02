@@ -182,20 +182,15 @@ impl SupportedSites {
                 }
             }
 
-            // Extract anything that looks like a domain in the rest of the line
-            // e.g. "1News: 1news.co.nz article videos"
-            for token in line.split_whitespace() {
-                let token =
-                    token.trim_matches(|c: char| !c.is_alphanumeric() && c != '.' && c != '-');
-                if token.contains('.') && token.chars().filter(|&c| c == '.').count() >= 1 {
-                    self.process_token(token);
-                }
-            }
+            // Disable "rest of line" scanning as it picks up description words causing false positives
+            // (e.g. "supports google.com" adds "google.com" but "supports foo" adds "foo")
         }
 
         log::info!(
-            "Loaded {} supported domains/keywords from file",
-            self.domains.len() + self.keywords.len()
+            "Loaded {} supported domains/keywords from file. Domains: {}, Keywords: {}",
+            self.domains.len() + self.keywords.len(),
+            self.domains.len(),
+            self.keywords.len()
         );
         Ok(())
     }
@@ -215,11 +210,63 @@ impl SupportedSites {
                 // Skip generic words to avoid false positives
                 let part = part.trim();
                 if part.len() >= 3
+                    // Content Types
                     && part != "video"
                     && part != "videos"
                     && part != "audio"
                     && part != "embed"
                     && part != "clip"
+                    && part != "clips"
+                    && part != "live"
+                    && part != "livestream"
+                    && part != "stream"
+                    && part != "playlist"
+                    && part != "playlists"
+                    && part != "list"
+                    && part != "channel"
+                    && part != "channels"
+                    && part != "user"
+                    && part != "users"
+                    && part != "group"
+                    && part != "groups"
+                    && part != "story"
+                    && part != "stories"
+                    && part != "topic"
+                    && part != "topics"
+                    && part != "search"
+                    && part != "album"
+                    && part != "albums"
+                    && part != "track"
+                    && part != "tracks"
+                    && part != "episode"
+                    && part != "episodes"
+                    && part != "series"
+                    && part != "season"
+                    && part != "seasons"
+                    && part != "movie"
+                    && part != "movies"
+                    && part != "show"
+                    && part != "shows"
+                    && part != "article"
+                    && part != "articles"
+                    && part != "page"
+                    && part != "pages"
+                    && part != "post"
+                    && part != "posts"
+                    && part != "feed"
+                    && part != "feeds"
+                    // News / Media
+                    && part != "news"
+                    && part != "music"
+                    && part != "radio"
+                    && part != "player"
+                    && part != "media"
+                    && part != "tv" // len 2 but consistent
+                    // Misc
+                    && part != "generic"
+                    && part != "unknown"
+                    && part != "watch"
+                    && part != "link"
                 {
                     self.keywords.insert(part.to_string());
                 }

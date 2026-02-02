@@ -50,7 +50,7 @@ export function TypingAnimation({
         return () => {
             clearInterval(typingEffect)
         }
-    }, [children, duration, started])
+    }, [children, duration, started, onComplete])
 
     return (
         <Component

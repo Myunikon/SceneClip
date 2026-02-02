@@ -241,7 +241,7 @@ function RootComponent() {
         }
         setupServerListener()
         return () => { if (unlisten) unlisten.then(f => f()) }
-    }, [])
+    }, [handleNewTask])
 
     // Lazy Binary Validation
     useEffect(() => {

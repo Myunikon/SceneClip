@@ -8,8 +8,17 @@ export function Updater() {
     const { t } = useTranslation()
 
     const {
-        appState,
-        ytdlpState,
+        appVersion,
+        appLatestVersion,
+        appNeedsUpdate,
+        appUpdateError,
+        appUpdateProgress,
+        ytdlpVersion,
+        ytdlpLatestVersion,
+        ytdlpNeedsUpdate,
+        ytdlpIntegrityValid,
+        ytdlpUpdateError,
+        ytdlpUpdateProgress,
         isCheckingAppUpdate,
         isCheckingYtdlpUpdate,
         checkBinaryUpdates,
@@ -17,21 +26,17 @@ export function Updater() {
         updateBinary,
         cancelUpdate
     } = useAppStore(useShallow(state => ({
-        appState: {
-            version: state.appVersion,
-            latest: state.appLatestVersion,
-            needsUpdate: state.appNeedsUpdate,
-            error: state.appUpdateError,
-            progress: state.appUpdateProgress
-        },
-        ytdlpState: {
-            version: state.ytdlpVersion,
-            latest: state.ytdlpLatestVersion,
-            needsUpdate: state.ytdlpNeedsUpdate,
-            error: state.ytdlpUpdateError,
-            progress: state.ytdlpUpdateProgress,
-            integrityValid: state.ytdlpIntegrityValid
-        },
+        appVersion: state.appVersion,
+        appLatestVersion: state.appLatestVersion,
+        appNeedsUpdate: state.appNeedsUpdate,
+        appUpdateError: state.appUpdateError,
+        appUpdateProgress: state.appUpdateProgress,
+        ytdlpVersion: state.ytdlpVersion,
+        ytdlpLatestVersion: state.ytdlpLatestVersion,
+        ytdlpNeedsUpdate: state.ytdlpNeedsUpdate,
+        ytdlpIntegrityValid: state.ytdlpIntegrityValid,
+        ytdlpUpdateError: state.ytdlpUpdateError,
+        ytdlpUpdateProgress: state.ytdlpUpdateProgress,
         isCheckingAppUpdate: state.isCheckingAppUpdate,
         isCheckingYtdlpUpdate: state.isCheckingYtdlpUpdate,
         checkBinaryUpdates: state.checkBinaryUpdates,
@@ -39,6 +44,23 @@ export function Updater() {
         updateBinary: state.updateBinary,
         cancelUpdate: state.cancelUpdate
     })))
+
+    const appState = {
+        version: appVersion,
+        latest: appLatestVersion,
+        needsUpdate: appNeedsUpdate,
+        error: appUpdateError,
+        progress: appUpdateProgress
+    }
+
+    const ytdlpState = {
+        version: ytdlpVersion,
+        latest: ytdlpLatestVersion,
+        needsUpdate: ytdlpNeedsUpdate,
+        error: ytdlpUpdateError,
+        progress: ytdlpUpdateProgress,
+        integrityValid: ytdlpIntegrityValid
+    }
 
     return (
         <div className="flex flex-col space-y-6">

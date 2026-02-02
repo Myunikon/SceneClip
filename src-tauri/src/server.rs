@@ -131,8 +131,8 @@ async fn handle_download(
         options,
     };
 
-    queue_state.add_task(task);
-    log::info!("Download added to queue: {} (id: {})", payload.url, id);
+    queue_state.add_task(task, &state.app_handle);
+    log::info!("Extension task added to queue successfully.");
 
     // Notify UI that a new task was added (for visual feedback only)
     let _ = state.app_handle.emit("extension-download-added", &id);

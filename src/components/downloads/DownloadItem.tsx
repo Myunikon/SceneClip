@@ -40,8 +40,8 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
     // Bail if task not found (deleted mid-render)
     if (!task) return null
 
-    // Check if this is a clipped download
-    const isClipped = task.range !== 'Full'
+    // Check if this is a clipped download (treat empty/null as Full)
+    const isClipped = task.range && task.range !== 'Full'
 
     // --- Dynamic File Icon ---
     const getFileIcon = () => {

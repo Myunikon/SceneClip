@@ -66,7 +66,9 @@ pub fn get_system_stats(
 
         let speeds = if let Some((last_time, last_rx, last_tx)) = *last {
             let elapsed = now.duration_since(last_time).as_secs_f64();
-            if elapsed > 0.0 {
+            // Minimum threshold: 500ms. If called too fast, return 0 or previous (here 0 for safety)
+            // prevents division by near-zero causing massive spikes
+            if elapsed >= 0.5 {
                 let dl = (total_rx.saturating_sub(last_rx)) as f64 / elapsed;
                 let ul = (total_tx.saturating_sub(last_tx)) as f64 / elapsed;
                 (dl, ul)
@@ -77,7 +79,16 @@ pub fn get_system_stats(
             (0.0, 0.0)
         };
 
-        *last = Some((now, total_rx, total_tx));
+        // Only update 'last' if we actually calculated a new speed (elapsed >= threshold)
+        // or if it's the first run
+        if let Some((last_time, _, _)) = *last {
+            if now.duration_since(last_time).as_secs_f64() >= 0.5 {
+                *last = Some((now, total_rx, total_tx));
+            }
+        } else {
+            *last = Some((now, total_rx, total_tx));
+        }
+
         speeds
     };
 

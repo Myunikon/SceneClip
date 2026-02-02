@@ -6,10 +6,13 @@ use tauri::State;
 #[tauri::command]
 pub async fn add_to_queue(
     state: State<'_, Arc<QueueState>>,
+    app: tauri::AppHandle,
     url: String,
     options: YtDlpOptions,
 ) -> Result<String, String> {
     let id = uuid::Uuid::new_v4().to_string();
+
+    log::info!("User added new task to queue: {} (ID: {})", url, id);
 
     // We construct the task
     // Note: 'title', 'speed', etc. are just placeholders initially
@@ -44,58 +47,59 @@ pub async fn add_to_queue(
         options,
     };
 
-    state.add_task(task);
+    state.add_task(task, &app);
     Ok(id)
 }
 
 #[tauri::command]
 pub async fn remove_from_queue(
     state: State<'_, Arc<QueueState>>,
+    app: tauri::AppHandle,
     id: String,
 ) -> Result<(), String> {
     // Scope the lock to ensure it is dropped before awaiting
     // Now returns Option<DownloadTask> so we can cleanup files
-    let removed_task_opt = state.remove_task(&id);
+    let removed_task_opt = state.remove_task(&id, &app);
 
     if let Some(task) = removed_task_opt {
+        log::info!("User removed task: {} (URL: {})", id, task.url);
         // 1. Process Cancellation (Force Kill)
         let _ =
             crate::commands::download::cancel_download_internal(id, state.inner().clone()).await;
 
-        // 2. File Cleanup (Absolute "Sisa Download" Removal)
-        // We try to delete known artifacts: .part, .ytdl, or the file itself IF NOT COMPLETED
+        // 2. File Cleanup
         if let Some(path_str) = task.file_path {
             let path = std::path::Path::new(&path_str);
-
             let mut candidates = Vec::new();
 
-            // ONLY remove the main file if it's NOT completed or stopped (which might contain a finished file)
+            // ONLY remove the main file if it's NOT completed or stopped.
+            // If it IS completed, the user might want to keep it even if removing from history.
             if !matches!(task.status, TaskStatus::Completed | TaskStatus::Stopped) {
                 candidates.push(path.to_path_buf());
             }
 
-            // Always try to remove partial files
-            candidates.push(path.with_extension(format!(
-                "{}.part",
-                path.extension().unwrap_or_default().to_str().unwrap_or("")
-            )));
-            candidates.push(path.with_extension(format!(
-                "{}.ytdl",
-                path.extension().unwrap_or_default().to_str().unwrap_or("")
-            )));
-
-            // Common yt-dlp pattern: "filename.mp4.part"
+            // Always try to remove partial/temp files associated with this download
+            // Pattern 1: .part appended to full name (yt-dlp default)
+            // e.g. "video.mp4.part"
             if let Some(file_name) = path.file_name() {
                 if let Some(parent) = path.parent() {
+                    // specific yt-dlp part file: video.mp4.part
                     candidates.push(parent.join(format!("{}.part", file_name.to_string_lossy())));
+                    // specific yt-dlp meta file: video.mp4.ytdl
                     candidates.push(parent.join(format!("{}.ytdl", file_name.to_string_lossy())));
+
+                    // Also try replacing extension (rare but possible depending on config)
+                    // e.g. video.part instead of video.mp4 (if temp-filename configured differently)
+                    if let Some(stem) = path.file_stem() {
+                        candidates.push(parent.join(format!("{}.part", stem.to_string_lossy())));
+                    }
                 }
             }
 
             for p in candidates {
-                if p.exists() && p.is_file() {
-                    let _ = std::fs::remove_file(p);
-                }
+                // remove_file returns error if file doesn't exist, which we can safely ignore
+                // This atomic attempt is safer than checking exists() first (TOCTOU)
+                let _ = std::fs::remove_file(p);
             }
         }
     }
@@ -103,13 +107,23 @@ pub async fn remove_from_queue(
 }
 
 #[tauri::command]
-pub async fn pause_task(state: State<'_, Arc<QueueState>>, id: String) -> Result<(), String> {
-    state.pause_task(&id)
+pub async fn pause_task(
+    state: State<'_, Arc<QueueState>>,
+    app: tauri::AppHandle,
+    id: String,
+) -> Result<(), String> {
+    log::info!("User paused task: {}", id);
+    state.pause_task(&id, &app)
 }
 
 #[tauri::command]
-pub async fn resume_task(state: State<'_, Arc<QueueState>>, id: String) -> Result<(), String> {
-    state.resume_task(&id)
+pub async fn resume_task(
+    state: State<'_, Arc<QueueState>>,
+    app: tauri::AppHandle,
+    id: String,
+) -> Result<(), String> {
+    log::info!("User resumed task: {}", id);
+    state.resume_task(&id, &app)
 }
 
 #[tauri::command]

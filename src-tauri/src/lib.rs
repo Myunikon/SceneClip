@@ -144,26 +144,28 @@ pub fn run() {
 
                 // --- 1. START MINIMIZED LOGIC ---
                 use tauri_plugin_store::StoreExt;
-                let store = match app.store("settings.json") {
-                    Ok(s) => s,
+                log::info!("Attempting to load settings for window configuration...");
+                
+                let start_minimized = match app.store("settings.json") {
+                    Ok(store) => {
+                        log::info!("Settings store loaded successfully.");
+                        store.get("startMinimized")
+                            .and_then(|v| v.as_bool())
+                            .unwrap_or(false)
+                    },
                     Err(e) => {
-                        log::error!("Failed to load settings store at startup: {}", e);
-                        // Prevent crash, continue with default window state (shown)
-                        return Ok(());
+                        log::error!("CRITICAL: Failed to load settings store at startup: {}. Continuing with defaults.", e);
+                        false
                     }
                 };
 
-                // Check 'startMinimized' (default false)
-                let start_minimized = store
-                    .get("startMinimized")
-                    .and_then(|v| v.as_bool())
-                    .unwrap_or(false);
-
                 if start_minimized {
+                    log::info!("Settings indicate 'startMinimized' is TRUE. Hiding main window.");
                     // Hide immediately (we assume window is created visible: false in tauri.conf.json is better,
                     // but if it's visible by default, this hides it quickly)
                     let _ = window.hide();
                 } else {
+                    log::info!("Settings indicate 'startMinimized' is FALSE. Showing main window.");
                     let _ = window.show();
                     let _ = window.set_focus();
                 }

@@ -1,3 +1,4 @@
+use regex::Regex;
 use serde::Deserialize;
 use std::path::Path;
 use tauri::AppHandle;
@@ -34,36 +35,36 @@ struct FfprobeFormat {
 
 /// Parses strings like "1.5 GB", "200 MiB", "500kb" into bytes.
 fn parse_size_to_bytes(s: &str) -> u64 {
-    let s = s.to_uppercase();
-    let parts: Vec<&str> = s.split_whitespace().collect();
-    if parts.is_empty() {
-        return 0;
-    }
+    let s = s.trim().to_uppercase();
 
-    let size_part = parts[0];
-    let mut clean = String::new();
-    let mut dot_count = 0;
+    // Regex to capture numeric part and unit part
+    // Matches "123", "1.5", "1,5", with optional unit "GB", "KiB", etc.
+    let re = match Regex::new(r"([\d.,]+)\s*([A-Z]*)") {
+        Ok(r) => r,
+        Err(_) => return 0, // Should never happen with valid regex
+    };
 
-    for c in size_part.chars() {
-        if c.is_ascii_digit() {
-            clean.push(c);
-        } else if (c == '.' || c == ',') && dot_count == 0 {
-            clean.push('.');
-            dot_count += 1;
-        }
-    }
+    let caps = match re.captures(&s) {
+        Some(c) => c,
+        None => return 0,
+    };
 
-    let val: f64 = clean.parse().unwrap_or(0.0);
+    // Parse number (handle both dot and comma)
+    let num_str = caps.get(1).map_or("0", |m| m.as_str()).replace(',', ".");
+    let value: f64 = num_str.parse().unwrap_or(0.0);
 
-    if s.contains('G') {
-        (val * 1024.0 * 1024.0 * 1024.0) as u64
-    } else if s.contains('M') {
-        (val * 1024.0 * 1024.0) as u64
-    } else if s.contains('K') {
-        (val * 1024.0) as u64
-    } else {
-        val as u64
-    }
+    let unit = caps.get(2).map_or("", |m| m.as_str());
+
+    // multipliers (handling decimal and binary prefixes roughly same for safety or strictly)
+    let multiplier = match unit {
+        "G" | "GB" | "GIB" => 1_073_741_824.0, // 1024^3
+        "M" | "MB" | "MIB" => 1_048_576.0,     // 1024^2
+        "K" | "KB" | "KIB" => 1_024.0,         // 1024
+        "T" | "TB" | "TIB" => 1_099_511_627_776.0,
+        _ => 1.0,
+    };
+
+    (value * multiplier) as u64
 }
 
 fn parse_bitrate_kbps(s: &str) -> u32 {
@@ -130,7 +131,18 @@ pub async fn estimate_export_size(
     }
 
     let base_bytes = if let (Some(d), Some(b)) = (duration_secs, actual_bitrate) {
-        (d * (b as f64) / 8.0) as u64
+        // Safe arithmetic with saturation to prevent overflow
+        // d * (b / 8.0)
+        let bits = b as f64;
+        let bytes_per_sec = bits / 8.0;
+        let total = d * bytes_per_sec;
+
+        // Clamp to u64::MAX to prevent overflow loops
+        if total > u64::MAX as f64 {
+            u64::MAX
+        } else {
+            total as u64
+        }
     } else if let Some(ref size_str) = params.original_size_str {
         parse_size_to_bytes(size_str)
     } else {
@@ -158,27 +170,24 @@ pub async fn estimate_export_size(
             }
         }
     } else if params.media_type == MediaType::Video {
-        /// CRF (Constant Rate Factor) compression ratios for H.264/H.265.
-        /// These ratios are used to estimate the final file size after compression.
-        /// Based on empirical testing with mixed content (movies, anime, screencasts).
-        ///
-        /// | CRF Range | Quality      | Typical Use Case        | Ratio |
-        /// |-----------|--------------|------------------------|-------|
-        /// | 35+       | Low          | Previews, thumbnails   | 0.15  |
-        /// | 28-34     | Medium-Low   | Social media uploads   | 0.30  |
-        /// | 23-27     | Good         | Streaming, web video   | 0.60  |
-        /// | 18-22     | High         | Archival, BluRay rips  | 0.95  |
-        /// | <18       | Near-lossless| Production work        | 1.05  |
-        const CRF_RATIOS: &[(i32, f64)] = &[(35, 0.15), (28, 0.3), (23, 0.6), (18, 0.95)];
-
-        CRF_RATIOS
-            .iter()
-            .find(|(limit, _)| params.crf >= *limit)
-            .map(|(_, r)| *r)
-            .unwrap_or(1.05)
+        // CRF Estimation Table
+        // Range mapping for compression ratios
+        match params.crf {
+            0..=17 => 1.05,  // Near-lossless (can be larger than source!)
+            18..=22 => 0.95, // High Quality
+            23..=27 => 0.60, // Good Balance
+            28..=34 => 0.30, // Low Bitrate
+            _ => 0.15,       // Very Low (35+)
+        }
     } else {
         1.0
     };
 
-    Ok((base_bytes as f64 * ratio) as u64)
+    // Calculate final size with overflow check
+    let estimated = base_bytes as f64 * ratio;
+    Ok(if estimated > u64::MAX as f64 {
+        u64::MAX
+    } else {
+        estimated as u64
+    })
 }

@@ -15,29 +15,13 @@ interface AboutSettingsProps {
 
 export function AboutSettings({ addLog, setShowEasterEgg }: AboutSettingsProps) {
     const { t } = useTranslation()
-    // const { checkBinaryUpdates } = useAppStore()
 
-    // Auto-check removed per user request
-    // useEffect(() => {
-    //    checkBinaryUpdates()
-    // }, [checkBinaryUpdates])
 
     const techItems = [
         { id: 'yt-dlp', name: 'yt-dlp', role: t('settings.about_page.role_core'), Icon: TerminalIcon, link: 'https://github.com/yt-dlp/yt-dlp', color: 'text-foreground' },
         { id: 'ffmpeg', name: 'FFmpeg', role: t('settings.about_page.role_media'), Icon: Scissors, link: 'https://ffmpeg.org', color: 'text-green-600 dark:text-green-400' },
         { id: 'tauri', name: 'Tauri', role: t('settings.about_page.role_framework'), Icon: Zap, link: 'https://tauri.app', color: 'text-yellow-600 dark:text-yellow-400' },
-        {
-            id: 'react', name: 'React', role: t('settings.about_page.role_ui'), Icon: (props: any) => (
-                <svg className={`w-5 h-5 ${props.className}`} viewBox="-11.5 -10.23174 23 20.46348">
-                    <circle cx="0" cy="0" r="2.05" fill="currentColor" />
-                    <g stroke="currentColor" strokeWidth="1" fill="none">
-                        <ellipse rx="11" ry="4.2" />
-                        <ellipse rx="11" ry="4.2" transform="rotate(60)" />
-                        <ellipse rx="11" ry="4.2" transform="rotate(120)" />
-                    </g>
-                </svg>
-            ), link: 'https://react.dev', color: 'text-cyan-500'
-        },
+        { id: 'react', name: 'React', role: t('settings.about_page.role_ui'), Icon: ReactIcon, link: 'https://react.dev', color: 'text-cyan-500' },
         { id: 'zustand', name: 'Zustand', role: t('settings.about_page.role_state'), Icon: Layers, link: 'https://zustand-demo.pmnd.rs', color: 'text-orange-500' },
         { id: 'router', name: 'TanStack Router', role: t('settings.about_page.role_routing'), Icon: Waypoints, link: 'https://tanstack.com/router', color: 'text-emerald-500' },
         { id: 'i18next', name: 'i18next', role: t('settings.about_page.role_i18n'), Icon: Languages, link: 'https://www.i18next.com', color: 'text-teal-500' },
@@ -133,5 +117,18 @@ export function AboutSettings({ addLog, setShowEasterEgg }: AboutSettingsProps) 
                 </div>
             </div>
         </div>
+    )
+}
+
+function ReactIcon(props: any) {
+    return (
+        <svg className={`w-5 h-5 ${props.className}`} viewBox="-11.5 -10.23174 23 20.46348">
+            <circle cx="0" cy="0" r="2.05" fill="currentColor" />
+            <g stroke="currentColor" strokeWidth="1" fill="none">
+                <ellipse rx="11" ry="4.2" />
+                <ellipse rx="11" ry="4.2" transform="rotate(60)" />
+                <ellipse rx="11" ry="4.2" transform="rotate(120)" />
+            </g>
+        </svg>
     )
 }

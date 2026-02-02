@@ -78,6 +78,9 @@ pub async fn download_media_internal(
     gpu_type: String,
     sender: mpsc::UnboundedSender<DownloadEvent>,
 ) -> Result<(), String> {
+    log::info!("Starting download for ID: {} (URL: {})", id, url);
+    log::debug!("Download Options: {:?}", options);
+
     // 1. Initial Event
     let _ = sender.send(DownloadEvent::Started {
         id: id.clone(),
@@ -217,9 +220,13 @@ pub async fn download_media_internal(
     // the child process is automatically killed.
     command.kill_on_drop(true);
 
-    let mut child = command
-        .spawn()
-        .map_err(|e| format!("Failed to spawn yt-dlp: {}", e))?;
+    let mut child = command.spawn().map_err(|e| {
+        let err_msg = format!("Failed to spawn yt-dlp: {}", e);
+        log::error!("{}", err_msg);
+        err_msg
+    })?;
+
+    log::info!("yt-dlp process spawned successfully for task {}", id);
 
     let pid = child.id().unwrap_or(0);
 
@@ -358,6 +365,7 @@ pub async fn download_media_internal(
     match status_res {
         Ok(status) => {
             if status.success() {
+                log::info!("Download process completed for task {}", id);
                 let _ = sender.send(DownloadEvent::Completed {
                     id: id.clone(),
                     file_path: full_path_str,

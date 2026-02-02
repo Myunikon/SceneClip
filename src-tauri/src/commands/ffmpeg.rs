@@ -151,6 +151,8 @@ pub async fn compress_media(
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
+        // Use the constant from system.rs or define locally if not public
+        // For now, consistent local definition
         const CREATE_NO_WINDOW: u32 = 0x08000000;
         std_command.creation_flags(CREATE_NO_WINDOW);
     }
@@ -165,66 +167,88 @@ pub async fn compress_media(
         .map_err(|e| format!("Failed to spawn ffmpeg: {}", e))?;
 
     // --- Progress Parsing (Regex based) ---
+    // Fixed: potential memory leak by ensuring parser stops when child exits
     let stderr = child.stderr.take().ok_or("Failed to open stderr")?;
     let reader = AsyncBufReader::new(stderr);
     let on_event_clone = on_event.clone();
 
-    tokio::spawn(async move {
+    // Cancellation channel for the parser task
+    let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
+
+    let parser_handle = tokio::spawn(async move {
         let mut total_duration_secs = 0.0;
         let mut last_percent = 0.0;
         let mut lines = reader.lines();
 
-        while let Ok(Some(l)) = lines.next_line().await {
-            // 1. Parse Duration
-            if total_duration_secs == 0.0 {
-                if let Some(cap) = DURATION_RE.captures(&l) {
-                    total_duration_secs = parse_time(&cap[1]);
+        loop {
+            tokio::select! {
+                line_result = lines.next_line() => {
+                    match line_result {
+                        Ok(Some(l)) => {
+                             // 1. Parse Duration
+                            if total_duration_secs == 0.0 {
+                                if let Some(cap) = DURATION_RE.captures(&l) {
+                                    total_duration_secs = parse_time(&cap[1]);
+                                }
+                            }
+
+                            // 2. Parse Progress
+                            if let Some(t_cap) = TIME_RE.captures(&l) {
+                                let current_time_secs = parse_time(&t_cap[1]);
+                                let mut percent = 0.0;
+                                if total_duration_secs > 0.0 {
+                                    percent = (current_time_secs / total_duration_secs) * 100.0;
+                                }
+
+                                let speed = SPEED_RE
+                                    .captures(&l)
+                                    .map(|c| c[1].to_string())
+                                    .unwrap_or_else(|| "N/A".to_string());
+
+                                let eta = ETA_RE
+                                    .captures(&l)
+                                    .map(|c| c[1].to_string())
+                                    .unwrap_or_else(|| "N/A".to_string());
+
+                                let threshold = if total_duration_secs < 30.0 {
+                                    0.01 // 1%
+                                } else {
+                                    0.1 // 0.1%
+                                };
+
+                                if (percent - last_percent).abs() > threshold || percent >= 100.0 {
+                                    let _ = on_event_clone.send(FFmpegEvent::Progress {
+                                        percent: percent.min(100.0),
+                                        speed,
+                                        eta,
+                                    });
+                                    last_percent = percent;
+                                }
+                            } else {
+                                // Log other messages
+                                let _ = on_event_clone.send(FFmpegEvent::Log {
+                                    message: l,
+                                    level: "info".to_string(),
+                                });
+                            }
+                        }
+                        Ok(None) => break, // EOF
+                        Err(_) => break, // Error
+                    }
                 }
-            }
-
-            // 2. Parse Progress
-            if let Some(t_cap) = TIME_RE.captures(&l) {
-                let current_time_secs = parse_time(&t_cap[1]);
-                let mut percent = 0.0;
-                if total_duration_secs > 0.0 {
-                    percent = (current_time_secs / total_duration_secs) * 100.0;
+                _ = &mut cancel_rx => {
+                    log::info!("FFmpeg parser cancelled");
+                    break;
                 }
-
-                let speed = SPEED_RE
-                    .captures(&l)
-                    .map(|c| c[1].to_string())
-                    .unwrap_or_else(|| "N/A".to_string());
-
-                let eta = ETA_RE
-                    .captures(&l)
-                    .map(|c| c[1].to_string())
-                    .unwrap_or_else(|| "N/A".to_string());
-
-                let threshold = if total_duration_secs < 30.0 {
-                    0.01 // 1% for short videos
-                } else {
-                    0.1 // 0.1% for long videos
-                };
-
-                if (percent - last_percent).abs() > threshold || percent >= 100.0 {
-                    let _ = on_event_clone.send(FFmpegEvent::Progress {
-                        percent: percent.min(100.0),
-                        speed,
-                        eta,
-                    });
-                    last_percent = percent;
-                }
-            } else {
-                // Log other messages
-                let _ = on_event_clone.send(FFmpegEvent::Log {
-                    message: l,
-                    level: "info".to_string(),
-                });
             }
         }
     });
 
     let output = child.wait_with_output().await.map_err(|e| e.to_string())?;
+
+    // Stop the parser task
+    let _ = cancel_tx.send(());
+    let _ = parser_handle.await; // Wait for cleanup
 
     if output.status.success() {
         let _ = on_event.send(FFmpegEvent::Completed { output_path });
@@ -314,7 +338,7 @@ pub async fn split_media_chapters(
         #[cfg(target_os = "windows")]
         {
             const CREATE_NO_WINDOW: u32 = 0x08000000;
-            command.creation_flags(CREATE_NO_WINDOW); // Windows: CREATE_NO_WINDOW
+            command.creation_flags(CREATE_NO_WINDOW);
         }
 
         let output = command

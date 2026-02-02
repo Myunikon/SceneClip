@@ -29,18 +29,21 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
 
             // 2. Listen for updates
             await listen<DownloadTask[]>('queue_update', (event) => {
+                console.log("[VideoSlice] queue_update RECEIVED:", event.payload?.length || 0, "tasks");
                 set({ tasks: event.payload });
             });
         },
 
         addTask: async (url, options) => {
+            console.log("[VideoSlice] addTask called:", { url, options });
             // No duplicate check needed here, backend handles logic or we allow it.
             try {
                 // Pass options directly. Backend expects camelCase keys matching YtDlpOptions
                 await invoke('add_to_queue', { url, options });
+                console.log("[VideoSlice] addTask success (invoke returned)");
                 // No need to manually update state, the event 'queue_update' will fire from backend
             } catch (e) {
-                console.error("Failed to add task:", e);
+                console.error("[VideoSlice] addTask failed:", e);
                 notify.error("Failed to add to queue", { description: String(e) });
             }
         },

@@ -107,8 +107,8 @@ async fn handle_download(
         title: "From Extension...".to_string(),
         status: TaskStatus::Pending,
         progress: 0.0,
-        speed: "-".to_string(),
-        eta: "-".to_string(),
+        speed: Some("-".to_string()),
+        eta: Some("-".to_string()),
         path: String::new(), // Will be resolved by queue processor using settings
         error_message: None,
         added_at: std::time::SystemTime::now()

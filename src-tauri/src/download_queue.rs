@@ -33,8 +33,8 @@ pub struct DownloadTask {
     pub title: String,
     pub status: TaskStatus,
     pub progress: f64,
-    pub speed: String,
-    pub eta: String,
+    pub speed: Option<String>,
+    pub eta: Option<String>,
     pub path: String,
     pub error_message: Option<String>,
     pub added_at: u64,
@@ -289,7 +289,7 @@ impl QueueState {
                         Ok(_) => {
                             task.status = TaskStatus::Paused;
                             task.status_detail = Some("Paused".to_string());
-                            task.speed = "-".to_string(); // Clear speed
+                            task.speed = Some("-".to_string()); // Clear speed
                             Ok(())
                         }
                         Err(e) => Err(format!("Failed to suspend process: {}", e)),
@@ -532,6 +532,8 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
             // Mark as queued/starting to prevent double-pick
             state.update_task_status(&id, TaskStatus::Queued, None);
 
+            log::info!("[Queue] Picking task {} to start", id);
+
             // Emit update to frontend
             emit_queue_update(&app, &state);
 
@@ -556,12 +558,13 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
 
                     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
 
-                    let settings = crate::ytdlp::AppSettings {
-                        download_path: task.path.clone(),
-                        // We should populate other fields from store if possible,
-                        // but for YtDlpOptions usually overrides most things.
-                        ..Default::default()
-                    };
+                    let mut settings = crate::ytdlp::load_settings(&app_handle);
+                    // Override download path if task has a specific one
+                    if !task.path.is_empty() {
+                        settings.download_path = task.path.clone();
+                    }
+
+                    let gpu_type = crate::ytdlp::load_gpu_type(&app_handle);
 
                     let task_id = task.id.clone();
 
@@ -598,6 +601,7 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                         if let Some(fp) = file_path {
                                             t.file_path = Some(fp);
                                         }
+                                        // Also status update if started
                                         t.status = TaskStatus::Downloading;
                                     });
                                     emit_queue_update(&app_monitor, &state_monitor);
@@ -613,8 +617,8 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                 } => {
                                     state_monitor.update_task(&task_id, |t| {
                                         t.progress = percent;
-                                        t.speed = speed;
-                                        t.eta = eta;
+                                        t.speed = Some(speed);
+                                        t.eta = Some(eta);
                                         t.speed_raw = speed_raw;
                                         t.eta_raw = eta_raw;
                                         t.total_size = Some(total_size);
@@ -708,11 +712,29 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                             t.scheduled_time = Some(now + delay);
                                         } else {
                                             t.status = TaskStatus::Error;
-                                            t.error_message = Some(message);
+                                            t.status_detail = Some(message.clone());
                                         }
                                     });
 
                                     emit_queue_update(&app_monitor, &state_monitor);
+
+                                    if should_retry {
+                                        let state_retry = state_monitor.clone();
+                                        let app_retry = app_monitor.clone();
+                                        let id_retry = task_id.clone();
+                                        tokio::spawn(async move {
+                                            tokio::time::sleep(std::time::Duration::from_secs(
+                                                delay,
+                                            ))
+                                            .await;
+                                            state_retry.update_task_status(
+                                                &id_retry,
+                                                TaskStatus::Pending,
+                                                None,
+                                            );
+                                            emit_queue_update(&app_retry, &state_retry);
+                                        });
+                                    }
                                 }
                                 _ => {}
                             }
@@ -725,8 +747,8 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                         task.url.clone(),
                         task.id.clone(),
                         task.options.clone(),
-                        settings,           // We really should get real settings
-                        "auto".to_string(), // GPU Auto
+                        settings,
+                        gpu_type,
                         tx,
                     )
                     .await;

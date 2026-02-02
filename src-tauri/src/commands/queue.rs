@@ -19,8 +19,8 @@ pub async fn add_to_queue(
         title: "Queued...".to_string(),
         status: TaskStatus::Pending,
         progress: 0.0,
-        speed: "-".to_string(),
-        eta: "-".to_string(),
+        speed: Some("-".to_string()),
+        eta: Some("-".to_string()),
         path: options.path.clone().unwrap_or_default(),
         error_message: None,
         added_at: std::time::SystemTime::now()
@@ -87,9 +87,8 @@ pub async fn remove_from_queue(
             // Common yt-dlp pattern: "filename.mp4.part"
             if let Some(file_name) = path.file_name() {
                 if let Some(parent) = path.parent() {
-                    let name_str = file_name.to_string_lossy();
-                    candidates.push(parent.join(format!("{}.part", name_str)));
-                    candidates.push(parent.join(format!("{}.ytdl", name_str)));
+                    candidates.push(parent.join(format!("{}.part", file_name.to_string_lossy())));
+                    candidates.push(parent.join(format!("{}.ytdl", file_name.to_string_lossy())));
                 }
             }
 

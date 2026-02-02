@@ -146,7 +146,10 @@ pub async fn download_media_internal(
     }
 
     // 4. Filename Generation
-    let template = if settings.filename_template.is_empty() {
+    let template = if let Some(ref custom) = options.custom_filename {
+        // PRIORITASKAN custom_filename dari options
+        custom.as_str()
+    } else if settings.filename_template.is_empty() {
         "{title}"
     } else {
         &settings.filename_template
@@ -173,6 +176,7 @@ pub async fn download_media_internal(
 
     // Construct full command string for UI
     let full_command_string = format!("{} {}", ytdlp_path, args.join(" "));
+    log::info!("[Download] Spawning yt-dlp: {}", full_command_string);
 
     // Send updated Started event with command
     let _ = sender.send(DownloadEvent::Started {

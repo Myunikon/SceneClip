@@ -227,33 +227,68 @@ impl SupportedSites {
         }
     }
 
-    pub fn matches(&self, url_str: &str) -> bool {
-        let parsed = match Url::parse(url_str) {
-            Ok(u) => u,
+    pub fn matches(&self, url: &str) -> bool {
+        let domain = match Url::parse(url) {
+            Ok(u) => u.host_str().unwrap_or("").to_lowercase(),
             Err(_) => return false,
         };
 
-        let host = match parsed.host_str() {
-            Some(h) => h.to_lowercase(),
-            None => return false,
-        };
-
-        // 1. Check exact domain match or subdomain match
-        for domain in &self.domains {
-            if host == *domain || host.ends_with(&format!(".{}", domain)) {
+        for d in &self.domains {
+            if domain == *d || domain.ends_with(&format!(".{}", d)) {
                 return true;
             }
         }
 
-        // 2. Check keyword match in host
         for keyword in &self.keywords {
-            if host.contains(keyword) {
+            if domain.contains(keyword) {
                 return true;
             }
         }
 
         false
     }
+}
+
+pub fn load_settings(app: &AppHandle) -> AppSettings {
+    use tauri_plugin_store::StoreExt;
+    let store = match app.store("settings.json") {
+        Ok(s) => s,
+        Err(_) => return AppSettings::default(),
+    };
+
+    let key = "app-storage-v5-clean";
+    if let Some(v) = store.get(key) {
+        if let Some(state) = v.get("state") {
+            if let Some(settings_val) = state.get("settings") {
+                if let Ok(settings) = serde_json::from_value::<AppSettings>(settings_val.clone()) {
+                    return settings;
+                }
+            }
+        }
+    }
+
+    AppSettings::default()
+}
+
+pub fn load_gpu_type(app: &AppHandle) -> String {
+    use tauri_plugin_store::StoreExt;
+    let store = match app.store("settings.json") {
+        Ok(s) => s,
+        Err(_) => return "auto".to_string(),
+    };
+
+    let key = "app-storage-v5-clean";
+    if let Some(v) = store.get(key) {
+        if let Some(state) = v.get("state") {
+            if let Some(gpu_val) = state.get("gpuType") {
+                if let Some(gpu) = gpu_val.as_str() {
+                    return gpu.to_string();
+                }
+            }
+        }
+    }
+
+    "auto".to_string()
 }
 
 // --- Logic ---
@@ -560,6 +595,13 @@ pub async fn build_ytdlp_args(
         "--progress-delta".to_string(), "0.1".to_string(),
     ];
 
+    // ffmpeg location
+    let ffmpeg_path = resolve_ffmpeg_path(app_handle, &settings.binary_path_ffmpeg);
+    if !ffmpeg_path.is_empty() && ffmpeg_path != "ffmpeg" {
+        args.push("--ffmpeg-location".to_string());
+        args.push(ffmpeg_path);
+    }
+
     // Extract resolution number from fmt (e.g. "1080p" -> "1080")
     let res_num = fmt.chars().filter(|c| c.is_numeric()).collect::<String>();
     let res_val = if res_num.is_empty() {
@@ -724,7 +766,8 @@ pub async fn build_ytdlp_args(
         args.push("--recode-video".to_string());
         args.push("gif".to_string());
         args.push("--postprocessor-args".to_string());
-        args.push(format!("VideoConvertor:-vf {} -loop 0", gif_filter));
+        // Use "ffmpeg" as the PP name for broader compatibility across yt-dlp versions
+        args.push(format!("ffmpeg:-vf {} -loop 0", gif_filter));
     } else {
         let mut h = String::new();
         if fmt != "Best" && fmt != "audio" {

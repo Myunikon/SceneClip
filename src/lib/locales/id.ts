@@ -10,7 +10,11 @@ export const id = {
     common: {
         copy_error: "Gagal menyalin",
         pause: "Jeda",
-        cancel: "Batal"
+        cancel: "Batal",
+        logs: "Log",
+        remove: "Hapus",
+        retry: "Coba Lagi",
+        unknown: "Tidak Diketahui"
     },
     error_boundary: {
         title: "Ada yang salah nih.",

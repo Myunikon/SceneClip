@@ -10,7 +10,11 @@ export const zh = {
     common: {
         copy_error: "复制失败",
         pause: "暂停",
-        cancel: "取消"
+        cancel: "取消",
+        logs: "日志",
+        remove: "删除",
+        retry: "重试",
+        unknown: "未知"
     },
     error_boundary: {
         title: "出了点问题。",

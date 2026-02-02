@@ -10,7 +10,11 @@ export const ms = {
     common: {
         copy_error: "Gagal menyalin",
         pause: "Jeda",
-        cancel: "Batal"
+        cancel: "Batal",
+        logs: "Log",
+        remove: "Buang",
+        retry: "Cuba Lagi",
+        unknown: "Tidak Diketahui"
     },
     error_boundary: {
         title: "Ada masalah berlaku.",

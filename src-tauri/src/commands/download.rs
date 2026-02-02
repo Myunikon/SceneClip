@@ -182,13 +182,22 @@ pub async fn download_media_internal(
     log::info!("[Download] Spawning yt-dlp: {}", full_command_string);
 
     // Send updated Started event with command
+    // Prioritize custom_filename for display title, fallback to metadata title
+    let display_title = options
+        .custom_filename
+        .as_ref()
+        .filter(|s| !s.is_empty())
+        .cloned()
+        .or_else(|| {
+            meta.get("title")
+                .and_then(|t| t.as_str())
+                .map(|t| t.to_string())
+        });
+
     let _ = sender.send(DownloadEvent::Started {
         id: id.clone(),
         url: url.clone(),
-        title: meta
-            .get("title")
-            .and_then(|t| t.as_str())
-            .map(|t| t.to_string()),
+        title: display_title,
         ytdlp_command: Some(full_command_string),
         file_path: Some(full_path_str.clone()),
     });

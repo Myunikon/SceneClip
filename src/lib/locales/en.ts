@@ -10,7 +10,11 @@ export const en = {
     common: {
         copy_error: "Copy failed",
         pause: "Pause",
-        cancel: "Cancel"
+        cancel: "Cancel",
+        logs: "Logs",
+        remove: "Remove",
+        retry: "Retry",
+        unknown: "Unknown"
     },
     error_boundary: {
         title: "Something went wrong.",

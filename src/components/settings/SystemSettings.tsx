@@ -12,7 +12,7 @@ import { validateBinary, detectBinaryType } from '../../lib/binary-validator'
 import { cn } from '../../lib/utils'
 
 // @ts-ignore - Reserved for future type-specific logic
-const _detect = detectBinaryType;
+// const _detect = detectBinaryType;
 
 interface SystemSettingsProps {
     settings: AppSettings
@@ -78,7 +78,7 @@ function BinaryPathInput({ label, value, onChange, description, expectedType }: 
                     description: t('settings.advanced.validation.error_desc') || "Verification failed."
                 })
             }
-        } catch (e) {
+        } catch (_e) {
             setStatus({ isValid: false, version: null, loading: false })
             notify.error(t('settings.advanced.validation.invalid') || "Binary Invalid", {
                 description: "Critical verification error"
@@ -111,7 +111,7 @@ function BinaryPathInput({ label, value, onChange, description, expectedType }: 
                 onChange(path)
                 validate(path) // Trigger explicitly
             }
-        } catch (e) {
+        } catch (_e) {
             notify.error("Failed to open file browser")
         }
     }

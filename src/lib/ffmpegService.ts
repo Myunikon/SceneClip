@@ -125,7 +125,7 @@ export async function splitVideoByChapters(
 /**
  * @deprecated Use Rust version (compress_media or split_media_chapters) instead.
  */
-export async function getFFmpegCommand(args: string[], _customBinaryPath?: string) {
+export async function getFFmpegCommand(args: string[]) {
   const { Command } = await import('@tauri-apps/plugin-shell')
   return Command.create('ffmpeg', args)
 }

@@ -664,7 +664,13 @@ export const en = {
             lbl_bitrate: "Audio Bitrate",
 
             btn_cancel: "Cancel",
-            btn_start: "Export",
+            btn_export: "Export",
+
+            // Missing keys added
+            title: "Export Media",
+            change_file: "Change",
+            preset_label: "Preset",
+            est_output: "Estimated Size",
 
             // File validation
             file_missing: "File Not Found",

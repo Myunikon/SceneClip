@@ -12,6 +12,8 @@ const typeStyles = {
     error: { icon: AlertCircle, color: 'text-red-400', bg: 'bg-red-500/10' },
     warning: { icon: AlertTriangle, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
     info: { icon: Info, color: 'text-orange-400', bg: 'bg-orange-500/10' },
+    debug: { icon: Info, color: 'text-gray-400', bg: 'bg-gray-500/10' },
+    trace: { icon: Info, color: 'text-gray-400', bg: 'bg-gray-500/10' },
 }
 
 export function NotificationCenter() {
@@ -25,7 +27,7 @@ export function NotificationCenter() {
     // Filter out 'info' logs (debug/verbose) and map strictly to "important" events
     const logsWithIndex = logs.map((log, idx) => ({ ...log, originalIndex: idx }))
     const recentLogs = logsWithIndex
-        .filter(log => log.type !== 'info') // User req: only important events (error, warning, success)
+        .filter(log => log.level !== 'info') // User req: only important events (error, warning, success)
         .reverse()
         .slice(0, 50)
 
@@ -131,7 +133,7 @@ export function NotificationCenter() {
                         ) : (
                             <div className="divide-y divide-white/5">
                                 {recentLogs.map((log) => {
-                                    const style = typeStyles[log.type] || typeStyles.info
+                                    const style = typeStyles[log.level] || typeStyles.info
                                     const Icon = style.icon
 
                                     // Localization Handling

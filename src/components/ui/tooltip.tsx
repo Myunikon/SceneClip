@@ -73,7 +73,7 @@ interface TooltipProps {
     onOpenChange?: (open: boolean) => void
     openDelay?: number
     closeDelay?: number
-    side?: 'top' | 'right' | 'bottom' | 'left'
+    side?: import('@floating-ui/react').Placement
     sideOffset?: number
 }
 

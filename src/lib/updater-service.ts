@@ -55,6 +55,6 @@ export async function getBinaryVersion(binaryName: string): Promise<string | nul
     }
 }
 
-export async function getLatestVersion(_binaryName: string): Promise<string | null> {
+export async function getLatestVersion() {
     return null
 }

@@ -5,13 +5,16 @@ import { NativeLoader } from './NativeLoader'
 import { useRecovery } from '../../hooks/useRecovery'
 import { useTheme } from '../../hooks/useTheme'
 import i18n from '../../lib/i18n'
+import { useShallow } from 'zustand/react/shallow'
 
 export function AppGuard({ children }: { children: React.ReactNode }) {
-    const {
-        initListeners,
-        binariesReady,
-        settings
-    } = useAppStore()
+    const { initListeners, binariesReady, settings } = useAppStore(
+        useShallow(state => ({
+            initListeners: state.initListeners,
+            binariesReady: state.binariesReady,
+            settings: state.settings
+        }))
+    )
 
     // 1. Enforce Theme immediately
     useTheme({ theme: settings.theme, frontendFontSize: settings.frontendFontSize })

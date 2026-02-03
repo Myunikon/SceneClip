@@ -224,8 +224,8 @@ export function ChoiceGroup<T extends string | number | undefined>({
                 const Icon = opt.icon
 
                 return (
-                    <TooltipProvider key={String(opt.value)}>
-                        <Tooltip delayDuration={300}>
+                    <TooltipProvider key={String(opt.value)} delayDuration={300}>
+                        <Tooltip>
                             <TooltipTrigger asChild>
                                 <button
                                     type="button"

@@ -14,7 +14,6 @@ interface AddDialogContextType {
     meta: VideoMeta | null
     loadingMeta: boolean
     errorMeta: boolean
-    hasMeta: boolean
 
     // Available Options (Computed)
     availableResolutions?: number[]

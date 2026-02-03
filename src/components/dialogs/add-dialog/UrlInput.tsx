@@ -1,6 +1,7 @@
 import { Clipboard, List, Link, X, Globe, FolderOpen } from 'lucide-react'
 
 import { cn } from '../../../lib/utils'
+import { notify } from '../../../lib/notify'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../ui/tooltip'
 import { Button } from '../../ui/button'
 
@@ -30,16 +31,17 @@ export function UrlInput({ url, onChange, onPaste, t, batchMode = false, onBatch
                 const joined = result.urls.join('\n')
                 onChange(joined)
 
-                const { notify } = await import('../../../lib/notify')
                 notify.success(t('dialog.batch_imported_title'), {
                     description: t('dialog.batch_imported_desc', { count: result.urls.length })
                 })
             } else if (result.error) {
-                const { notify } = await import('../../../lib/notify')
                 notify.error(t('dialog.import_failed'), { description: result.error })
             }
         } catch (e) {
             console.error('Batch import failed', e)
+            notify.error(t('dialog.import_failed'), {
+                description: e instanceof Error ? e.message : 'Unknown error'
+            })
         }
     }
 

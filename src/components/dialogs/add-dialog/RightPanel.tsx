@@ -32,11 +32,12 @@ function DownloadTypeTabs({ mode, onChange, t }: { mode: 'video' | 'audio' | 'gi
 
 export function RightPanel() {
     const {
-        hasMeta, t,
+        meta, t,
         options, setters,
     } = useAddDialogContext()
 
-    if (!hasMeta) return null
+    // Compute hasMeta locally (removed from context to reduce redundancy)
+    if (!meta) return null
 
     // Derived Mode State
     const mode = options.format === 'audio' ? 'audio' : options.format === 'gif' ? 'gif' : 'video'

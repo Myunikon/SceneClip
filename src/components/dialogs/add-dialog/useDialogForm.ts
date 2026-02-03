@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { downloadDir } from '@tauri-apps/api/path'
+import { notify } from '../../../lib/notify'
 import { DialogOptions, DialogOptionSetters, AppSettings } from '../../../types'
 
 interface UseDialogToProps {
@@ -12,10 +14,7 @@ export function useDialogForm({ initialStart, initialEnd, settings }: UseDialogT
     // State Definitions
     // ----------------------------------------------------
     const [format, setFormat] = useState('Best')
-    const [path, setPath] = useState(
-        settings.downloadPath ||
-        ''
-    )
+    const [path, setPath] = useState('')
     const [rangeStart, setRangeStart] = useState(initialStart ? String(initialStart) : '')
     const [rangeEnd, setRangeEnd] = useState(initialEnd ? String(initialEnd) : '')
     const [sponsorBlock, setSponsorBlock] = useState(settings.useSponsorBlock)
@@ -55,6 +54,18 @@ export function useDialogForm({ initialStart, initialEnd, settings }: UseDialogT
     // Effects / Side Logic
     // ----------------------------------------------------
 
+    // Initialize path with actual default directory
+    useEffect(() => {
+        const initPath = async () => {
+            if (!path) {
+                const defaultPath = settings.downloadPath || await downloadDir()
+                setPath(defaultPath)
+            }
+        }
+        initPath()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])  // Run once on mount
+
     // Auto-enable Trim for GIFs
     useEffect(() => {
         if (format === 'gif') {
@@ -64,10 +75,14 @@ export function useDialogForm({ initialStart, initialEnd, settings }: UseDialogT
 
     // Safety Guard: Mutually Exclusive clipping & sponsor block
     useEffect(() => {
-        if (isClipping) {
+        if (isClipping && sponsorBlock) {
             setSponsorBlock(false)
+            // Notify user about the change
+            notify.info("SponsorBlock disabled", {
+                description: "Clipping and SponsorBlock cannot be used together"
+            })
         }
-    }, [isClipping])
+    }, [isClipping, sponsorBlock])
 
     // Safety Guard: Reset Codec when Container changes
     useEffect(() => {

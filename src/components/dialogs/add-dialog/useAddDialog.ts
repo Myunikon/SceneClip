@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { readText } from '@tauri-apps/plugin-clipboard-manager'
 import { downloadDir } from '@tauri-apps/api/path'
@@ -39,6 +39,14 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
     const [isOpen, setIsOpen] = useState(false)
     const [url, setUrl] = useState('')
 
+    // Refs to avoid stale closures in async callbacks
+    const urlRef = useRef(url)
+    const initialUrlRef = useRef(initialUrl)
+
+    // Keep refs in sync with state
+    useEffect(() => { urlRef.current = url }, [url])
+    useEffect(() => { initialUrlRef.current = initialUrl }, [initialUrl])
+
     // 1. Form State Hook
     const { options, setters, resetForm, setPath } = useDialogForm({
         initialStart,
@@ -66,18 +74,18 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
     useEffect(() => {
         if (!isOpen) return
 
-        // If we have a URL already (from props or typing), don't override
-        if (url) return
+        // Use refs for fresh values in async callback (avoids stale closures)
+        if (urlRef.current) return
 
         const checkClipboard = async () => {
-            // Double check inside async
-            if (url) return
+            // Check fresh value inside async
+            if (urlRef.current) return
 
             try {
                 const text = await readText()
                 if (text && isValidVideoUrl(text)) {
                     // Only auto-paste if we don't have an initialUrl conflicting
-                    if (!initialUrl) {
+                    if (!initialUrlRef.current) {
                         setUrl(text)
                     }
                 }
@@ -86,7 +94,6 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
             }
         }
         checkClipboard()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen])
 
     // Close on Escape key
@@ -199,11 +206,6 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
         }
     }
 
-    // Quick download is deprecated, always show dialog
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const quickDownload = async (_targetUrl: string) => {
-        return false
-    }
 
     const isDiskFull = !!(estimatedSize > 0 && diskFreeSpace !== null && estimatedSize > diskFreeSpace)
 
@@ -213,7 +215,7 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
         options, setters, // Return grouped props
         meta, loadingMeta, errorMeta,
         availableResolutions, availableAudioBitrates, availableVideoCodecs, availableAudioCodecs, availableLanguages,
-        handleSubmit, resetForm, browse, handlePaste, quickDownload,
+        handleSubmit, resetForm, browse, handlePaste,
         t,
         formatFileSize: (bytes?: number) => formatBytes(bytes || 0, 2, i18n.language),
         estimatedSize, // Return calculated size

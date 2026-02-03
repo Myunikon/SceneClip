@@ -29,8 +29,8 @@ export function VideoPreview({ loading, meta, error, t, url }: VideoPreviewProps
             // Save current focus
             setFocusedElementBeforePreview(document.activeElement as HTMLElement)
         } else if (focusedElementBeforePreview) {
-            // Restore focus
-            focusedElementBeforePreview.focus()
+            // Restore focus (use optional chaining in case element was removed from DOM)
+            focusedElementBeforePreview?.focus?.()
             setFocusedElementBeforePreview(null)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -113,7 +113,7 @@ export function VideoPreview({ loading, meta, error, t, url }: VideoPreviewProps
                                     <ImageOff className="w-8 h-8 text-muted-foreground/50" />
                                 </div>
                                 <span className="text-xs font-medium text-muted-foreground/70 max-w-[200px] line-clamp-2 leading-relaxed">
-                                    {t('dialog.preview.no_thumbnail') || meta.title}
+                                    {t('dialog.preview.no_thumbnail') || t('dialog.preview.no_image_available') || 'No thumbnail available'}
                                 </span>
                             </div>
                         )}

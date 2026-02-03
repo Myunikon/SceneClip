@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Scissors } from 'lucide-react'
 import { RangeSlider } from '../../ui'
 import { cn, formatTime, parseTime } from '../../../lib/utils'
@@ -20,10 +21,16 @@ export function ClipSection({ maxDuration }: ClipSectionProps) {
     // For GIF mode (when maxDuration is set), clipping is mandatory
     const isMandatory = !!maxDuration
 
+    // Memoize parsed times to avoid 8x parseTime() calls per render
+    const parsedStart = useMemo(() => parseTime(rangeStart), [rangeStart])
+    const parsedEnd = useMemo(() => parseTime(rangeEnd), [rangeEnd])
+    const isInvalidRange = !!(rangeStart && rangeEnd && parsedStart >= parsedEnd)
+    const clipDuration = parsedEnd - parsedStart
+
     // Helper to validate and clamp times on blur
-    const handleTimeBlur = (isStart: boolean) => {
-        let s = parseTime(rangeStart)
-        let e = parseTime(rangeEnd)
+    const handleTimeBlur = () => {
+        let s = parsedStart
+        let e = parsedEnd
 
         // 1. Clamp to duration bounds
         if (duration) {
@@ -34,24 +41,10 @@ export function ClipSection({ maxDuration }: ClipSectionProps) {
             e = Math.max(0, e)
         }
 
-        // 2. Swap if inverted
+        // 2. Swap if inverted (both branches were identical, simplified)
         if (s >= e) {
-            if (isStart) {
-                // If we edited start and it went past end, push end to Match or valid range?
-                // Logic: Swap them
-                const temp = s
-                s = e
-                e = temp
-            } else {
-                // If we edited end and it went before start, swap
-                const temp = s
-                s = e
-                e = temp
-            }
+            [s, e] = [e, s]
         }
-
-        // 3. Special case: If exactly same, maybe default to 10s gap? 
-        // Existing logic was just swap. Let's keep it simple.
 
         setRangeStart(formatTime(s))
         setRangeEnd(formatTime(e))
@@ -108,14 +101,14 @@ export function ClipSection({ maxDuration }: ClipSectionProps) {
                 <div className="flex items-center gap-2">
                     <div className={cn(
                         "flex flex-1 items-center gap-1.5 p-0.5 rounded-lg border bg-white dark:bg-black/20 shadow-sm transition-all focus-within:ring-2 focus-within:ring-primary/20",
-                        (rangeStart && rangeEnd && parseTime(rangeStart) >= parseTime(rangeEnd)) ? "border-red-500/50" : "border-border dark:border-white/10"
+                        isInvalidRange ? "border-red-500/50" : "border-border dark:border-white/10"
                     )}>
                         <input
                             className="w-full min-w-0 bg-transparent py-1.5 px-2 text-sm text-center font-mono outline-none placeholder:text-muted-foreground/30 focus:placeholder:text-muted-foreground/50 transition-colors"
                             placeholder="00:00"
                             value={rangeStart}
                             onChange={e => setRangeStart(e.target.value.replace(TIME_INPUT_REGEX, ''))}
-                            onBlur={() => handleTimeBlur(true)}
+                            onBlur={handleTimeBlur}
                         />
                         <span className="text-muted-foreground/40 text-xs shrink-0">→</span>
                         <input
@@ -123,37 +116,37 @@ export function ClipSection({ maxDuration }: ClipSectionProps) {
                             placeholder={duration ? formatTime(duration) : "00:10"}
                             value={rangeEnd}
                             onChange={e => setRangeEnd(e.target.value.replace(TIME_INPUT_REGEX, ''))}
-                            onBlur={() => handleTimeBlur(false)}
+                            onBlur={handleTimeBlur}
                         />
                     </div>
 
                     {/* Duration Badge - Compact */}
                     <div className={cn(
                         "shrink-0 h-8 px-2.5 rounded-lg border flex items-center justify-center gap-1 font-mono text-xs font-medium shadow-sm transition-all",
-                        maxDuration && rangeStart && rangeEnd && (parseTime(rangeEnd) - parseTime(rangeStart)) > maxDuration
+                        maxDuration && rangeStart && rangeEnd && clipDuration > maxDuration
                             ? "bg-orange-500/10 border-orange-500/30 text-orange-600 dark:text-orange-400"
-                            : (rangeStart && rangeEnd && parseTime(rangeEnd) > parseTime(rangeStart))
+                            : (rangeStart && rangeEnd && clipDuration > 0)
                                 ? "bg-primary/10 border-primary/20 text-primary"
                                 : "bg-muted/50 border-border dark:border-white/10 text-muted-foreground"
                     )}>
                         <span className="text-[10px] opacity-70">⏱</span>
                         <span>
-                            {rangeStart && rangeEnd && parseTime(rangeEnd) > parseTime(rangeStart)
-                                ? `${Math.round(parseTime(rangeEnd) - parseTime(rangeStart))}s`
+                            {rangeStart && rangeEnd && clipDuration > 0
+                                ? `${Math.round(clipDuration)}s`
                                 : "--s"
                             }
                         </span>
                     </div>
                 </div>
 
-                {(rangeStart && rangeEnd && parseTime(rangeStart) >= parseTime(rangeEnd)) && (
+                {isInvalidRange && (
                     <p className="text-xs text-red-500 font-bold mt-2 text-center animate-in slide-in-from-top-1">
                         {t('dialog.time_error')}
                     </p>
                 )}
-                {maxDuration && rangeStart && rangeEnd && (parseTime(rangeEnd) - parseTime(rangeStart)) > maxDuration && (
+                {maxDuration && rangeStart && rangeEnd && clipDuration > maxDuration && (
                     <p className="text-xs text-orange-600 dark:text-orange-400 font-bold mt-2 text-center animate-in slide-in-from-top-1">
-                        ⚠️ {t('dialog.gif_maker.too_long', { max: maxDuration, current: Math.round(parseTime(rangeEnd) - parseTime(rangeStart)) }) || `Clip is too long! Max ${maxDuration}s for GIF. Current: ${Math.round(parseTime(rangeEnd) - parseTime(rangeStart))}s`}
+                        ⚠️ {t('dialog.gif_maker.too_long', { max: maxDuration, current: Math.round(clipDuration) }) || `Clip is too long! Max ${maxDuration}s for GIF. Current: ${Math.round(clipDuration)}s`}
                     </p>
                 )}
             </div>

@@ -32,7 +32,7 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
         options, setters,
         meta, loadingMeta, errorMeta,
         availableResolutions, availableAudioBitrates, availableVideoCodecs, availableAudioCodecs, availableLanguages,
-        handleSubmit, browse, handlePaste, quickDownload,
+        handleSubmit, browse, handlePaste,
         t,
         formatFileSize,
         estimatedSize,
@@ -53,7 +53,8 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
             resetForm()
             setIsOpen(false)
         },
-        quickDownload
+        // quickDownload deprecated - always returns false (kept for API compatibility)
+        quickDownload: async () => false
     }))
 
     // Styles
@@ -122,7 +123,7 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
                                 <AddDialogProvider value={{
                                     url, setUrl,
                                     options, setters,
-                                    meta, loadingMeta, errorMeta, hasMeta,
+                                    meta, loadingMeta, errorMeta,
                                     availableResolutions, availableAudioBitrates, availableVideoCodecs, availableAudioCodecs, availableLanguages,
                                     browse, handlePaste,
                                     t, formatFileSize, estimatedSize,

@@ -3,6 +3,7 @@ import { MessageSquare, Subtitles } from 'lucide-react'
 import { SettingCard, ChoiceGroup } from '../../../common'
 import { Switch } from '../../../ui'
 import { cn } from '../../../../lib/utils'
+import { notify } from '../../../../lib/notify'
 
 interface SubtitlesSettingsProps {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,7 +37,6 @@ export const SubtitlesSettings: React.FC<SubtitlesSettingsProps> = ({
     const handleClick = async () => {
         const newVal = !checked;
         if (newVal) {
-            const { notify } = await import('../../../../lib/notify');
             notify.info(t('dialog.subtitle_safe_mode_title'), {
                 description: t('dialog.subtitle_safe_mode_desc')
             });

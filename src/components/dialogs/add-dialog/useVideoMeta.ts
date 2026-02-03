@@ -21,6 +21,9 @@ export function useVideoMeta(url: string) {
         setLoading(true)
         setError(false)
 
+        // Cleanup flag to prevent setState on unmounted component
+        let isCancelled = false
+
         debounceRef.current = setTimeout(async () => {
             try {
                 // Use backend command
@@ -34,18 +37,21 @@ export function useVideoMeta(url: string) {
                     settings
                 })
 
-                setMeta(data)
+                if (!isCancelled) setMeta(data)
             } catch (e: unknown) {
-                console.error("Metadata fetch failed", e)
-                notify.error("Failed to fetch video info", { description: e instanceof Error ? e.message : "Check URL and connection" })
-                setError(true)
-                setMeta(null)
+                if (!isCancelled) {
+                    console.error("Metadata fetch failed", e)
+                    notify.error("Failed to fetch video info", { description: e instanceof Error ? e.message : "Check URL and connection" })
+                    setError(true)
+                    setMeta(null)
+                }
             } finally {
-                setLoading(false)
+                if (!isCancelled) setLoading(false)
             }
         }, 1000)
 
         return () => {
+            isCancelled = true
             if (debounceRef.current) clearTimeout(debounceRef.current)
         }
     }, [url])

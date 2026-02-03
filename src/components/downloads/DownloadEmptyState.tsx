@@ -1,6 +1,6 @@
 import { Download } from 'lucide-react'
 import { useTranslation, Trans } from 'react-i18next'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { getShortcutSymbol } from '../../lib/platform'
 import { TypingAnimation } from '@/registry/magicui/typing-animation'
 
@@ -8,28 +8,22 @@ export function DownloadEmptyState() {
     const { t } = useTranslation()
     const MOD = getShortcutSymbol()
 
-    // State to track if animation should play
-    const [shouldAnimate, setShouldAnimate] = useState(false)
-    // State to show subtext (initially hidden if animating)
-    const [showSubtext, setShowSubtext] = useState(false)
+    // Unified Typography
+    const TEXT_CLASSES = "text-lg font-medium text-foreground/80 tracking-[-0.01em] drop-shadow-sm whitespace-nowrap"
 
-    useEffect(() => {
-        // Check if animation has played in this session
-        const hasPlayed = sessionStorage.getItem("emptyStatePlayed")
+    // State to track if animation should play - initialize lazy to avoid flicker
+    const [shouldAnimate, setShouldAnimate] = useState(() => {
+        return !sessionStorage.getItem("emptyStatePlayed")
+    })
 
-        if (hasPlayed) {
-            // If played, show everything immediately
-            setShouldAnimate(false)
-            setShowSubtext(true)
-        } else {
-            // If not played, start animation
-            setShouldAnimate(true)
-            setShowSubtext(false)
-        }
-    }, [])
+    // State to show subtext - show immediately if animation played
+    const [showSubtext, setShowSubtext] = useState(() => {
+        return !!sessionStorage.getItem("emptyStatePlayed")
+    })
 
     const handleAnimationComplete = () => {
         setShowSubtext(true)
+        setShouldAnimate(false) // Switch to static text to prevent re-animation on hot reload/updates (optional but cleaner)
         sessionStorage.setItem("emptyStatePlayed", "true")
     }
 
@@ -41,20 +35,22 @@ export function DownloadEmptyState() {
             </div>
 
             {/* Simple Text */}
-            <h3 className="text-lg font-medium text-foreground/80 mb-1 min-h-[28px]">
+            <h3 className="mb-1 min-h-[28px]">
                 {shouldAnimate ? (
                     <TypingAnimation
-                        className="text-lg font-medium text-foreground/80"
+                        className={TEXT_CLASSES}
                         onComplete={handleAnimationComplete}
                     >
                         {t('downloads.empty') || "No downloads yet"}
                     </TypingAnimation>
                 ) : (
-                    t('downloads.empty') || "No downloads yet"
+                    <span className={TEXT_CLASSES}>
+                        {t('downloads.empty') || "No downloads yet"}
+                    </span>
                 )}
             </h3>
 
-            <div className={`transition-opacity duration-500 ${showSubtext ? 'opacity-100' : 'opacity-0'}`}>
+            <div className={`transition-opacity duration-500 min-h-[44px] flex items-start justify-center ${showSubtext ? 'opacity-100' : 'opacity-0'}`}>
                 <p className="text-sm text-muted-foreground/60 max-w-xs mx-auto">
                     <Trans
                         i18nKey="empty_state.description"

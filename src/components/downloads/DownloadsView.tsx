@@ -2,14 +2,16 @@ import { useAppStore } from '../../store'
 import { useShallow } from 'zustand/react/shallow'
 import { DownloadEmptyState } from './DownloadEmptyState'
 import { DownloadItem } from './DownloadItem'
+import { ErrorBoundary } from '../common/ErrorBoundary'
+
+const ACTIVE_STATUSES = ['pending', 'fetching_info', 'downloading', 'paused', 'processing', 'error']
 
 export function DownloadsView() {
-  // Context7 Pattern: Select derived value (IDs) instead of raw array
-  // This prevents re-renders when individual task data changes (only task additions/removals trigger re-render)
-  // FIX: Only show active/error tasks. Completed/Stopped should "move" to History.
+  // Performance Optimization: Only re-render parent when task list composition changes.
+  // Individual DownloadItem components subscribe to their own task updates.
   const taskIds = useAppStore(useShallow((s) =>
     s.tasks
-      .filter(t => !['completed', 'stopped'].includes(t.status))
+      .filter(t => ACTIVE_STATUSES.includes(t.status))
       .map(t => t.id)
   ))
 
@@ -26,11 +28,13 @@ export function DownloadsView() {
 
       {/* Scrollable List Body */}
       <div className="flex-1 overflow-y-auto pt-2">
-        <div className="flex flex-col">
-          {taskIds.map(taskId => (
-            <DownloadItem key={taskId} taskId={taskId} />
-          ))}
-        </div>
+        <ErrorBoundary fallback={<div className="p-4 text-center text-red-500">Failed to render list</div>}>
+          <div className="flex flex-col">
+            {taskIds.map(taskId => (
+              <DownloadItem key={taskId} taskId={taskId} />
+            ))}
+          </div>
+        </ErrorBoundary>
       </div>
     </div>
   )

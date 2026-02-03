@@ -64,12 +64,17 @@ export function useBackendLogs() {
                     // Call original console method first
                     originalFn.apply(console, args)
 
-                    // Format message from args
-                    const message = args
-                        .map((arg) =>
-                            typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-                        )
-                        .join(' ')
+                    // Check if any argument is an Error to extract stack trace
+                    let stackTrace: string | undefined
+                    const formattedArgs = args.map((arg) => {
+                        if (arg instanceof Error) {
+                            if (!stackTrace) stackTrace = arg.stack
+                            return `${arg.name}: ${arg.message}`
+                        }
+                        return typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                    })
+
+                    const message = formattedArgs.join(' ')
 
                     // Skip empty messages or internal React/framework noise
                     if (!message || message.startsWith('[HMR]') || message.startsWith('[vite]')) {
@@ -105,7 +110,8 @@ export function useBackendLogs() {
                     addLog({
                         message,
                         level,
-                        source
+                        source,
+                        stackTrace
                     })
                 }
             }
@@ -122,10 +128,29 @@ export function useBackendLogs() {
         interceptConsole()
 
         // Attach to Tauri's log stream
-        // This makes backend logs (from log::info!, etc.) appear in browser console
         attachConsole()
-            .then((detach) => {
+            .then(async (detach) => {
                 detachRef.current = detach
+
+                // --- Log System Info on Connect ---
+                try {
+                    // Dynamic import to avoid issues if plugin not present
+                    const { type, version, arch, platform } = await import('@tauri-apps/plugin-os')
+                    const osType = await type()
+                    const osVersion = await version()
+                    const osArch = await arch()
+                    const osPlatform = await platform()
+
+                    addLog({
+                        message: `System Info: ${osType} ${osPlatform} ${osVersion} (${osArch})`,
+                        level: 'info',
+                        source: 'system',
+                        context: `UserAgent: ${navigator.userAgent}`
+                    })
+                } catch (e) {
+                    console.error("Failed to fetch OS info", e)
+                }
+
                 addLog({
                     message: 'Backend log bridge established',
                     level: 'success',

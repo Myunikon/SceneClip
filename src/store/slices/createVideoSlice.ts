@@ -27,10 +27,36 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
                 console.error("Failed to fetch queue state:", e);
             }
 
-            // 2. Listen for updates
+            // 2. Listen for updates (Throttled to ~5fps with trailing edge)
+            let lastUpdate = 0
+            const THROTTLE_MS = 200
+            let trailingTimeout: NodeJS.Timeout | null = null
+
             await listen<DownloadTask[]>('queue_update', (event) => {
-                console.log("[VideoSlice] queue_update RECEIVED:", event.payload?.length || 0, "tasks");
-                set({ tasks: event.payload });
+                const now = Date.now()
+
+                // Clear any pending trailing update as we have fresh data
+                if (trailingTimeout) {
+                    clearTimeout(trailingTimeout)
+                    trailingTimeout = null
+                }
+
+                if (now - lastUpdate > THROTTLE_MS) {
+                    // Leading edge: Update immediately if outside window
+                    console.log("[VideoSlice] queue_update RECEIVED:", event.payload?.length || 0, "tasks")
+                    set({ tasks: event.payload })
+                    lastUpdate = now
+                } else {
+                    // Trailing edge: Schedule update for end of window
+                    // This ensures we never miss the "100%" or "Complete" final state
+                    const remaining = THROTTLE_MS - (now - lastUpdate)
+                    trailingTimeout = setTimeout(() => {
+                        console.log("[VideoSlice] queue_update TRAILING:", event.payload?.length || 0, "tasks")
+                        set({ tasks: event.payload })
+                        lastUpdate = Date.now()
+                        trailingTimeout = null
+                    }, remaining)
+                }
             });
         },
 

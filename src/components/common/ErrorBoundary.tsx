@@ -5,6 +5,7 @@ import { AlertTriangle, RefreshCcw, Copy, Check } from 'lucide-react';
 
 interface Props {
   children?: ReactNode;
+  fallback?: ReactNode;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   t: any;
 }
@@ -44,6 +45,10 @@ class ErrorBoundaryClass extends Component<Props, State> {
 
   public render() {
     if (this.state.hasError) {
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+
       const { t } = this.props;
       return (
         <div className="min-h-screen w-full flex items-center justify-center p-6 bg-background text-foreground animate-in fade-in duration-300">
@@ -99,12 +104,12 @@ class ErrorBoundaryClass extends Component<Props, State> {
   }
 }
 
-export function ErrorBoundary({ children }: { children?: ReactNode }) {
+export function ErrorBoundary({ children, fallback }: { children?: ReactNode, fallback?: ReactNode }) {
   const settings = useAppStore((state) => state.settings);
 
   // Safe access to translations with fallback to English
   const language = settings?.language || 'en';
   const t = (translations[language as keyof typeof translations] || translations.en).error_boundary;
 
-  return <ErrorBoundaryClass t={t}>{children}</ErrorBoundaryClass>;
+  return <ErrorBoundaryClass t={t} fallback={fallback}>{children}</ErrorBoundaryClass>;
 }

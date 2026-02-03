@@ -18,7 +18,12 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(
             tauri_plugin_log::Builder::default()
-                .level(log::LevelFilter::Debug) // Filter out TRACE level noise (heartbeats, etc.)
+                .level(if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Info })
+                .level_for("tauri", log::LevelFilter::Warn)
+                .level_for("hyper", log::LevelFilter::Off)
+                .level_for("h2", log::LevelFilter::Off)
+                .level_for("tao", log::LevelFilter::Error)
+                .level_for("wry", log::LevelFilter::Error)
                 .targets([
                     tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stdout),
                     tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir {
@@ -26,7 +31,10 @@ pub fn run() {
                     }),
                     tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Webview),
                 ])
+                // Reverted to KeepAll due to v2 API mismatch (Keep(5) variant not found).
+                // TODO: Find correct syntax for rotation in tauri-plugin-log v2.
                 .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepAll)
+                .max_file_size(2 * 1024 * 1024) // 2MB
                 .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
                 .build(),
         )

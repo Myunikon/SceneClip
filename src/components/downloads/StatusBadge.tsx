@@ -1,7 +1,7 @@
 import { cn } from '../../lib/utils'
 import { useTranslation } from 'react-i18next'
 
-export function StatusBadge({ status }: { status: string }) {
+export function StatusBadge({ status, className }: { status: string, className?: string }) {
     const { t } = useTranslation()
 
     const colors: Record<string, string> = {
@@ -14,11 +14,25 @@ export function StatusBadge({ status }: { status: string }) {
         paused: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-500',
     }
 
+    const getStatusColor = (s: string) => {
+        if (s in colors) return colors[s]
+
+        // Dev warning for unknown status
+        if (process.env.NODE_ENV === 'development') {
+            console.warn(`[StatusBadge] Unknown status: "${s}"`)
+        }
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400 border border-red-500/50'
+    }
+
     // Use task_status namespace
     const label = t(`task_status.${status}`)
 
     return (
-        <span className={cn("px-2.5 py-0.5 rounded-full text-xs font-medium capitalize whitespace-nowrap", colors[status] || colors.stopped)}>
+        <span className={cn(
+            "px-2.5 py-0.5 rounded-full text-xs font-medium capitalize whitespace-nowrap",
+            getStatusColor(status),
+            className
+        )}>
             {label}
         </span>
     )

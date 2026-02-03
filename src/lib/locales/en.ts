@@ -498,6 +498,8 @@ export const en = {
         select_preset: "Select Preset",
         custom_preset: "Custom / Manual",
         custom_args_label: "Enter custom FFmpeg arguments",
+        custom_args_empty: "Custom arguments cleared",
+        format_original: "Original",
         not_available: "Not available",
         inside_video: "Inside video file",
         subtitle_settings: "Subtitle Settings",

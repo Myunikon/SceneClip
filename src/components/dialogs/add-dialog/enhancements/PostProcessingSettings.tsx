@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react'
 import { Wand2 } from 'lucide-react'
 import { SettingCard } from '../../../common'
 import { PopUpButton } from '../../../ui'
+import { notify } from '../../../../lib/notify'
 import type { PostProcessorPreset } from '../../../../types'
 
 interface PostProcessingSettingsProps {
@@ -50,30 +51,36 @@ export const PostProcessingSettings: React.FC<PostProcessingSettingsProps> = ({
 
     const handleDropdownChange = (val: string) => {
         if (val === '-custom-') {
-            // Switch to custom mode. 
-            // If we already have something in local args, use it, otherwise keep current if it was already custom, or empty.
-            setPostProcessorArgs(localCustomArgs || '');
+            // Initialize custom input with current value to preserve previous settings
+            const initialValue = postProcessorArgs || '';
+            setLocalCustomArgs(initialValue);
+            setPostProcessorArgs(initialValue);
         } else {
             setPostProcessorArgs(val);
         }
     }
 
     const handleCustomArgsBlur = () => {
-        if (localCustomArgs !== postProcessorArgs) {
-            setPostProcessorArgs(localCustomArgs);
+        const trimmed = localCustomArgs.trim();
+        if (trimmed !== postProcessorArgs) {
+            if (!trimmed && postProcessorArgs) {
+                // Warn user about empty input
+                notify.warning(t('dialog.custom_args_empty') || 'Custom arguments cleared');
+            }
+            setPostProcessorArgs(trimmed);
         }
     }
 
     const handleToggle = (isChecked: boolean) => {
         if (isChecked) {
-            // Turning ON: Select first preset or custom if not set
+            onChange(true);  // Notify parent that feature is enabled
+            // Set default args if none set
             if (!postProcessorArgs) {
-                const firstPreset = filteredPresets[0]
-                setPostProcessorArgs(firstPreset?.args || '-custom-')
+                const firstPreset = filteredPresets[0];
+                setPostProcessorArgs(firstPreset?.args || '');  // Empty string, not '-custom-'
             }
         } else {
-            // Turning OFF
-            onChange(false)
+            onChange(false);
         }
     }
 

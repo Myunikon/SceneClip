@@ -34,7 +34,7 @@ export const SubtitlesSettings: React.FC<SubtitlesSettingsProps> = ({
     setSubtitleFormat
 }) => {
 
-    const handleClick = async () => {
+    const handleClick = () => {
         const newVal = !checked;
         if (newVal) {
             notify.info(t('dialog.subtitle_safe_mode_title'), {
@@ -63,7 +63,7 @@ export const SubtitlesSettings: React.FC<SubtitlesSettingsProps> = ({
                             variant="scroll"
                             value={subtitleLang}
                             onChange={setSubtitleLang}
-                            options={(availableLanguages || []).map((lang) => ({
+                            options={availableLanguages.map((lang) => ({
                                 value: lang.id,
                                 label: lang.label
                             }))}
@@ -93,7 +93,7 @@ export const SubtitlesSettings: React.FC<SubtitlesSettingsProps> = ({
                                     value={subtitleFormat}
                                     onChange={setSubtitleFormat}
                                     options={[
-                                        { value: undefined, label: 'Original' },
+                                        { value: undefined, label: t('dialog.format_original') || 'Original' },
                                         { value: 'srt', label: 'SRT' },
                                         { value: 'ass', label: 'ASS' },
                                     ]}

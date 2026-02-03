@@ -5,19 +5,49 @@ use crate::ytdlp::{self, AppSettings, YtDlpOptions};
 use serde::Serialize;
 use std::collections::VecDeque;
 use std::process::Stdio;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 use tauri::{ipc::Channel, AppHandle};
 use tokio::io::{AsyncBufReadExt, BufReader as AsyncBufReader};
 use tokio::process::Command;
 use tokio::sync::mpsc;
 
 // SCENECLIP_PROGRESS Format:
-// SCENECLIP_PROGRESS;<timestamp>;<downloaded_bytes>;<total_bytes>;<total_estimated>;<speed_bps>;<eta_seconds>
 const SCENECLIP_IDX_DOWNLOADED: usize = 2;
 const SCENECLIP_IDX_TOTAL: usize = 3;
 const SCENECLIP_IDX_TOTAL_EST: usize = 4;
 const SCENECLIP_IDX_SPEED: usize = 5;
 const SCENECLIP_IDX_ETA: usize = 6;
+
+/// Parse time string (HH:MM:SS, MM:SS, or SS) to seconds
+fn parse_time_to_seconds(time_str: Option<&str>) -> f64 {
+    let s = match time_str {
+        Some(t) => t.trim(),
+        None => return 0.0,
+    };
+
+    if s.is_empty() || s == "inf" {
+        return 0.0;
+    }
+
+    let parts: Vec<&str> = s.split(':').collect();
+    match parts.len() {
+        1 => parts[0].parse::<f64>().unwrap_or(0.0),
+        2 => {
+            let mins: f64 = parts[0].parse().unwrap_or(0.0);
+            let secs: f64 = parts[1].parse().unwrap_or(0.0);
+            mins * 60.0 + secs
+        }
+        3 => {
+            let hrs: f64 = parts[0].parse().unwrap_or(0.0);
+            let mins: f64 = parts[1].parse().unwrap_or(0.0);
+            let secs: f64 = parts[2].parse().unwrap_or(0.0);
+            hrs * 3600.0 + mins * 60.0 + secs
+        }
+        _ => 0.0,
+    }
+}
 
 /// Download event types for channel streaming
 #[derive(Clone, Serialize, Debug)]
@@ -258,8 +288,11 @@ pub async fn download_media_internal(
     // Smart Capping: Expect post-processing for merges, audio extraction, or specific enhancements
     let is_audio_mode = options.format.as_deref() == Some("audio")
         || (options.format.is_none() && options.audio_format.is_some());
+    let is_clipping = options.range_start.is_some() || options.range_end.is_some();
+    let is_gif = options.format.as_deref() == Some("gif");
     let expect_pp = is_audio_mode
-        || options.format.as_deref() == Some("gif")
+        || is_gif
+        || is_clipping  // FFmpeg trim also counts as post-processing
         || options.container.is_some()
         || settings.embed_metadata
         || settings.embed_thumbnail
@@ -268,6 +301,46 @@ pub async fn download_media_internal(
         || options.audio_normalization.unwrap_or(false)
         || options.format.is_none() // Default: bestvideo+bestaudio -> merge
         || options.format.as_deref() == Some("best");
+
+    // Calculate clip duration for accurate progress estimation
+    let clip_duration_secs = if is_clipping {
+        let start_secs = parse_time_to_seconds(options.range_start.as_deref());
+        let end_secs = parse_time_to_seconds(options.range_end.as_deref());
+        // If end is 0 (inf or not set), estimate 60s default
+        let actual_end = if end_secs > 0.0 {
+            end_secs
+        } else {
+            start_secs + 60.0
+        };
+        (actual_end - start_secs).max(1.0)
+    } else {
+        0.0
+    };
+
+    // GPU-aware encoding speed multiplier (realtime multiplier)
+    // GPU: ~3x realtime, CPU: ~1x realtime, Copy codec: ~10x realtime
+    let encode_speed_multiplier = match gpu_type.as_str() {
+        "nvidia" | "amd" | "intel" | "apple" => 3.0,
+        _ => 1.0,
+    };
+    // If video copy (not transcoding), it's much faster
+    let final_encode_speed = if !options.force_transcode.unwrap_or(false)
+        && !options.audio_normalization.unwrap_or(false)
+        && !is_gif
+    {
+        encode_speed_multiplier * 5.0 // Copy is ~5x faster than encode
+    } else {
+        encode_speed_multiplier
+    };
+    let estimated_encode_time = if clip_duration_secs > 0.0 {
+        (clip_duration_secs / final_encode_speed).max(2.0) // Minimum 2 seconds
+    } else {
+        10.0 // Default 10s for non-clipping post-processing
+    };
+
+    // Shared cancellation flag for timer task - stops timer when process completes
+    let timer_cancel = Arc::new(AtomicBool::new(false));
+    let timer_cancel_clone = timer_cancel.clone();
 
     // Spawn stdout handler
     let stdout_handle = tokio::spawn(async move {
@@ -298,9 +371,10 @@ pub async fn download_media_internal(
                         total_eta *= 1.3;
                     }
 
-                    // Cap at 90% during download if post-processing is expected
-                    if expect_pp && !is_post_processing && percent > 90.0 {
-                        percent = 90.0;
+                    // Cap at 80% during download if post-processing is expected
+                    // This leaves 20% (80-100%) for post-processing phase
+                    if expect_pp && !is_post_processing && percent > 80.0 {
+                        percent = 80.0;
                     }
 
                     let _ = sender_stdout.send(DownloadEvent::Progress {
@@ -312,6 +386,65 @@ pub async fn download_media_internal(
                         status: "downloading".to_string(),
                         speed_raw: Some(speed_val),
                         eta_raw: Some(total_eta as u64),
+                    });
+                }
+
+                // Handle download finished - start timer-based progress for clipping/trimming
+                // yt-dlp emits "finished" status when download completes, before FFmpeg trim
+                if parts.len() >= 2 && parts[1] == "finished" && is_clipping && !is_post_processing
+                {
+                    is_post_processing = true; // Prevent duplicate progress events
+                    let trim_status = if is_gif {
+                        "Creating GIF..."
+                    } else if is_audio_mode {
+                        "Processing audio..."
+                    } else {
+                        "Trimming video..."
+                    };
+
+                    // Start timer-based progress updates (80% -> 99%)
+                    let start_time = Instant::now();
+                    let sender_timer = sender_stdout.clone();
+                    let id_timer = id_clone.clone();
+                    let status_timer = trim_status.to_string();
+                    let cancel_flag = timer_cancel_clone.clone();
+
+                    // Spawn timer task for smooth progress updates
+                    tokio::spawn(async move {
+                        loop {
+                            // Check if cancelled (process completed)
+                            if cancel_flag.load(Ordering::Relaxed) {
+                                break;
+                            }
+
+                            let elapsed = start_time.elapsed().as_secs_f64();
+                            // Progress from 80% to 99% based on elapsed time
+                            let progress_ratio = (elapsed / estimated_encode_time).min(1.0);
+                            let current_percent = 80.0 + (progress_ratio * 19.0); // 80% + up to 19%
+
+                            let remaining_secs = (estimated_encode_time - elapsed).max(0.0) as u64;
+
+                            let _ = sender_timer.send(DownloadEvent::Progress {
+                                id: id_timer.clone(),
+                                percent: current_percent,
+                                speed: "N/A".to_string(),
+                                eta: if remaining_secs > 0 {
+                                    format!("~{}s", remaining_secs)
+                                } else {
+                                    "Finishing...".to_string()
+                                },
+                                total_size: "N/A".to_string(),
+                                status: status_timer.clone(),
+                                speed_raw: None,
+                                eta_raw: Some(remaining_secs),
+                            });
+
+                            if progress_ratio >= 1.0 {
+                                break; // Stop when estimated time reached
+                            }
+
+                            tokio::time::sleep(Duration::from_millis(500)).await;
+                        }
                     });
                 }
             } else if line.contains("SCENECLIP_PP;") {
@@ -368,6 +501,9 @@ pub async fn download_media_internal(
 
     // Wait for process to exit
     let status_res = child.wait().await;
+
+    // Cancel any running timer task
+    timer_cancel.store(true, Ordering::Relaxed);
 
     // Wait for streams (ignore errors from them closing)
     let _ = stdout_handle.await;

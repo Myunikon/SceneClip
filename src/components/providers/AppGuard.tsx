@@ -30,9 +30,11 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         // Move sessionStorage access to effect to avoid hydration mismatch/render blocking
-        if (typeof sessionStorage !== 'undefined') {
-            setIsRefresh(!!sessionStorage.getItem('app_initialized'))
-        }
+        try {
+            if (typeof sessionStorage !== 'undefined') {
+                setIsRefresh(!!sessionStorage.getItem('app_initialized'))
+            }
+        } catch { /* Ignore storage errors */ }
 
         const init = async () => {
             if (initStartedRef.current) return
@@ -41,7 +43,11 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
             setLoading(true)
 
             // Skip fast loading simulation if already initialized in this session
-            const hasInitialized = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('app_initialized')
+            let hasInitialized = false
+            try {
+                hasInitialized = typeof sessionStorage !== 'undefined' && !!sessionStorage.getItem('app_initialized')
+            } catch { /* Ignore */ }
+
             const minTime = hasInitialized ? 0 : 1000
 
             const minLoad = new Promise(resolve => setTimeout(resolve, minTime))
@@ -55,9 +61,11 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
 
                 await Promise.all([initListeners(), minLoad])
 
-                if (typeof sessionStorage !== 'undefined') {
-                    sessionStorage.setItem('app_initialized', 'true')
-                }
+                try {
+                    if (typeof sessionStorage !== 'undefined') {
+                        sessionStorage.setItem('app_initialized', 'true')
+                    }
+                } catch { /* Ignore */ }
                 setLoading(false)
             } catch (e: unknown) {
                 console.error("AppGuard Init Error:", e)

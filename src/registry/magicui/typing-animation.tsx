@@ -55,7 +55,7 @@ export function TypingAnimation({
     return (
         <Component
             className={cn(
-                "font-display tracking-[-0.02em] drop-shadow-sm",
+                "tracking-[-0.02em] drop-shadow-sm",
                 className
             )}
             {...props}

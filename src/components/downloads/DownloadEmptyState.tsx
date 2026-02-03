@@ -13,18 +13,30 @@ export function DownloadEmptyState() {
 
     // State to track if animation should play - initialize lazy to avoid flicker
     const [shouldAnimate, setShouldAnimate] = useState(() => {
-        return !sessionStorage.getItem("emptyStatePlayed")
+        try {
+            return !sessionStorage.getItem("emptyStatePlayed")
+        } catch {
+            return true // Fallback to playing animation if storage fails
+        }
     })
 
     // State to show subtext - show immediately if animation played
     const [showSubtext, setShowSubtext] = useState(() => {
-        return !!sessionStorage.getItem("emptyStatePlayed")
+        try {
+            return !!sessionStorage.getItem("emptyStatePlayed")
+        } catch {
+            return false
+        }
     })
 
     const handleAnimationComplete = () => {
         setShowSubtext(true)
         setShouldAnimate(false) // Switch to static text to prevent re-animation on hot reload/updates (optional but cleaner)
-        sessionStorage.setItem("emptyStatePlayed", "true")
+        try {
+            sessionStorage.setItem("emptyStatePlayed", "true")
+        } catch (e) {
+            console.warn("Failed to save empty state preference", e)
+        }
     }
 
     return (

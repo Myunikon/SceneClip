@@ -132,6 +132,7 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
     // Icon helper
     const FileIcon = mediaType === 'audio' ? Music : mediaType === 'image' ? ImageIcon : FileVideo
 
+
     return createPortal(
         <AnimatePresence>
             {isOpen && (
@@ -148,7 +149,7 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
                     {/* Sheet / Dialog */}
                     <motion.div
                         initial={{ opacity: 0, y: -20, scale: 0.98 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        animate={{ opacity: 1, y: 0, scale: isDragging ? 0.92 : 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.98 }}
                         transition={{ type: "spring", stiffness: 350, damping: 25 }}
                         className="relative w-full max-w-[500px] bg-[#F5F5F7] dark:bg-[#1E1E1E] rounded-xl shadow-2xl overflow-hidden border border-white/20 dark:border-white/10 flex flex-col max-h-[90vh]"
@@ -165,7 +166,7 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
                         {/* --- Header --- */}
                         <div className="flex items-start p-5 pb-4 gap-3">
                             <div className="h-10 w-10 shrink-0 bg-white/50 dark:bg-white/10 rounded-lg flex items-center justify-center shadow-sm border border-black/5">
-                                <FileIcon className="w-5 h-5 text-primary" />
+                                <FileIcon className="w-5 h-5 text-primary" strokeWidth={1.5} />
                             </div>
                             <div className="flex-1 min-w-0 flex flex-col justify-center min-h-[40px]">
                                 <h3 className="text-[17px] font-semibold text-foreground leading-snug">
@@ -187,7 +188,7 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
 
                         {fileMissing && (
                             <div className="mx-5 mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-3 text-red-600 dark:text-red-400">
-                                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={1.5} />
                                 <span className="text-xs font-semibold leading-relaxed">{tc('file_missing_error', 'Original file not found on disk.')}</span>
                             </div>
                         )}
@@ -215,7 +216,7 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
                                 </span>
                                 <div className="flex items-center gap-2">
                                     {estimatedSize ? (
-                                        <span className="font-bold text-foreground font-mono text-sm bg-green-500/10 text-green-600 dark:text-green-400 px-2 py-0.5 rounded">
+                                        <span className="font-bold text-foreground tabular-nums text-sm bg-green-500/10 text-green-600 dark:text-green-400 px-2 py-0.5 rounded">
                                             ~{estimatedSize}
                                         </span>
                                     ) : (

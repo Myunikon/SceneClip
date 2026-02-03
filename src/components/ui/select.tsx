@@ -161,7 +161,7 @@ export function Select({ value, onChange, options, placeholder, className, disab
                 )}
             >
                 <span className={cn("truncate", !selectedOption && "text-muted-foreground")}>{displayLabel}</span>
-                <ChevronDown className={cn("w-4 h-4 opacity-50", isOpen && "rotate-180")} />
+                <ChevronDown className={cn("w-4 h-4 opacity-50", isOpen && "rotate-180")} strokeWidth={1.5} />
             </button>
 
             {isOpen && createPortal(

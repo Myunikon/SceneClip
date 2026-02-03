@@ -79,6 +79,7 @@ export function EnhancementsSection() {
                                     setSubtitleLang={setters.setSubtitleLang}
                                     embedSubtitles={options.embedSubtitles}
                                     setEmbedSubtitles={setters.setEmbedSubtitles}
+                                    container={options.container}
                                     subtitleFormat={options.subtitleFormat}
                                     setSubtitleFormat={setters.setSubtitleFormat}
                                 />

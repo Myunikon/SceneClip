@@ -18,6 +18,7 @@ interface SubtitlesSettingsProps {
     setEmbedSubtitles: (embed: boolean) => void
     subtitleFormat?: string
     setSubtitleFormat: (format: string | undefined) => void
+    container?: string
 }
 
 export const SubtitlesSettings: React.FC<SubtitlesSettingsProps> = ({
@@ -31,8 +32,14 @@ export const SubtitlesSettings: React.FC<SubtitlesSettingsProps> = ({
     embedSubtitles,
     setEmbedSubtitles,
     subtitleFormat,
-    setSubtitleFormat
+    setSubtitleFormat,
+    container
 }) => {
+    // Container Compatibility Logic
+    // MKV: The King (Supports everything)
+    // MP4/MOV: Supports text subs but usually requires SRT/MOV_TEXT
+    // WEBM: Supports WebVTT but embedding SRT is hit-or-miss
+    const isEmbedSupported = !container || ['mkv', 'mp4', 'mov'].includes(container.toLowerCase())
 
     const handleClick = () => {
         const newVal = !checked;
@@ -70,9 +77,15 @@ export const SubtitlesSettings: React.FC<SubtitlesSettingsProps> = ({
                             activeColor="primary"
                         />
 
+                        {/* Embed Option - Smart Hide if not supported */}
                         <div
-                            onClick={() => setEmbedSubtitles(!embedSubtitles)}
-                            className="flex items-center justify-between p-3 rounded-xl border border-white/5 cursor-pointer hover:bg-white/5 transition-all"
+                            onClick={() => isEmbedSupported && setEmbedSubtitles(!embedSubtitles)}
+                            className={cn(
+                                "flex items-center justify-between p-3 rounded-xl border transition-all",
+                                isEmbedSupported
+                                    ? "border-white/5 cursor-pointer hover:bg-white/5"
+                                    : "border-transparent bg-white/5 opacity-50 cursor-not-allowed"
+                            )}
                         >
                             <div className="flex items-center gap-3">
                                 <div className={cn("p-1.5 rounded-lg", embedSubtitles ? "bg-foreground text-background" : "bg-white/10 text-muted-foreground")}>
@@ -80,10 +93,20 @@ export const SubtitlesSettings: React.FC<SubtitlesSettingsProps> = ({
                                 </div>
                                 <div>
                                     <div className="text-sm font-bold leading-none">{t('dialog.embed_subs')}</div>
-                                    <div className="text-[10px] text-muted-foreground mt-1">{t('dialog.inside_video')}</div>
+                                    <div className="text-[10px] text-muted-foreground mt-1">
+                                        {isEmbedSupported
+                                            ? t('dialog.inside_video')
+                                            : `Not available for ${container?.toUpperCase()}`
+                                        }
+                                    </div>
                                 </div>
                             </div>
-                            <Switch checked={embedSubtitles} onCheckedChange={setEmbedSubtitles} className="data-[state=checked]:bg-white scale-90" />
+                            <Switch
+                                checked={embedSubtitles}
+                                onCheckedChange={setEmbedSubtitles}
+                                disabled={!isEmbedSupported}
+                                className="data-[state=checked]:bg-white scale-90"
+                            />
                         </div>
 
                         {!embedSubtitles && (

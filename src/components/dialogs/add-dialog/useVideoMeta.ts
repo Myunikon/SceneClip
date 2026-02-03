@@ -37,6 +37,12 @@ export function useVideoMeta(url: string) {
                     settings
                 })
 
+                // Compute convenience flags
+                if (data) {
+                    data.hasSubtitles = (data.subtitles && Object.keys(data.subtitles).length > 0) ||
+                        (data.automatic_captions && Object.keys(data.automatic_captions).length > 0)
+                }
+
                 if (!isCancelled) setMeta(data)
             } catch (e: unknown) {
                 if (!isCancelled) {

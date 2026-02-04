@@ -15,9 +15,9 @@
   <img src="https://img.shields.io/badge/Language-TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript"/>
   <img src="https://img.shields.io/badge/Core-Rust-DEA584?style=flat-square&logo=rust&logoColor=black" alt="Rust"/>
   <br/>
-  <img src="https://img.shields.io/github/v/release/Myunikon/YTClipScene?style=flat-square&label=Version&color=success" alt="Version"/>
-  <img src="https://img.shields.io/github/downloads/Myunikon/YTClipScene/total?style=flat-square&label=Downloads&color=blue" alt="Downloads"/>
-  <img src="https://img.shields.io/github/license/Myunikon/YTClipScene?style=flat-square&label=License" alt="LICENSE"/>
+  <img src="https://img.shields.io/github/v/release/Myunikon/SceneClip?style=flat-square&label=Version&color=success" alt="Version"/>
+  <img src="https://img.shields.io/github/downloads/Myunikon/SceneClip/total?style=flat-square&label=Downloads&color=blue" alt="Downloads"/>
+  <img src="https://img.shields.io/github/license/Myunikon/SceneClip?style=flat-square&label=License" alt="LICENSE"/>
 </p>
 
 <p align="center">
@@ -115,7 +115,7 @@ SceneClip bundles **ffmpeg** and **yt-dlp** automatically — no manual installa
 | <img src="https://img.shields.io/badge/-macOS-000000?style=flat-square&logo=apple&logoColor=white"/> | `.dmg` | `.zip` (extract & run) |
 | <img src="https://img.shields.io/badge/-Linux-FCC624?style=flat-square&logo=linux&logoColor=black"/> | `.deb` | `.AppImage` (portable) |
 
-> **[Download the Latest Release](https://github.com/Myunikon/YTClipScene/releases)**
+> **[Download the Latest Release](https://github.com/Myunikon/SceneClip/releases)**
 
 **Note**: Windows SmartScreen may warn you because the app is not code-signed yet. Click **More Info** then **Run Anyway** to proceed.
 
@@ -241,8 +241,8 @@ Once the prerequisites are ready:
 
 1.  **Clone Repository**:
     ```bash
-    git clone https://github.com/Myunikon/YTClipScene.git
-    cd YTClipScene
+    git clone https://github.com/Myunikon/SceneClip.git
+    cd SceneClip
     ```
 
 2.  **Install NPM Dependencies**:
@@ -268,7 +268,7 @@ Once the prerequisites are ready:
 
 Contributions are welcome! Here's how you can help:
 
-1.  **Report Bugs**: Open an issue on [GitHub Issues](https://github.com/Myunikon/YTClipScene/issues). Please include terminal logs (see [Troubleshooting](docs/TROUBLESHOOTING.md)).
+1.  **Report Bugs**: Open an issue on [GitHub Issues](https://github.com/Myunikon/SceneClip/issues). Please include terminal logs (see [Troubleshooting](docs/TROUBLESHOOTING.md)).
 2.  **Suggest Features**: Open a feature request issue with a detailed description of the use case.
 3.  **Submit Pull Requests**: Fork the repo, create a branch, make your changes, and submit a PR.
 
@@ -279,7 +279,7 @@ Please ensure your code follows the existing style and includes appropriate test
 <p align="center">
   <b>Enjoying SceneClip?</b>
   <br/>
-  Give us a star on <a href="https://github.com/Myunikon/YTClipScene">GitHub</a> to support development!
+  Give us a star on <a href="https://github.com/Myunikon/SceneClip">GitHub</a> to support development!
 </p>
 
 <p align="center">

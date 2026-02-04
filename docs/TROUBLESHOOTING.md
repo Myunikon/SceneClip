@@ -72,7 +72,7 @@ If you encounter an issue not listed above, please report it to us via **GitHub 
     *   Click the **Save Logs** (Floppy Disk icon) button to save the output as a `.txt` file.
 
 3.  **Create Issue**:
-    *   Go to our [GitHub Issues](https://github.com/Myunikon/YTClipScene/issues) page.
+    *   Go to our [GitHub Issues](https://github.com/Myunikon/SceneClip/issues) page.
     *   Click "New Issue".
     *   Attach the **Log File** and a **Screenshot** of the error.
     *   Describe what you were trying to do.

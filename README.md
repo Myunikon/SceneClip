@@ -2,7 +2,7 @@
   <img src="./public/sceneclip-banner.png" width="600" alt="SceneClip Banner"/>
 </p>
 
-<h1 align="center">SceneClip 🎬</h1>
+<h1 align="center">SceneClip</h1>
 
 <p align="center">
   <b>The Ultimate GUI for yt-dlp and ffmpeg</b><br/>
@@ -13,45 +13,99 @@
   <img src="https://img.shields.io/badge/Built_with-Tauri_v2-blue?style=flat-square&logo=tauri&logoColor=white" alt="Tauri v2"/>
   <img src="https://img.shields.io/badge/Frontend-React_18-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 18"/>
   <img src="https://img.shields.io/badge/Language-TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript"/>
+  <img src="https://img.shields.io/badge/Core-Rust-DEA584?style=flat-square&logo=rust&logoColor=black" alt="Rust"/>
   <br/>
   <img src="https://img.shields.io/github/v/release/Myunikon/YTClipScene?style=flat-square&label=Version&color=success" alt="Version"/>
   <img src="https://img.shields.io/github/downloads/Myunikon/YTClipScene/total?style=flat-square&label=Downloads&color=blue" alt="Downloads"/>
-  <img src="https://img.shields.io/github/license/Myunikon/YTClipScene?style=flat-square&label=License" alt="License"/>
+  <img src="https://img.shields.io/github/license/Myunikon/YTClipScene?style=flat-square&label=License" alt="LICENSE"/>
 </p>
 
 <p align="center">
-  <a href="#-quick-start">Quick Start</a> •
-  <a href="#-features">Features</a> •
+  <a href="#features">Features</a> •
+  <a href="#quick-start">Quick Start</a> •
+  <a href="docs/GUIDE.md">User Manual</a> •
+  <a href="docs/TROUBLESHOOTING.md">Troubleshooting</a> •
   <a href="./supportedsites.md">Supported Sites</a> •
-  <a href="#%EF%B8%8F-privacy--security">Privacy</a> •
-  <a href="#-roadmap">Roadmap</a> •
-  <a href="#-faq">FAQ</a>
+  <a href="#contributing">Contributing</a>
 </p>
 
 ---
 
+## Why SceneClip?
+
+Command-line tools like `yt-dlp` are incredibly powerful, but they come with a steep learning curve — cryptic flags, manual ffmpeg piping, and no visual feedback. **SceneClip bridges that gap.** It wraps the full power of `yt-dlp` and `ffmpeg` in an intuitive desktop interface, so you get professional-grade media downloading without ever touching a terminal.
+
 <p align="center">
-  <img src="./public/sceneclip-preview.png" alt="SceneClip Download Interface" width="90%"/>
+  <img src="./public/sceneclip_download.gif" alt="SceneClip Demo - Download Workflow" width="90%"/>
   <br/>
-  <sub>📥 <b>Download</b> — Paste URL, choose format & quality, start downloading</sub>
-</p>
-
-<p align="center">
-  <img src="./public/sceneclip-preview1.png" alt="SceneClip History" width="45%"/>
-  &nbsp;&nbsp;
-  <img src="./public/sceneclip-preview2.png" alt="SceneClip Settings" width="45%"/>
-</p>
-<p align="center">
-  <sub>📋 <b>History</b> — View download history</sub>
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <sub>⚙️ <b>Settings</b> — Customize your experience</sub>
+  <sub>Demo — Paste URL, select quality, download with one click</sub>
 </p>
 
 ---
 
-## 🚀 Quick Start
+### Screenshots
 
-### ⚡ Installation
+<table>
+  <tr>
+    <td align="center">
+      <img src="./public/sceneclip-preview.png" alt="Downloads View" width="400"/>
+      <br/><sub><b>Downloads</b> — Active queue & progress tracking</sub>
+    </td>
+    <td align="center">
+      <img src="./public/sceneclip-preview1.png" alt="Keyring Manager" width="400"/>
+      <br/><sub><b>Keyring</b> — Secure credential storage</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="./public/sceneclip-preview2.png" alt="History View" width="400"/>
+      <br/><sub><b>History</b> — Browse past downloads</sub>
+    </td>
+    <td align="center">
+      <img src="./public/sceneclip-preview3.png" alt="Settings" width="400"/>
+      <br/><sub><b>Settings</b> — Customize your experience</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+## Features
+
+SceneClip provides a complete media downloading solution with these core capabilities:
+
+| Feature | Description |
+|:--------|:------------|
+| **Smart Detection** | Automatically detects URLs from your clipboard. Just copy a link and SceneClip is ready. |
+| **Precision Clipping** | Download specific segments of videos by setting start/end timestamps. No need for the full file. |
+| **GIF Maker** | Convert video clips into optimized GIF animations with customizable FPS and scale. |
+| **Batch Downloading** | Queue multiple URLs for hands-free, sequential processing. |
+| **SponsorBlock** | Automatically skip sponsor segments, intros, and outros (YouTube). |
+| **Secure Keyring** | Store credentials using your OS's native encrypted vault for premium content access. |
+| **Multi-Language** | Available in English, Indonesian, Malay, and Mandarin Chinese. |
+
+For a complete guide on all features, see the **[User Manual](docs/GUIDE.md)**.
+
+---
+
+## Tech Stack
+
+SceneClip is built using modern, high-performance technologies:
+
+*   **Core**: [Tauri v2](https://tauri.app) (Rust) - For a tiny footprint and maximum security.
+*   **Frontend**: React 18 + TypeScript + TailwindCSS - Ensuring a snappy, beautiful UI.
+*   **Engine**:
+    *   [yt-dlp](https://github.com/yt-dlp/yt-dlp): The rigorous industry standard for media extraction.
+    *   [FFmpeg](https://ffmpeg.org): For powerful media processing, merging, and conversion.
+    *   [Aria2c](https://aria2.github.io): For multi-connection accelerated downloading.
+
+**[View Full List of Supported Sites](./supportedsites.md)** — Thousands of platforms including YouTube, Twitter, Instagram, TikTok, and more.
+
+---
+
+## Quick Start
+
+### Installation (For Users)
 
 SceneClip bundles **ffmpeg** and **yt-dlp** automatically — no manual installation needed!
 
@@ -61,216 +115,175 @@ SceneClip bundles **ffmpeg** and **yt-dlp** automatically — no manual installa
 | <img src="https://img.shields.io/badge/-macOS-000000?style=flat-square&logo=apple&logoColor=white"/> | `.dmg` | `.zip` (extract & run) |
 | <img src="https://img.shields.io/badge/-Linux-FCC624?style=flat-square&logo=linux&logoColor=black"/> | `.deb` | `.AppImage` (portable) |
 
-> 📥 **[Download the Latest Release](https://github.com/Myunikon/YTClipScene/releases)**
+> **[Download the Latest Release](https://github.com/Myunikon/YTClipScene/releases)**
 
-#### 🪟 Windows Notes
-If SmartScreen appears: Click **More Info** → **Run Anyway** (app is not code-signed yet).
-
-#### 🍎 macOS Notes
-If blocked: Right-click app → **Open** → **Open**.
+**Note**: Windows SmartScreen may warn you because the app is not code-signed yet. Click **More Info** then **Run Anyway** to proceed.
 
 ---
 
-### 🧩 Browser Extension
+## Project Structure
 
-Download directly from your browser! The extension adds a "Download with SceneClip" button to video sites.
+For contributors and developers, here is the detailed breakdown of our repository:
 
-1. Download `SceneClip_browser_extension.zip` from [Releases](https://github.com/Myunikon/YTClipScene/releases)
-2. Extract the ZIP
-3. Load in browser:
-   - **Chrome/Edge**: `chrome://extensions` → Enable Developer Mode → Load Unpacked
-   - **Firefox**: `about:debugging` → This Firefox → Load Temporary Add-on
-
----
-
-## ✨ Features
-
-<table>
-<tr>
-<td width="33%" valign="top">
-
-**✂️ Smart Clipping**
-
-- **Precision Cuts**: Extract specific segments (e.g., `00:10` - `00:20`) without re-encoding the whole video.
-- **Phantom Fix**: Proprietary algorithm to rewrite MP4 duration atoms, ensuring clips play correctly on Windows Media Player & QuickTime.
-- **GIF Maker**: Turn video segments into high-quality, optimized GIFs.
-
-</td>
-<td width="33%" valign="top">
-
-**📥 Advanced Downloading**
-
-- **Multi-Format**: Support for MP4, MKV, WEBM, MP3, FLAC, WAV.
-- **Quality Control**: From 144p up to **4K/8K** HDR.
-- **Codec Selection**: Force AV1, HEVC, H.264, or VP9.
-- **Batch Mode**: Queue multiple URLs for sequential, hands-free processing.
-
-</td>
-<td width="33%" valign="top">
-
-**🛠️ Power Tools**
-
-- **SponsorBlock**: Automatically skip intros, outros, and sponsored segments.
-- **Subtitles**: Embed soft-subs or burn-in captions (SRT/VTT).
-- **Audio Norm**: Normalize audio levels to 0dB.
-- **Cookies**: Import `cookies.txt` for premium/age-gated content.
-
-</td>
-</tr>
-</table>
-
-### 🖼️ Modern UI & UX
-
-- **Theme Support**: 🌞 Light / 🌙 Dark / 💻 System Sync
-- **Localization**: 🇬🇧 English, 🇮🇩 Indonesian, 🇲🇾 Malay, 🇨🇳 Chinese
-- **Clipboard Monitor**: Auto-detects supported URLs when you copy them (can be toggled off).
-- **Native Notifications**: Desktop alerts when tasks complete.
+```
+SceneClip/
+├── .github/workflows/  # CI/CD Workflows (Release, Builds)
+├── browser_extension/  # Source code for the browser companion extension
+├── docs/               # Documentation (User Guide, FAQ)
+├── public/             # Static assets (images, icons)
+├── scripts/            # Build & Setup scripts
+│
+├── src/                # Frontend (React + TypeScript)
+│   ├── assets/         # CSS & Platform icons
+│   ├── components/     # UI Components
+│   │   ├── common/     # Shared components (Shortcuts, Notifications)
+│   │   ├── dialogs/    # Modals (Add, Guide, Confirmation)
+│   │   ├── downloads/  # Download list & items view
+│   │   ├── history/    # History view components
+│   │   ├── layout/     # App shell & header
+│   │   ├── providers/  # Context (Updater, AppGuard, Clipboard)
+│   │   └── settings/   # Settings pages (Network, System, etc.)
+│   ├── hooks/          # Custom React Hooks
+│   ├── lib/            # Utilities & Locales (i18n)
+│   ├── store/          # Zustand State Management
+│   └── main.tsx        # Entry point
+│
+├── src-tauri/          # Backend (Rust)
+│   ├── resources/      # Sidecar plugins (Python scripts)
+│   ├── src/            # Rust Source code
+│   │   ├── commands/   # Modularized Tauri Commands
+│   │   └── ytdlp.rs    # Core yt-dlp wrapper logic
+│   └── tauri.conf.json # Configuration
+│
+└── README.md
+```
 
 ---
 
-## 🛡️ Privacy & Security
+## Privacy & Security
 
-We believe in **Local Processing**.
+We believe in **Local Processing** and **Zero Knowledge**.
 
-- **No Data Collection**: SceneClip does not track your downloads or watch history.
-- **Offline Logic**: All video processing (clipping, converting, ffmpeg tasks) happens 100% on your machine.
-- **Open Source**: The code is transparent. You can audit exactly what the application does.
+### Local Storage
+SceneClip does **not** have a cloud backend.
+*   **Passwords**: Your Saved Passwords in the Keyring Manager are encrypted using the OS's native secure vault (Windows Credential Manager / macOS Keychain). We cannot access them.
+*   **Cookies**: Imported cookies are stored locally in `AppData` and used solely by `yt-dlp` to authenticate with video sites on your behalf.
+*   **History**: Your download history resides in a local JSON file on your machine.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/VirusTotal-Clean-brightgreen?style=flat-square&logo=virustotal" alt="VirusTotal Clean"/>
-</p>
-
----
-
-## 🗺️ Roadmap
-
-See what's coming next or [request a feature](https://github.com/Myunikon/YTClipScene/issues):
-
-- [x] Dark/Light Mode Support
-- [x] SponsorBlock Integration
-- [x] **Bundled Binaries** (ffmpeg & yt-dlp included!)
-- [x] **Portable Version** (ZIP for Windows/macOS)
-- [x] **Browser Extension** (Right-click to download)
-- [ ] **Playlist Downloading** (Download entire playlists)
-- [ ] **Metadata Editor** (Edit ID3 tags for MP3s)
+### Zero Telemetry
+SceneClip does not track your downloads, search history, or personal data. Network requests are made strictly to:
+1.  The video sites you are downloading from.
+2.  GitHub API (only if you click "Check for Updates").
 
 ---
 
-## 📝 Usage Guide
+## Developer Guide
 
-### 1. Simple Download
+Interested in contributing? Follow these steps to set up your environment.
 
-1. Copy a link (YouTube, Twitter, Instagram, etc.).
-2. SceneClip detects it automatically. Click **Download**.
-3. Choose Video or Audio format. Done.
+### 1. System Prerequisites
 
-### 2. Creating a Clip
+You need **Node.js 18+** and **Rust (Stable)** installed on all platforms. Then, follow your OS specific steps:
 
-1. Select **"Clip Mode"** in the dialog.
-2. Drag the timeline sliders or type exact timestamps (e.g., `01:20` to `01:30`).
-3. Toggle **"Phantom Fix"** for maximum player compatibility.
-4. Click **Download**.
+<details open>
+<summary><b>Windows</b></summary>
+<br>
 
-### 3. Converting to GIF
+1.  **Install C++ Build Tools**:
+    Download "Visual Studio Build Tools" and ensure "Desktop development with C++" is selected.
+    
+2.  **Install Rust**:
+    Download the installer from [rust-lang.org](https://www.rust-lang.org/tools/install).
 
-1. Select **"GIF Mode"**.
-2. Set **FPS** (15-60) and **Scale** (Width in px).
-3. Choose Quality: **High** (Better colors/dithering) or **Fast** (Quicker encode).
-
----
-
-## ⚙️ Configuration
-
-<details>
-<summary><b>📂 File Paths & Naming</b></summary>
-
-- **Downloads Folder**: Customizable via Settings.
-- **Filename Template**:
-  - Default: `%(title)s.%(ext)s`
-  - Advanced: `%(uploader)s_%(upload_date)s_%(title)s.%(ext)s`
-  </details>
-
-<details>
-<summary><b>🌐 Network & Access</b></summary>
-
-- **Proxy**: Supports HTTP/HTTPS/SOCKS proxies.
-- **Imposter Mode**: Spoof User-Agent (mimic iPad/Android) to bypass throttling.
-- **Cookies**: Load `cookies.txt` (Netscape format) to access member-only videos.
-</details>
-
----
-
-## ❓ FAQ
-
-<details>
-<summary><b>Windows says "Unrecognized App" (SmartScreen). Is it safe?</b></summary>
-Yes. This warning appears because SceneClip is an open-source project and isn't signed with an expensive corporate certificate (~$400/year).
-<br><br>
-To install: Click <b>More Info</b> → <b>Run Anyway</b>. The source code is openly available for audit.
+3.  **WebView2**:
+    Windows 10/11 usually has this pre-installed. If not, download the "Evergreen Bootstrapper".
 </details>
 
 <details>
-<summary><b>What is "Phantom Duration Fix"?</b></summary>
-When you clip a small segment from a long stream using standard tools, the file metadata often retains the original duration (e.g., a 10s clip thinks it is 5 hours long). <b>Phantom Fix</b> rewrites the MP4 atoms so the file is truly 10 seconds long, allowing proper seeking in all players.
+<summary><b>Linux</b></summary>
+<br>
+
+You need build-essential and WebKitGTK libraries.
+
+**Debian / Ubuntu**:
+```bash
+sudo apt update
+sudo apt install libwebkit2gtk-4.0-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+```
+
+**Arch Linux**:
+```bash
+sudo pacman -Syu
+sudo pacman -S --needed webkit2gtk base-devel curl wget file openssl appmenu-gtk-module gtk3 libappindicator-gtk3 librsvg
+```
 </details>
 
 <details>
-<summary><b>Which sites are supported?</b></summary>
-SceneClip is powered by `yt-dlp`, supporting <b>thousands of sites</b> including YouTube, Twitch, Twitter (X), Instagram, TikTok, Vimeo, and many more.
+<summary><b>macOS</b></summary>
+<br>
+
+You need Xcode Command Line Tools.
+
+1.  **Install Xcode CLI**:
+    ```bash
+    xcode-select --install
+    ```
+
+2.  **Install Rust**:
+    ```bash
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    ```
 </details>
+
+### 2. Setup & Run
+
+Once the prerequisites are ready:
+
+1.  **Clone Repository**:
+    ```bash
+    git clone https://github.com/Myunikon/YTClipScene.git
+    cd YTClipScene
+    ```
+
+2.  **Install NPM Dependencies**:
+    ```bash
+    npm install
+    ```
+
+3.  **Setup Binaries (CRITICAL Step)**:
+    We use a script to download the correct `yt-dlp`, `ffmpeg`, and `aria2c` binaries for your OS.
+    ```bash
+    npm run setup-binaries
+    ```
+
+4.  **Run Development Server**:
+    This starts the React frontend and the Tauri Rust backend.
+    ```bash
+    npm run tauri dev
+    ```
 
 ---
 
-## 🛠️ For Developers
+## Contributing
 
-Interested in contributing? Here is how to build from source.
+Contributions are welcome! Here's how you can help:
 
-### Prerequisites
+1.  **Report Bugs**: Open an issue on [GitHub Issues](https://github.com/Myunikon/YTClipScene/issues). Please include terminal logs (see [Troubleshooting](docs/TROUBLESHOOTING.md)).
+2.  **Suggest Features**: Open a feature request issue with a detailed description of the use case.
+3.  **Submit Pull Requests**: Fork the repo, create a branch, make your changes, and submit a PR.
 
-- [Node.js](https://nodejs.org/) (v18+)
-- [Rust](https://www.rust-lang.org/) (Stable)
-- **Windows**: VS C++ Build Tools
-- **Linux**: `libwebkit2gtk-4.0-dev`, `build-essential`, `ffmpeg`
-
-### Build Steps
-
-1. **Clone Repo**:
-
-   ```bash
-   git clone https://github.com/Myunikon/YTClipScene.git
-   cd YTClipScene
-   ```
-
-2. **Install Dependencies**:
-
-   ```bash
-   npm install
-   ```
-
-3. **Setup Binaries (Crucial)**:
-   This script downloads the OS-specific `yt-dlp` and `ffmpeg` executables needed for Tauri's sidecar pattern.
-
-   ```bash
-   npm run setup-binaries
-   ```
-
-4. **Run in Dev Mode**:
-   ```bash
-   npm run tauri dev
-   ```
+Please ensure your code follows the existing style and includes appropriate tests where applicable.
 
 ---
 
 <p align="center">
   <b>Enjoying SceneClip?</b>
   <br/>
-  Gives us a star ⭐ on <a href="https://github.com/Myunikon/YTClipScene">GitHub</a> to support development!
+  Give us a star on <a href="https://github.com/Myunikon/YTClipScene">GitHub</a> to support development!
 </p>
 
 <p align="center">
-  <sub>Made with ❤️ by <a href="https://github.com/Myunikon">Myunikon</a></sub>
-  <br/>
-  <sub><a href="./supportedsites.md">Check Supported Sites</a></sub>
+  <sub>Made with love by <a href="https://github.com/Myunikon">Myunikon</a></sub>
   <br/>
   <sub>Distributed under MIT License</sub>
 </p>

@@ -553,8 +553,8 @@
 }
 
 .glass-panel {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
   background-color: hsl(var(--card) / var(--glass-opacity));
   border: var(--glass-border);
   box-shadow: var(--glass-shadow);
@@ -570,8 +570,8 @@
 
 .glass-strong {
   background: hsl(var(--background) / calc(var(--glass-opacity) + 0.15));
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
   border: var(--glass-border);
   box-shadow: var(--glass-shadow);
 }

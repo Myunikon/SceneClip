@@ -18,7 +18,7 @@ import { useBackendLogs } from '../hooks/useBackendLogs'
 import { AddDialog, AddDialogHandle } from '../components/dialogs'
 import { Onboarding } from '../components/providers'
 import { ClipboardListener } from '../components/providers'
-import { GuideModal, GuideModalRef } from '../components/dialogs'
+import { GuideModal } from '../components/dialogs'
 import { ShortcutsPopover } from '../components/common'
 import { AppHeader } from '../components/layout'
 import { AppLayout } from '../components/layout'
@@ -46,10 +46,10 @@ function RootComponent() {
 
     const [clipboardUrl, setClipboardUrl] = useState('')
     const [showShortcuts, setShowShortcuts] = useState(false)
+    const [showGuide, setShowGuide] = useState(false)
 
     // Dialog Refs
     const addDialogRef = useRef<AddDialogHandle>(null)
-    const guideModalRef = useRef<GuideModalRef>(null)
 
     // Custom Hooks Integration
     useTheme({ theme: settings.theme, frontendFontSize: settings.frontendFontSize })
@@ -265,11 +265,13 @@ function RootComponent() {
                 <AppLayout isOffline={isOffline}>
                     <AppHeader
                         openDialog={openDialog}
-                        onOpenGuide={() => guideModalRef.current?.showModal()}
+
+                        onOpenGuide={() => setShowGuide(true)}
                         onOpenShortcuts={() => setShowShortcuts(true)}
                     />
 
                     <ShortcutsPopover isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
+                    <GuideModal isOpen={showGuide} onClose={() => setShowGuide(false)} />
 
                     {/* MAIN CONTENT OUTLET */}
                     <div className="flex-1 overflow-hidden relative flex flex-col">
@@ -291,7 +293,7 @@ function RootComponent() {
                         initialEnd={clipboardEnd}
                         isOffline={isOffline}
                     />
-                    <GuideModal ref={guideModalRef} />
+
                     <Onboarding />
 
                     <ContextMenu

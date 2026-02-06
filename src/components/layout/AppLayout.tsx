@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useAppStore } from "../../store";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
-import { useState, useCallback } from "react";
+import { useState } from "react";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -51,9 +51,9 @@ export function AppLayout({ children, isOffline }: AppLayoutProps) {
     };
   }, [tasks]);
 
-  const handleConfirmExit = useCallback(async () => {
+  const handleConfirmExit = async () => {
     await invoke("force_exit");
-  }, []);
+  };
 
 
   // Handle Global Font Scale

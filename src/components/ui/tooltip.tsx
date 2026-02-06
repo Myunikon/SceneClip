@@ -54,11 +54,11 @@ export function TooltipProvider({
     skipDelayDuration = 300,
     disableHoverableContent = false
 }: TooltipProviderProps) {
-    const contextValue = React.useMemo(() => ({
+    const contextValue = {
         delayDuration,
         skipDelayDuration,
         disableHoverableContent
-    }), [delayDuration, skipDelayDuration, disableHoverableContent])
+    }
 
     return (
         <ProviderContext.Provider value={contextValue}>
@@ -128,22 +128,26 @@ export function Tooltip({
 
 // Helper for safe ref merging
 function useMergeRefs<T>(...refs: (React.Ref<T> | undefined)[]) {
-    return React.useMemo(() => {
-        if (refs.every((ref) => ref == null)) return null
-        return (node: T) => {
-            refs.forEach((ref) => {
-                if (typeof ref === 'function') ref(node)
-                else if (ref != null) (ref as React.MutableRefObject<T | null>).current = node
-            })
-        }
-    }, [refs])
+    if (refs.every((ref) => ref == null)) return null
+    return (node: T) => {
+        refs.forEach((ref) => {
+            if (typeof ref === 'function') ref(node)
+            else if (ref != null) (ref as React.MutableRefObject<T | null>).current = node
+        })
+    }
 }
 
 export const TooltipTrigger = React.forwardRef<HTMLElement, React.HTMLProps<HTMLElement> & { asChild?: boolean }>(
     ({ children, asChild, ...props }, propRef) => {
         const context = useTooltip()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        const childrenRef = (children as any).ref
+        // The ref of the child element, if it's a valid React element
+        const childrenRef = React.useMemo(() => {
+            if (React.isValidElement(children)) {
+                return (children as any).ref;
+            }
+            return undefined;
+        }, [children]); // Depend on children to update if the child element changes
+
         const mergedRef = useMergeRefs(context.refs.setReference, propRef, childrenRef)
 
         const referenceProps = context.getReferenceProps(props)

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useMemo } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { Trash2, Copy, Filter, Check, Terminal, Cpu, Scissors, FolderOpen, Search, Download, Bug, AlertTriangle, AlertCircle, Info, CheckCircle2, Globe, ChevronRight } from 'lucide-react'
 import { invoke } from '@tauri-apps/api/core'
 import { useAppStore } from '../../store'
@@ -25,17 +25,15 @@ export function TerminalView() {
     const [autoScroll, setAutoScroll] = useState(true)
 
     // Filter logs based on selected filters
-    const filteredLogs = useMemo(() => {
-        return logs.filter(log => {
-            const matchesSource = sourceFilter === 'all' || log.source === sourceFilter
-            const matchesLevel = levelFilter === 'all' || log.level === levelFilter
-            const matchesSearch = searchQuery === '' ||
-                (log.message || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (log.context || '').toLowerCase().includes(searchQuery.toLowerCase())
+    const filteredLogs = logs.filter(log => {
+        const matchesSource = sourceFilter === 'all' || log.source === sourceFilter
+        const matchesLevel = levelFilter === 'all' || log.level === levelFilter
+        const matchesSearch = searchQuery === '' ||
+            (log.message || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (log.context || '').toLowerCase().includes(searchQuery.toLowerCase())
 
-            return matchesSource && matchesLevel && matchesSearch
-        })
-    }, [logs, sourceFilter, levelFilter, searchQuery])
+        return matchesSource && matchesLevel && matchesSearch
+    })
 
     useEffect(() => {
         if (autoScroll) {
@@ -86,15 +84,13 @@ export function TerminalView() {
         }
     }
 
-    const sourceFilterButtons = useMemo(() => {
-        return [
-            { id: 'all', label: t('terminal.filter_all') || 'All', icon: Terminal },
-            { id: 'system', label: t('terminal.filter_system') || 'System', icon: Cpu },
-            { id: 'ytdlp', label: t('terminal.filter_ytdlp') || 'yt-dlp', icon: Terminal },
-            { id: 'ffmpeg', label: t('terminal.filter_ffmpeg') || 'FFmpeg', icon: Scissors },
-            { id: 'ui', label: 'UI', icon: Globe },
-        ] as const
-    }, [t])
+    const sourceFilterButtons = [
+        { id: 'all', label: t('terminal.filter_all') || 'All', icon: Terminal },
+        { id: 'system', label: t('terminal.filter_system') || 'System', icon: Cpu },
+        { id: 'ytdlp', label: t('terminal.filter_ytdlp') || 'yt-dlp', icon: Terminal },
+        { id: 'ffmpeg', label: t('terminal.filter_ffmpeg') || 'FFmpeg', icon: Scissors },
+        { id: 'ui', label: 'UI', icon: Globe },
+    ] as const
 
     const levelFilterButtons = [
         { id: 'all', label: 'All', color: '' },
@@ -261,7 +257,7 @@ export function TerminalView() {
                     </div>
                 )}
                 {filteredLogs.map((log) => (
-                    <MemoizedLogItem
+                    <LogItem
                         key={log.id}
                         log={log}
                     />
@@ -272,8 +268,8 @@ export function TerminalView() {
     )
 }
 
-// Memoized Log Item to prevent unnecessary re-renders
-const MemoizedLogItem = React.memo(({ log }: { log: LogEntry }) => {
+// Log Item
+const LogItem = ({ log }: { log: LogEntry }) => {
     const { t } = useTranslation()
     const [expanded, setExpanded] = useState(false)
 
@@ -289,7 +285,9 @@ const MemoizedLogItem = React.memo(({ log }: { log: LogEntry }) => {
     const { icon: LevelIcon, color: levelColor, bg: levelBg } = levelInfo[log.level] || levelInfo.info
 
     // Syntax highlighting logic
-    const highlightedMessage = useMemo(() => {
+    // Syntax highlighting logic
+    // Syntax highlighting logic
+    const getHighlightedMessage = () => {
         const msg = log.translationKey ? t(log.translationKey, log.params) : (log.message || '')
 
         // SECURITY: Escape HTML
@@ -311,7 +309,8 @@ const MemoizedLogItem = React.memo(({ log }: { log: LogEntry }) => {
             .replace(/(\[[^\]]+\])/g, '<span class="text-zinc-500">$1</span>')
 
         return result
-    }, [log.message, log.translationKey, log.params, t])
+    }
+    const highlightedMessage = getHighlightedMessage()
 
     const handleCopyLine = async () => {
         try {
@@ -424,9 +423,4 @@ const MemoizedLogItem = React.memo(({ log }: { log: LogEntry }) => {
             )}
         </div>
     )
-}, (prev, next) => {
-    return prev.log.id === next.log.id &&
-        prev.log.message === next.log.message &&
-        prev.log.level === next.log.level &&
-        prev.log.translationKey === next.log.translationKey
-})
+}

@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { Scissors } from 'lucide-react'
 import { RangeSlider } from '../../ui'
 import { cn, formatTime, parseTime } from '../../../lib/utils'
@@ -21,9 +20,9 @@ export function ClipSection({ maxDuration }: ClipSectionProps) {
     // For GIF mode (when maxDuration is set), clipping is mandatory
     const isMandatory = !!maxDuration
 
-    // Memoize parsed times to avoid 8x parseTime() calls per render
-    const parsedStart = useMemo(() => parseTime(rangeStart), [rangeStart])
-    const parsedEnd = useMemo(() => parseTime(rangeEnd), [rangeEnd])
+    // Automatic memoization by React Compiler
+    const parsedStart = parseTime(rangeStart)
+    const parsedEnd = parseTime(rangeEnd)
     const isInvalidRange = !!(rangeStart && rangeEnd && parsedStart >= parsedEnd)
     const clipDuration = parsedEnd - parsedStart
 

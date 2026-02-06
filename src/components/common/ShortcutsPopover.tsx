@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from 'react'
+import { useRef, useEffect } from 'react'
 import { Keyboard, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
@@ -15,32 +15,25 @@ export function ShortcutsPopover({ isOpen, onClose }: ShortcutsPopoverProps) {
     const popoverRef = useRef<HTMLDivElement>(null)
 
     // Dynamic shortcuts list
-    const shortcuts = useMemo(() => {
-        const MOD = getShortcutSymbol()
-        const SHIFT = getShiftSymbol()
-        const ALT = getAltSymbol()
-
-        const list = [
-            { keys: [MOD, 'N'], action: 'new_download' },
-            { keys: [MOD, ','], action: 'settings' },
-            // History: Cmd+Shift+H (Mac) vs Ctrl+H (Win)
-            {
-                keys: IS_MAC ? [MOD, SHIFT, 'H'] : [MOD, 'H'],
-                action: 'history'
-            },
-            // Downloads: Cmd+Opt+L (Mac) vs Ctrl+J (Win)
-            {
-                keys: IS_MAC ? [MOD, ALT, 'L'] : [MOD, 'J'],
-                action: 'downloads'
-            },
-            // Fullscreen: Cmd+Ctrl+F (Mac) vs F11 (Win/Web)
-            {
-                keys: IS_MAC ? ['Fn', 'F'] : ['F11'],
-                action: 'fullscreen'
-            },
-        ]
-        return list
-    }, [])
+    const shortcuts = [
+        { keys: [getShortcutSymbol(), 'N'], action: 'new_download' },
+        { keys: [getShortcutSymbol(), ','], action: 'settings' },
+        // History: Cmd+Shift+H (Mac) vs Ctrl+H (Win)
+        {
+            keys: IS_MAC ? [getShortcutSymbol(), getShiftSymbol(), 'H'] : [getShortcutSymbol(), 'H'],
+            action: 'history'
+        },
+        // Downloads: Cmd+Opt+L (Mac) vs Ctrl+J (Win)
+        {
+            keys: IS_MAC ? [getShortcutSymbol(), getAltSymbol(), 'L'] : [getShortcutSymbol(), 'J'],
+            action: 'downloads'
+        },
+        // Fullscreen: Cmd+Ctrl+F (Mac) vs F11 (Win/Web)
+        {
+            keys: IS_MAC ? ['Fn', 'F'] : ['F11'],
+            action: 'fullscreen'
+        },
+    ]
 
     // Close on click outside
     useEffect(() => {

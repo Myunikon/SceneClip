@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from '@tanstack/react-router'
 import { GpuIndicator } from './GpuIndicator'
 import { invoke } from '@tauri-apps/api/core'
@@ -123,13 +123,11 @@ export function StatusFooter() {
     const barClass = "fixed bottom-0 left-0 right-0 z-40 bg-background/60 backdrop-blur-2xl border-t border-white/5 px-5 py-2 transition-all duration-300 shadow-[0_-1px_20px_rgba(0,0,0,0.1)]"
 
     // Calculate global progress
-    const { activeDownloads, globalProgress } = useMemo(() => {
-        const active = tasks.filter(t => t.status === 'downloading')
-        const progress = active.length > 0
-            ? active.reduce((sum, t) => sum + (t.progress || 0), 0) / active.length
-            : 0
-        return { activeDownloads: active, globalProgress: progress }
-    }, [tasks])
+    // Calculate global progress
+    const activeDownloads = tasks.filter(t => t.status === 'downloading')
+    const globalProgress = activeDownloads.length > 0
+        ? activeDownloads.reduce((sum, t) => sum + (t.progress || 0), 0) / activeDownloads.length
+        : 0
 
     // Navigation and Logic Helpers
     const router = useRouter()

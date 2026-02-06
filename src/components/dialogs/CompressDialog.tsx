@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AlertTriangle, RefreshCw, FileVideo, Music, Image as ImageIcon } from 'lucide-react'
@@ -35,7 +35,8 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
     const [resolvedPath, setResolvedPath] = useState<string | null>(null)
 
     // --- Media Type Logic ---
-    const mediaType = useMemo<'video' | 'audio' | 'image'>(() => {
+    // --- Media Type Logic ---
+    const getMediaType = (): 'video' | 'audio' | 'image' => {
         const pathToCheck = resolvedPath || task?.filePath
         if (!pathToCheck) return 'video'
         const lower = pathToCheck.toLowerCase()
@@ -43,7 +44,8 @@ export function CompressDialog({ isOpen, onClose, task, onCompress }: CompressDi
         if (AUDIO_EXTS.includes(ext)) return 'audio'
         if (IMAGE_EXTS.includes(ext)) return 'image'
         return 'video'
-    }, [task, resolvedPath])
+    }
+    const mediaType = getMediaType()
 
     // --- Hooks ---
     const form = useExportForm(mediaType)

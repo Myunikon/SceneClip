@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { notify } from '../../lib/notify'
 import { useAppStore, DownloadTask } from '../../store'
 import { useShallow } from 'zustand/react/shallow'
@@ -76,14 +76,14 @@ export function HistoryView() {
         setSelectedIds(new Set())
     }
 
-    const toggleSelect = useCallback((id: string) => {
+    const toggleSelect = (id: string) => {
         setSelectedIds(prev => {
             const next = new Set(prev)
             if (next.has(id)) next.delete(id)
             else next.add(id)
             return next
         })
-    }, [])
+    }
 
     const selectAll = () => {
         if (selectedIds.size === historyTasks.length) {
@@ -93,14 +93,14 @@ export function HistoryView() {
         }
     }
 
-    const deleteSelected = useCallback(() => {
+    const deleteSelected = () => {
         if (confirm(t('history_menu.confirm_delete_msg', { count: selectedIds.size }) || `Are you sure you want to delete ${selectedIds.size} items?`)) {
             selectedIds.forEach(id => clearTask(id))
             setIsSelectionMode(false)
             setSelectedIds(new Set())
             notify.success(t('history_menu.toast_deleted', { count: selectedIds.size }) || `Deleted ${selectedIds.size} items`)
         }
-    }, [selectedIds, clearTask, t])
+    }
 
     useEffect(() => {
         const refreshSizes = async () => {
@@ -113,7 +113,7 @@ export function HistoryView() {
         refreshSizes()
     }, [])
 
-    const historyTasks = useMemo(() => {
+    const historyTasks = (() => {
         const realTasks = tasks.filter(t => t.status === 'completed' || t.status === 'stopped' || t.status === 'error')
         const allTasks = [...realTasks] // Purely real tasks
 
@@ -164,7 +164,7 @@ export function HistoryView() {
         })
 
         return sorted
-    }, [tasks, searchQuery, filterType, sortOrder, filterFormat])
+    })()
 
     // Verification State
     const [missingFileIds, setMissingFileIds] = useState<Set<string>>(new Set())
@@ -198,32 +198,32 @@ export function HistoryView() {
 
 
 
-    const handleOpenFolder = useCallback(async (path: string) => {
+    const handleOpenFolder = async (path: string) => {
         try { await openPath(path); } catch {
             notify.error(t('errors.folder_not_found'));
         }
-    }, [t])
+    }
 
-    const handlePlayFile = useCallback(async (path: string) => {
+    const handlePlayFile = async (path: string) => {
         if (!path) return notify.warning(t('history.file_not_found'))
         try { await openPath(path); } catch {
             notify.error(t('errors.file_desc'));
         }
-    }, [t])
+    }
 
-    const handleRemove = useCallback((id: string) => clearTask(id), [clearTask])
-    const handleRetry = useCallback((id: string) => { retryTask(id); notify.success("Redownload Started") }, [retryTask])
-    const handleViewCommand = useCallback((task: DownloadTask) => { setSelectedTask(task); setIsCommandOpen(true) }, [])
+    const handleRemove = (id: string) => clearTask(id)
+    const handleRetry = (id: string) => { retryTask(id); notify.success("Redownload Started") }
+    const handleViewCommand = (task: DownloadTask) => { setSelectedTask(task); setIsCommandOpen(true) }
 
     // NEW: Compress dialog state
     const [selectedTask, setSelectedTask] = useState<DownloadTask | null>(null)
     const [isCommandOpen, setIsCommandOpen] = useState(false)
     const [compressTask, setCompressTask] = useState<DownloadTask | null>(null)
     const [isCompressOpen, setIsCompressOpen] = useState(false)
-    const handleCompress = useCallback((task: DownloadTask) => {
+    const handleCompress = (task: DownloadTask) => {
         setCompressTask(task)
         setIsCompressOpen(true)
-    }, [])
+    }
 
     return (
         <div className="flex flex-col h-full bg-background/50 cq-history">

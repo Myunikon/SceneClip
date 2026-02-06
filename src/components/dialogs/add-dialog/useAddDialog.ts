@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { readText } from '@tauri-apps/plugin-clipboard-manager'
 import { downloadDir } from '@tauri-apps/api/path'
@@ -107,16 +107,14 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
 
 
     // Compute Available Formats & Options using pure utils
-    const availableResolutions = useMemo(() => getAvailableResolutions(meta?.formats), [meta])
-    const availableAudioBitrates = useMemo(() => getAvailableAudioBitrates(meta?.formats), [meta])
-    const availableVideoCodecs = useMemo(() => getAvailableVideoCodecs(meta?.formats), [meta])
-    const availableAudioCodecs = useMemo(() => getAvailableAudioCodecs(meta?.formats), [meta])
-    const availableLanguages = useMemo(() => getAvailableLanguages(meta), [meta])
+    const availableResolutions = getAvailableResolutions(meta?.formats)
+    const availableAudioBitrates = getAvailableAudioBitrates(meta?.formats)
+    const availableVideoCodecs = getAvailableVideoCodecs(meta?.formats)
+    const availableAudioCodecs = getAvailableAudioCodecs(meta?.formats)
+    const availableLanguages = getAvailableLanguages(meta)
 
-    // Memoize Estimated Size Calculation
-    const estimatedSize = useMemo(() => {
-        return estimateDownloadSize(meta, options)
-    }, [meta, options])
+    // Estimated Size Calculation
+    const estimatedSize = estimateDownloadSize(meta, options)
 
     // Moved formatFileSize to lib/utils/formatBytes
 

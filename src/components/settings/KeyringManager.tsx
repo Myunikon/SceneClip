@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { type as osType } from '@tauri-apps/plugin-os'
 import { Trash2, Plus, Eye, EyeOff, Lock, Edit2, Check, X, Key, Copy, Globe, User, Loader2 } from 'lucide-react'
@@ -30,7 +30,7 @@ export function KeyringManager({ settings, setSetting }: KeyringManagerProps) {
 
     const [deleteConfirm, setDeleteConfirm] = useState<{ service: string, username: string } | null>(null)
 
-    const storageName = useMemo(() => {
+    const getStorageName = () => {
         try {
             const os = osType()
             switch (os) {
@@ -42,7 +42,8 @@ export function KeyringManager({ settings, setSetting }: KeyringManagerProps) {
         } catch {
             return 'System Secure Storage'
         }
-    }, [])
+    }
+    const storageName = getStorageName()
 
     // Helper: Clean domain input
     const cleanDomain = (url: string) => {

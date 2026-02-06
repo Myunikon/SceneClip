@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { Sparkles } from 'lucide-react'
 import { useAddDialogContext } from '../dialogs/add-dialog/AddDialogContext'
 import { OptionCard, ChoiceGroup } from './CommonSettings'
@@ -17,44 +16,40 @@ export function SelectDownloadType() {
     const mode = format === 'audio' ? 'audio' : format === 'gif' ? 'gif' : 'video'
 
     // Audio Formats
-    const audioFormats = useMemo(() => {
-        return (availableAudioBitrates && availableAudioBitrates.length > 0)
-            ? [
-                { value: '320', label: 'Best Available' },
-                ...availableAudioBitrates.map(rate => {
-                    return { value: rate.toString(), label: `${rate} kbps` }
-                })
-            ]
-            : [
-                { value: '320', label: 'Best (320k)' },
-                { value: '256', label: '256 kbps' },
-                { value: '192', label: '192 kbps' },
-                { value: '128', label: '128 kbps' },
-            ]
-    }, [availableAudioBitrates, t])
+    const audioFormats = (availableAudioBitrates && availableAudioBitrates.length > 0)
+        ? [
+            { value: '320', label: 'Best Available' },
+            ...availableAudioBitrates.map(rate => {
+                return { value: rate.toString(), label: `${rate} kbps` }
+            })
+        ]
+        : [
+            { value: '320', label: 'Best (320k)' },
+            { value: '256', label: '256 kbps' },
+            { value: '192', label: '192 kbps' },
+            { value: '128', label: '128 kbps' },
+        ]
 
-    const bestOption = useMemo(() => ({
+    const bestOption = {
         value: 'Best',
         label: t('dialog.formats.best'),
         icon: "/BestQuality.png",
         desc: t('dialog.quality_profiles.highest_quality')
-    }), [t])
+    }
 
     // Video Formats
-    const resolutionOptions = useMemo(() => {
-        return (availableResolutions && availableResolutions.length > 0)
-            ? availableResolutions
-                .filter(h => h >= 144)
-                .map(h => {
-                    const label = `${h}p`
-                    return { value: `${h}p`, label }
-                })
-            : [
-                { value: '1080p', label: '1080p' },
-                { value: '720p', label: '720p' },
-                { value: '480p', label: '480p' },
-            ]
-    }, [availableResolutions, t])
+    const resolutionOptions = (availableResolutions && availableResolutions.length > 0)
+        ? availableResolutions
+            .filter(h => h >= 144)
+            .map(h => {
+                const label = `${h}p`
+                return { value: `${h}p`, label }
+            })
+        : [
+            { value: '1080p', label: '1080p' },
+            { value: '720p', label: '720p' },
+            { value: '480p', label: '480p' },
+        ]
 
     return (
         <div className="space-y-4 p-1">

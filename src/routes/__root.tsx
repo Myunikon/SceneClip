@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import { createRootRoute, Outlet, useRouter } from '@tanstack/react-router'
 // import { TanStackRouterDevtools } from '@tanstack/router-devtools'
-import { useRef, useEffect, useState, useCallback } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { exists } from '@tauri-apps/plugin-fs'
 import { downloadDir } from '@tauri-apps/api/path'
@@ -65,7 +65,7 @@ function RootComponent() {
     const [clipboardStart, setClipboardStart] = useState<number | undefined>(undefined)
     const [clipboardEnd, setClipboardEnd] = useState<number | undefined>(undefined)
 
-    const handleNewTask = useCallback(async (url?: string, cookies?: string, userAgent?: string, start?: number, end?: number) => {
+    const handleNewTask = async (url?: string, cookies?: string, userAgent?: string, start?: number, end?: number) => {
         if (url) {
             setClipboardUrl(url)
             setClipboardCookies(cookies)
@@ -81,7 +81,7 @@ function RootComponent() {
         }
         // Small delay to ensure state is set before dialog opens
         setTimeout(() => addDialogRef.current?.showModal(), 50)
-    }, [])
+    }
 
     const addTask = (url: string, opts: any) => useAppStore.getState().addTask(url, opts)
     const openDialog = () => handleNewTask()

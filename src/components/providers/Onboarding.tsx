@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+// import { useCallback } from "react";
 import { Zap, Scissors, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAppStore } from "../../store";
@@ -7,9 +7,9 @@ import { cn } from "../../lib/utils";
 export function Onboarding() {
   const { settings, setSetting } = useAppStore();
 
-  const handleStart = useCallback(() => {
+  const handleStart = () => {
     setSetting("hasSeenOnboarding", true);
-  }, [setSetting]);
+  };
 
   // Escape Hatch: ?reset-onboarding=true
   const forceShow = typeof window !== 'undefined' && window.location.search.includes('reset-onboarding')

@@ -69,7 +69,6 @@ export function CustomDateTimePicker({ value, onChange, t }: CustomDateTimePicke
                 }
             }, 10)
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [mode, isOpen])
 
     // Close on click outside (modified for portal)

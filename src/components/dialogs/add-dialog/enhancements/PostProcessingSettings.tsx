@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Wand2 } from 'lucide-react'
 import { SettingCard } from '../../../common'
 import { PopUpButton } from '../../../ui'
@@ -24,13 +24,11 @@ export const PostProcessingSettings: React.FC<PostProcessingSettingsProps> = ({
     presets,
     currentFormat
 }) => {
-    // Memoize filtered presets
-    const filteredPresets = useMemo(() => {
-        return presets.filter((p: PostProcessorPreset) => {
-            if (currentFormat === 'audio') return p.type === 'audio' || p.type === 'general'
-            return p.type === 'video' || p.type === 'general'
-        })
-    }, [presets, currentFormat])
+    // Filtered presets
+    const filteredPresets = presets.filter((p: PostProcessorPreset) => {
+        if (currentFormat === 'audio') return p.type === 'audio' || p.type === 'general'
+        return p.type === 'video' || p.type === 'general'
+    })
 
     // Determine current preset value for dropdown
     const currentPresetArgs = filteredPresets.find(p => p.args === postProcessorArgs)?.args;

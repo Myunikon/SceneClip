@@ -1,4 +1,3 @@
-import { memo } from 'react'
 import { DownloadTask } from '../../store'
 import {
     FileVideo, Music, FolderOpen, Play,
@@ -48,7 +47,7 @@ export interface HistoryItemProps {
     developerMode?: boolean
 }
 
-export const HistoryItem = memo(({
+export const HistoryItem = ({
     task,
     isSelected,
     isSelectionMode,
@@ -232,7 +231,7 @@ export const HistoryItem = memo(({
             )}
         </div>
     )
-})
+}
 
 HistoryItem.displayName = "HistoryItem"
 

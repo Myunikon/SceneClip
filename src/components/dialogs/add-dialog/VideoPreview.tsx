@@ -33,8 +33,7 @@ export function VideoPreview({ loading, meta, error, t, url }: VideoPreviewProps
             focusedElementBeforePreview?.focus?.()
             setFocusedElementBeforePreview(null)
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isPreviewOpen])
+    }, [isPreviewOpen, focusedElementBeforePreview])
 
     const imageSrc = getProxiedSrc(meta?.thumbnail)
 

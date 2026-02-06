@@ -78,8 +78,7 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
         }
 
         init()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, [initListeners, settings.language])
 
     if (initError || (!loading && !binariesReady)) {
         return (

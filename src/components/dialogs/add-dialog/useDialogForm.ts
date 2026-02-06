@@ -63,8 +63,7 @@ export function useDialogForm({ initialStart, initialEnd, settings }: UseDialogT
             }
         }
         initPath()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])  // Run once on mount
+    }, [initialStart, initialEnd, path, settings.downloadPath])  // Run once on mount
 
     // Auto-enable Trim for GIFs
     useEffect(() => {

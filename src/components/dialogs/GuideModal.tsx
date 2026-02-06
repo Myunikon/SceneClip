@@ -1,12 +1,11 @@
 
 import { useRef, useEffect, useState } from 'react'
 import {
-    Rocket, Scissors, Terminal, AlertTriangle,
-    BookOpen, MousePointerClick, CheckCircle2,
+    BookOpen,
     X
 } from 'lucide-react'
 
-import { useTranslation, Trans } from 'react-i18next'
+import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '../../lib/utils'
 
@@ -15,12 +14,12 @@ interface GuideModalProps {
     onClose: () => void
 }
 
-type GuideSection = 'start' | 'clipping' | 'advanced' | 'faq'
+type GuideSection = 'overview' | 'features' | 'advanced' | 'troubleshooting'
 
 export function GuideModal({ isOpen, onClose }: GuideModalProps) {
     const { t } = useTranslation()
     const popoverRef = useRef<HTMLDivElement>(null)
-    const [activeSection, setActiveSection] = useState<GuideSection>('start')
+    const [activeSection, setActiveSection] = useState<GuideSection>('overview')
 
     // Close on click outside
     useEffect(() => {
@@ -49,10 +48,10 @@ export function GuideModal({ isOpen, onClose }: GuideModalProps) {
 
 
     const sections = [
-        { id: 'start', label: t('guide.menu.start') || "Start", icon: Rocket },
-        { id: 'clipping', label: t('guide.menu.clip') || "Clip", icon: Scissors },
-        { id: 'advanced', label: t('guide.menu.advanced') || "Adv", icon: Terminal },
-        { id: 'faq', label: t('guide.menu.faq') || "FAQ", icon: AlertTriangle },
+        { id: 'overview', label: "Overview" },
+        { id: 'features', label: "Features" },
+        { id: 'advanced', label: "Advanced" },
+        { id: 'troubleshooting', label: "Fix Issues" },
     ]
 
     return (
@@ -60,11 +59,11 @@ export function GuideModal({ isOpen, onClose }: GuideModalProps) {
             {isOpen && (
                 <motion.div
                     ref={popoverRef}
-                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute top-14 right-24 z-50 w-80 max-h-[80vh] flex flex-col bg-background/95 backdrop-blur-2xl border border-border/50 rounded-xl shadow-2xl overflow-hidden"
+                    initial={{ opacity: 0, scale: 0.9, filter: "blur(10px)" }}
+                    animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                    exit={{ opacity: 0, scale: 0.9, filter: "blur(10px)" }}
+                    transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                    className="absolute top-14 right-24 z-50 w-80 max-h-[80vh] flex flex-col bg-background/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden ring-1 ring-black/5"
                 >
                     {/* Header */}
                     <div className="flex items-center justify-between p-3 border-b border-border/10 bg-secondary/20 shrink-0">
@@ -80,39 +79,49 @@ export function GuideModal({ isOpen, onClose }: GuideModalProps) {
                         </button>
                     </div>
 
-                    {/* Navigation Tabs */}
-                    <div className="flex p-1 gap-1 bg-secondary/10 border-b border-border/10 shrink-0 overflow-x-auto no-scrollbar">
-                        {sections.map((section) => (
-                            <button
-                                key={section.id}
-                                onClick={() => setActiveSection(section.id as GuideSection)}
-                                className={cn(
-                                    "flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-xs font-medium transition-all whitespace-nowrap",
-                                    activeSection === section.id
-                                        ? "bg-primary text-primary-foreground shadow-sm"
-                                        : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-                                )}
-                            >
-                                <section.icon className="w-3 h-3" />
-                                <span>{section.label}</span>
-                            </button>
-                        ))}
+                    {/* Navigation Tabs (Scrollable Segmented Control) */}
+                    <div className="border-b border-border/40 shrink-0">
+                        <div className="overflow-x-auto custom-scrollbar py-2 px-3">
+                            <div className="flex gap-1 p-1 bg-muted/40 rounded-lg relative isolate ring-1 ring-inset ring-black/5 dark:ring-white/5 w-max min-w-full">
+                                {sections.map((section) => (
+                                    <button
+                                        key={section.id}
+                                        onClick={() => setActiveSection(section.id as GuideSection)}
+                                        className={cn(
+                                            "relative z-10 flex items-center justify-center py-1.5 px-4 rounded-md text-xs font-semibold transition-all duration-200 ease-out whitespace-nowrap shrink-0",
+                                            activeSection === section.id
+                                                ? "text-foreground"
+                                                : "text-muted-foreground hover:text-foreground/70"
+                                        )}
+                                    >
+                                        {activeSection === section.id && (
+                                            <motion.div
+                                                layoutId="active-pill"
+                                                className="absolute inset-0 bg-background rounded-md shadow-[0_2px_8px_rgba(0,0,0,0.08)] ring-1 ring-black/5 dark:ring-white/5 z-[-1]"
+                                                transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                                            />
+                                        )}
+                                        <span>{section.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
                     {/* Content Scrollable Area */}
-                    <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
                         <AnimatePresence mode="wait">
                             <motion.div
                                 key={activeSection}
-                                initial={{ opacity: 0, x: 5 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -5 }}
-                                transition={{ duration: 0.15 }}
+                                initial={{ opacity: 0, x: 20, filter: "blur(4px)" }}
+                                animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+                                exit={{ opacity: 0, x: -20, filter: "blur(4px)" }}
+                                transition={{ type: "spring", bounce: 0, duration: 0.3 }}
                             >
-                                {activeSection === 'start' && <GettingStartedContent t={t} />}
-                                {activeSection === 'clipping' && <ClippingContent t={t} />}
+                                {activeSection === 'overview' && <OverviewContent t={t} />}
+                                {activeSection === 'features' && <FeaturesContent t={t} />}
                                 {activeSection === 'advanced' && <AdvancedContent t={t} />}
-                                {activeSection === 'faq' && <FaqContent t={t} />}
+                                {activeSection === 'troubleshooting' && <TroubleshootingContent t={t} />}
                             </motion.div>
                         </AnimatePresence>
                     </div>
@@ -124,97 +133,137 @@ export function GuideModal({ isOpen, onClose }: GuideModalProps) {
 
 // Compact Content Components
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function GettingStartedContent({ t }: { t: any }) {
+function OverviewContent({ t: _t }: { t: any }) {
     return (
-        <div className="space-y-4">
-            <div className="space-y-1">
-                <h4 className="font-bold text-sm">{t('guide.subtitle')}</h4>
-                <p className="text-xs text-muted-foreground">Quick setup guide.</p>
+        <div className="space-y-5">
+
+            <div className="space-y-2">
+                <h4 className="font-bold text-sm text-foreground">The Ultimate GUI for yt-dlp</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                    Download videos, extract audio, and create precise clips from thousands of sites without touching a terminal.
+                </p>
             </div>
 
             <div className="space-y-3">
-                <CompactStepItem
-                    num="1"
-                    title={t('guide.steps.smart.title')}
-                    desc={t('guide.steps.smart.desc')}
-                />
-                <CompactStepItem
-                    num="2"
-                    title={t('guide.steps.format.title')}
-                    desc={t('guide.steps.format.desc')}
-                />
+                <div className="text-xs font-semibold text-foreground/80">Smart Detection Workflow</div>
+                <div className="grid gap-3">
+                    <CompactStepItem num="1" title="Copy Link" desc="Copy any video URL from your browser (YouTube, Twitch, etc)." />
+                    <CompactStepItem num="2" title="Auto-Detect" desc="SceneClip reads your clipboard and auto-pastes the link." />
+                    <CompactStepItem num="3" title="Download" desc="One click for Best Quality. Use 'List' icon for batch mode." />
+                </div>
             </div>
 
-            <div className="bg-orange-500/10 border border-orange-500/20 p-3 rounded-lg flex gap-2">
-                <MousePointerClick className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
-                <div>
-                    <h5 className="text-xs font-bold text-orange-400">{t('guide_content.pro_tip_title')}</h5>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground leading-tight mt-0.5">
-                        {t('guide_content.pro_tip_desc')}
+            <div className="bg-primary/5 border border-primary/10 p-3 rounded-lg">
+                <h5 className="text-xs font-bold text-foreground">Supported Platforms</h5>
+                <p className="text-[10px] text-muted-foreground mt-1 leading-normal">
+                    YouTube, Twitter (X), Instagram, TikTok, Twitch, SoundCloud, Bilibili, and thousands more.
+                </p>
+            </div>
+        </div>
+    )
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function FeaturesContent({ t: _t }: { t: any }) {
+    return (
+        <div className="space-y-5">
+            <div className="space-y-4">
+                <FeatureBlock title="Clipping & Trimming" color="text-orange-500">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                        Download only what you need. Enable the <strong>Trim</strong> toggle, then set Start/End timestamps to extract a specific segment without downloading the full video.
                     </p>
-                </div>
+                </FeatureBlock>
+
+                <FeatureBlock title="GIF Maker" color="text-pink-500">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                        Turn any video segment into an optimized GIF. Select the <strong>GIF</strong> tab. Limit: 30 seconds max. Adjustable FPS and scale.
+                    </p>
+                </FeatureBlock>
+
+                <FeatureBlock title="Keyring Manager" color="text-blue-500">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                        Securely store credentials for Premium/Age-gated content. Uses your OS native vault (Windows Credential Manager, macOS Keychain, or Linux Secret Service).
+                    </p>
+                </FeatureBlock>
             </div>
         </div>
     )
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function ClippingContent({ t }: { t: any }) {
+function AdvancedContent({ t: _t }: { t: any }) {
     return (
-        <div className="space-y-3">
-            <div className="flex items-center gap-2 mb-2">
-                <Scissors className="w-4 h-4 text-orange-500" />
-                <h4 className="font-bold text-sm">{t('guide.steps.clip.title')}</h4>
+        <div className="space-y-5">
+            <div className="space-y-3">
+                <h4 className="font-bold text-xs text-foreground uppercase tracking-wider opacity-70">Enhancements</h4>
+                <ul className="grid gap-2">
+                    <CompactFeatureRow title="SponsorBlock" desc="Auto-skip sponsors, intros, and outros (YouTube only)." />
+                    <CompactFeatureRow title="Embed Subtitles" desc="Merge Soft-Subs directly into the video file." />
+                    <CompactFeatureRow title="Loudness Norm" desc="Normalize audio to EBU R128 broadcast standard." />
+                </ul>
             </div>
 
-            <ul className="space-y-2">
-                <li className="text-xs text-muted-foreground pl-2 border-l-2 border-primary/20">
-                    <Trans i18nKey="guide_content.clip_step1" components={{ strong: <strong className="text-foreground" /> }} />
-                </li>
-                <li className="text-xs text-muted-foreground pl-2 border-l-2 border-primary/20">
-                    {t('guide_content.clip_step2')}
-                </li>
-                <li className="text-xs text-muted-foreground pl-2 border-l-2 border-primary/20">
-                    <Trans i18nKey="guide_content.clip_step3" components={{ strong: <strong className="text-foreground" /> }} />
-                </li>
-            </ul>
+            <div className="space-y-3">
+                <h4 className="font-bold text-xs text-foreground uppercase tracking-wider opacity-70">Network & System</h4>
+                <ul className="grid gap-2">
+                    <CompactFeatureRow title="Aria2c Accelerator" desc="Multi-threaded downloading for maximum speed." />
+                    <CompactFeatureRow title="Cookies Import" desc="Use browser cookies to access Premium content." />
+                    <CompactFeatureRow title="GPU Acceleration" desc="Hardware-accelerated transcoding for faster clips." />
+                </ul>
+            </div>
         </div>
     )
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function AdvancedContent({ t }: { t: any }) {
+function TroubleshootingContent({ t: _t }: { t: any }) {
     return (
-        <div className="space-y-3">
-            <div className="flex items-center gap-2 mb-2">
-                <Terminal className="w-4 h-4 text-red-500" />
-                <h4 className="font-bold text-sm">{t('guide.steps.terminal.title')}</h4>
+        <div className="space-y-4">
+            <div className="space-y-3">
+                <TroubleshootItem title="Download Stuck at 100%?">
+                    Processing large files (4K/8K) involves merging video+audio streams. This is normal and depends on your CPU speed. Please wait.
+                </TroubleshootItem>
+                <TroubleshootItem title="Sign in / Bot Check?">
+                    YouTube may throttle bots. Go to <strong>Settings &gt; Network</strong> and enable <strong>PO Token</strong> or import browser cookies.
+                </TroubleshootItem>
+                <TroubleshootItem title="Permission Denied?">
+                    Avoid saving to optimized system folders (e.g. <code>C:\Program Files</code> or <code>/usr/local</code>). Use your User Downloads or Documents folder. Check Security Software exclusions.
+                </TroubleshootItem>
+                <TroubleshootItem title="Slow Speeds?">
+                    Try enabling <strong>Aria2c</strong> in Network Settings to force multi-connection downloading.
+                </TroubleshootItem>
             </div>
-            <ul className="space-y-2">
-                <CompactFeatureRow
-                    title={t('guide_content.term_logs_title')}
-                    desc={t('guide_content.term_logs_desc')}
-                />
-                <CompactFeatureRow
-                    title={t('guide_content.cookies_title')}
-                    desc={t('guide_content.cookies_desc')}
-                />
-            </ul>
+
+            <a href="https://github.com/Myunikon/SceneClip/issues" target="_blank" rel="noreferrer" className="block p-3 mt-2 bg-secondary/30 hover:bg-secondary/50 rounded-lg text-center transition-colors">
+                <div className="text-xs font-semibold text-primary">Report a Bug on GitHub</div>
+                <div className="text-[10px] text-muted-foreground">Attach logs from the Terminal tab</div>
+            </a>
         </div>
     )
 }
 
+/* -------------------------- HELPERS -------------------------- */
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function FaqContent({ t }: { t: any }) {
+function FeatureBlock({ title, children, color }: { title: string, children: React.ReactNode, color: string }) {
     return (
-        <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-                <div key={i} className="border border-border/10 rounded-lg p-2.5 bg-secondary/5">
-                    <h5 className="font-semibold text-xs text-foreground mb-1">{t(`guide_content.faq_${i}_q`)}</h5>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{t(`guide_content.faq_${i}_a`)}</p>
-                </div>
-            ))}
+        <div className="flex gap-3">
+            <div className={cn("w-1 h-8 rounded-full shrink-0", color.replace('text-', 'bg-'))} />
+            <div>
+                <h5 className="text-sm font-semibold text-foreground mb-1">{title}</h5>
+                {children}
+            </div>
+        </div>
+    )
+}
+
+function TroubleshootItem({ title, children }: { title: string, children: React.ReactNode }) {
+    return (
+        <div className="border border-border/40 rounded-lg p-3 bg-secondary/5">
+            <h5 className="font-semibold text-xs text-foreground mb-1">
+                {title}
+            </h5>
+            <p className="text-xs text-muted-foreground leading-relaxed border-l-2 border-border pl-2 ml-0.5">{children}</p>
         </div>
     )
 }
@@ -237,8 +286,8 @@ function CompactStepItem({ num, title, desc }: { num: string, title: string, des
 
 function CompactFeatureRow({ title, desc }: { title: string, desc: string }) {
     return (
-        <li className="flex gap-2 items-start p-2 rounded hover:bg-secondary/10 border border-transparent hover:border-border/10 transition-colors">
-            <CheckCircle2 className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" />
+        <li className="flex gap-3 items-start p-2 rounded hover:bg-secondary/10 border border-transparent hover:border-border/10 transition-colors">
+            <div className="w-1 h-1 rounded-full bg-primary shrink-0 mt-1.5" />
             <div>
                 <strong className="block text-xs text-foreground">{title}</strong>
                 <span className="text-[10px] sm:text-xs text-muted-foreground leading-tight">{desc}</span>

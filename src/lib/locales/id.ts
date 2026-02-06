@@ -10,6 +10,7 @@ export const id = {
     common: {
         copy_error: "Gagal menyalin",
         pause: "Jeda",
+        resume: "Lanjutkan",
         cancel: "Batal",
         logs: "Log",
         remove: "Hapus",

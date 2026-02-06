@@ -10,6 +10,7 @@ export const ms = {
     common: {
         copy_error: "Gagal menyalin",
         pause: "Jeda",
+        resume: "Sambung",
         cancel: "Batal",
         logs: "Log",
         remove: "Buang",

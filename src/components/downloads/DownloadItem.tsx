@@ -130,7 +130,7 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
     return (
         <>
             {/* Safari-like Row: Icon + Info Block + Actions */}
-            <div className="group relative flex items-center gap-4 px-5 py-3 border-b border-border/40 hover:bg-accent/30 transition-colors select-none">
+            <div className="group flex items-center gap-4 px-5 py-3 border-b border-border/40 bg-background/50 hover:bg-accent/40 transition-all duration-200 ease-out hover:scale-[1.002] hover:shadow-sm select-none">
 
                 {/* 1. File Icon (Dynamic) */}
                 <div className="shrink-0">

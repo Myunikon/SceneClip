@@ -10,6 +10,7 @@ export const en = {
     common: {
         copy_error: "Copy failed",
         pause: "Pause",
+        resume: "Resume",
         cancel: "Cancel",
         logs: "Logs",
         remove: "Remove",

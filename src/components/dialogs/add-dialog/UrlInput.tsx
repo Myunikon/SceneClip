@@ -118,7 +118,9 @@ export function UrlInput({ url, onChange, onPaste, t, batchMode = false, onBatch
                         <input
                             required
                             type="url"
-                            className="w-full h-10 pl-10 pr-20 rounded-lg bg-secondary/30 hover:bg-secondary/50 border border-transparent focus:bg-background focus:border-primary/30 text-[13px] font-medium focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-muted-foreground/40"
+                            className="w-full h-12 pl-12 pr-20 rounded-xl bg-secondary/30 hover:bg-secondary/50 border border-transparent focus:bg-background focus:border-primary/50 text-[14px] font-medium 
+                            outline-none transition-all duration-200 placeholder:text-muted-foreground/40
+                            focus:ring-2 focus:ring-primary/10 focus:shadow-[0_0_0_4px_rgba(var(--primary),0.05)]"
                             placeholder={t('url_input.placeholder_single')}
                             value={url}
                             onChange={e => onChange(e.target.value)}

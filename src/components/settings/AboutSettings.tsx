@@ -69,23 +69,23 @@ export function AboutSettings({ addLog, setShowEasterEgg }: AboutSettingsProps) 
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider ml-4">
                     {t('settings.about_page.core')}
                 </h3>
-                <div className="border rounded-xl overflow-hidden bg-card/50 divide-y divide-border/50">
+                <div className="border rounded-xl overflow-hidden bg-card/50 divide-y divide-border/50 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-150 fill-mode-forwards">
                     {techItems.map((item) => (
                         <div
                             key={item.id}
-                            className="flex items-center justify-between p-3 pl-4 hover:bg-muted/50 transition-colors cursor-pointer group"
+                            className="flex items-center justify-between p-3 pl-4 hover:bg-muted/50 transition-colors cursor-pointer group active:scale-[0.99] active:bg-muted/80 duration-200"
                             onClick={() => openUrl(item.link)}
                         >
                             <div className="flex items-center gap-3">
-                                <div className={`w-8 h-8 rounded-md bg-background flex items-center justify-center border border-border/50 shadow-sm group-hover:scale-105 transition-transform`}>
+                                <div className={`w-8 h-8 rounded-md bg-background flex items-center justify-center border border-border/50 shadow-sm group-hover:scale-110 transition-transform duration-300`}>
                                     <item.Icon className={`w-5 h-5 ${item.color}`} />
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-medium leading-none">{item.name}</h4>
+                                    <h4 className="text-sm font-medium leading-none group-hover:text-primary transition-colors">{item.name}</h4>
                                     <p className="text-xs text-muted-foreground mt-0.5">{item.role}</p>
                                 </div>
                             </div>
-                            <ChevronRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors mr-2" />
+                            <ChevronRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-primary/50 group-hover:translate-x-0.5 transition-all" />
                         </div>
                     ))}
                 </div>

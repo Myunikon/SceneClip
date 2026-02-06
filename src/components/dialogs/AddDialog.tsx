@@ -106,7 +106,13 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
                         initial="initial"
                         animate="animate"
                         exit="exit"
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+                        transition={{
+                            type: "spring",
+                            damping: 25,
+                            stiffness: 350,
+                            mass: 0.5,
+                            duration: 0.3
+                        }}
                         className={dialogClass}
                     >
                         <form onSubmit={handleSubmit} className={formClass}>

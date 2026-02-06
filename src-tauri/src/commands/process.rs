@@ -7,6 +7,27 @@ lazy_static! {
     static ref SYSTEM: Mutex<System> = Mutex::new(System::new_all());
 }
 
+/// Collect all descendant processes of a given PID using BFS
+fn collect_process_tree(pid: Pid, sys: &System) -> Vec<Pid> {
+    let mut tree = vec![pid];
+    let mut checked_indices = 0;
+
+    // Standard BFS to find children
+    while checked_indices < tree.len() {
+        let parent = tree[checked_indices];
+        for (child_pid, process) in sys.processes() {
+            if let Some(parent_pid) = process.parent() {
+                if parent_pid == parent && !tree.contains(child_pid) {
+                    tree.push(*child_pid);
+                }
+            }
+        }
+        checked_indices += 1;
+    }
+
+    tree
+}
+
 #[command]
 pub fn kill_process_tree(pid: u32) -> Result<(), String> {
     let mut sys = SYSTEM.lock().map_err(|e| e.to_string())?;
@@ -20,21 +41,7 @@ pub fn kill_process_tree(pid: u32) -> Result<(), String> {
     }
 
     // Collect all descendants recursively
-    let mut to_kill = vec![pid];
-    let mut checked_indices = 0;
-
-    // Standard BFS to find children
-    while checked_indices < to_kill.len() {
-        let parent = to_kill[checked_indices];
-        for (child_pid, process) in sys.processes() {
-            if let Some(parent_pid) = process.parent() {
-                if parent_pid == parent && !to_kill.contains(child_pid) {
-                    to_kill.push(*child_pid);
-                }
-            }
-        }
-        checked_indices += 1;
-    }
+    let to_kill = collect_process_tree(pid, &sys);
 
     // Kill in reverse order (children first)
     for target_pid in to_kill.iter().rev() {
@@ -55,7 +62,87 @@ pub fn kill_process_tree(pid: u32) -> Result<(), String> {
     Ok(())
 }
 
-// Keep existing suspend logic for now, but consolidate imports if needed
+// ============================================================================
+// PROCESS TREE SUSPEND/RESUME - For Pause/Resume functionality
+// ============================================================================
+
+/// Suspend an entire process tree (parent + all children)
+/// This is crucial for pausing downloads that use aria2c, ffmpeg, or deno as child processes
+pub fn suspend_process_tree(pid: u32) -> Result<(), String> {
+    let mut sys = SYSTEM.lock().map_err(|e| e.to_string())?;
+    sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+
+    let root_pid = Pid::from_u32(pid);
+
+    // Check if process exists
+    if sys.process(root_pid).is_none() {
+        return Err(format!("Process {} not found", pid));
+    }
+
+    // Collect entire process tree
+    let tree = collect_process_tree(root_pid, &sys);
+
+    log::info!(
+        "Suspending process tree for PID {}: {} processes",
+        pid,
+        tree.len()
+    );
+
+    // Suspend in reverse order (children first, then parent)
+    // This prevents the parent from spawning new children while we're suspending
+    for target_pid in tree.iter().rev() {
+        let target_u32 = target_pid.as_u32();
+        if let Err(e) = suspend_single_process(target_u32) {
+            log::warn!("Failed to suspend PID {}: {}", target_u32, e);
+            // Continue with other processes - don't fail the whole operation
+        } else {
+            log::debug!("Suspended PID {}", target_u32);
+        }
+    }
+
+    Ok(())
+}
+
+/// Resume an entire process tree (parent + all children)
+pub fn resume_process_tree(pid: u32) -> Result<(), String> {
+    let mut sys = SYSTEM.lock().map_err(|e| e.to_string())?;
+    sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+
+    let root_pid = Pid::from_u32(pid);
+
+    // Check if process exists
+    if sys.process(root_pid).is_none() {
+        return Err(format!("Process {} not found", pid));
+    }
+
+    // Collect entire process tree
+    let tree = collect_process_tree(root_pid, &sys);
+
+    log::info!(
+        "Resuming process tree for PID {}: {} processes",
+        pid,
+        tree.len()
+    );
+
+    // Resume in forward order (parent first, then children)
+    // This ensures the parent is ready to handle child output when children resume
+    for target_pid in tree.iter() {
+        let target_u32 = target_pid.as_u32();
+        if let Err(e) = resume_single_process(target_u32) {
+            log::warn!("Failed to resume PID {}: {}", target_u32, e);
+            // Continue with other processes
+        } else {
+            log::debug!("Resumed PID {}", target_u32);
+        }
+    }
+
+    Ok(())
+}
+
+// ============================================================================
+// PLATFORM-SPECIFIC SINGLE PROCESS SUSPEND/RESUME
+// ============================================================================
+
 #[cfg(target_os = "windows")]
 mod implementation {
     // Windows API types
@@ -111,36 +198,75 @@ mod implementation {
 }
 
 #[cfg(target_os = "windows")]
+fn suspend_single_process(pid: u32) -> Result<(), String> {
+    implementation::suspend_process(pid)
+}
+
+#[cfg(target_os = "windows")]
+fn resume_single_process(pid: u32) -> Result<(), String> {
+    implementation::resume_process(pid)
+}
+
+// Tauri commands that expose tree-based suspend/resume
+#[cfg(target_os = "windows")]
 #[command]
 pub fn suspend_process(pid: u32) -> Result<(), String> {
-    implementation::suspend_process(pid)
+    suspend_process_tree(pid)
 }
 
 #[cfg(target_os = "windows")]
 #[command]
 pub fn resume_process(pid: u32) -> Result<(), String> {
-    implementation::resume_process(pid)
+    resume_process_tree(pid)
 }
 
-// Fallback for non-Windows (Unix uses signals)
+// ============================================================================
+// UNIX IMPLEMENTATION (macOS, Linux)
+// ============================================================================
+
 #[cfg(not(target_os = "windows"))]
-#[command]
-pub fn suspend_process(pid: u32) -> Result<(), String> {
+fn suspend_single_process(pid: u32) -> Result<(), String> {
     use std::process::Command;
-    Command::new("kill")
+    let output = Command::new("kill")
         .args(["-STOP", &pid.to_string()])
         .output()
         .map_err(|e| e.to_string())?;
+
+    if !output.status.success() {
+        return Err(format!(
+            "kill -STOP failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
     Ok(())
+}
+
+#[cfg(not(target_os = "windows"))]
+fn resume_single_process(pid: u32) -> Result<(), String> {
+    use std::process::Command;
+    let output = Command::new("kill")
+        .args(["-CONT", &pid.to_string()])
+        .output()
+        .map_err(|e| e.to_string())?;
+
+    if !output.status.success() {
+        return Err(format!(
+            "kill -CONT failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+    Ok(())
+}
+
+// Tauri commands for Unix that use tree-based suspend/resume
+#[cfg(not(target_os = "windows"))]
+#[command]
+pub fn suspend_process(pid: u32) -> Result<(), String> {
+    suspend_process_tree(pid)
 }
 
 #[cfg(not(target_os = "windows"))]
 #[command]
 pub fn resume_process(pid: u32) -> Result<(), String> {
-    use std::process::Command;
-    Command::new("kill")
-        .args(["-CONT", &pid.to_string()])
-        .output()
-        .map_err(|e| e.to_string())?;
-    Ok(())
+    resume_process_tree(pid)
 }

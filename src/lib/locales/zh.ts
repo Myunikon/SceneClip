@@ -10,6 +10,7 @@ export const zh = {
     common: {
         copy_error: "复制失败",
         pause: "暂停",
+        resume: "继续",
         cancel: "取消",
         logs: "日志",
         remove: "删除",

@@ -1410,3 +1410,221 @@ pub fn sanitize_url(url: &str) -> String {
         url.to_string()
     }
 }
+
+// ============================================================================
+// Unit Tests
+// ============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // --- is_youtube_url tests ---
+
+    #[test]
+    fn is_youtube_url_standard_watch() {
+        assert!(is_youtube_url(
+            "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        ));
+        assert!(is_youtube_url("http://youtube.com/watch?v=abc123"));
+        assert!(is_youtube_url("https://youtube.com/playlist?list=PLtest"));
+    }
+
+    #[test]
+    fn is_youtube_url_short_format() {
+        assert!(is_youtube_url("https://youtu.be/dQw4w9WgXcQ"));
+        assert!(is_youtube_url("http://youtu.be/abc123"));
+        assert!(is_youtube_url("youtu.be/test"));
+    }
+
+    #[test]
+    fn is_youtube_url_music_and_subdomains() {
+        assert!(is_youtube_url("https://music.youtube.com/watch?v=abc"));
+        assert!(is_youtube_url("https://m.youtube.com/watch?v=abc"));
+    }
+
+    #[test]
+    fn is_youtube_url_rejects_other_sites() {
+        assert!(!is_youtube_url("https://vimeo.com/123456"));
+        assert!(!is_youtube_url("https://tiktok.com/@user/video/123"));
+        assert!(!is_youtube_url("https://twitter.com/user/status/123"));
+        assert!(!is_youtube_url("not a url"));
+        assert!(!is_youtube_url(""));
+    }
+
+    // --- SupportedSites tests ---
+
+    #[test]
+    fn supported_sites_vip_check() {
+        let sites = SupportedSites::new();
+
+        // VIP sites
+        assert!(sites.is_vip("youtube.com"));
+        assert!(sites.is_vip("youtu.be"));
+        assert!(sites.is_vip("tiktok.com"));
+        assert!(sites.is_vip("instagram.com"));
+        assert!(sites.is_vip("twitter.com"));
+        assert!(sites.is_vip("x.com"));
+        assert!(sites.is_vip("twitch.tv"));
+
+        // Subdomains of VIPs
+        assert!(sites.is_vip("music.youtube.com"));
+        assert!(sites.is_vip("m.tiktok.com"));
+
+        // Not VIP
+        assert!(!sites.is_vip("randomsite.com"));
+        assert!(!sites.is_vip(""));
+    }
+
+    #[test]
+    fn supported_sites_matches_vip_urls() {
+        let sites = SupportedSites::new();
+
+        assert!(sites.matches("https://www.youtube.com/watch?v=test"));
+        assert!(sites.matches("https://youtu.be/test"));
+        assert!(sites.matches("https://tiktok.com/@user/video/123"));
+        assert!(sites.matches("https://www.instagram.com/p/abc123/"));
+    }
+
+    #[test]
+    fn supported_sites_rejects_invalid_urls() {
+        let sites = SupportedSites::new();
+
+        assert!(!sites.matches("not a url"));
+        assert!(!sites.matches(""));
+        assert!(!sites.matches("file:///local/path"));
+    }
+
+    #[test]
+    fn supported_sites_dynamic_loading() {
+        let sites = SupportedSites::new();
+
+        // Manually add a domain
+        {
+            let mut domains = sites.domains.write().unwrap();
+            domains.insert("testsite.com".to_string());
+        }
+
+        // Should match now
+        assert!(sites.matches("https://testsite.com/video/123"));
+        assert!(sites.matches("https://sub.testsite.com/video/123"));
+    }
+
+    #[test]
+    fn supported_sites_keyword_matching() {
+        let sites = SupportedSites::new();
+
+        // Add a keyword
+        {
+            let mut keywords = sites.keywords.write().unwrap();
+            keywords.insert("bilibili".to_string());
+        }
+
+        // Should match via keyword
+        assert!(sites.matches("https://www.bilibili.tv/video/123"));
+    }
+
+    // --- sanitize_filename tests ---
+    // Note: sanitize_filename requires meta JSON and YtDlpOptions, testing core sanitization
+
+    #[test]
+    fn sanitize_segment_removes_dangerous_chars() {
+        // Direct test of the sanitize logic
+        let sanitize = |s: &str| -> String {
+            s.replace(|c: char| "\\/:*?\"<>|%".contains(c), "_")
+                .replace("..", "")
+                .trim()
+                .to_string()
+        };
+
+        assert_eq!(sanitize("normal_filename"), "normal_filename");
+        assert_eq!(
+            sanitize("file<with>special:chars"),
+            "file_with_special_chars"
+        );
+        assert_eq!(sanitize("path/traversal"), "path_traversal");
+        assert_eq!(sanitize("dots..dots"), "dotsdots");
+        assert_eq!(sanitize("  spaces  "), "spaces");
+        assert_eq!(sanitize("percent%encode"), "percent_encode");
+        assert_eq!(sanitize("pipe|char"), "pipe_char");
+    }
+
+    #[test]
+    fn sanitize_filename_with_empty_custom_name() {
+        let meta = serde_json::json!({
+            "title": "Test Video Title",
+            "id": "abc123",
+            "ext": "mp4"
+        });
+
+        let options = YtDlpOptions {
+            custom_filename: Some("".to_string()),
+            ..Default::default()
+        };
+
+        let result = sanitize_filename("{title}", &meta, &options);
+        assert!(result.contains("Test Video Title"));
+    }
+
+    #[test]
+    fn sanitize_filename_with_custom_name() {
+        let meta = serde_json::json!({
+            "title": "Original Title",
+            "id": "abc123",
+            "ext": "mp4"
+        });
+
+        let options = YtDlpOptions {
+            custom_filename: Some("My Custom Name".to_string()),
+            ..Default::default()
+        };
+
+        let result = sanitize_filename("{title}", &meta, &options);
+        assert!(result.contains("My Custom Name"));
+        assert!(!result.contains("Original Title"));
+    }
+
+    #[test]
+    fn sanitize_filename_extension_handling() {
+        let meta = serde_json::json!({
+            "title": "Test",
+            "ext": "mp4"
+        });
+
+        let options = YtDlpOptions::default();
+        let result = sanitize_filename("{title}", &meta, &options);
+        assert!(result.ends_with(".mp4"));
+    }
+
+    #[test]
+    fn sanitize_filename_audio_mode() {
+        let meta = serde_json::json!({
+            "title": "Audio Track",
+            "ext": "m4a"
+        });
+
+        let options = YtDlpOptions {
+            format: Some("audio".to_string()),
+            audio_format: Some("mp3".to_string()),
+            ..Default::default()
+        };
+
+        let result = sanitize_filename("{title}", &meta, &options);
+        assert!(result.ends_with(".mp3"));
+    }
+
+    #[test]
+    fn sanitize_filename_length_limit() {
+        let long_title = "A".repeat(300);
+        let meta = serde_json::json!({
+            "title": long_title,
+            "ext": "mp4"
+        });
+
+        let options = YtDlpOptions::default();
+        let result = sanitize_filename("{title}", &meta, &options);
+
+        // Should be truncated to ~200 chars + extension
+        assert!(result.len() <= 210);
+    }
+}

@@ -1,5 +1,5 @@
 use crate::download_queue::{DownloadTask, QueueState, TaskStatus};
-use crate::ytdlp::YtDlpOptions;
+use crate::ytdlp::{SupportedSites, YtDlpOptions};
 use std::sync::Arc;
 use tauri::State;
 
@@ -9,7 +9,16 @@ pub async fn add_to_queue(
     app: tauri::AppHandle,
     url: String,
     options: YtDlpOptions,
+    sites: State<'_, Arc<SupportedSites>>,
 ) -> Result<String, String> {
+    // VALIDATE URL against supported sites FIRST
+    if !sites.matches(&url) {
+        log::warn!("[Queue] Rejected unsupported URL: {}", url);
+        return Err(format!(
+            "URL not supported. This site is not in the yt-dlp supported sites list."
+        ));
+    }
+
     let id = uuid::Uuid::new_v4().to_string();
 
     log::info!("User added new task to queue: {} (ID: {})", url, id);

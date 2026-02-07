@@ -2,16 +2,21 @@
 // Enables frontend to receive progress events from Rust backend
 
 use crate::ytdlp::{self, AppSettings, YtDlpOptions};
+use regex::Regex;
 use serde::Serialize;
 use std::collections::VecDeque;
 use std::process::Stdio;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
 use tauri::{ipc::Channel, AppHandle};
 use tokio::io::{AsyncBufReadExt, BufReader as AsyncBufReader};
 use tokio::process::Command;
 use tokio::sync::mpsc;
+
+// FFmpeg time= regex for realtime progress parsing during trim/clip
+lazy_static::lazy_static! {
+    static ref FFMPEG_TIME_RE: Regex = Regex::new(r"time=(\d+:\d+:\d+\.\d+)").unwrap();
+    static ref FFMPEG_SPEED_RE: Regex = Regex::new(r"speed=\s*(\S+)x").unwrap();
+}
 
 // SCENECLIP_PROGRESS Format:
 const SCENECLIP_IDX_DOWNLOADED: usize = 2;
@@ -317,31 +322,6 @@ pub async fn download_media_internal(
         0.0
     };
 
-    // GPU-aware encoding speed multiplier (realtime multiplier)
-    // GPU: ~3x realtime, CPU: ~1x realtime, Copy codec: ~10x realtime
-    let encode_speed_multiplier = match gpu_type.as_str() {
-        "nvidia" | "amd" | "intel" | "apple" => 3.0,
-        _ => 1.0,
-    };
-    // If video copy (not transcoding), it's much faster
-    let final_encode_speed = if !options.force_transcode.unwrap_or(false)
-        && !options.audio_normalization.unwrap_or(false)
-        && !is_gif
-    {
-        encode_speed_multiplier * 5.0 // Copy is ~5x faster than encode
-    } else {
-        encode_speed_multiplier
-    };
-    let estimated_encode_time = if clip_duration_secs > 0.0 {
-        (clip_duration_secs / final_encode_speed).max(2.0) // Minimum 2 seconds
-    } else {
-        10.0 // Default 10s for non-clipping post-processing
-    };
-
-    // Shared cancellation flag for timer task - stops timer when process completes
-    let timer_cancel = Arc::new(AtomicBool::new(false));
-    let timer_cancel_clone = timer_cancel.clone();
-
     // Spawn stdout handler
     let stdout_handle = tokio::spawn(async move {
         let reader = AsyncBufReader::new(stdout);
@@ -389,8 +369,8 @@ pub async fn download_media_internal(
                     });
                 }
 
-                // Handle download finished - start timer-based progress for clipping/trimming
-                // yt-dlp emits "finished" status when download completes, before FFmpeg trim
+                // Handle download finished - transition to post-processing phase
+                // FFmpeg progress is now parsed from stderr in realtime
                 if parts.len() >= 2 && parts[1] == "finished" && is_clipping && !is_post_processing
                 {
                     is_post_processing = true; // Prevent duplicate progress events
@@ -402,49 +382,17 @@ pub async fn download_media_internal(
                         "Trimming video..."
                     };
 
-                    // Start timer-based progress updates (80% -> 99%)
-                    let start_time = Instant::now();
-                    let sender_timer = sender_stdout.clone();
-                    let id_timer = id_clone.clone();
-                    let status_timer = trim_status.to_string();
-                    let cancel_flag = timer_cancel_clone.clone();
-
-                    // Spawn timer task for smooth progress updates
-                    tokio::spawn(async move {
-                        loop {
-                            // Check if cancelled (process completed)
-                            if cancel_flag.load(Ordering::Relaxed) {
-                                break;
-                            }
-
-                            let elapsed = start_time.elapsed().as_secs_f64();
-                            // Progress from 80% to 99% based on elapsed time
-                            let progress_ratio = (elapsed / estimated_encode_time).min(1.0);
-                            let current_percent = 80.0 + (progress_ratio * 19.0); // 80% + up to 19%
-
-                            let remaining_secs = (estimated_encode_time - elapsed).max(0.0) as u64;
-
-                            let _ = sender_timer.send(DownloadEvent::Progress {
-                                id: id_timer.clone(),
-                                percent: current_percent,
-                                speed: "N/A".to_string(),
-                                eta: if remaining_secs > 0 {
-                                    format!("~{}s", remaining_secs)
-                                } else {
-                                    "Finishing...".to_string()
-                                },
-                                total_size: "N/A".to_string(),
-                                status: status_timer.clone(),
-                                speed_raw: None,
-                                eta_raw: Some(remaining_secs),
-                            });
-
-                            if progress_ratio >= 1.0 {
-                                break; // Stop when estimated time reached
-                            }
-
-                            tokio::time::sleep(Duration::from_millis(500)).await;
-                        }
+                    // Send initial 80% progress to indicate trim phase started
+                    // Realtime progress (80-99%) now comes from stderr FFmpeg time= parsing
+                    let _ = sender_stdout.send(DownloadEvent::Progress {
+                        id: id_clone.clone(),
+                        percent: 80.0,
+                        speed: "N/A".to_string(),
+                        eta: "Processing...".to_string(),
+                        total_size: "N/A".to_string(),
+                        status: trim_status.to_string(),
+                        speed_raw: None,
+                        eta_raw: None,
                     });
                 }
             } else if line.contains("SCENECLIP_PP;") {
@@ -483,27 +431,74 @@ pub async fn download_media_internal(
         }
     });
 
-    // Spawn stderr handler (Capture last lines)
+    // Clone values for stderr handler that needs to parse FFmpeg progress
+    let id_stderr = id.clone();
+    let sender_stderr = sender.clone();
+    let stderr_is_clipping = is_clipping;
+    let stderr_clip_duration = clip_duration_secs;
+
+    // Spawn stderr handler (Parse FFmpeg progress for realtime trim updates)
     let stderr_handle = tokio::spawn(async move {
         let reader = AsyncBufReader::new(stderr);
         let mut lines = reader.lines();
         let mut error_buffer: VecDeque<String> = VecDeque::new();
+        let mut last_percent: f64 = 80.0;
 
         while let Ok(Some(line)) = lines.next_line().await {
-            // Keep last 20 lines
+            // Parse FFmpeg time= for realtime trim progress
+            if stderr_is_clipping && stderr_clip_duration > 0.0 {
+                if let Some(caps) = FFMPEG_TIME_RE.captures(&line) {
+                    if let Some(time_match) = caps.get(1) {
+                        let time_str = time_match.as_str();
+                        let current_secs = parse_time_to_seconds(Some(time_str));
+
+                        // Calculate progress: 80% (download done) + up to 19% (trim progress)
+                        let trim_progress = (current_secs / stderr_clip_duration).min(1.0);
+                        let percent = 80.0 + (trim_progress * 19.0);
+
+                        // Throttle: only send if changed by at least 1%
+                        if (percent - last_percent).abs() > 1.0 {
+                            // Parse speed from same line if available
+                            let speed_str = FFMPEG_SPEED_RE
+                                .captures(&line)
+                                .and_then(|c| c.get(1))
+                                .map(|m| format!("{}x", m.as_str()))
+                                .unwrap_or_else(|| "N/A".to_string());
+
+                            let remaining_secs =
+                                ((1.0 - trim_progress) * stderr_clip_duration) as u64;
+
+                            let _ = sender_stderr.send(DownloadEvent::Progress {
+                                id: id_stderr.clone(),
+                                percent,
+                                speed: speed_str,
+                                eta: if remaining_secs > 0 {
+                                    format!("~{}s", remaining_secs)
+                                } else {
+                                    "Finishing...".to_string()
+                                },
+                                total_size: "N/A".to_string(),
+                                status: "Trimming video...".to_string(),
+                                speed_raw: None,
+                                eta_raw: Some(remaining_secs),
+                            });
+                            last_percent = percent;
+                        }
+                    }
+                }
+            }
+
+            // Keep last 20 lines for error reporting
             if error_buffer.len() >= 20 {
                 error_buffer.pop_front();
             }
-            error_buffer.push_back(line.clone());
+            error_buffer.push_back(line);
         }
         error_buffer
     });
 
     // Wait for process to exit
     let status_res = child.wait().await;
-
-    // Cancel any running timer task
-    timer_cancel.store(true, Ordering::Relaxed);
 
     // Wait for streams (ignore errors from them closing)
     let _ = stdout_handle.await;

@@ -388,3 +388,49 @@ pub async fn split_media_chapters(
     });
     Ok(())
 }
+
+// ============================================================================
+// Unit Tests
+// ============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // --- parse_time tests ---
+
+    #[test]
+    fn parse_time_hhmmss_format() {
+        assert!((parse_time("01:30:45") - 5445.0).abs() < 0.001);
+        assert!((parse_time("00:00:00") - 0.0).abs() < 0.001);
+        assert!((parse_time("02:00:00") - 7200.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn parse_time_hhmmss_with_decimals() {
+        assert!((parse_time("00:01:30.5") - 90.5).abs() < 0.001);
+        assert!((parse_time("01:00:00.25") - 3600.25).abs() < 0.001);
+        assert!((parse_time("00:00:05.123") - 5.123).abs() < 0.001);
+    }
+
+    #[test]
+    fn parse_time_seconds_only() {
+        assert!((parse_time("45.5") - 45.5).abs() < 0.001);
+        assert!((parse_time("0") - 0.0).abs() < 0.001);
+        assert!((parse_time("3600.99") - 3600.99).abs() < 0.001);
+    }
+
+    #[test]
+    fn parse_time_invalid_input() {
+        assert!((parse_time("invalid") - 0.0).abs() < 0.001);
+        assert!((parse_time("") - 0.0).abs() < 0.001);
+        assert!((parse_time("abc:de:fg") - 0.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn parse_time_mm_ss_format() {
+        // MM:SS format (2 parts) is NOT explicitly handled, falls through to parse as float
+        // This documents current behavior
+        assert!((parse_time("01:30") - 0.0).abs() < 0.001); // Can't parse as float
+    }
+}

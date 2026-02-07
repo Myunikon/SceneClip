@@ -1,38 +1,40 @@
 import { useRef, useEffect } from 'react'
-import { Keyboard, X } from 'lucide-react'
+import { Keyboard, Command, Settings, History, Download, Maximize, Key } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { getShortcutSymbol, getShiftSymbol, getAltSymbol, IS_MAC } from '../../lib/platform'
+import { cn } from '../../lib/utils'
 
 interface ShortcutsPopoverProps {
     isOpen: boolean
     onClose: () => void
-    anchorRef?: React.RefObject<HTMLButtonElement>
 }
 
 export function ShortcutsPopover({ isOpen, onClose }: ShortcutsPopoverProps) {
     const { t } = useTranslation()
     const popoverRef = useRef<HTMLDivElement>(null)
 
-    // Dynamic shortcuts list
+    // Unified Shortcuts List (No Groups per user request)
     const shortcuts = [
-        { keys: [getShortcutSymbol(), 'N'], action: 'new_download' },
-        { keys: [getShortcutSymbol(), ','], action: 'settings' },
-        // History: Cmd+Shift+H (Mac) vs Ctrl+H (Win)
-        {
-            keys: IS_MAC ? [getShortcutSymbol(), getShiftSymbol(), 'H'] : [getShortcutSymbol(), 'H'],
-            action: 'history'
-        },
-        // Downloads: Cmd+Opt+L (Mac) vs Ctrl+J (Win)
+        // Primary Actions
+        { keys: [getShortcutSymbol(), 'N'], label: t('downloads.new_download'), icon: Command },
+
+        // Navigation (In Order)
         {
             keys: IS_MAC ? [getShortcutSymbol(), getAltSymbol(), 'L'] : [getShortcutSymbol(), 'J'],
-            action: 'downloads'
+            label: t('nav.downloads'),
+            icon: Download
         },
-        // Fullscreen: Cmd+Ctrl+F (Mac) vs F11 (Win/Web)
+        { keys: [getShortcutSymbol(), 'K'], label: t('nav.keyring') || "Keyring", icon: Key },
         {
-            keys: IS_MAC ? ['Fn', 'F'] : ['F11'],
-            action: 'fullscreen'
+            keys: IS_MAC ? [getShortcutSymbol(), getShiftSymbol(), 'H'] : [getShortcutSymbol(), 'H'],
+            label: t('history.title'),
+            icon: History
         },
+        { keys: [getShortcutSymbol(), ','], label: t('nav.settings'), icon: Settings },
+
+        // Window Controls
+        { keys: IS_MAC ? ['Fn', 'F'] : ['F11'], label: t('guide.sections.shortcuts_fullscreen'), icon: Maximize },
     ]
 
     // Close on click outside
@@ -42,9 +44,7 @@ export function ShortcutsPopover({ isOpen, onClose }: ShortcutsPopoverProps) {
                 onClose()
             }
         }
-        if (isOpen) {
-            document.addEventListener('mousedown', handleClickOutside)
-        }
+        if (isOpen) document.addEventListener('mousedown', handleClickOutside)
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [isOpen, onClose])
 
@@ -53,66 +53,51 @@ export function ShortcutsPopover({ isOpen, onClose }: ShortcutsPopoverProps) {
         const handleEsc = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose()
         }
-        if (isOpen) {
-            document.addEventListener('keydown', handleEsc)
-        }
+        if (isOpen) document.addEventListener('keydown', handleEsc)
         return () => document.removeEventListener('keydown', handleEsc)
     }, [isOpen, onClose])
-
-    const getActionLabel = (action: string) => {
-        switch (action) {
-            case 'new_download': return t('downloads.new_download')
-            case 'settings': return t('nav.settings')
-            case 'history': return t('history.title')
-            case 'downloads': return t('nav.downloads')
-            case 'fullscreen': return t('guide.sections.shortcuts_fullscreen')
-            case 'devtools': return 'DevTools'
-            case 'close_dialog': return t('shortcuts.close')
-            default: return action
-        }
-    }
 
     return (
         <AnimatePresence>
             {isOpen && (
                 <motion.div
                     ref={popoverRef}
-                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute top-14 right-24 z-50 w-64 p-4 bg-background/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl"
+                    initial={{ opacity: 0, scale: 0.95, y: -8, filter: "blur(4px)" }}
+                    animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+                    exit={{ opacity: 0, scale: 0.95, y: -8, filter: "blur(4px)" }}
+                    transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                    style={{ transformOrigin: "top right" }}
+                    className={cn(
+                        "absolute top-14 right-20 z-50 w-72 flex flex-col",
+                        "bg-popover/80 backdrop-blur-xl border border-white/10",
+                        "rounded-xl shadow-2xl overflow-hidden ring-1 ring-black/5"
+                    )}
                 >
-                    <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-semibold text-sm flex items-center gap-2">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-border/10 bg-white/5">
+                        <h3 className="font-semibold text-xs text-foreground/90 flex items-center gap-2">
                             <Keyboard className="w-4 h-4 text-primary" />
                             {t('shortcuts.title')}
                         </h3>
-                        <button
-                            onClick={onClose}
-                            className="p-1 hover:bg-secondary rounded-full transition-colors"
-                        >
-                            <X className="w-3.5 h-3.5 text-muted-foreground" />
-                        </button>
+                        <div className="text-[10px] text-muted-foreground font-mono opacity-50">ESC</div>
                     </div>
 
-                    <div className="space-y-2">
-                        {shortcuts.map((shortcut, i) => (
+                    {/* Content */}
+                    <div className="p-2 space-y-0.5">
+                        {shortcuts.map((item, i) => (
                             <div
                                 key={i}
-                                className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-secondary/50 transition-colors"
+                                className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-white/5 transition-colors group cursor-default"
                             >
-                                <span className="text-xs text-muted-foreground">
-                                    {getActionLabel(shortcut.action)}
-                                </span>
+                                <div className="flex items-center gap-2.5">
+                                    <item.icon className="w-3.5 h-3.5 text-muted-foreground/70 group-hover:text-primary transition-colors" />
+                                    <span className="text-xs font-medium text-foreground/80 group-hover:text-foreground transition-colors">
+                                        {item.label}
+                                    </span>
+                                </div>
                                 <div className="flex items-center gap-1">
-                                    {shortcut.keys.map((key, j) => (
-                                        <kbd
-                                            key={j}
-                                            className="px-1.5 py-0.5 bg-secondary border border-border rounded text-xs font-mono font-medium min-w-[20px] text-center"
-                                        >
-                                            {key}
-                                        </kbd>
+                                    {item.keys.map((key, k) => (
+                                        <KeyCap key={k}>{key}</KeyCap>
                                     ))}
                                 </div>
                             </div>
@@ -121,5 +106,20 @@ export function ShortcutsPopover({ isOpen, onClose }: ShortcutsPopoverProps) {
                 </motion.div>
             )}
         </AnimatePresence>
+    )
+}
+
+// Apple-style Keycap Component
+function KeyCap({ children }: { children: React.ReactNode }) {
+    return (
+        <div className={cn(
+            "min-w-[20px] h-5 flex items-center justify-center px-1.5",
+            "text-[10px] font-medium font-mono text-foreground/90",
+            "bg-secondary/50 border-b-2 border-border/60 rounded-[4px]", // The key physical look
+            "shadow-sm",
+            "select-none"
+        )}>
+            {children}
+        </div>
     )
 }

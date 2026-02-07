@@ -15,14 +15,29 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
 
     return {
         tasks: [],
+        tasksById: {},
 
-        // --- QUEUE COMMANDS (Rust) ---
+        // --- OPTIMIZED QUEUE COMMANDS (Rust) ---
+
+        getTaskById: (id: string) => get().tasksById[id],
 
         initializeQueue: async () => {
+            // Helper to normalize tasks array to Record
+            const normalizeTasks = (tasks: DownloadTask[]): Record<string, DownloadTask> => {
+                const byId: Record<string, DownloadTask> = {}
+                for (const task of tasks) {
+                    byId[task.id] = task
+                }
+                return byId
+            }
+
             // 1. Fetch initial state
             try {
                 const currentQueue = await invoke<DownloadTask[]>('get_queue_state');
-                set({ tasks: currentQueue });
+                set({
+                    tasks: currentQueue,
+                    tasksById: normalizeTasks(currentQueue)
+                });
             } catch (e) {
                 console.error("Failed to fetch queue state:", e);
             }
@@ -44,15 +59,20 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
                 if (now - lastUpdate > THROTTLE_MS) {
                     // Leading edge: Update immediately if outside window
                     console.log("[VideoSlice] queue_update RECEIVED:", event.payload?.length || 0, "tasks")
-                    set({ tasks: event.payload })
+                    set({
+                        tasks: event.payload,
+                        tasksById: normalizeTasks(event.payload)
+                    })
                     lastUpdate = now
                 } else {
                     // Trailing edge: Schedule update for end of window
-                    // This ensures we never miss the "100%" or "Complete" final state
                     const remaining = THROTTLE_MS - (now - lastUpdate)
                     trailingTimeout = setTimeout(() => {
                         console.log("[VideoSlice] queue_update TRAILING:", event.payload?.length || 0, "tasks")
-                        set({ tasks: event.payload })
+                        set({
+                            tasks: event.payload,
+                            tasksById: normalizeTasks(event.payload)
+                        })
                         lastUpdate = Date.now()
                         trailingTimeout = null
                     }, remaining)

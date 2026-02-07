@@ -131,6 +131,8 @@ export interface SystemSlice {
 
 export interface VideoSlice {
   tasks: DownloadTask[]
+  tasksById: Record<string, DownloadTask>  // O(1) lookup optimization
+  getTaskById: (id: string) => DownloadTask | undefined
   initializeQueue: () => Promise<void>
   addTask: (url: string, options: DownloadOptions) => Promise<void>
   stopTask: (id: string) => Promise<void>

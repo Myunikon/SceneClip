@@ -107,6 +107,7 @@ export const en = {
             advanced: "System",
             logs: "Logs",
             guide: "Guide",
+            security: "Security",
             about: "About"
         },
         general: {
@@ -775,127 +776,126 @@ export const en = {
         compress: "Export",
         delete: "Delete"
     },
+    // Updated Guide Content (New Structure)
     guide: {
         title: "User Manual",
         subtitle: "Master SceneClip in minutes.",
-        menu: {
-            start: "Getting Started",
-            clip: "Clipping & Edit",
-            advanced: "Advanced",
-            faq: "Common Errors",
-        },
-        compress: {
-            title_video: "Compress Video",
-            title_audio: "Convert Audio",
-            title_image: "Optimize Image",
-
-            lbl_resolution: "Resolution",
-            lbl_quality: "Quality (CRF)",
-            lbl_speed: "Speed",
-            lbl_encoder: "Encoder",
-            lbl_bitrate: "Bitrate",
-
-            preset_wa: "WhatsApp Status",
-            preset_wa_desc: "Small size, good for mobile (720p)",
-            preset_wa_desc_audio: "Voice Note Quality (64k)",
-
-            preset_social: "Social Media",
-            preset_social_desc: "Balanced quality & size (1080p)",
-            preset_social_desc_audio: "Standard Music (128k)",
-
-            preset_archive: "Archive / Editing",
-            preset_archive_desc: "High quality, larger size",
-            preset_archive_desc_audio: "High Fidelity (320k)",
-
-            btn_cancel: "Cancel",
-            btn_start: "Start Compression",
-
-            advanced: "Advanced Settings",
-            file_missing: "File Not Found",
-            file_missing_desc: "The source file is missing.",
-            browse_file: "Browse File...",
-            checking_file: "Checking file...",
-            file_relocated: "File path updated",
-
-            original_size: "Original Size",
-            format: "Format",
-            unknown: "Unknown",
-            auto: "Auto",
-
-            double_compression_warning: "This file is already compressed. Re-compressing may reduce quality further.",
-
-            opt_voice: "Voice",
-            opt_low: "Low",
-            opt_standard: "Standard",
-            opt_good: "Good",
-            opt_high: "High",
-            opt_max: "Max",
-
-            opt_original_no_resize: "Original (No Resize)",
-
-            opt_auto_detect: "Auto (Detect)",
-            opt_cpu: "CPU (x264/Software)",
-
-            opt_ultrafast: "Ultrafast (Low Quality)",
-            opt_veryfast: "Very Fast",
-            opt_medium: "Medium (Default)",
-            opt_slow: "Slow (Better Compression)",
-            opt_veryslow: "Very Slow (Best Compression)",
-
-            quality_original: "Original",
-            quality_standard: "Standard",
-            quality_low: "Low",
-            est_size: "Est. Output",
-            drop_hint: "Drop new file to replace",
-            calculating: "Calculating...",
-            approx: "~"
-        },
-        steps: {
-            smart: {
-                title: "Smart Detection",
-                desc: "No need to paste manually! Copy a link and SceneClip detects it automatically."
-            },
-            clip: {
-                title: "Precision Clipping",
-                desc: "Save data! Use the 'Scissors' icon to download only the part you need."
-            },
-            format: {
-                title: "Format & Convert",
-                desc: "Choose your flavor: 4K Video, Clear MP3 Audio, or instant GIF memes."
-            },
-            terminal: {
-                title: "Terminal & Logs",
-                desc: "Download failed? Check the 'Terminal' tab for raw debug logs."
-            }
-        },
         sections: {
-            started: "Quick Start",
-            single: "Paste & Download",
-            single_text: "1. Copy a video URL.\n2. Click (+) or press Ctrl+N.\n3. The app auto-detects the link.\n4. Choose format and click Download.",
-            clipping: "Clip & Trim",
-            clipping_text: "Download only what you need.\n1. Open Add Dialog.\n2. Expand 'Clip Video'.\n3. Set Start/End times (e.g., 10 to 60 for a 50s clip).\n4. Download to get just that segment.",
-            power: "Advanced Features",
-            turbo: "Turbo Mode",
-            turbo_text: "Multi-threaded downloading is enabled by default for maximum speed. No setup needed.",
-            queue: "Queue System",
-            queue_text: "Downloads are queued automatically. Default limit is 3 concurrent tasks (Adjustable in Settings > Network).",
-            renaming: "Smart Renaming",
-            renaming_text: "Customize filenames in Settings > Downloads.\nVariables: {title}, {uploader}, {id}, {width}, {height}.",
-            troubleshoot: "Troubleshooting",
-            ts_fail: "Download Failed?",
-            ts_fail_text: "- Check internet.\n- Check disk space.\n- Retrying usually fixes temporary network glitches.",
-            ts_restart: "Reset Settings",
-            ts_restart_text: "Settings > Advanced > Reset to Defaults.",
-            auth_guide: "Age-Restricted Content",
-            auth_guide_text: "Use 'System Browser Session' in Settings > Advanced > Source to download age-gated videos using your browser's cookies.",
-            shortcuts: "Keyboard Shortcuts",
-            shortcuts_list: "- **Ctrl + N**: New Download\n- **Ctrl + ,**: Settings\n- **Ctrl + H**: History\n- **Ctrl + D**: Downloads View\n- **F11**: Toggle Fullscreen\n- **Esc**: Close Dialogs",
-            shortcuts_fullscreen: "Toggle Fullscreen",
-            replay_tour: "Replay Tour",
-            visual_placeholder: "Visual Demo coming soon",
-            sponsorblock: "SponsorBlock",
-            sponsorblock_text: "Auto-skip non-content segments like benchmarks, intros, and more.",
-            got_it: "Close Guide"
+            overview: "Overview",
+            features: "Features",
+            advanced: "Advanced",
+            troubleshooting: "Fix Issues",
+
+            // Descriptions
+            overview_desc: "Quick Start & Supported Platforms",
+            features_desc: "Clipping, GIF Maker, Keyring, Batch",
+            advanced_desc: "SponsorBlock, Subtitles, System",
+            troubleshooting_desc: "Common errors and solutions",
+            shortcuts: "Shortcuts",
+            shortcuts_fullscreen: "Toggle Fullscreen"
+        },
+        // Content for GuideModal
+        content: {
+            overview: {
+                title: "The Ultimate GUI for yt-dlp",
+                desc: "Download videos, extract audio, and create precise clips from thousands of sites without touching a terminal.",
+                smart_workflow: "Smart Detection Workflow",
+                steps: {
+                    s1_title: "Copy Link",
+                    s1_desc: "Copy any video URL from your browser (YouTube, Twitch, etc).",
+                    s2_title: "Auto-Detect",
+                    s2_desc: "SceneClip reads your clipboard and auto-pastes the link.",
+                    s3_title: "Download",
+                    s3_desc: "One click for Best Quality. Use 'List' icon for batch mode."
+                },
+                formats: {
+                    title: "Format Selection",
+                    best: "Best:",
+                    best_desc: "Auto-merges highest quality Video + Audio (recommended).",
+                    audio: "Audio Only:",
+                    audio_desc: "Extracts MP3/M4A for music or podcasts.",
+                    custom: "Custom:",
+                    custom_desc: "Manually select 1080p/720p and MP4/MKV container."
+                },
+                supported: {
+                    title: "Supported Platforms",
+                    major: "Major Sites:",
+                    major_list: "YouTube, Twitch, Instagram, TikTok, Twitter (X), Facebook, Reddit, SoundCloud, Bilibili, Vimeo.",
+                    streaming: "Streaming:",
+                    streaming_list: "Crunchyroll, Disney+, Discovery+, HBO (free content), and many TV-network sites.",
+                    full_list: "View full list of 1000+ supported sites"
+                }
+            },
+            features: {
+                clipping: {
+                    title: "Clipping & Trimming",
+                    desc: "Download only what you need. Enable the Trim toggle, then set Start/End timestamps to extract a specific segment without downloading the full video."
+                },
+                gif: {
+                    title: "GIF Maker",
+                    desc: "Turn any video segment into an optimized GIF. Select the GIF tab. Limit: 30 seconds max. Adjustable FPS and scale."
+                },
+                keyring: {
+                    title: "Keyring Manager",
+                    desc: "Securely store credentials for Premium/Age-gated content. Uses your OS native vault (Windows Credential Manager, macOS Keychain, or Linux Secret Service)."
+                },
+                batch: {
+                    title: "Batch Downloading",
+                    desc: "Queue multiple videos at once. Click the List Icon next to the URL bar to paste a list of links or import a .txt file."
+                },
+                scheduler: {
+                    title: "Scheduler",
+                    desc: "Schedule downloads for later. Access via Enhancements > Schedule. *App must remain open.*"
+                }
+            },
+            advanced: {
+                enhancements: "Enhancements",
+                network: "Network & System",
+                items: {
+                    sponsorblock: "SponsorBlock",
+                    sponsorblock_desc: "Auto-skip sponsors, intros, and outros (YouTube only).",
+                    embed_subs: "Embed Subtitles",
+                    embed_subs_desc: "Merge Soft-Subs or download .srt files.",
+                    loudness: "Loudness Norm",
+                    loudness_desc: "Normalize audio to EBU R128 broadcast standard.",
+                    postproc: "Post-Processing",
+                    postproc_desc: "Use custom FFmpeg presets for conversion.",
+                    aria2c: "Aria2c Accelerator",
+                    aria2c_desc: "Multi-threaded downloading for maximum speed.",
+                    cookies: "Cookies Import",
+                    cookies_desc: "Use browser cookies to access Premium content.",
+                    gpu: "GPU Acceleration",
+                    gpu_desc: "Hardware-accelerated transcoding for faster clips."
+                }
+            },
+            troubleshooting: {
+                stuck: {
+                    title: "Download Stuck at 100%?",
+                    desc: "Processing large files (4K/8K) involves merging video+audio streams. This is normal and depends on your CPU speed. Please wait."
+                },
+                signin: {
+                    title: "Sign in / Bot Check?",
+                    desc: "YouTube may throttle bots. Go to Settings > Advanced > Source and select your browser to use its cookies."
+                },
+                permission: {
+                    title: "Permission Denied?",
+                    desc: "Avoid saving to optimized system folders (e.g. C:\\Program Files or /usr/local). Use your User Downloads or Documents folder. Check Security Software exclusions."
+                },
+                slow: {
+                    title: "Slow Speeds?",
+                    desc: "Try enabling Aria2c in Network Settings to force multi-connection downloading."
+                },
+                geoblock: {
+                    title: "Video Unavailable / Geo-Block?",
+                    desc: "Use Proxy settings (Network tab) or a VPN. Do not use Smart Proxy and Manual Proxy together."
+                },
+                playlist: {
+                    title: "Playlist stopped at 5?",
+                    desc: "You likely pasted the link in Single URL mode. Use the Batch (List Icon) tab for playlists."
+                },
+                report_btn: "Report a Bug on GitHub",
+                report_desc: "Attach logs from the Terminal tab"
+            }
         }
     },
     notifications: {
@@ -966,10 +966,20 @@ export const en = {
         file_desc: "File may have been moved or deleted.",
         open_folder: "Open Folder"
     },
-    // NEW KEYS (Moved to root)
     shortcuts: {
         title: "Keyboard Shortcuts",
-        close: "Close"
+        close: "Close",
+        groups: {
+            general: "General",
+            navigation: "Navigation"
+        },
+        actions: {
+            settings: "Settings", // Backup if nav.settings missing
+            history: "History",
+            downloads: "Downloads",
+            new_download: "New Download",
+            fullscreen: "Toggle Fullscreen"
+        }
     },
 
     terminal: {
@@ -1009,26 +1019,10 @@ export const en = {
         switch_tooltip_single: "Switch to single URL"
     },
 
+    // Legacy content kept if needed, but new logic uses guide.content
     guide_content: {
         help_center: "Help Center",
-        pro_tip_title: "Pro Tip: Drag & Drop",
-        pro_tip_desc: "Drag any .txt file containing links into the app to start a batch download instantly.",
-        how_to_use: "How to Use:",
-        clip_step1: "Toggle <strong>\"Clip Mode\"</strong> (Scissors icon).",
-        clip_step2: "Wait for metadata to load capability.",
-        clip_step3: "Drag the <strong>Range Slider</strong> to pick start/end points.",
-        clip_step4: "GIF format is available for short clips.",
-        term_logs_title: "Terminal Logs",
-        term_logs_desc: "View raw output from yt-dlp and FFmpeg. Essential for debugging errors.",
-        cookies_title: "Browser Cookies",
-        cookies_desc: "Download Age-Restricted content by using cookies from your browser (Chrome/Firefox).",
-
-        faq_1_q: "Download stuck at 100%?",
-        faq_1_a: "The app is likely merging video and audio streams. This can take a while for large files (4K/8K).",
-        faq_2_q: "Sign in to confirm your age?",
-        faq_2_a: "Go to Settings > Advanced > Source and select your browser to use its cookies.",
-        faq_3_q: "Slow download speed?",
-        faq_3_a: "Try changing 'Connection Type' in Network Settings to 'Aggressive'. Warning: May cause temporary IP bans."
+        // ... kept for fallback if needed
     },
 
     dialog_status: {

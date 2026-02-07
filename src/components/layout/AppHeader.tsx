@@ -27,7 +27,7 @@ export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeade
                     : 'downloads';
 
     return (
-        <header data-tauri-drag-region className="relative h-16 border-b border-border/50 bg-background/95 shrink-0 grid grid-cols-[1fr_auto_1fr] items-center px-6 z-50 gap-4 cq-header">
+        <header data-tauri-drag-region className="relative h-16 border-b border-border/50 bg-background/95 shrink-0 grid grid-cols-[1fr_auto_1fr] items-center px-6 z-50 gap-4 cq-header will-change-transform">
             {/* Left: Branding */}
             <div className="flex justify-start items-center gap-3 header-branding">
                 <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg shadow-lg shadow-orange-500/20 flex items-center justify-center shrink-0">

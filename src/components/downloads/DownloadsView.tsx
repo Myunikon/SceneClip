@@ -31,7 +31,9 @@ export function DownloadsView() {
         <ErrorBoundary fallback={<div className="p-4 text-center text-red-500">Failed to render list</div>}>
           <div className="flex flex-col">
             {taskIds.map(taskId => (
-              <DownloadItem key={taskId} taskId={taskId} />
+              <div key={taskId} className="content-visibility-auto">
+                <DownloadItem taskId={taskId} />
+              </div>
             ))}
           </div>
         </ErrorBoundary>

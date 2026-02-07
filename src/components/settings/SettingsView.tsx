@@ -260,6 +260,7 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
                                 />
                             )}
 
+
                             <div className={cn("h-[calc(100vh-200px)] min-h-[400px] animate-in fade-in slide-in-from-bottom-2", activeTab === 'logs' ? 'block' : 'hidden')}>
                                 <TerminalView />
                             </div>

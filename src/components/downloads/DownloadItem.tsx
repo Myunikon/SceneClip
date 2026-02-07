@@ -19,9 +19,8 @@ interface DownloadItemProps {
 export function DownloadItem({ taskId }: DownloadItemProps) {
     const { t } = useTranslation()
 
-    // Context7 Pattern: Each DownloadItem subscribes to its own task
-    // Only re-renders when THIS task changes, not when other tasks change
-    const task = useAppStore(useShallow((s) => s.tasks.find(t => t.id === taskId)))
+    // O(1) lookup optimization: Use tasksById instead of array.find()
+    const task = useAppStore(useShallow((s) => s.tasksById[taskId]))
     const { pauseTask, stopTask, resumeTask, retryTask, clearTask, settings } = useAppStore(
         useShallow((s) => ({
             pauseTask: s.pauseTask,

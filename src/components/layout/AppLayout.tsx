@@ -153,7 +153,7 @@ export function AppLayout({ children, isOffline }: AppLayoutProps) {
 
 
       {/* Content Container - Ensure above background */}
-      <div className="relative z-10 w-full h-full flex flex-col">
+      <div className="relative z-10 w-full h-full flex flex-col will-change-transform">
         {children}
       </div>
     </div >

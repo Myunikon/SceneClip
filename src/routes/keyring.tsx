@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { motion } from 'framer-motion'
-import { KeyringManager } from '../components/settings'
+import { KeyringManager } from '../components/settings/KeyringManager'
 import { useAppStore } from '../store'
 import { AppSettings } from '../store/slices/types'
 import { useTranslation } from 'react-i18next'

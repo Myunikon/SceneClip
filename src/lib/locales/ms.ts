@@ -110,7 +110,8 @@ export const ms = {
             advanced: "Sistem",
             logs: "Log",
             guide: "Panduan",
-            about: "Tentang"
+            security: "Keselamatan",
+            about: "Mengenai"
         },
         general: {
             language_theme: "Bahasa & Tema",
@@ -716,60 +717,136 @@ export const ms = {
         delete: "Padam"
     },
     guide: {
-        title: "Manual Lengkap",
-        subtitle: "Segala ilmu yang anda perlukan untuk menguasai SceneClip.",
-        menu: {
-            start: "Bermula",
-            clip: "Klip & Edit",
-            advanced: "Lanjutan",
-            faq: "Masalah Lazim"
-        },
-        steps: {
-            smart: {
-                title: "Pengesanan Pintar",
-                desc: "Salin pautan, dan SceneClip akan mengesannya secara automatik."
-            },
-            clip: {
-                title: "Potongan Tepat",
-                desc: "Jimat data! Muat turun bahagian yang anda perlukan sahaja."
-            },
-            format: {
-                title: "Pilih Format",
-                desc: "Video 4K, Audio MP3 Jelas, atau GIF Segera."
-            },
-            terminal: {
-                title: "Terminal & Log",
-                desc: "Muat turun gagal? Semak tab Terminal untuk log ralat."
-            }
-        },
+        title: "Panduan Pengguna",
+        subtitle: "Kuasai SceneClip dalam beberapa minit.",
         sections: {
-            started: "Bermula",
-            single: "Cara Muat Turun Video",
-            single_text: "1. Salin URL video YouTube yang ingin dimuat turun.\n2. Klik butang (+) di penjuru kanan atas.\n3. Apl akan mengesan pautan secara automatik dari papan keratan (Magic Paste).\n4. Pilih format yang diinginkan:\n   - Video Terbaik: Kualiti tertinggi (MP4/WebM).\n   - Audio Sahaja: Tukar kepada MP3 atau WAV.\n   - GIF: Cipta animasi GIF pendek.\n5. Klik 'Muat Turun' untuk memulakan proses.",
-            clipping: "Memotong Video (Clipping)",
-            clipping_text: "Cipta klip pendek viral tanpa perlu memuat turun video penuh.\n\nCara Penggunaan:\n1. Buka dialog 'Tambah Muat Turun'.\n2. Klik 'Potong Video' (Clip Range) untuk membuka pilihan.\n3. Masukkan Masa Mula dan Tamat dalam saat.\n4. Klik Muat Turun.\n\nContoh:\n- Mula: 60 (minit ke-1)\n- Tamat: 120 (minit ke-2)\nApl hanya akan mengambil potongan 1 minit tersebut.",
-            power: "Ciri Kuasa",
-            turbo: "Mod Turbo (Berbilang Bebenang)",
-            turbo_text: "Mod Turbo menggunakan enjin tersuai berprestasi tinggi (seperti IDM/Aria2).\n\n- Cara Kerja: Memecahkan fail kepada 8 bahagian berasingan (hirisan pizza) dan memuat turunnya secara serentak.\n- Kelajuan: Boleh mencapai 10x lebih pantas berbanding pelayar biasa.\n- Had: Jika anda mengalami ralat '403 Forbidden' atau gagal serta-merta, YouTube mungkin menyekat IP anda sementara kerana terlalu banyak sambungan. Matikan Mod Turbo untuk beralih ke 'Mod Selamat' (1 bebenang).",
-            queue: "Pengurusan Barisan",
-            queue_text: "Tab 'Muat Turun' memaparkan tugasan aktif. Tab 'Sejarah' menyimpan fail selesai.\n- Serentak: Secara lalai, 3 muat turun berjalan serentak. Anda boleh ubah had ini di Tetapan > Rangkaian.\n- Sambung Semula (Resume): Jika muat turun gagal atau dihentikan, klik butang 'Sambung' untuk meneruskan dari kedudukan terakhir.",
-            renaming: "Cara Nama Fail Automatik",
-            renaming_text: "Sesuaikan penamaan fail automatik mengikut citarasa anda.\nPergi ke Tetapan > Muat Turun > Templat Nama Fail.\n\nPembolehubah Tersedia:\n- {title}: Tajuk Video\n- {uploader}: Nama Saluran\n- {id}: ID Video unik\n- {ext}: Sambungan Fail\n\nCorak Disyorkan:\n[{uploader}] {title}.{ext}",
-            troubleshoot: "Selesaikan Masalah Umum",
-            ts_fail: "Kenapa muat turun gagal?",
-            ts_fail_text: "Penyelesaian Umum:\n1. Semak sambungan internet anda.\n2. Matikan Mod Turbo: Sesetengah ISP atau wilayah menyekat sambungan berbilang ke YouTube.\n3. Kandungan Dewasa/Terhad: Gunakan tab 'Pelayar' untuk log masuk ke akaun YouTube anda, kemudian cuba muat turun lagi.\n4. Semak Tetapan Proksi jika anda menggunakannya.",
-            ts_restart: "Kenapa apl mula semula?",
-            ts_restart_text: "Jika mesej 'Apl Mula Semula' muncul, anda mungkin berada dalam Mod Pembangun (Dev) dan menyimpan fail ke folder kod sumber. Ini mencetuskan muat semula panas (hot-reload). Dalam versi Rilis akhir, kelakuan ini dinyahaktifkan.",
-            auth_guide: "Cara Muat Turun Kandungan Terhad",
-            auth_guide_text: "Untuk memuat turun kandungan terhad umur/premium:\n1. Pastikan anda telah log masuk ke YouTube dalam Chrome atau Edge.\n2. Di Tetapan > Lanjutan > Sumber, pilih 'Gunakan Sesi Pelayar Sistem'.\n3. Apl akan meminjam sesi log masuk dari pelayar anda.\n\nNota: Berfungsi dengan kaedah Muat Turun Asli sahaja.",
-            shortcuts: "Pintasan Papan Kekunci",
-            shortcuts_list: "- **Ctrl + N**: Muat Turun Baru\n- **Ctrl + ,**: Tetapan\n- **Ctrl + H**: Sejarah\n- **Ctrl + D**: Paparan Muat Turun\n- **F11**: Skrin Penuh\n- **Esc**: Tutup Dialog",
-            shortcuts_fullscreen: "Skrin Penuh",
-            replay_tour: "Ulangi Jelajah Aluan",
-            visual_placeholder: "Demo Visual akan datang",
-            sponsorblock: "Langkau Penaja (SponsorBlock)",
-            sponsorblock_text: "Secara automatik membuang segmen tajaan, intro, dan outro.\n\n- Cara Kerja: Menggunakan data komuniti untuk mengesan dan membuang bahagian bukan kandungan.\n- Kategori: Anda boleh suaikan apa yang hendak dibuang di Tetapan > Lanjutan > SponsorBlock.\n- Nota: Ciri ini memerlukan pemprosesan semula video, jadi mungkin mengambil masa lebih lama.",
-            got_it: "Faham!"
+            overview: "Gambaran Keseluruhan",
+            features: "Ciri-ciri",
+            advanced: "Lanjutan",
+            troubleshooting: "Penyelesaian Masalah",
+
+            // Descriptions
+            overview_desc: "Mula Cepat & Platform Disokong",
+            features_desc: "Klip, Pembuat GIF, Keyring, Batch",
+            advanced_desc: "SponsorBlock, Sari Kata, Sistem",
+            troubleshooting_desc: "Ralat umum dan penyelesaian"
+        },
+        content: {
+            overview: {
+                title: "GUI Terbaik untuk yt-dlp",
+                desc: "Muat turun video, ekstrak audio, dan buat klip tepat dari ribuan laman web tanpa terminal.",
+                smart_workflow: "Aliran Kerja Pintar",
+                steps: {
+                    s1_title: "Salin Pautan",
+                    s1_desc: "Salin mana-mana URL video dari penyemak imbas anda (YouTube, Twitch, dll).",
+                    s2_title: "Auto-Kesan",
+                    s2_desc: "SceneClip membaca papan keratan anda dan menampal pautan secara automatik.",
+                    s3_title: "Muat Turun",
+                    s3_desc: "Satu klik untuk Kualiti Terbaik. Gunakan ikon 'Senarai' untuk mod batch."
+                },
+                formats: {
+                    title: "Pilihan Format",
+                    best: "Terbaik:",
+                    best_desc: "Gabung Video + Audio kualiti tertinggi secara automatik (disyorkan).",
+                    audio: "Audio Sahaja:",
+                    audio_desc: "Ekstrak MP3/M4A untuk muzik atau podcast.",
+                    custom: "Tersuai:",
+                    custom_desc: "Pilih 1080p/720p dan bekas MP4/MKV secara manual."
+                },
+                supported: {
+                    title: "Platform Disokong",
+                    major: "Laman Utama:",
+                    major_list: "YouTube, Twitch, Instagram, TikTok, Twitter (X), Facebook, Reddit, SoundCloud, Bilibili, Vimeo.",
+                    streaming: "Penstriman:",
+                    streaming_list: "Crunchyroll, Disney+, Discovery+, HBO (kandungan percuma), dan banyak laman rangkaian TV.",
+                    full_list: "Lihat senarai penuh 1000+ laman disokong"
+                }
+            },
+            features: {
+                clipping: {
+                    title: "Klip & Potong",
+                    desc: "Muat turun apa yang anda perlukan sahaja. Hidupkan suis Tukar, kemudian tetapkan cap masa Mula/Tamat untuk mengekstrak segmen tertentu tanpa memuat turun video penuh."
+                },
+                gif: {
+                    title: "Pembuat GIF",
+                    desc: "Tukar mana-mana segmen video menjadi GIF yang dioptimumkan. Pilih tab GIF. Had: 30 saat maksimum. FPS dan skala boleh laras."
+                },
+                keyring: {
+                    title: "Pengurus Keyring",
+                    desc: "Simpan kelayakan dengan selamat untuk kandungan Premium/Terhad Umur. Menggunakan peti besi asli OS anda (Windows Credential Manager, macOS Keychain, atau Linux Secret Service)."
+                },
+                batch: {
+                    title: "Muat Turun Batch",
+                    desc: "Bariskan beberapa video sekaligus. Klik Ikon Senarai di sebelah bar URL untuk menampal senarai pautan atau import fail .txt."
+                },
+                scheduler: {
+                    title: "Penjadual",
+                    desc: "Jadualkan muat turun untuk kemudian. Akses melalui Peningkatan > Jadual. *Apl mesti kekal terbuka.*"
+                }
+            },
+            advanced: {
+                enhancements: "Peningkatan",
+                network: "Rangkaian & Sistem",
+                items: {
+                    sponsorblock: "SponsorBlock",
+                    sponsorblock_desc: "Langkau penaja, intro, dan outro secara automatik (YouTube sahaja).",
+                    embed_subs: "Benamkan Sari Kata",
+                    embed_subs_desc: "Gabungkan Sari Kata Lembut atau muat turun fail .srt.",
+                    loudness: "Norma Kekuatan Bunyi",
+                    loudness_desc: "Normalkan audio kepada piawaian penyiaran EBU R128.",
+                    postproc: "Pasca-Pemprosesan",
+                    postproc_desc: "Gunakan pratetap FFmpeg tersuai untuk penukaran.",
+                    aria2c: "Pemecut Aria2c",
+                    aria2c_desc: "Muat turun berbilang benang untuk kelajuan maksimum.",
+                    cookies: "Import Kuki",
+                    cookies_desc: "Gunakan kuki penyemak imbas untuk mengakses kandungan Premium.",
+                    gpu: "Pecutan GPU",
+                    gpu_desc: "Transkod dipercepatkan perkakasan untuk klip yang lebih pantas."
+                }
+            },
+            troubleshooting: {
+                stuck: {
+                    title: "Muat Turun Tersekat pada 100%?",
+                    desc: "Memproses fail besar (4K/8K) melibatkan penggabungan aliran video+audio. Ini adalah normal dan bergantung pada kelajuan CPU anda. Sila tunggu."
+                },
+                signin: {
+                    title: "Log masuk / Semakan Bot?",
+                    desc: "YouTube mungkin menyekat bot. Pergi ke Tetapan > Lanjutan > Sumber dan pilih penyemak imbas anda untuk menggunakan kukinya."
+                },
+                permission: {
+                    title: "Kebenaran Ditolak?",
+                    desc: "Elakkan menyimpan ke folder sistem yang dioptimumkan (cth. C:\\Program Files atau /usr/local). Gunakan folder Muat Turun atau Dokumen Pengguna anda. Semak pengecualian Perisian Keselamatan."
+                },
+                slow: {
+                    title: "Kelajuan Perlahan?",
+                    desc: "Cuba hidupkan Aria2c dalam Tetapan Rangkaian untuk memaksa muat turun berbilang sambungan."
+                },
+                geoblock: {
+                    title: "Video Tidak Tersedia / Geo-Block?",
+                    desc: "Gunakan tetapan Proksi (tab Rangkaian) atau VPN. Jangan gunakan Proksi Pintar dan Proksi Manual bersama-sama."
+                },
+                playlist: {
+                    title: "Senarai main berhenti pada 5?",
+                    desc: "Anda mungkin menampal pautan dalam mod URL Tunggal. Gunakan tab Batch (Ikon Senarai) untuk senarai main."
+                },
+                report_btn: "Lapor Pepijat di GitHub",
+                report_desc: "Lampirkan log dari tab Terminal"
+            }
+        }
+    },
+    shortcuts: {
+        title: "Pintasan Papan Kekunci",
+        close: "Tutup",
+        groups: {
+            general: "Umum",
+            navigation: "Navigasi"
+        },
+        actions: {
+            settings: "Tetapan",
+            history: "Sejarah",
+            downloads: "Muat Turun",
+            new_download: "Muat Turun Baru",
+            fullscreen: "Skrin Penuh"
         }
     },
     notifications: {
@@ -842,10 +919,7 @@ export const ms = {
     video: "Video",
     audio: "Audio",
 
-    shortcuts: {
-        title: "Pintasan Papan Kekunci",
-        close: "Tutup"
-    },
+
 
     onboarding: {
         step1_title: "Selamat Datang ke SceneClip",
@@ -933,6 +1007,8 @@ export const ms = {
         selected_count: "{{count}} Dipilih",
         confirm_delete_msg: "Adakah anda pasti mahu memadam {{count}} item?"
     },
+
+
 
     terminal: {
         filter_all: "Semua",

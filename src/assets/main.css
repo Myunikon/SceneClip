@@ -403,23 +403,8 @@
     }
   }
 
-  .header-branding {
-    justify-self: start;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .header-actions-container {
-    justify-self: end;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-  }
-
-  .header-nav-container {
-    transition: padding 0.15s cubic-bezier(0.4, 0, 0.2, 1), margin 0.15s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease;
-  }
+  /* Note: .header-branding, .header-actions-container, .header-nav-container 
+     are already defined at lines 289-305, removed duplicates here */
 
 
 
@@ -504,6 +489,28 @@
       width: 100% !important;
     }
   }
+
+  /* ===== PERFORMANCE UTILITIES ===== */
+  /* content-visibility: skip rendering for off-screen elements */
+  .content-visibility-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 5rem;
+    /* ~80px fallback height */
+  }
+
+  /* contain: isolate layout/style calculations */
+  .contain-strict {
+    contain: strict;
+  }
+
+  .contain-content {
+    contain: content;
+  }
+
+  /* will-change: hint GPU acceleration for animating elements */
+  .will-change-transform {
+    will-change: transform;
+  }
 }
 
 /* Custom Scrollbar */
@@ -574,6 +581,20 @@
   -webkit-backdrop-filter: blur(40px);
   border: var(--glass-border);
   box-shadow: var(--glass-shadow);
+}
+
+/* ===== ACCESSIBILITY: Reduced Motion ===== */
+/* Respect user preference to reduce motion/animations */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ===== LOW PERFORMANCE MODE ===== */

@@ -7,9 +7,10 @@ interface ShortcutsHandlers {
     onSettings: () => void
     onHistory: () => void
     onDownloads: () => void
+    onKeyring: () => void
 }
 
-export function useGlobalShortcuts({ onNewTask, onSettings, onHistory, onDownloads }: ShortcutsHandlers) {
+export function useGlobalShortcuts({ onNewTask, onSettings, onKeyring, onHistory, onDownloads }: ShortcutsHandlers) {
     useEffect(() => {
         const handleKeyDown = async (e: KeyboardEvent) => {
             if (e.defaultPrevented) return
@@ -27,6 +28,12 @@ export function useGlobalShortcuts({ onNewTask, onSettings, onHistory, onDownloa
             if (mod && e.key === ',') {
                 e.preventDefault()
                 onSettings()
+            }
+
+            // Keyring: Ctrl/Cmd + K
+            if (mod && e.key.toLowerCase() === 'k') {
+                e.preventDefault()
+                onKeyring()
             }
 
             // History: Ctrl + H (Win) vs Cmd + Shift + H (Mac)
@@ -71,5 +78,5 @@ export function useGlobalShortcuts({ onNewTask, onSettings, onHistory, onDownloa
 
         window.addEventListener('keydown', handleKeyDown)
         return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [onNewTask, onSettings, onHistory, onDownloads])
+    }, [onNewTask, onSettings, onKeyring, onHistory, onDownloads])
 }

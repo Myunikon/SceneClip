@@ -21,7 +21,7 @@ import {
 import { openPath } from '@tauri-apps/plugin-opener'
 import { exists } from '@tauri-apps/plugin-fs'
 
-import { CommandModal } from '../dialogs'
+import { CommandModal, ConfirmDialog } from '../dialogs'
 import { CompressDialog } from '../dialogs'
 import { parseSize, cn } from '../../lib/utils'
 import { SegmentedControl } from '../ui'
@@ -48,6 +48,8 @@ export function HistoryView() {
     const [filterType, setFilterType] = useState('date') // date, size, source
     const [filterFormat, setFilterFormat] = useState('all') // all, video, audio
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+    const [showDeleteSelectedConfirm, setShowDeleteSelectedConfirm] = useState(false)
+    const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false)
 
     // --- UI State ---
     const [showMenu, setShowMenu] = useState(false)
@@ -94,12 +96,15 @@ export function HistoryView() {
     }
 
     const deleteSelected = () => {
-        if (confirm(t('history_menu.confirm_delete_msg', { count: selectedIds.size }) || `Are you sure you want to delete ${selectedIds.size} items?`)) {
-            selectedIds.forEach(id => clearTask(id))
-            setIsSelectionMode(false)
-            setSelectedIds(new Set())
-            notify.success(t('history_menu.toast_deleted', { count: selectedIds.size }) || `Deleted ${selectedIds.size} items`)
-        }
+        setShowDeleteSelectedConfirm(true)
+    }
+
+    const handleConfirmDeleteSelected = () => {
+        selectedIds.forEach(id => clearTask(id))
+        setIsSelectionMode(false)
+        setSelectedIds(new Set())
+        notify.success(t('history_menu.toast_deleted', { count: selectedIds.size }) || `Deleted ${selectedIds.size} items`)
+        setShowDeleteSelectedConfirm(false)
     }
 
     useEffect(() => {
@@ -335,7 +340,7 @@ export function HistoryView() {
                                             <button onClick={handleVerifyFiles} className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium hover:bg-muted rounded-lg transition-colors">
                                                 <RefreshCw className={cn("w-3.5 h-3.5", isVerifying && "animate-spin")} /> Verify Integrity
                                             </button>
-                                            <button onClick={() => { if (confirm("Delete all history?")) deleteHistory() }} className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
+                                            <button onClick={() => setShowDeleteAllConfirm(true)} className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
                                                 <Trash2 className="w-3.5 h-3.5" /> Delete History
                                             </button>
                                         </div>
@@ -374,24 +379,25 @@ export function HistoryView() {
                     {historyTasks.length > 0 ? (
                         <div className="divide-y divide-border/50 border-t border-border/50">
                             {historyTasks.slice(0, visibleCount).map((task, idx) => (
-                                <HistoryItem
-                                    key={task.id}
-                                    task={task}
-                                    index={idx}
-                                    isSelectionMode={isSelectionMode}
-                                    isSelected={selectedIds.has(task.id)}
-                                    isMissing={missingFileIds.has(task.id)}
-                                    onToggleSelect={toggleSelect}
-                                    onPlay={handlePlayFile}
-                                    onOpenFolder={handleOpenFolder}
-                                    onRemove={handleRemove}
-                                    onRetry={handleRetry}
-                                    onCompress={handleCompress}
-                                    onViewCommand={handleViewCommand}
-                                    language={language}
-                                    t={t}
-                                    developerMode={settings.developerMode}
-                                />
+                                <div key={task.id} className="content-visibility-auto">
+                                    <HistoryItem
+                                        task={task}
+                                        index={idx}
+                                        isSelectionMode={isSelectionMode}
+                                        isSelected={selectedIds.has(task.id)}
+                                        isMissing={missingFileIds.has(task.id)}
+                                        onToggleSelect={toggleSelect}
+                                        onPlay={handlePlayFile}
+                                        onOpenFolder={handleOpenFolder}
+                                        onRemove={handleRemove}
+                                        onRetry={handleRetry}
+                                        onCompress={handleCompress}
+                                        onViewCommand={handleViewCommand}
+                                        language={language}
+                                        t={t}
+                                        developerMode={settings.developerMode}
+                                    />
+                                </div>
                             ))}
 
                             {/* Load More */}
@@ -432,6 +438,26 @@ export function HistoryView() {
                 onCompress={(taskId, options) => {
                     if (compressTask) useAppStore.getState().compressTask(taskId, options)
                 }}
+            />
+
+            {/* Delete Confirmation Dialogs */}
+            <ConfirmDialog
+                isOpen={showDeleteSelectedConfirm}
+                onClose={() => setShowDeleteSelectedConfirm(false)}
+                onConfirm={handleConfirmDeleteSelected}
+                title={t('history_menu.delete_selected_title') || 'Delete Selected Items?'}
+                description={t('history_menu.confirm_delete_msg', { count: selectedIds.size }) || `Are you sure you want to delete ${selectedIds.size} items?`}
+                confirmLabel={t('common.delete') || 'Delete'}
+                cancelLabel={t('common.cancel') || 'Cancel'}
+            />
+            <ConfirmDialog
+                isOpen={showDeleteAllConfirm}
+                onClose={() => setShowDeleteAllConfirm(false)}
+                onConfirm={() => { deleteHistory(); setShowDeleteAllConfirm(false) }}
+                title={t('history.delete_all_title') || 'Delete All History?'}
+                description={t('history.delete_all_desc') || 'This will remove all items from your download history. This action cannot be undone.'}
+                confirmLabel={t('common.delete') || 'Delete All'}
+                cancelLabel={t('common.cancel') || 'Cancel'}
             />
         </div>
     )

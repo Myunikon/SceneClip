@@ -108,6 +108,7 @@ export const zh = {
             advanced: "系统",
             logs: "日志",
             guide: "指南",
+            security: "安全",
             about: "关于"
         },
         general: {
@@ -724,61 +725,20 @@ export const zh = {
         compress: "导出",
         delete: "删除"
     },
-    guide: {
-        title: "完整用户手册",
-        subtitle: "掌握 SceneClip 所需的一切知识。",
-        menu: {
-            start: "快速开始",
-            clip: "剪辑与编辑",
-            advanced: "高级功能",
-            faq: "常见问题"
+
+    shortcuts: {
+        title: "键盘快捷键",
+        close: "关闭",
+        groups: {
+            general: "常规",
+            navigation: "导航"
         },
-        steps: {
-            smart: {
-                title: "智能检测",
-                desc: "无需手动粘贴！复制链接，SceneClip 自动识别。"
-            },
-            clip: {
-                title: "精准剪辑",
-                desc: "节省流量！使用“剪刀”图标仅下载所需片段。"
-            },
-            format: {
-                title: "格式选择",
-                desc: "4K 视频、清晰 MP3 音频或即时 GIF 表情包。"
-            },
-            terminal: {
-                title: "终端日志",
-                desc: "下载失败？查看“终端”选项卡获取调试日志。"
-            }
-        },
-        sections: {
-            started: "快速入门",
-            single: "如何下载视频",
-            single_text: "1. 复制您想要下载的 YouTube 视频链接。\n2. 点击右上角的 (+) 按钮。\n3. 应用程序将自动检测剪贴板中的链接（Magic Paste）。\n4. 选择您需要的格式：\n   - 最佳视频+音频：最高可用质量 (MP4/WebM).\n   - 仅音频：转换为 MP3 或 WAV。\n   - GIF：创建短动画 GIF。\n5. 点击“下载”开始。",
-            clipping: "视频剪辑 (Clipping)",
-            clipping_text: "无需下载整个视频即可创建热门短片。\n\n使用方法：\n1. 打开“添加下载”对话框。\n2. 点击“视频剪辑” (Clip Range) 展开选项。\n3. 输入开始和结束时间（秒）。\n4. 点击下载。\n\n示例：\n- 开始：60（第1分钟）\n- 结束：120（第2分钟）\n应用程序将仅下载这 1 分钟的片段。",
-            power: "高级功能",
-            turbo: "极速模式 (多线程Turbo)",
-            turbo_text: "极速模式使用类似 IDM/Aria2 的高性能自定义引擎。\n\n- 工作原理：将文件分成 8 个独立块（披萨切片）并同时下载。\n- 性能：与标准浏览器相比，速度可提高 10 倍。\n- 限制：如果您遇到 '403 Forbidden' 错误或立即失败，可能是 YouTube 因连接过多暂时封锁了您的 IP。请关闭极速模式以切换到“安全模式”（单线程）。",
-            queue: "队列管理",
-            queue_text: "“下载”标签页显示活动任务。“历史”标签页保存已完成的文件。\n- 并发：默认情况下，同时运行 3 个下载。您可以在 设置 > 网络 中更改此限制。\n- 如果下载失败或停止，请点击“继续”按钮从上次位置恢复。",
-            renaming: "如何自动命名文件",
-            renaming_text: "自定义文件的自动命名方式。\n前往 设置 > 下载 > 文件名模板。\n\n可用变量：\n- {title}: 视频标题\n- {uploader}: 频道名称\n- {id}: 唯一视频 ID\n- {ext}: 文件扩展名\n\n推荐格式：\n[{uploader}] {title}.{ext}",
-            troubleshoot: "解决常见问题",
-            ts_fail: "为什么下载失败？",
-            ts_fail_text: "常见解决方案：\n1. 检查您的网络连接。\n2. 关闭极速模式：某些 ISP 或地区会阻止对 YouTube 的多线程连接。\n3. 年龄限制内容：使用“浏览器”标签页登录您的 YouTube 帐户，然后重试下载。\n4. 如果使用代理，请检查代理设置。",
-            ts_restart: "为什么应用自动重启？",
-            ts_restart_text: "如果看到“应用正在重启”消息，说明您可能处于开发模式 (Dev) 并将文件保存到了源代码文件夹。这会触发热重载 (Hot-reload)。在正式发布版本中，此行为已被禁用。",
-            auth_guide: "如何下载年龄限制视频",
-            auth_guide_text: "要下载年龄限制/会员内容：\n1. 请确保您已在 Chrome 或 Edge 浏览器中登录 YouTube。\n2. 在设置 > 高级 > 来源中，选择“使用系统浏览器会话”。\n3. 应用程序将借用您的浏览器登录会话进行下载。\n\n注意：仅适用于原生下载模式。",
-            shortcuts: "键盘快捷键",
-            shortcuts_list: "- **Ctrl + N**: 新建下载\n- **Ctrl + ,**: 打开设置\n- **Ctrl + H**: 历史记录\n- **Ctrl + D**: 下载列表\n- **F11**: 切换全屏\n- **Esc**: 关闭对话框",
-            shortcuts_fullscreen: "切换全屏",
-            replay_tour: "重播欢迎向导",
-            visual_placeholder: "视觉演示即将推出",
-            sponsorblock: "自动跳过赞助 (SponsorBlock)",
-            sponsorblock_text: "自动跳过赞助片段、片头和片尾。\n\n- 工作原理：使用社区数据检测并移除视频中的非内容部分。\n- 分类：您可以在 设置 > 高级 > SponsorBlock 中自定义要跳过的内容。\n- 注意：此功能需要重新处理视频，因此完成时间可能会稍长。",
-            got_it: "知道了!"
+        actions: {
+            settings: "设置",
+            history: "历史记录",
+            downloads: "下载列表",
+            new_download: "新建下载",
+            fullscreen: "全屏切换"
         }
     },
     context_menu: {
@@ -840,10 +800,7 @@ export const zh = {
     video: "视频",
     audio: "音频",
 
-    shortcuts: {
-        title: "键盘快捷键",
-        close: "关闭"
-    },
+
 
     onboarding: {
         step1_title: "欢迎使用 SceneClip",
@@ -930,6 +887,127 @@ export const zh = {
         tooltip_missing: "File not found - Moved or Deleted",
         selected_count: "已选择 {{count}} 项",
         confirm_delete_msg: "确定要删除这 {{count}} 项吗？"
+    },
+
+    guide: {
+        title: "用户指南",
+        subtitle: "几分钟内掌握 SceneClip。",
+        sections: {
+            overview: "概览",
+            features: "功能",
+            advanced: "高级",
+            troubleshooting: "故障排除",
+
+            // Descriptions
+            overview_desc: "快速开始 & 支持平台",
+            features_desc: "剪辑, GIF 制作, 密钥环, 批量",
+            advanced_desc: "SponsorBlock, 字幕, 系统",
+            troubleshooting_desc: "常见问题及解决方案",
+            shortcuts: "快捷键",
+            shortcuts_fullscreen: "全屏切换"
+        },
+        content: {
+            overview: {
+                title: "yt-dlp 的终极 GUI",
+                desc: "从数千个网站下载视频、提取音频并创建精确剪辑，无需接触终端。",
+                smart_workflow: "智能检测工作流",
+                steps: {
+                    s1_title: "复制链接",
+                    s1_desc: "从浏览器复制任何视频 URL (YouTube, Twitch 等)。",
+                    s2_title: "自动检测",
+                    s2_desc: "SceneClip 读取您的剪贴板并自动粘贴链接。",
+                    s3_title: "下载",
+                    s3_desc: "一键获取最佳质量。使用“列表”图标进入批量模式。"
+                },
+                formats: {
+                    title: "格式选择",
+                    best: "最佳:",
+                    best_desc: "自动合并最高质量的视频 + 音频 (推荐)。",
+                    audio: "仅音频:",
+                    audio_desc: "提取 MP3/M4A 用于音乐或播客。",
+                    custom: "自定义:",
+                    custom_desc: "手动选择 1080p/720p 和 MP4/MKV 容器。"
+                },
+                supported: {
+                    title: "支持平台",
+                    major: "主要站点:",
+                    major_list: "YouTube, Twitch, Instagram, TikTok, Twitter (X), Facebook, Reddit, SoundCloud, Bilibili, Vimeo。",
+                    streaming: "流媒体:",
+                    streaming_list: "Crunchyroll, Disney+, Discovery+, HBO (免费内容) 以及许多电视网络站点。",
+                    full_list: "查看 1000+ 支持站点的完整列表"
+                }
+            },
+            features: {
+                clipping: {
+                    title: "剪辑 & 修剪",
+                    desc: "只下载您需要的部分。启用修剪开关，然后设置开始/结束时间戳以提取特定片段，无需下载完整视频。"
+                },
+                gif: {
+                    title: "GIF 制作器",
+                    desc: "将任何视频片段转换为优化的 GIF。选择 GIF 选项卡。限制：最长 30 秒。FPS 和缩放可调。"
+                },
+                keyring: {
+                    title: "密钥环管理器",
+                    desc: "安全存储会员/年龄限制内容的凭据。使用操作系统原生保管库 (Windows 凭据管理器, macOS 钥匙串, 或 Linux 密钥服务)。"
+                },
+                batch: {
+                    title: "批量下载",
+                    desc: "一次排队多个视频。点击 URL 栏旁边的列表图标粘贴链接列表或导入 .txt 文件。"
+                },
+                scheduler: {
+                    title: "计划程序",
+                    desc: "计划稍后下载。通过 增强功能 > 计划 访问。*应用必须保持打开状态。*"
+                }
+            },
+            advanced: {
+                enhancements: "增强功能",
+                network: "网络 & 系统",
+                items: {
+                    sponsorblock: "SponsorBlock",
+                    sponsorblock_desc: "自动跳过赞助、片头和片尾 (仅限 YouTube)。",
+                    embed_subs: "嵌入字幕",
+                    embed_subs_desc: "合并软字幕或下载 .srt 文件。",
+                    loudness: "响度标准化",
+                    loudness_desc: "将音频标准化为 EBU R128 广播标准。",
+                    postproc: "后处理",
+                    postproc_desc: "使用自定义 FFmpeg 预设进行转换。",
+                    aria2c: "Aria2c 加速器",
+                    aria2c_desc: "多线程下载以获得最大速度。",
+                    cookies: "导入 Cookie",
+                    cookies_desc: "使用浏览器 Cookie 访问会员内容。",
+                    gpu: "GPU 加速",
+                    gpu_desc: "硬件加速转码以加快剪辑速度。"
+                }
+            },
+            troubleshooting: {
+                stuck: {
+                    title: "下载卡在 100%？",
+                    desc: "处理大文件 (4K/8K) 涉及合并视频+音频流。这很正常，取决于您的 CPU 速度。请稍候。"
+                },
+                signin: {
+                    title: "登录 / 机器人检查？",
+                    desc: "YouTube 可能限制机器人。转到 设置 > 高级 > 来源，选择您的浏览器以使用其 Cookie。",
+                },
+                permission: {
+                    title: "权限被拒绝？",
+                    desc: "避免保存到系统文件夹 (如 C:\\Program Files 或 /usr/local)。使用您的“下载”或“文档”文件夹。检查安全软件排除项。",
+                },
+                slow: {
+                    title: "速度慢？",
+                    desc: "尝试在网络设置中启用 Aria2c 以强制多连接下载。"
+                },
+                geoblock: {
+                    title: "视频不可用 / 地区限制？",
+                    desc: "使用代理设置 (网络选项卡) 或 VPN。不要同时使用智能代理和手动代理。"
+                },
+                playlist: {
+                    title: "播放列表在第 5 个停止？",
+                    desc: "您可能在单 URL 模式下粘贴了链接。使用批量 (列表图标) 选项卡作为播放列表。"
+                },
+                report_btn: "在 GitHub 上报告 Bug",
+                report_desc: "附上终端选项卡中的日志"
+            }
+        }
     },
 
     terminal: {

@@ -167,6 +167,7 @@ function RootComponent() {
     useGlobalShortcuts({
         onNewTask: () => handleNewTask(),
         onSettings: () => router.navigate({ to: '/settings' }),
+        onKeyring: () => router.navigate({ to: '/keyring' }),
         onHistory: () => router.navigate({ to: '/history' }),
         onDownloads: () => router.navigate({ to: '/' })
     })

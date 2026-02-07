@@ -112,6 +112,7 @@ export const id = {
             advanced: "Sistem",
             logs: "Log",
             guide: "Panduan",
+            security: "Keamanan",
             about: "Tentang"
         },
         general: {
@@ -509,9 +510,21 @@ export const id = {
         fetching_info: "Mengambil info..."
     },
 
+
     shortcuts: {
         title: "Pintasan Keyboard",
-        close: "Tutup"
+        close: "Tutup",
+        groups: {
+            general: "Umum",
+            navigation: "Navigasi"
+        },
+        actions: {
+            settings: "Pengaturan",
+            history: "Riwayat",
+            downloads: "Unduhan",
+            new_download: "Unduhan Baru",
+            fullscreen: "Layar Penuh"
+        }
     },
 
     terminal: {
@@ -859,69 +872,127 @@ export const id = {
         compress: "Ekspor",
         delete: "Hapus"
     },
+
     guide: {
         title: "Panduan Pengguna",
         subtitle: "Kuasai SceneClip dalam hitungan menit.",
-        menu: {
-            start: "Mulai (Getting Started)",
-            clip: "Klip & Edit",
-            advanced: "Lanjutan",
-            faq: "Masalah Umum"
-        },
-        steps: {
-            smart: {
-                title: "Deteksi Pintar",
-                desc: "Copy link, dan SceneClip akan mendeteksinya otomatis."
-            },
-            clip: {
-                title: "Pemotongan Presisi",
-                desc: "Hemat data! Download hanya bagian yang kamu butuhkan."
-            },
-            format: {
-                title: "Pilih Format",
-                desc: "4K Video, Audio MP3 Jernih, atau GIF Instan."
-            },
-            terminal: {
-                title: "Terminal & Log",
-                desc: "Download gagal? Cek tab Terminal untuk diagnosa."
-            }
-        },
         sections: {
-            started: "Mulai Cepat",
-            single: "Paste & Download",
-            single_text: "1. Salin URL video.\n2. Klik (+) atau tekan Ctrl+N.\n3. Aplikasi mendeteksi link otomatis.\n4. Pilih format dan klik Download.",
-            clipping: "Potong Klip",
-            clipping_text: "Unduh bagian yang penting saja.\n1. Buka Dialog Tambah.\n2. Buka 'Potong Video'.\n3. Atur waktu Mulai/Selesai (cth. 10 sampai 60).\n4. Unduh segmen tersebut.",
-            power: "Fitur Lanjutan",
-            turbo: "Mode Turbo",
-            turbo_text: "Unduhan multi-thread aktif secara default untuk kecepatan maksimal.",
-            queue: "Sistem Antrean",
-            queue_text: "Unduhan diantrekan otomatis. Batas default 3 tugas bersamaan (Bisa diatur di Pengaturan).",
-            renaming: "Penamaan Pintar",
-            renaming_text: "Kustomisasi nama file di Pengaturan > Unduhan.\nVariabel: {title}, {uploader}, {id}, {width}, {height}.",
-            troubleshoot: "Pemecahan Masalah",
-            ts_fail: "Unduhan Gagal?",
-            ts_fail_text: "- Cek internet.\n- Cek penyimpanan.\n- Coba lagi biasanya berhasil.",
-            ts_restart: "Reset Pengaturan",
-            ts_restart_text: "Pengaturan > Lanjutan > Reset ke Awal.",
-            auth_guide: "Konten Terbatas",
-            auth_guide_text: "Gunakan 'Sessi Browser Sistem' di Pengaturan untuk mengunduh video terbatas umur menggunakan cookies browser Anda.",
-            shortcuts: "Pintasan Keyboard",
-            shortcuts_list: "- **Ctrl + N**: Unduhan Baru\n- **Ctrl + ,**: Pengaturan\n- **Ctrl + H**: Riwayat\n- **Ctrl + D**: Tampilan Unduhan\n- **F11**: Layar Penuh\n- **Esc**: Tutup Dialog",
-            shortcuts_fullscreen: "Layar Penuh",
-            replay_tour: "Ulangi Tur",
-            visual_placeholder: "Demo Visual segera hadir",
-            sponsorblock: "SponsorBlock",
-            sponsorblock_text: "Lewati segmen non-konten seperti intro dan sponsor secara otomatis.",
-            got_it: "Tutup Panduan"
+            overview: "Ringkasan",
+            features: "Fitur",
+            advanced: "Lanjutan",
+            troubleshooting: "Perbaikan Masalah",
+
+            // Descriptions
+            overview_desc: "Mulai Cepat & Platform Pendukung",
+            features_desc: "Kliping, Pembuat GIF, Keyring, Batch",
+            advanced_desc: "SponsorBlock, Subtitle, Sistem",
+            troubleshooting_desc: "Kesalahan umum dan solusinya"
+        },
+        content: {
+            overview: {
+                title: "GUI Terbaik untuk yt-dlp",
+                desc: "Unduh video, ekstrak audio, dan buat klip presisi dari ribuan situs tanpa menyentuh terminal.",
+                smart_workflow: "Alur Kerja Deteksi Cerdas",
+                steps: {
+                    s1_title: "Salin Link",
+                    s1_desc: "Salin URL video apa pun dari browser Anda (YouTube, Twitch, dll).",
+                    s2_title: "Deteksi Otomatis",
+                    s2_desc: "SceneClip membaca clipboard Anda dan menempelkan link secara otomatis.",
+                    s3_title: "Unduh",
+                    s3_desc: "Satu klik untuk Kualitas Terbaik. Gunakan ikon 'List' untuk mode batch."
+                },
+                formats: {
+                    title: "Pilihan Format",
+                    best: "Terbaik:",
+                    best_desc: "Menggabungkan Video + Audio kualitas tertinggi secara otomatis (disarankan).",
+                    audio: "Audio Saja:",
+                    audio_desc: "Mengekstrak MP3/M4A untuk musik atau podcast.",
+                    custom: "Kustom:",
+                    custom_desc: "Pilih manual 1080p/720p dan kontainer MP4/MKV."
+                },
+                supported: {
+                    title: "Platform yang Didukung",
+                    major: "Situs Utama:",
+                    major_list: "YouTube, Twitch, Instagram, TikTok, Twitter (X), Facebook, Reddit, SoundCloud, Bilibili, Vimeo.",
+                    streaming: "Streaming:",
+                    streaming_list: "Crunchyroll, Disney+, Discovery+, HBO (konten gratis), dan banyak situs jaringan TV.",
+                    full_list: "Lihat daftar lengkap 1000+ situs yang didukung"
+                }
+            },
+            features: {
+                clipping: {
+                    title: "Kliping & Pemotongan",
+                    desc: "Unduh hanya yang Anda butuhkan. Aktifkan toggle Potong, lalu atur timestamp Mulai/Selesai untuk mengekstrak segmen tertentu tanpa mengunduh video lengkap."
+                },
+                gif: {
+                    title: "Pembuat GIF",
+                    desc: "Ubah segmen video apa pun menjadi GIF yang dioptimalkan. Pilih tab GIF. Batas: maks 30 detik. FPS dan skala dapat disesuaikan."
+                },
+                keyring: {
+                    title: "Manajer Keyring",
+                    desc: "Simpan kredensial dengan aman untuk konten Premium/Terbatas Usia. Menggunakan vault bawaan OS Anda (Windows Credential Manager, macOS Keychain, atau Linux Secret Service)."
+                },
+                batch: {
+                    title: "Unduhan Batch",
+                    desc: "Antrekan banyak video sekaligus. Klik Ikon List di sebelah bar URL untuk menempelkan daftar link atau impor file .txt."
+                },
+                scheduler: {
+                    title: "Penjadwal",
+                    desc: "Jadwalkan unduhan untuk nanti. Akses via Peningkatan > Jadwal. *Aplikasi harus tetap terbuka.*"
+                }
+            },
+            advanced: {
+                enhancements: "Peningkatan",
+                network: "Jaringan & Sistem",
+                items: {
+                    sponsorblock: "SponsorBlock",
+                    sponsorblock_desc: "Lewati sponsor, intro, dan outro secara otomatis (khusus YouTube).",
+                    embed_subs: "Sematkan Subtitle",
+                    embed_subs_desc: "Gabungkan Soft-Subs atau unduh file .srt.",
+                    loudness: "Normalisasi Kekerasan",
+                    loudness_desc: "Normalkan audio ke standar siaran EBU R128.",
+                    postproc: "Pasca-Pemrosesan",
+                    postproc_desc: "Gunakan preset FFmpeg kustom untuk konversi.",
+                    aria2c: "Akselerator Aria2c",
+                    aria2c_desc: "Unduhan multi-thread untuk kecepatan maksimum.",
+                    cookies: "Impor Cookies",
+                    cookies_desc: "Gunakan cookies browser untuk mengakses konten Premium.",
+                    gpu: "Akselerasi GPU",
+                    gpu_desc: "Transcoding yang dipercepat perangkat keras untuk klip yang lebih cepat."
+                }
+            },
+            troubleshooting: {
+                stuck: {
+                    title: "Unduhan Macet di 100%?",
+                    desc: "Memproses file besar (4K/8K) melibatkan penggabungan stream video+audio. Ini normal dan tergantung pada kecepatan CPU Anda. Harap tunggu."
+                },
+                signin: {
+                    title: "Masuk / Cek Bot?",
+                    desc: "YouTube mungkin membatasi bot. Buka Pengaturan > Lanjutan > Sumber dan pilih browser Anda untuk menggunakan cookies-nya."
+                },
+                permission: {
+                    title: "Izin Ditolak?",
+                    desc: "Hindari menyimpan ke folder sistem yang dioptimalkan (mis. C:\\Program Files atau /usr/local). Gunakan folder Unduhan Pengguna atau Dokumen Anda. Periksa pengecualian Perangkat Lunak Keamanan."
+                },
+                slow: {
+                    title: "Kecepatan Lambat?",
+                    desc: "Coba aktifkan Aria2c di Pengaturan Jaringan untuk memaksakan unduhan multi-koneksi."
+                },
+                geoblock: {
+                    title: "Video Tidak Tersedia / Blokir Geo?",
+                    desc: "Gunakan pengaturan Proxy (tab Jaringan) atau VPN. Jangan gunakan Proxy Cerdas dan Proxy Manual secara bersamaan."
+                },
+                playlist: {
+                    title: "Playlist berhenti di 5?",
+                    desc: "Anda mungkin menempelkan link dalam mode URL Tunggal. Gunakan tab Batch (Ikon List) untuk playlist."
+                },
+                report_btn: "Laporkan Bug di GitHub",
+                report_desc: "Lampirkan log dari tab Terminal"
+            }
         }
     },
-    notifications: {
-        title: "Notifikasi",
-        empty: "Belum ada notifikasi",
-        clear_all: "Hapus Semua",
-        dismiss: "Tutup"
-    },
+
+
 
     logs: {
         download_complete: "Unduhan Selesai: {{id}}",

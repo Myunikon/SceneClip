@@ -51,6 +51,7 @@ pub struct YtDlpOptions {
     pub post_processor_args: Option<String>,
     // JS Runtime override
     pub js_runtime_path: Option<String>,
+    pub disable_js_runtime: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -775,41 +776,43 @@ pub async fn build_ytdlp_args(
             }
         }
 
-        let mut active_js_path = options.js_runtime_path.clone().or_else(|| {
-            if !settings.binary_path_node.is_empty() {
-                Some(settings.binary_path_node.clone())
-            } else {
-                None
+        if !options.disable_js_runtime.unwrap_or(false) {
+            let mut active_js_path = options.js_runtime_path.clone().or_else(|| {
+                if !settings.binary_path_node.is_empty() {
+                    Some(settings.binary_path_node.clone())
+                } else {
+                    None
+                }
+            });
+
+            // Try to find Deno sidecar using proper resolution (handles platform suffix)
+            if active_js_path.is_none() {
+                let deno_path = resolve_binary_path(app_handle, "deno");
+                // Only use if we found a real path (not just "deno" fallback)
+                if deno_path != "deno" && std::path::Path::new(&deno_path).exists() {
+                    active_js_path = Some(deno_path);
+                }
             }
-        });
 
-        // Try to find Deno sidecar using proper resolution (handles platform suffix)
-        if active_js_path.is_none() {
-            let deno_path = resolve_binary_path(app_handle, "deno");
-            // Only use if we found a real path (not just "deno" fallback)
-            if deno_path != "deno" && std::path::Path::new(&deno_path).exists() {
-                active_js_path = Some(deno_path);
-            }
-        }
+            if let Some(path) = active_js_path {
+                let lower = path.to_lowercase();
+                let runtime_type = if lower.contains("deno") {
+                    "deno"
+                } else if lower.contains("bun") {
+                    "bun"
+                } else if lower.contains("node") {
+                    "node"
+                } else {
+                    "deno" // Default assumption if unknown
+                };
 
-        if let Some(path) = active_js_path {
-            let lower = path.to_lowercase();
-            let runtime_type = if lower.contains("deno") {
-                "deno"
-            } else if lower.contains("bun") {
-                "bun"
-            } else if lower.contains("qjs") {
-                "quickjs"
-            } else {
-                "node"
-            };
+                args.push("--js-runtimes".to_string());
+                args.push(format!("{}:{}", runtime_type, path));
 
-            args.push("--js-runtimes".to_string());
-            args.push(format!("{}:{}", runtime_type, path));
-
-            if runtime_type == "deno" || runtime_type == "bun" {
-                args.push("--remote-components".to_string());
-                args.push("ejs:npm".to_string());
+                if runtime_type == "deno" || runtime_type == "bun" {
+                    args.push("--remote-components".to_string());
+                    args.push("ejs:npm".to_string());
+                }
             }
         }
 
@@ -1103,22 +1106,6 @@ pub async fn build_ytdlp_args(
         }
     }
 
-    // NEW: Force video copy when clipping if no other video codec is specified
-    // EXCEPT if audio normalization is requested, as re-encoding might be preferred for quality/consistency
-    if is_clipping
-        && fmt != "gif"
-        && fmt != "audio"
-        && !options.force_transcode.unwrap_or(false)
-        && !options.audio_normalization.unwrap_or(false)
-        && active_gpu_type == "cpu"
-    // Only if not using GPU, as GPU logic handles its own codecs
-    {
-        let has_video_codec = ffmpeg_args.iter().any(|a| a.contains("-c:v "));
-        if !has_video_codec {
-            ffmpeg_args.push("-c:v copy".to_string());
-        }
-    }
-
     if !ffmpeg_args.is_empty() {
         args.push("--postprocessor-args".to_string());
         args.push(format!("ffmpeg:{}", ffmpeg_args.join(" ")));
@@ -1150,6 +1137,10 @@ pub async fn build_ytdlp_args(
             args.push("--sub-langs".to_string());
             args.push(lang.to_string());
         }
+
+        // Prioritize native SRT if available
+        args.push("--sub-format".to_string());
+        args.push("srt/best".to_string());
 
         args.push("--ignore-errors".to_string());
         args.push("--sleep-subtitles".to_string());

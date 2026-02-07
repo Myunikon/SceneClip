@@ -104,7 +104,8 @@ pub enum DownloadEvent {
 }
 
 // Internal function callable by Queue
-pub async fn download_media_internal(
+// Now wrapped by retry logic
+async fn perform_download_attempt(
     app: AppHandle,
     url: String,
     id: String,
@@ -112,11 +113,13 @@ pub async fn download_media_internal(
     settings: AppSettings,
     gpu_type: String,
     sender: mpsc::UnboundedSender<DownloadEvent>,
+    suppress_error: bool,
 ) -> Result<(), String> {
-    log::info!("Starting download for ID: {} (URL: {})", id, url);
+    log::info!("Starting download attempt for ID: {} (URL: {})", id, url);
     log::debug!("Download Options: {:?}", options);
 
-    // 1. Initial Event
+    // 1. Initial Event (Only send on first attempt if we tracked it, but here we just send it)
+    // Actually, sending Started multiple times might reset UI, which is acceptable for a retry.
     let _ = sender.send(DownloadEvent::Started {
         id: id.clone(),
         url: url.clone(),
@@ -514,6 +517,7 @@ pub async fn download_media_internal(
                     id: id.clone(),
                     file_path: full_path_str,
                 });
+                Ok(())
             } else {
                 // Construct error message from stderr
                 let error_msg = if error_buffer.is_empty() {
@@ -527,23 +531,107 @@ pub async fn download_media_internal(
                 };
 
                 log::error!("[Download] Failed (ID: {}): {}", id, error_msg);
-                let _ = sender.send(DownloadEvent::Error {
-                    id: id.clone(),
-                    message: error_msg,
-                });
+
+                if !suppress_error {
+                    let _ = sender.send(DownloadEvent::Error {
+                        id: id.clone(),
+                        message: error_msg.clone(),
+                    });
+                }
+                Err(error_msg)
             }
         }
         Err(e) => {
             // In case of kill or error
             log::warn!("[Download] Process cancelled or killed (ID: {}): {}", id, e);
-            let _ = sender.send(DownloadEvent::Error {
-                id: id.clone(),
-                message: format!("Process execution error or cancelled: {}", e),
-            });
+            let msg = format!("Process execution error or cancelled: {}", e);
+            if !suppress_error {
+                let _ = sender.send(DownloadEvent::Error {
+                    id: id.clone(),
+                    message: msg.clone(),
+                });
+            }
+            Err(msg)
         }
     }
+}
 
-    Ok(())
+pub async fn download_media_internal(
+    app: AppHandle,
+    url: String,
+    id: String,
+    options: YtDlpOptions,
+    settings: AppSettings,
+    gpu_type: String,
+    sender: mpsc::UnboundedSender<DownloadEvent>,
+) -> Result<(), String> {
+    let mut current_options = options.clone();
+    let mut attempt = 0;
+    const MAX_ATTEMPTS: i32 = 3;
+
+    loop {
+        attempt += 1;
+        let is_last_attempt = attempt >= MAX_ATTEMPTS;
+
+        let result = perform_download_attempt(
+            app.clone(),
+            url.clone(),
+            id.clone(),
+            current_options.clone(),
+            settings.clone(),
+            gpu_type.clone(),
+            sender.clone(),
+            !is_last_attempt, // Suppress error if we might retry
+        )
+        .await;
+
+        match result {
+            Ok(_) => return Ok(()),
+            Err(e) => {
+                if is_last_attempt {
+                    return Err(e);
+                }
+
+                // Analyze Error
+                let error_lower = e.to_lowercase();
+                if error_lower.contains("challenge")
+                    || error_lower.contains("sig function")
+                    || error_lower.contains("javascript")
+                {
+                    let _ = sender.send(DownloadEvent::Log {
+                        id: id.clone(),
+                        message:
+                            "JavaScript Challenge failed. Retrying without external JS runtime..."
+                                .to_string(),
+                        level: "warning".to_string(),
+                    });
+                    // Disable JS Runtime for next attempt
+                    current_options.disable_js_runtime = Some(true);
+                } else if error_lower.contains("error number -138")
+                    || error_lower.contains("timed out")
+                    || error_lower.contains("timeout")
+                {
+                    let _ = sender.send(DownloadEvent::Log {
+                        id: id.clone(),
+                        message: "Connection timed out. Retrying...".to_string(),
+                        level: "warning".to_string(),
+                    });
+                    // Could increase timeout here if we tracked it in options
+                } else {
+                    // Unknown error, break and fail
+                    // We suppressed the error event, so we must send it now
+                    let _ = sender.send(DownloadEvent::Error {
+                        id: id.clone(),
+                        message: e.clone(),
+                    });
+                    return Err(e);
+                }
+
+                // Wait a bit before retry?
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+            }
+        }
+    }
 }
 
 #[tauri::command]

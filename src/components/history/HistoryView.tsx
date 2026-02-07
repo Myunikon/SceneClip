@@ -29,19 +29,25 @@ import { HistoryItem } from './HistoryItem'
 
 
 export function HistoryView() {
-    const { tasks, deleteHistory, clearTask, retryTask, recoverDownloads, getInterruptedCount, settings } = useAppStore(
+    const { tasks, settings } = useAppStore(
         useShallow((s) => ({
             tasks: s.tasks,
-            deleteHistory: s.deleteHistory,
-            clearTask: s.clearTask,
-            retryTask: s.retryTask,
-            recoverDownloads: s.recoverDownloads,
-            getInterruptedCount: s.getInterruptedCount,
             settings: s.settings
         }))
     )
     const language = settings.language
     const { t } = useTranslation()
+
+    // Actions & Derived State (Local to avoid selector issues)
+    const deleteHistory = () => useAppStore.getState().deleteHistory()
+    const clearTask = (id: string) => useAppStore.getState().clearTask(id)
+    const retryTask = (id: string) => useAppStore.getState().retryTask(id)
+    const recoverDownloads = () => useAppStore.getState().recoverDownloads()
+
+    // Calculate interrupted count locally from tasks prop
+    const interruptedCount = tasks.filter(t =>
+        t.status === 'stopped' && (t.statusDetail === 'Interrupted by Restart' || t.statusDetail?.includes('Interrupted'))
+    ).length
 
     // --- Filtering & Sorting State ---
     const [searchQuery, setSearchQuery] = useState('')
@@ -100,12 +106,21 @@ export function HistoryView() {
     }
 
     const handleConfirmDeleteSelected = () => {
-        selectedIds.forEach(id => clearTask(id))
+        selectedIds.forEach(id => useAppStore.getState().clearTask(id))
         setIsSelectionMode(false)
         setSelectedIds(new Set())
         notify.success(t('history_menu.toast_deleted', { count: selectedIds.size }) || `Deleted ${selectedIds.size} items`)
         setShowDeleteSelectedConfirm(false)
     }
+
+
+
+    // ... (rest of the component uses these local consts/functions)
+
+    // Update the usages in the return block implicitly by defining these helpers.
+    // However, I need to be careful about where I insert this.
+    // I will replace the component body parts where these were used or define them at the top.
+
 
     useEffect(() => {
         const refreshSizes = async () => {
@@ -324,7 +339,7 @@ export function HistoryView() {
                                                 </button>
                                             ))}
                                             <div className="h-px bg-border/50 my-1" />
-                                            {getInterruptedCount() > 0 && (
+                                            {interruptedCount > 0 && (
                                                 <button
                                                     onClick={() => {
                                                         const recovered = recoverDownloads()
@@ -334,7 +349,7 @@ export function HistoryView() {
                                                     }}
                                                     className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
                                                 >
-                                                    <AlertTriangle className="w-3.5 h-3.5" /> Recover ({getInterruptedCount()})
+                                                    <AlertTriangle className="w-3.5 h-3.5" /> Recover ({interruptedCount})
                                                 </button>
                                             )}
                                             <button onClick={handleVerifyFiles} className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium hover:bg-muted rounded-lg transition-colors">

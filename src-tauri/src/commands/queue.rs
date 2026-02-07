@@ -191,3 +191,64 @@ pub async fn verify_file_sizes(state: tauri::State<'_, Arc<QueueState>>) -> Resu
     }
     Ok(())
 }
+
+#[tauri::command]
+pub async fn add_history_item(
+    state: State<'_, Arc<QueueState>>,
+    app: tauri::AppHandle,
+    title: String,
+    url: String,
+    file_path: String,
+    file_size: Option<String>,
+) -> Result<String, String> {
+    let id = uuid::Uuid::new_v4().to_string();
+
+    log::info!(
+        "Adding history item: {} (ID: {}, Path: {})",
+        title,
+        id,
+        file_path
+    );
+
+    // Create a completed task for history
+    let task = DownloadTask {
+        id: id.clone(),
+        url,
+        title,
+        status: TaskStatus::Completed,
+        progress: 100.0,
+        speed: None,
+        eta: None,
+        path: std::path::Path::new(&file_path)
+            .parent()
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_default(),
+        error_message: None,
+        added_at: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+        pid: None,
+        status_detail: Some("Exported".to_string()),
+        eta_raw: None,
+        speed_raw: None,
+        total_size: file_size.clone(),
+        range: None,
+        format: None,
+        file_path: Some(file_path),
+        scheduled_time: None,
+        retry_count: None,
+        ytdlp_command: None,
+        file_size, // Use same string for display
+        completed_at: Some(
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as u64,
+        ),
+        options: Default::default(),
+    };
+
+    state.add_task(task, &app);
+    Ok(id)
+}

@@ -240,13 +240,16 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
                     sizeBytes = s.size
                 } catch { /* ignore */ }
 
-                updateTask(taskId, {
-                    status: 'completed',
-                    progress: 100,
-                    statusDetail: 'Compression Complete',
+                // Add to history properly via backend
+                await invoke('add_history_item', {
+                    title: `Exported: ${originalTask.title}`,
+                    url: originalTask.url,
                     filePath: outputPath,
                     fileSize: formatBytes(sizeBytes)
-                })
+                });
+
+                // Refresh queue to restore original task state (remove "Compressing..." status)
+                await get().initializeQueue();
 
                 notify.success("Compression Complete", { description: `${outputPath} (${formatBytes(sizeBytes)})` })
 

@@ -14,6 +14,7 @@ export const en = {
         cancel: "Cancel",
         logs: "Logs",
         remove: "Remove",
+        delete: "Delete",
         retry: "Retry",
         unknown: "Unknown"
     },
@@ -776,6 +777,26 @@ export const en = {
         compress: "Export",
         delete: "Delete"
     },
+    delete_all_title: "Delete All History",
+    delete_all_desc: "This will remove all items from your download history. This action cannot be undone.",
+    delete_selected_title: "Delete Selected",
+    scan_missing_files: "Scan Complete: {{count}} missing files found",
+    scan_healthy_files: "Scan Complete: All files are healthy",
+
+    history_menu: {
+        select: "Select Mode",
+        cancel: "Cancel Selection",
+        selected_count: "{{count}} Selected",
+        select_all: "Select All",
+        deselect_all: "Deselect All",
+        delete: "Delete",
+        delete_selected_title: "Delete Selected Items?",
+        confirm_delete_msg: "Are you sure you want to delete {{count}} items?",
+        toast_deleted: "Deleted {{count}} items",
+        toast_redownload: "Redownload Started",
+        toast_file_updated: "File path updated",
+        tooltip_missing: "File not found - Moved or Deleted"
+    },
     // Updated Guide Content (New Structure)
     guide: {
         title: "User Manual",
@@ -974,7 +995,7 @@ export const en = {
             navigation: "Navigation"
         },
         actions: {
-            settings: "Settings", // Backup if nav.settings missing
+            settings: "Settings",
             history: "History",
             downloads: "Downloads",
             new_download: "New Download",
@@ -1032,25 +1053,8 @@ export const en = {
         calculating: "Calculating..."
     },
 
-    history_menu: {
-        redownload: "Redownload",
-        view_command: "View Command",
-        compress: "Compress",
-        locate_file: "Locate File",
-        recover: "Recover File",
-        selected: "Selected",
-        select_all: "Select All",
-        deselect_all: "Deselect All",
-        delete: "DELETE",
-        cancel: "Cancel",
-        toast_redownload: "Redownload Started",
-        toast_file_updated: "File path updated",
-        toast_deleted: "Deleted {{count}} items",
-        tooltip_missing: "File not found - Moved or Deleted",
-        select: "Select",
-        selected_count: "{{count}} Selected",
-        confirm_delete_msg: "Are you sure you want to delete {{count}} items?"
-    },
+
+
 
     // Onboarding (Welcome Sheet)
     onboarding: {

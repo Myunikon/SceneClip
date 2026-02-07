@@ -92,6 +92,7 @@ pub fn run() {
             commands::queue::resume_task,
             commands::queue::get_queue_state,
             commands::queue::verify_file_sizes,
+            commands::queue::add_history_item,
             commands::updater::check_updates,
             commands::updater::update_binary,
             commands::updater::cancel_update,

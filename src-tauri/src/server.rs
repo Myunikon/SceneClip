@@ -35,10 +35,15 @@ pub fn init(app_handle: AppHandle) {
 }
 
 async fn start_server(app_handle: AppHandle) {
-    // CORS is required because the request comes from chrome-extension://...
+    // CORS whitelist: only browser extensions and localhost can access
+    // Security: prevents arbitrary websites from adding downloads
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST])
-        .allow_origin(Any)
+        .allow_origin([
+            "chrome-extension://*".parse().unwrap(),
+            "moz-extension://*".parse().unwrap(),
+            "http://localhost:*".parse().unwrap(),
+        ])
         .allow_headers(Any);
 
     let state = AppState { app_handle };
@@ -113,7 +118,7 @@ async fn handle_download(
         error_message: None,
         added_at: std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or_default()
             .as_secs(),
         pid: None,
         status_detail: Some("Queued via Browser Extension".to_string()),

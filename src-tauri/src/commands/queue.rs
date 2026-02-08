@@ -37,7 +37,7 @@ pub async fn add_to_queue(
         error_message: None,
         added_at: std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or_default()
             .as_secs(),
         // New fields initialized to None
         pid: None,
@@ -226,7 +226,7 @@ pub async fn add_history_item(
         error_message: None,
         added_at: std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or_default()
             .as_secs(),
         pid: None,
         status_detail: Some("Exported".to_string()),
@@ -243,7 +243,7 @@ pub async fn add_history_item(
         completed_at: Some(
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_default()
                 .as_millis() as u64,
         ),
         options: Default::default(),

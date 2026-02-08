@@ -278,18 +278,27 @@ pub async fn compress_media(
     }
 }
 
-// Helper to parse HH:MM:SS.ss or SS.ss to seconds
+// Helper to parse HH:MM:SS.ss, MM:SS.ss, or SS.ss to seconds
 fn parse_time(time_str: &str) -> f64 {
     let parts: Vec<&str> = time_str.split(':').collect();
-    if parts.len() == 3 {
-        // HH:MM:SS.ss
-        let h: f64 = parts[0].parse().unwrap_or(0.0);
-        let m: f64 = parts[1].parse().unwrap_or(0.0);
-        let s: f64 = parts[2].parse().unwrap_or(0.0);
-        h * 3600.0 + m * 60.0 + s
-    } else {
-        // SS.ss
-        time_str.parse().unwrap_or(0.0)
+    match parts.len() {
+        3 => {
+            // HH:MM:SS.ss
+            let h: f64 = parts[0].parse().unwrap_or(0.0);
+            let m: f64 = parts[1].parse().unwrap_or(0.0);
+            let s: f64 = parts[2].parse().unwrap_or(0.0);
+            h * 3600.0 + m * 60.0 + s
+        }
+        2 => {
+            // MM:SS.ss
+            let m: f64 = parts[0].parse().unwrap_or(0.0);
+            let s: f64 = parts[1].parse().unwrap_or(0.0);
+            m * 60.0 + s
+        }
+        _ => {
+            // SS.ss or invalid
+            time_str.parse().unwrap_or(0.0)
+        }
     }
 }
 
@@ -429,8 +438,9 @@ mod tests {
 
     #[test]
     fn parse_time_mm_ss_format() {
-        // MM:SS format (2 parts) is NOT explicitly handled, falls through to parse as float
-        // This documents current behavior
-        assert!((parse_time("01:30") - 0.0).abs() < 0.001); // Can't parse as float
+        // MM:SS format (2 parts) - now properly handled
+        assert!((parse_time("01:30") - 90.0).abs() < 0.001); // 1 min 30 sec = 90 sec
+        assert!((parse_time("05:45") - 345.0).abs() < 0.001); // 5 min 45 sec = 345 sec
+        assert!((parse_time("00:30") - 30.0).abs() < 0.001); // 30 sec
     }
 }

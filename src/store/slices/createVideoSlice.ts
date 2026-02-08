@@ -2,14 +2,16 @@
 import { StateCreator } from 'zustand'
 import { AppState, DownloadTask, VideoSlice } from './types'
 import { invoke } from '@tauri-apps/api/core'
-import { listen } from '@tauri-apps/api/event'
+import { listen, UnlistenFn } from '@tauri-apps/api/event'
 import { buildCompressedOutputPath } from '../../lib/ffmpegService'
 import { getUniqueFilePath } from '../../lib/fileUtils'
 import { formatBytes } from '../../lib/utils'
 import { notify } from '../../lib/notify'
 import { stat } from '@tauri-apps/plugin-fs'
 
-
+// Store unlisten function to prevent listener accumulation
+let queueUpdateUnlisten: UnlistenFn | null = null
+let trailingTimeout: NodeJS.Timeout | null = null
 
 export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set, get) => {
 
@@ -42,12 +44,21 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
                 console.error("Failed to fetch queue state:", e);
             }
 
-            // 2. Listen for updates (Throttled to ~5fps with trailing edge)
+            // 2. Cleanup previous listener to prevent memory leak
+            if (queueUpdateUnlisten) {
+                queueUpdateUnlisten()
+                queueUpdateUnlisten = null
+            }
+            if (trailingTimeout) {
+                clearTimeout(trailingTimeout)
+                trailingTimeout = null
+            }
+
+            // 3. Listen for updates (Throttled to ~5fps with trailing edge)
             let lastUpdate = 0
             const THROTTLE_MS = 200
-            let trailingTimeout: NodeJS.Timeout | null = null
 
-            await listen<DownloadTask[]>('queue_update', (event) => {
+            queueUpdateUnlisten = await listen<DownloadTask[]>('queue_update', (event) => {
                 const now = Date.now()
 
                 // Clear any pending trailing update as we have fresh data
@@ -79,6 +90,7 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
                 }
             });
         },
+
 
         addTask: async (url, options) => {
             console.log("[VideoSlice] addTask called:", { url, options });

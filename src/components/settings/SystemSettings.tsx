@@ -86,14 +86,15 @@ function BinaryPathInput({ label, value, onChange, description, expectedType }: 
         }
     }
 
-    // Validate on mount or reset
+    // Validate on mount or when value changes
     useEffect(() => {
         if (value && value.trim() !== '' && !value.includes('Auto-managed') && status.isValid === null) {
             validate(value)
         } else if (!value || value.trim() === '' || value.includes('Auto-managed')) {
             setStatus({ isValid: null, version: null, loading: false })
         }
-    }, []) // Only on mount
+    }, [value, status.isValid, validate])
+
 
     const handleBrowse = async () => {
         try {
@@ -174,8 +175,9 @@ function BinaryPathInput({ label, value, onChange, description, expectedType }: 
 
 export function SystemSettings({ settings, setSetting, updateSettings }: SystemSettingsProps) {
     const { t } = useTranslation()
-    const { resetSettings } = useAppStore()
+    const { resetSettings, gpuModel, gpuType } = useAppStore()
     const [showResetConfirm, setShowResetConfirm] = useState(false)
+
 
     return (
         <div className="space-y-4">
@@ -253,10 +255,10 @@ export function SystemSettings({ settings, setSetting, updateSettings }: SystemS
                 <div className="mt-4 flex items-center gap-2 text-xs bg-secondary/50 p-2 rounded-lg border border-border/50">
                     <span className="font-bold text-muted-foreground">{t('settings.advanced.detected_gpu') || "GPU:"}</span>
                     <span className="font-mono text-primary">
-                        {useAppStore.getState().gpuModel || t('settings.advanced.unknown_integrated') || "Integrated"}
+                        {gpuModel || t('settings.advanced.unknown_integrated') || "Integrated"}
                     </span>
                     <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase text-[10px] font-bold">
-                        {useAppStore.getState().gpuType}
+                        {gpuType}
                     </span>
                 </div>
             </SettingSection>

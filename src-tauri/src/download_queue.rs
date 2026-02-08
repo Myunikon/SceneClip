@@ -697,12 +697,17 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                         let max_retries = 3;
                                         let current = t.retry_count.unwrap_or(0);
 
-                                        // Transient error detection (simple)
+                                        // Transient error detection (HTTP 5xx, timeout, network errors)
                                         let msg_lower = message.to_lowercase();
                                         let is_transient = msg_lower.contains("timeout")
                                             || msg_lower.contains("network")
                                             || msg_lower.contains("socket")
-                                            || msg_lower.contains("5"); // 5xx errors often contain 500, 503 etc
+                                            || msg_lower.contains("500")
+                                            || msg_lower.contains("502")
+                                            || msg_lower.contains("503")
+                                            || msg_lower.contains("504")
+                                            || msg_lower.contains("connection refused")
+                                            || msg_lower.contains("temporarily unavailable");
 
                                         if is_transient && current < max_retries {
                                             retry_num = current + 1;
@@ -719,7 +724,7 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                             // Schedule it
                                             let now = std::time::SystemTime::now()
                                                 .duration_since(std::time::UNIX_EPOCH)
-                                                .unwrap()
+                                                .unwrap_or_default()
                                                 .as_secs();
                                             t.scheduled_time = Some(now + delay);
                                         } else {

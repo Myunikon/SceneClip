@@ -20,6 +20,7 @@ interface AddDialogContextType {
     availableAudioBitrates?: number[]
     availableVideoCodecs?: string[]
     availableAudioCodecs?: string[]
+    availableContainers?: string[]
     availableLanguages?: LanguageOption[]
 
     // Utilities

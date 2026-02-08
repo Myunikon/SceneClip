@@ -552,7 +552,8 @@ export const ms = {
             vp9: "Piawaian YouTube (4K)",
             av1: "AV1 jimat ruang (Generasi Seterusnya).",
             warning_title: "Polengkodan Semula Diperlukan",
-            warning_desc: "Sumber tiada {{codec}}. Kualiti mungkin turun sedikit & muat turun lebih lama."
+            warning_desc: "Sumber tiada {{codec}}. Kualiti mungkin turun sedikit & muat turun lebih lama.",
+            reencode_short: "Perlu Kod Semula"
         },
 
         // Bagian UI Baru

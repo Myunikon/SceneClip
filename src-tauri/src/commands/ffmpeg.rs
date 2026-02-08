@@ -323,13 +323,16 @@ pub async fn split_media_chapters(
         .and_then(|s| s.to_str())
         .unwrap_or("mp4");
 
-    let total_duration = if let Some(last) = chapters.last() {
-        last.end_time - chapters.first().map(|c| c.start_time).unwrap_or(0.0)
-    } else {
+    // Calculate total duration from selected chapters
+    let total_duration: f64 = chapters.iter().map(|c| c.end_time - c.start_time).sum();
+    let total_duration = if total_duration <= 0.0 {
         1.0
+    } else {
+        total_duration
     };
 
     let mut accumulated_time = 0.0;
+    let mut last_percent = 0.0;
 
     for (index, chapter) in chapters.iter().enumerate() {
         let safe_title = chapter
@@ -354,19 +357,48 @@ pub async fn split_media_chapters(
         args.push("0".to_string());
         args.push(output_path.to_string_lossy().to_string());
 
-        let mut command = Command::new(&ffmpeg_path);
+        let mut std_command = std::process::Command::new(&ffmpeg_path);
 
         #[cfg(target_os = "windows")]
         {
+            use std::os::windows::process::CommandExt;
             const CREATE_NO_WINDOW: u32 = 0x08000000;
-            command.creation_flags(CREATE_NO_WINDOW);
+            std_command.creation_flags(CREATE_NO_WINDOW);
         }
 
-        let output = command
-            .args(&args)
-            .output()
-            .await
-            .map_err(|e| format!("Failed to split chapter {}: {}", index + 1, e))?;
+        let mut command = Command::from(std_command);
+        command.args(&args);
+        command.stdout(Stdio::piped());
+        command.stderr(Stdio::piped());
+
+        let mut child = command
+            .spawn()
+            .map_err(|e| format!("Failed to spawn ffmpeg for chapter {}: {}", index + 1, e))?;
+
+        let stderr = child.stderr.take().ok_or("Failed to open stderr")?;
+        let reader = AsyncBufReader::new(stderr);
+        let mut lines = reader.lines();
+
+        while let Ok(Some(line)) = lines.next_line().await {
+            // Parse time=... to update progress
+            if let Some(t_cap) = TIME_RE.captures(&line) {
+                let current_chapter_time = parse_time(&t_cap[1]);
+                let total_elapsed = accumulated_time + current_chapter_time;
+                let percent = (total_elapsed / total_duration) * 100.0;
+
+                // Throttle updates
+                if (percent - last_percent).abs() > 0.5 || percent >= 100.0 {
+                    let _ = on_event.send(FFmpegEvent::Progress {
+                        percent: percent.min(100.0),
+                        speed: "N/A".to_string(), // Copy usually doesn't report speed reliably or is too fast
+                        eta: "N/A".to_string(),
+                    });
+                    last_percent = percent;
+                }
+            }
+        }
+
+        let output = child.wait_with_output().await.map_err(|e| e.to_string())?;
 
         if !output.status.success() {
             let err_msg = format!(
@@ -377,19 +409,10 @@ pub async fn split_media_chapters(
             let _ = on_event.send(FFmpegEvent::Error {
                 message: err_msg.clone(),
             });
-            return Err(err_msg); // P0 FIX: Fail entire operation
+            return Err(err_msg);
         }
 
-        // Update Progress
-        let chapter_duration = chapter.end_time - chapter.start_time;
-        accumulated_time += chapter_duration;
-        let percent = (accumulated_time / total_duration) * 100.0;
-
-        let _ = on_event.send(FFmpegEvent::Progress {
-            percent: percent.min(100.0),
-            speed: "N/A".to_string(),
-            eta: "N/A".to_string(),
-        });
+        accumulated_time += chapter.end_time - chapter.start_time;
     }
 
     let _ = on_event.send(FFmpegEvent::Completed {

@@ -13,6 +13,7 @@ export interface ParsedMetadata {
     audioBitrates: number[]
     videoCodecs: string[]
     audioCodecs: string[]
+    containers: string[]
     languages: LanguageOption[]
     thumbnail?: string
     filesize?: number

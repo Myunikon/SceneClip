@@ -16,8 +16,7 @@ export function LeftPanel() {
 
     return (
         <div className={cn(
-            "relative z-20 p-6 space-y-6 transition-all duration-300 ease-out panel-left",
-            hasMeta ? "w-[26rem] shrink-0 border-r border-white/5 bg-black/5 shadow-[5px_0_15px_-5px_rgba(0,0,0,0.5)]" : "w-full"
+            hasMeta ? "w-[420px] shrink-0 border-r border-white/5 bg-black/5 shadow-[5px_0_15px_-5px_rgba(0,0,0,0.5)]" : "w-full"
         )}>
             <UrlInput
                 url={url}

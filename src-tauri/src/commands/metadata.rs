@@ -16,6 +16,7 @@ pub struct ParsedMetadata {
     pub audio_bitrates: Vec<u32>,
     pub video_codecs: Vec<String>,
     pub audio_codecs: Vec<String>,
+    pub containers: Vec<String>,
     pub languages: Vec<LanguageOption>,
     pub thumbnail: Option<String>,
     pub filesize: Option<u64>,
@@ -28,6 +29,7 @@ struct YtDlpFormat {
     abr: Option<f64>,
     vcodec: Option<String>,
     acodec: Option<String>,
+    ext: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -72,6 +74,7 @@ pub fn parse_video_metadata(raw_json: serde_json::Value) -> Result<ParsedMetadat
     let mut audio_bitrates = Vec::new();
     let mut video_codecs = BTreeSet::new();
     let mut audio_codecs = BTreeSet::new();
+    let mut containers = BTreeSet::new();
 
     if let Some(formats) = meta.formats {
         for f in formats {
@@ -135,6 +138,22 @@ pub fn parse_video_metadata(raw_json: serde_json::Value) -> Result<ParsedMetadat
                     }
                 }
             }
+
+            // Containers (Extensions)
+            if let Some(ext) = f.ext {
+                // Determine if this format is "valid" for container listing
+                // Usually we care if it's a video container or a purely audio one depending on context
+                // But generally, yt-dlp returns ext like mp4, webm, m4a, 3gp.
+                // We normalize:
+                let ext_lower = ext.to_lowercase();
+                if ext_lower == "mp4"
+                    || ext_lower == "mkv"
+                    || ext_lower == "webm"
+                    || ext_lower == "mov"
+                {
+                    containers.insert(ext_lower);
+                }
+            }
         }
     }
 
@@ -183,6 +202,7 @@ pub fn parse_video_metadata(raw_json: serde_json::Value) -> Result<ParsedMetadat
         audio_bitrates,
         video_codecs: video_codecs.into_iter().collect(),
         audio_codecs: audio_codecs.into_iter().collect(),
+        containers: containers.into_iter().collect(),
         languages,
         thumbnail: meta.thumbnail,
         filesize: meta.filesize,

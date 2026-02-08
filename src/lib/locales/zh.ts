@@ -561,7 +561,8 @@ export const zh = {
             vp9: "YouTube 标准 (4K)",
             av1: "AV1 节省流量 (下一代)",
             warning_title: "需要重新编码",
-            warning_desc: "源文件不包含 {{codec}}。质量可能会略有下降，下载时间会变长。"
+            warning_desc: "源文件不包含 {{codec}}。质量可能会略有下降，下载时间会变长。",
+            reencode_short: "需重新编码"
         },
 
         // 新的 UI 部分

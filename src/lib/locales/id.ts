@@ -507,7 +507,20 @@ export const id = {
         clip_pause_title: "Jeda Unduhan Klip?",
         clip_pause_desc: "Ini download KLIP. Karena batasan teknis, resume akan MULAI ULANG dari 0%.",
         clip_pause_confirm: "Pause Saja",
-        fetching_info: "Mengambil info..."
+        fetching_info: "Mengambil info...",
+
+        // Codec
+        codec: {
+            label: "Codec",
+            auto_desc: "Kualitas Terbaik Otomatis",
+            h264: "H.264 kompatibel luas.",
+            hevc: "Efisiensi Tinggi (H.265)",
+            vp9: "Standar YouTube (4K)",
+            av1: "AV1 hemat data (Next-Gen).",
+            warning_title: "Perlu Re-encode",
+            warning_desc: "File sumber tidak memiliki {{codec}}. Kualitas mungkin berkurang sedikit & butuh waktu lama.",
+            reencode_short: "Perlu Re-encode"
+        }
     },
 
 
@@ -870,7 +883,10 @@ export const id = {
         view_command: "Lihat Perintah",
         folder: "Buka Folder",
         compress: "Ekspor",
-        delete: "Hapus"
+        delete: "Hapus",
+        delete_all_title: "Hapus Semua Riwayat",
+        delete_all_desc: "Ini akan menghapus semua item dari riwayat unduhan Anda. Tindakan ini tidak bisa dibatalkan.",
+        delete_selected_title: "Hapus Pilihan"
     },
 
     guide: {

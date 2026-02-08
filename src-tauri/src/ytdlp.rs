@@ -916,10 +916,10 @@ pub async fn build_ytdlp_args(
 
         let codec = options.video_codec.as_deref().unwrap_or("auto");
         let format_string = match codec {
-            "h264" => format!("bestvideo{}[vcodec^=avc]+bestaudio[ext=m4a]/best{}[ext=mp4]", h, h),
-            "av1" => format!("bestvideo{}[vcodec^=av01]+bestaudio/bestvideo{}[vcodec^=vp9]+bestaudio", h, h),
-            "vp9" => format!("bestvideo{}[vcodec^=vp9]+bestaudio", h),
-            "hevc" => format!("bestvideo{}[vcodec^=hevc]+bestaudio/bestvideo{}[vcodec^=hev1]+bestaudio/bestvideo{}[vcodec^=hvc1]+bestaudio", h, h, h),
+            "h264" => format!("bestvideo{}[vcodec^=avc]+bestaudio[ext=m4a]/best{}[ext=mp4]/bestvideo{}+bestaudio/best{}", h, h, h, h),
+            "av1" => format!("bestvideo{}[vcodec^=av01]+bestaudio/bestvideo{}[vcodec^=vp9]+bestaudio/bestvideo{}+bestaudio/best{}", h, h, h, h),
+            "vp9" => format!("bestvideo{}[vcodec^=vp9]+bestaudio/bestvideo{}+bestaudio/best{}", h, h, h),
+            "hevc" => format!("bestvideo{}[vcodec^=hevc]+bestaudio/bestvideo{}[vcodec^=hev1]+bestaudio/bestvideo{}[vcodec^=hvc1]+bestaudio/bestvideo{}+bestaudio/best{}", h, h, h, h, h),
             _ => format!("bestvideo{}+bestaudio/best{}", h, h),
         };
         args.push("-f".to_string());
@@ -1024,8 +1024,15 @@ pub async fn build_ytdlp_args(
                 args.push("--postprocessor-args".to_string());
                 args.push(format!("VideoConvertor:{}", transcode_args));
             }
+
+            // FORCE VideoConvertor to run if we have custom args (transcoding/normalization)
+            // This ensures single-stream downloads (that don't trigger Merger) still get processed.
+            args.push("--recode-video".to_string());
+            args.push(container.to_string());
         }
 
+        // Redundant if we use recode-video, but kept for safety in non-transcode paths logic check
+        // Actually, merge-output-format is useful for the Merger step itself.
         args.push("--merge-output-format".to_string());
         args.push(container.to_string());
     }

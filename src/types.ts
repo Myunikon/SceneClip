@@ -42,6 +42,7 @@ export interface VideoMeta {
     filesize_approx?: number
     chapters?: VideoChapter[]
     is_live?: boolean
+    containers?: string[]
 }
 
 // System Stats

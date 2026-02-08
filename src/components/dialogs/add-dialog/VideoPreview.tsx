@@ -60,7 +60,7 @@ export function VideoPreview({ loading, meta, error, t, url }: VideoPreviewProps
             {/* --- 1. PREVIEW KECIL (THUMBNAIL) --- */}
             <button
                 type="button"
-                className={`w-full relative flex items-center justify-center text-center border-b border-white/5 shrink-0 overflow-hidden group bg-black/20 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-inset transition-colors ${loading || !meta || error ? 'h-40' : 'min-h-[160px]'}`}
+                className={`w-full relative flex items-center justify-center text-center border-b border-white/5 shrink-0 overflow-hidden group bg-black/20 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-inset transition-colors aspect-video ${loading || !meta || error ? '' : ''}`}
                 onClick={() => meta && !imgError && setIsPreviewOpen(true)}
                 onKeyDown={handleKeyDown}
                 disabled={loading || error || !meta}
@@ -81,7 +81,7 @@ export function VideoPreview({ loading, meta, error, t, url }: VideoPreviewProps
                                 <img
                                     src={imageSrc}
                                     referrerPolicy="no-referrer"
-                                    className="max-h-[350px] w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105"
+                                    className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105"
                                     alt="Thumbnail"
                                     draggable={false}
                                     onError={() => setImgError(true)}

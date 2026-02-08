@@ -111,6 +111,7 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
     const availableAudioBitrates = getAvailableAudioBitrates(meta?.formats)
     const availableVideoCodecs = getAvailableVideoCodecs(meta?.formats)
     const availableAudioCodecs = getAvailableAudioCodecs(meta?.formats)
+    const availableContainers = meta?.containers || []
     const availableLanguages = getAvailableLanguages(meta)
 
     // Estimated Size Calculation
@@ -212,7 +213,7 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
         url, setUrl,
         options, setters, // Return grouped props
         meta, loadingMeta, errorMeta,
-        availableResolutions, availableAudioBitrates, availableVideoCodecs, availableAudioCodecs, availableLanguages,
+        availableResolutions, availableAudioBitrates, availableVideoCodecs, availableAudioCodecs, availableContainers, availableLanguages,
         handleSubmit, resetForm, browse, handlePaste,
         t,
         formatFileSize: (bytes?: number) => formatBytes(bytes || 0, 2, i18n.language),

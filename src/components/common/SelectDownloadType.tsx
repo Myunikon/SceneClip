@@ -6,7 +6,7 @@ import { cn } from '../../lib/utils'
 export function SelectDownloadType() {
     const {
         options, setters,
-        availableResolutions, availableAudioBitrates,
+        availableResolutions, availableAudioBitrates, availableVideoCodecs, availableContainers,
         t
     } = useAddDialogContext()
 
@@ -188,28 +188,60 @@ export function SelectDownloadType() {
                             variant="scroll"
                             value={container}
                             onChange={setContainer}
-                            options={['mp4', 'mkv', 'webm', 'mov'].map(c => ({ value: c, label: c.toUpperCase() }))}
+                            options={['mp4', 'mkv', 'webm', 'mov'].map(c => {
+                                const isAvailable = !availableContainers || availableContainers.length === 0 || availableContainers.includes(c)
+                                const label = c.toUpperCase()
+                                return {
+                                    value: c,
+                                    label: isAvailable ? label : `${label} (Convert)`,
+                                    description: isAvailable ? undefined : t('dialog.logic_warnings.mov_reencode', { codec: label }).replace(/<[^>]*>/g, '') // reused optional warning
+                                }
+                            })}
                         />
                     </OptionCard>
 
-                    {/* VIDEO CODEC - Moved from Enhancements */}
-                    <OptionCard
-                        title={t('dialog.video_codec') || "Video Codec"}
-                        description={t('dialog.codec_desc') || "AV1 is best, H264 is most compatible"}
-                    >
-                        <ChoiceGroup
-                            variant="scroll"
-                            value={options.videoCodec || 'auto'}
+                    {/* VIDEO CODEC */}
+                    {(() => {
+                        const selectedCodec = options.videoCodec || 'auto'
+                        const isSelectedAvailable = selectedCodec === 'auto' ||
+                            (!availableVideoCodecs || availableVideoCodecs.length === 0 || availableVideoCodecs.includes(selectedCodec))
 
-                            onChange={(val) => setters.setVideoCodec(val)}
-                            options={[
-                                { value: 'auto', label: 'Auto' },
-                                { value: 'av1', label: 'AV1' },
-                                { value: 'vp9', label: 'VP9' },
-                                { value: 'h264', label: 'H264' },
-                            ]}
-                        />
-                    </OptionCard>
+                        let codecDesc = ""
+                        if (selectedCodec === 'auto') codecDesc = t('dialog.codec.auto_desc') || "Best quality available"
+                        else if (selectedCodec === 'hevc') codecDesc = t('dialog.codec.hevc') || "High Efficiency (H.265)"
+                        else if (selectedCodec === 'h264') codecDesc = t('dialog.codec.h264') || "Best Compatibility (AVC)"
+                        else if (selectedCodec === 'av1') codecDesc = t('dialog.codec.av1') || "Royalty-free (Best Quality)"
+                        else if (selectedCodec === 'vp9') codecDesc = t('dialog.codec.vp9') || "Google / YouTube Standard"
+
+                        // Append warning if conversion needed
+                        if (!isSelectedAvailable) {
+                            // Short & clear warning
+                            const warnText = t('dialog.codec.reencode_short') || "Re-encode required"
+                            codecDesc = `⚠️ ${warnText} (${codecDesc})`
+                        }
+
+                        return (
+                            <OptionCard
+                                title={t('dialog.video_codec') || "Video Codec"}
+                                description={codecDesc}
+                            >
+                                <ChoiceGroup
+                                    variant="scroll"
+                                    value={options.videoCodec || 'auto'}
+                                    onChange={(val) => setters.setVideoCodec(val as any)}
+                                    options={[
+                                        { value: 'auto', label: 'Auto' },
+                                        ...['h264', 'av1', 'vp9', 'hevc'].map(codec => ({
+                                            value: codec,
+                                            label: codec.toUpperCase(),
+                                            // Mark visually if unavailable (optional, maybe fade it slightly or add icon? User explicitly said no text in option)
+                                            // Let's just keep it clean as requested. The description above warns them.
+                                        }))
+                                    ]}
+                                />
+                            </OptionCard>
+                        )
+                    })()}
                 </div>
             )}
         </div>

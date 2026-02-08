@@ -595,6 +595,7 @@ export const en = {
             av1: "AV1 saves space (Next-Gen).",
             warning_title: "Re-encoding Required",
             warning_desc: "The source file does not contain {{codec}}. Quality may be slightly reduced, and download time will be longer.",
+            reencode_short: "Re-encode needed"
         },
 
         // New UI Sections
@@ -775,13 +776,11 @@ export const en = {
         view_command: "View Command",
         folder: "Show in Folder",
         compress: "Export",
-        delete: "Delete"
+        delete: "Delete",
+        delete_all_title: "Delete All History",
+        delete_all_desc: "This will remove all items from your download history. This action cannot be undone.",
+        delete_selected_title: "Delete Selected"
     },
-    delete_all_title: "Delete All History",
-    delete_all_desc: "This will remove all items from your download history. This action cannot be undone.",
-    delete_selected_title: "Delete Selected",
-    scan_missing_files: "Scan Complete: {{count}} missing files found",
-    scan_healthy_files: "Scan Complete: All files are healthy",
 
     history_menu: {
         select: "Select Mode",

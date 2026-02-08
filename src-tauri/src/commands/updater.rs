@@ -1,5 +1,6 @@
 // use futures::StreamExt;
 use reqwest::header::USER_AGENT;
+use sha2::Digest;
 use std::cmp::Ordering;
 use std::fs;
 use std::io::Write;
@@ -463,6 +464,7 @@ pub async fn update_binary(app: AppHandle, binary: String) -> Result<String, Str
 
         let (target_keyword, extension) = get_target_pattern(&binary);
 
+        // 1. Find Binary Asset
         let asset = assets
             .iter()
             .find(|a| {
@@ -471,20 +473,41 @@ pub async fn update_binary(app: AppHandle, binary: String) -> Result<String, Str
                     if cfg!(target_os = "windows") {
                         name == "yt-dlp.exe"
                     } else if cfg!(target_os = "macos") {
-                        name == "yt-dlp_macos"
+                        // macOS: Check architecture
+                        if std::env::consts::ARCH == "aarch64" {
+                            name == "yt-dlp_macos"
+                        } else {
+                            name == "yt-dlp_macos"
+                        }
                     } else {
-                        name == "yt-dlp_linux"
+                        // Linux: Check architecture
+                        if std::env::consts::ARCH == "aarch64" {
+                            name == "yt-dlp_linux_aarch64"
+                        } else {
+                            name == "yt-dlp_linux"
+                        }
                     }
                 } else {
                     name.contains(&target_keyword) && name.ends_with(&extension)
                 }
             })
-            .ok_or("No asset found")?;
+            .ok_or(format!(
+                "No matching binary found for system architecture ({})",
+                std::env::consts::ARCH
+            ))?;
+
+        // 2. Find Checksum Asset (SHA2-256SUMS)
+        let checksum_asset = assets
+            .iter()
+            .find(|a| a.name == "SHA2-256SUMS")
+            .ok_or("SHA2-256SUMS verification file not found in release")?;
 
         let temp_dir = app.path().temp_dir().unwrap_or_else(|_| PathBuf::from("."));
         let temp_filename = format!("sceneclip_update_{}.tmp", binary);
         let temp_path = temp_dir.join(&temp_filename);
 
+        // 3. Download Binary
+        log::info!("Downloading binary to {:?}", temp_path);
         download_file_with_progress(
             &app,
             &asset.browser_download_url,
@@ -494,21 +517,71 @@ pub async fn update_binary(app: AppHandle, binary: String) -> Result<String, Str
         )
         .await?;
 
+        // 4. Verify Checksum
+        log::info!("Verifying checksum...");
+        match verify_checksum(
+            &checksum_asset.browser_download_url,
+            &temp_path,
+            &asset.name,
+        )
+        .await
+        {
+            Ok(_) => log::info!("Checksum verified successfully"),
+            Err(e) => {
+                let _ = fs::remove_file(&temp_path); // Cleanup
+                return Err(format!("Checksum verification failed: {}", e));
+            }
+        }
+
+        // 5. Atomic Update with Backup
         let final_path = get_writable_binary_path(&app, &binary);
         if let Some(parent) = final_path.parent() {
             let _ = fs::create_dir_all(parent);
         }
 
-        if extension == "zip" {
-            extract_zip(&temp_path, &final_path, &binary)?;
-        } else if extension.contains("tar") {
-            extract_tar(&temp_path, &final_path, &binary)?;
-        } else {
-            replace_binary(&temp_path, &final_path)?;
+        // Prepare paths
+        let backup_path = final_path.with_extension("old");
+
+        // Remove old backup if exists
+        if backup_path.exists() {
+            let _ = fs::remove_file(&backup_path);
         }
 
-        let _ = fs::remove_file(&temp_path);
-        Ok(final_path.to_string_lossy().to_string())
+        // Backup existing binary if it exists
+        if final_path.exists() {
+            fs::rename(&final_path, &backup_path)
+                .map_err(|e| format!("Failed to backup existing binary: {}", e))?;
+        }
+
+        // Install new binary
+        let install_result = if extension == "zip" {
+            extract_zip(&temp_path, &final_path, &binary)
+        } else if extension.contains("tar") {
+            extract_tar(&temp_path, &final_path, &binary)
+        } else {
+            replace_binary(&temp_path, &final_path)
+        };
+
+        match install_result {
+            Ok(_) => {
+                log::info!("Update installed successfully");
+                let _ = fs::remove_file(&temp_path);
+                // Optional: Remove backup now or keep it until next update?
+                // Strategy: Keep .old until next successful update attempts to overwrite it.
+                // But cleaning up is cleaner.
+                let _ = fs::remove_file(&backup_path);
+                Ok(final_path.to_string_lossy().to_string())
+            }
+            Err(e) => {
+                log::error!("Installation failed, rolling back: {}", e);
+                // Rollback
+                if backup_path.exists() {
+                    let _ = fs::rename(&backup_path, &final_path);
+                }
+                let _ = fs::remove_file(&temp_path);
+                Err(format!("Update failed and rolled back. Error: {}", e))
+            }
+        }
     });
 
     let abort_handle = update_task.abort_handle();
@@ -544,6 +617,59 @@ pub async fn update_binary(app: AppHandle, binary: String) -> Result<String, Str
     result
 }
 
+// Helper for checksum verification
+async fn verify_checksum(
+    checksum_url: &str,
+    file_path: &Path,
+    filename_in_checksums: &str,
+) -> Result<(), String> {
+    // 1. Download SHA2-256SUMS file
+    let client = reqwest::Client::new();
+    let res = client
+        .get(checksum_url)
+        .header(USER_AGENT, "SceneClip")
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if !res.status().is_success() {
+        return Err("Failed to download checksum file".to_string());
+    }
+
+    let checksums_content = res.text().await.map_err(|e| e.to_string())?;
+
+    // 2. Calculate local file hash
+    let mut file = fs::File::open(file_path).map_err(|e| e.to_string())?;
+    let mut hasher = sha2::Sha256::new();
+    std::io::copy(&mut file, &mut hasher).map_err(|e| e.to_string())?;
+    let hash_result = hasher.finalize();
+    let local_hash = hex::encode(hash_result);
+
+    // 3. Find matching line in checksums file
+    // Format: <hash> <filename>
+    for line in checksums_content.lines() {
+        if line.ends_with(filename_in_checksums) {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if parts.len() >= 2 {
+                let remote_hash = parts[0];
+                if local_hash.eq_ignore_ascii_case(remote_hash) {
+                    return Ok(());
+                } else {
+                    return Err(format!(
+                        "Hash mismatch! Local: {}, Remote: {}",
+                        local_hash, remote_hash
+                    ));
+                }
+            }
+        }
+    }
+
+    Err(format!(
+        "Hash for {} not found in checksum file",
+        filename_in_checksums
+    ))
+}
+
 #[tauri::command]
 pub async fn install_app_update(app: AppHandle) -> Result<(), String> {
     log::info!("Starting App Update Process...");
@@ -573,6 +699,7 @@ pub async fn install_app_update(app: AppHandle) -> Result<(), String> {
         log::info!("Windows Mode: is_installed={}, arch={}", is_installed, arch);
 
         let keyword = if is_installed { "setup" } else { "portable" };
+        let is_portable = !is_installed;
 
         // Try architecture-specific match first
         let arch_keyword = if arch == "aarch64" { "arm64" } else { "" };
@@ -582,6 +709,8 @@ pub async fn install_app_update(app: AppHandle) -> Result<(), String> {
             .find(|a| {
                 let name = a.name.to_lowercase();
                 let is_exe = name.ends_with(".exe");
+                let is_zip = is_portable && name.ends_with(".zip");
+
                 let matches_type = name.contains(keyword);
                 let matches_arch = arch_keyword.is_empty() || name.contains(arch_keyword);
                 // Exclude ARM builds if we're on x64
@@ -591,13 +720,15 @@ pub async fn install_app_update(app: AppHandle) -> Result<(), String> {
                     true
                 };
 
-                is_exe && matches_type && matches_arch && excludes_wrong_arch
+                (is_exe || is_zip) && matches_type && matches_arch && excludes_wrong_arch
             })
             .or_else(|| {
-                // Fallback: any .exe matching type
+                // Fallback: any .exe or .zip matching keyword
                 assets.iter().find(|a| {
                     let name = a.name.to_lowercase();
-                    name.ends_with(".exe") && name.contains(keyword)
+                    let matches_ext =
+                        name.ends_with(".exe") || (is_portable && name.ends_with(".zip"));
+                    matches_ext && name.contains(keyword)
                 })
             })
     };
@@ -687,6 +818,23 @@ pub async fn install_app_update(app: AppHandle) -> Result<(), String> {
             app.exit(0);
         } else {
             log::info!("Applying Windows Portable Update...");
+
+            // Handle Zip Extraction
+            let update_exe = if temp_path.extension().map_or(false, |e| e == "zip") {
+                log::info!("Extracting zip update...");
+                let new_exe = current_exe.with_extension("new");
+                // Validate: Extract SceneClip.exe from zip
+                match extract_zip(&temp_path, &new_exe, "SceneClip") {
+                    Ok(_) => {
+                        let _ = fs::remove_file(&temp_path); // Cleanup zip
+                        new_exe
+                    }
+                    Err(e) => return Err(format!("Failed to extract zip update: {}", e)),
+                }
+            } else {
+                temp_path.clone()
+            };
+
             let old_exe = current_exe.with_extension("old");
 
             if old_exe.exists() {
@@ -695,10 +843,10 @@ pub async fn install_app_update(app: AppHandle) -> Result<(), String> {
             fs::rename(&current_exe, &old_exe)
                 .map_err(|e| format!("Failed to rename current exe: {}", e))?;
 
-            if fs::rename(&temp_path, &current_exe).is_err() {
-                fs::copy(&temp_path, &current_exe)
+            if fs::rename(&update_exe, &current_exe).is_err() {
+                fs::copy(&update_exe, &current_exe)
                     .map_err(|e| format!("Failed to copy new exe: {}", e))?;
-                let _ = fs::remove_file(&temp_path);
+                let _ = fs::remove_file(&update_exe);
             }
 
             std::process::Command::new(&current_exe)

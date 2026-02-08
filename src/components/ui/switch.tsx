@@ -24,6 +24,7 @@ export function Switch({ checked, onCheckedChange, className, disabled, ...props
             {...props}
         >
             <motion.span
+                initial={false}
                 animate={{ x: checked ? 20 : 0 }}
                 transition={{
                     type: "spring",

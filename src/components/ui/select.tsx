@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from 'react'
+import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronDown, Check } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { useDropdown } from '../../hooks/useDropdown'
 
 interface Option {
     value: string
@@ -18,63 +19,7 @@ interface SelectProps {
 }
 
 export function Select({ value, onChange, options, placeholder, className, disabled }: SelectProps) {
-    const [isOpen, setIsOpen] = useState(false)
-    const [focusedIndex, setFocusedIndex] = useState(-1)
-    const containerRef = useRef<HTMLDivElement>(null)
-    const listRef = useRef<HTMLDivElement>(null)
-
-    // Portal state
-    const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 })
-
-    // Update coordinates when opening
-    useEffect(() => {
-        if (isOpen && containerRef.current) {
-            const rect = containerRef.current.getBoundingClientRect()
-            setCoords({
-                top: rect.bottom + window.scrollY + 4, // 4px gap
-                left: rect.left + window.scrollX,
-                width: rect.width
-            })
-        }
-    }, [isOpen])
-
-    // Handle Resize & Scroll
-    useEffect(() => {
-        const handleResize = () => setIsOpen(false)
-        const handleScroll = (e: Event) => {
-            // If the scroll event originated from within the dropdown list, do not close
-            if (listRef.current && (listRef.current === e.target || listRef.current.contains(e.target as Node))) {
-                return
-            }
-            setIsOpen(false)
-        }
-
-        window.addEventListener('resize', handleResize)
-        window.addEventListener('scroll', handleScroll, true) // Capture to detect outside scrolls
-
-        return () => {
-            window.removeEventListener('resize', handleResize)
-            window.removeEventListener('scroll', handleScroll, true)
-        }
-    }, [])
-
-    // Click outside handler
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            // Check if click is inside container OR list
-            if (
-                containerRef.current &&
-                !containerRef.current.contains(event.target as Node) &&
-                listRef.current &&
-                !listRef.current.contains(event.target as Node)
-            ) {
-                setIsOpen(false)
-                setFocusedIndex(-1)
-            }
-        }
-        if (isOpen) document.addEventListener('mousedown', handleClickOutside)
-        return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [isOpen])
+    const { isOpen, toggle, close, containerRef, listRef, coords, focusedIndex, setFocusedIndex } = useDropdown()
 
     // Scroll focused item into view
     useEffect(() => {
@@ -85,17 +30,15 @@ export function Select({ value, onChange, options, placeholder, className, disab
                 element.scrollIntoView({ block: 'nearest' })
             }
         }
-    }, [focusedIndex, isOpen])
+    }, [focusedIndex, isOpen, listRef])
 
-    // Reset focused index when opening
+    // Reset focused index when opening based on current value
     useEffect(() => {
         if (isOpen) {
             const index = options.findIndex(o => o.value === value)
             setFocusedIndex(index >= 0 ? index : 0)
-        } else {
-            setFocusedIndex(-1)
         }
-    }, [isOpen, value, options])
+    }, [isOpen, value, options, setFocusedIndex])
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (disabled) return
@@ -107,16 +50,16 @@ export function Select({ value, onChange, options, placeholder, className, disab
                 if (isOpen) {
                     if (focusedIndex >= 0 && focusedIndex < options.length) {
                         onChange(options[focusedIndex].value)
-                        setIsOpen(false)
+                        close()
                     }
                 } else {
-                    setIsOpen(true)
+                    toggle()
                 }
                 break
             case 'ArrowDown':
                 e.preventDefault()
                 if (!isOpen) {
-                    setIsOpen(true)
+                    toggle()
                 } else {
                     setFocusedIndex(prev => (prev < options.length - 1 ? prev + 1 : prev))
                 }
@@ -124,20 +67,17 @@ export function Select({ value, onChange, options, placeholder, className, disab
             case 'ArrowUp':
                 e.preventDefault()
                 if (!isOpen) {
-                    setIsOpen(true)
+                    toggle()
                 } else {
                     setFocusedIndex(prev => (prev > 0 ? prev - 1 : prev))
                 }
                 break
             case 'Escape':
                 e.preventDefault()
-                setIsOpen(false)
+                close()
                 break
             case 'Tab':
-                if (isOpen) {
-                    // Close on tab out
-                    setIsOpen(false)
-                }
+                if (isOpen) close()
                 break
         }
     }
@@ -149,7 +89,7 @@ export function Select({ value, onChange, options, placeholder, className, disab
         <div className={cn("relative w-full", className)} ref={containerRef}>
             <button
                 type="button"
-                onClick={() => !disabled && setIsOpen(!isOpen)}
+                onClick={() => !disabled && toggle()}
                 onKeyDown={handleKeyDown}
                 className={cn(
                     "w-full flex items-center justify-between px-3 h-10 text-sm rounded-lg border focus:outline-none transition-all focus:ring-2 focus:ring-primary/50",
@@ -164,15 +104,15 @@ export function Select({ value, onChange, options, placeholder, className, disab
                 <ChevronDown className={cn("w-4 h-4 opacity-50", isOpen && "rotate-180")} strokeWidth={1.5} />
             </button>
 
-            {isOpen && createPortal(
+            {isOpen && coords && createPortal(
                 <div
                     ref={listRef}
-                    className="fixed z-[9999] mt-1 overflow-hidden rounded-xl border border-border/50 bg-popover shadow-xl"
+                    className="fixed z-[9999] mt-1 overflow-hidden rounded-xl border border-border/50 bg-popover/95 backdrop-blur-xl shadow-xl animate-in fade-in zoom-in-95 duration-100"
                     style={{
                         top: coords.top,
                         left: coords.left,
                         width: coords.width,
-                        maxHeight: '260px' // fallback
+                        maxHeight: '260px'
                     }}
                 >
                     <div className="max-h-60 overflow-y-auto p-1 custom-scrollbar">
@@ -182,11 +122,11 @@ export function Select({ value, onChange, options, placeholder, className, disab
                                 type="button"
                                 onClick={() => {
                                     onChange(option.value)
-                                    setIsOpen(false)
+                                    close()
                                 }}
                                 onMouseEnter={() => setFocusedIndex(index)}
                                 className={cn(
-                                    "relative w-full cursor-default select-none py-2 pl-9 pr-3 text-sm rounded-lg outline-none text-left flex items-center",
+                                    "relative w-full cursor-default select-none py-2 pl-9 pr-3 text-sm rounded-lg outline-none text-left flex items-center transition-colors",
                                     index === focusedIndex ? "bg-accent text-accent-foreground" : "text-popover-foreground",
                                     option.value === value ? "font-medium" : ""
                                 )}

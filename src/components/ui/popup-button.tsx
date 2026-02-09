@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from 'react'
+import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronsUpDown, Check } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { useDropdown } from '../../hooks/useDropdown'
 
 interface Option {
     value: string
@@ -19,63 +20,7 @@ interface PopUpButtonProps {
 }
 
 export function PopUpButton({ value, onChange, options, placeholder, className, disabled, align = 'left' }: PopUpButtonProps) {
-    const [isOpen, setIsOpen] = useState(false)
-    const [focusedIndex, setFocusedIndex] = useState(-1)
-    const containerRef = useRef<HTMLDivElement>(null)
-    const listRef = useRef<HTMLDivElement>(null)
-
-    // Portal state
-    const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 })
-
-    // Update coordinates when opening
-    useEffect(() => {
-        if (isOpen && containerRef.current) {
-            const rect = containerRef.current.getBoundingClientRect()
-            setCoords({
-                top: rect.bottom + window.scrollY + 4, // 4px gap
-                left: align === 'left' ? (rect.left + window.scrollX) : (rect.right + window.scrollX - rect.width),
-                width: rect.width
-            })
-        }
-    }, [isOpen, align])
-
-    // Handle Resize & Scroll
-    useEffect(() => {
-        const handleResize = () => setIsOpen(false)
-        const handleScroll = (e: Event) => {
-            // If the scroll event originated from within the dropdown list, do not close
-            if (listRef.current && (listRef.current === e.target || listRef.current.contains(e.target as Node))) {
-                return
-            }
-            // Close on outside scroll
-            setIsOpen(false)
-        }
-
-        window.addEventListener('resize', handleResize)
-        window.addEventListener('scroll', handleScroll, true)
-
-        return () => {
-            window.removeEventListener('resize', handleResize)
-            window.removeEventListener('scroll', handleScroll, true)
-        }
-    }, [])
-
-    // Click outside handler
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (
-                containerRef.current &&
-                !containerRef.current.contains(event.target as Node) &&
-                listRef.current &&
-                !listRef.current.contains(event.target as Node)
-            ) {
-                setIsOpen(false)
-                setFocusedIndex(-1)
-            }
-        }
-        if (isOpen) document.addEventListener('mousedown', handleClickOutside)
-        return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [isOpen])
+    const { isOpen, toggle, close, containerRef, listRef, coords, focusedIndex, setFocusedIndex } = useDropdown({ align })
 
     // Scroll focused item into view
     useEffect(() => {
@@ -86,17 +31,15 @@ export function PopUpButton({ value, onChange, options, placeholder, className, 
                 element.scrollIntoView({ block: 'nearest' })
             }
         }
-    }, [focusedIndex, isOpen])
+    }, [focusedIndex, isOpen, listRef])
 
-    // Reset focused index when opening
+    // Reset focused index when opening based on current value
     useEffect(() => {
         if (isOpen) {
             const index = options.findIndex(o => o.value === value)
             setFocusedIndex(index >= 0 ? index : 0)
-        } else {
-            setFocusedIndex(-1)
         }
-    }, [isOpen, value, options])
+    }, [isOpen, value, options, setFocusedIndex])
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (disabled) return
@@ -108,16 +51,16 @@ export function PopUpButton({ value, onChange, options, placeholder, className, 
                 if (isOpen) {
                     if (focusedIndex >= 0 && focusedIndex < options.length) {
                         onChange(options[focusedIndex].value)
-                        setIsOpen(false)
+                        close()
                     }
                 } else {
-                    setIsOpen(true)
+                    toggle()
                 }
                 break
             case 'ArrowDown':
                 e.preventDefault()
                 if (!isOpen) {
-                    setIsOpen(true)
+                    toggle()
                 } else {
                     setFocusedIndex(prev => (prev < options.length - 1 ? prev + 1 : prev))
                 }
@@ -125,17 +68,17 @@ export function PopUpButton({ value, onChange, options, placeholder, className, 
             case 'ArrowUp':
                 e.preventDefault()
                 if (!isOpen) {
-                    setIsOpen(true)
+                    toggle()
                 } else {
                     setFocusedIndex(prev => (prev > 0 ? prev - 1 : prev))
                 }
                 break
             case 'Escape':
                 e.preventDefault()
-                setIsOpen(false)
+                close()
                 break
             case 'Tab':
-                if (isOpen) setIsOpen(false)
+                if (isOpen) close()
                 break
         }
     }
@@ -147,7 +90,7 @@ export function PopUpButton({ value, onChange, options, placeholder, className, 
         <div className={cn("relative w-full", className)} ref={containerRef}>
             <button
                 type="button"
-                onClick={() => !disabled && setIsOpen(!isOpen)}
+                onClick={() => !disabled && toggle()}
                 onKeyDown={handleKeyDown}
                 className={cn(
                     "w-full flex items-center justify-between px-3 py-1.5 text-sm rounded-md shadow-sm border focus:outline-none transition-all",
@@ -169,7 +112,7 @@ export function PopUpButton({ value, onChange, options, placeholder, className, 
                 <ChevronsUpDown className="w-3.5 h-3.5 opacity-60 shrink-0" />
             </button>
 
-            {isOpen && createPortal(
+            {isOpen && coords && createPortal(
                 <div
                     ref={listRef}
                     className="fixed z-[9999] mt-1 overflow-hidden rounded-lg border border-border/50 bg-popover/95 backdrop-blur-xl shadow-xl animate-in fade-in zoom-in-95 duration-100"
@@ -187,7 +130,7 @@ export function PopUpButton({ value, onChange, options, placeholder, className, 
                                 type="button"
                                 onClick={() => {
                                     onChange(option.value)
-                                    setIsOpen(false)
+                                    close()
                                 }}
                                 onMouseEnter={() => setFocusedIndex(index)}
                                 className={cn(

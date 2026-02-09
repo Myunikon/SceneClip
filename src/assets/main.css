@@ -66,8 +66,8 @@
       0 8px 10px -6px hsl(var(--shadow-color) / 0.04);
 
     /* Glass Strategy Variables */
-    --glass-opacity: 0.85;
-    --glass-border: 1px solid hsl(220 13% 87% / 0.8);
+    --glass-opacity: 0.8;
+    --glass-border: 1px solid hsl(220 13% 87% / 0.5);
     --glass-shadow: var(--shadow-md);
   }
 
@@ -128,6 +128,13 @@
     @apply border-border;
   }
 
+  input,
+  textarea,
+  button,
+  select {
+    font-family: inherit;
+  }
+
   body {
     @apply bg-background text-foreground;
     /* Clean premium gradient overlay for Light Mode */
@@ -140,6 +147,46 @@
     background-attachment: fixed;
   }
 
+  /* --- FLUID TYPOGRAPHY & SPACING (Container Queries) --- */
+  .cq-text-xs {
+    font-size: clamp(0.65rem, 1.5cqw, 0.75rem);
+  }
+
+  .cq-text-sm {
+    font-size: clamp(0.75rem, 1.8cqw, 0.875rem);
+  }
+
+  .cq-text-base {
+    font-size: clamp(0.875rem, 2cqw, 1rem);
+  }
+
+  .cq-text-lg {
+    font-size: clamp(1rem, 2.5cqw, 1.125rem);
+  }
+
+  .cq-text-xl {
+    font-size: clamp(1.125rem, 3cqw, 1.5rem);
+  }
+
+  .cq-p-2 {
+    padding: clamp(0.25rem, 1cqw, 0.5rem);
+  }
+
+  .cq-p-4 {
+    padding: clamp(0.5rem, 2cqw, 1rem);
+  }
+
+  .cq-p-6 {
+    padding: clamp(0.75rem, 3cqw, 1.5rem);
+  }
+
+  .cq-gap-2 {
+    gap: clamp(0.25rem, 1cqw, 0.5rem);
+  }
+
+  .cq-gap-4 {
+    gap: clamp(0.5rem, 2cqw, 1rem);
+  }
 }
 
 @layer utilities {
@@ -446,8 +493,8 @@
 
     .panel-left {
       height: 100% !important;
-      overflow-y: hidden !important;
-      /* Locked/Fixed */
+      overflow-y: auto !important;
+      /* Scrollable */
     }
 
     .panel-right {

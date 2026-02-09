@@ -16,26 +16,29 @@ export function LeftPanel() {
 
     return (
         <div className={cn(
-            hasMeta ? "w-[420px] shrink-0 border-r border-white/5 bg-black/5 shadow-[5px_0_15px_-5px_rgba(0,0,0,0.5)]" : "w-full"
+            "flex flex-col transition-all duration-300 panel-left min-w-0 custom-scrollbar",
+            hasMeta ? "flex-[0.7] border-r border-border/40 bg-background/50 backdrop-blur-xl shadow-[5px_0_15px_-5px_rgba(0,0,0,0.2)] min-w-[320px]" : "flex-1 w-full"
         )}>
-            <UrlInput
-                url={url}
-                onChange={setUrl}
-                onPaste={handlePaste}
-                t={t}
-                batchMode={options.batchMode}
-                onBatchModeChange={setters.setBatchMode}
-            />
+            <div className="flex-1 w-full cq-p-6 flex flex-col cq-gap-4">
+                <UrlInput
+                    url={url}
+                    onChange={setUrl}
+                    onPaste={handlePaste}
+                    t={t}
+                    batchMode={options.batchMode}
+                    onBatchModeChange={setters.setBatchMode}
+                />
 
-            {!options.batchMode && <VideoPreview loading={loadingMeta} meta={meta} error={errorMeta} t={t} url={url} />}
+                {!options.batchMode && <VideoPreview loading={loadingMeta} meta={meta} error={errorMeta} t={t} url={url} />}
 
-            <FilenameSettings
-                options={options}
-                setters={setters}
-                meta={meta}
-                t={t}
-                browse={browse}
-            />
+                <FilenameSettings
+                    options={options}
+                    setters={setters}
+                    meta={meta}
+                    t={t}
+                    browse={browse}
+                />
+            </div>
         </div>
     )
 }

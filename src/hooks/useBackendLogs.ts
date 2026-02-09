@@ -61,58 +61,74 @@ export function useBackendLogs() {
                 originalFn: (...args: unknown[]) => void
             ) => {
                 return (...args: unknown[]) => {
-                    // Call original console method first
-                    originalFn.apply(console, args)
+                    // Prevent infinite loops if logging triggers more logging (e.g. from addLog causing re-renders that log)
+                    // We use a simple flag on the function scope, or rely on the store's behavior.
+                    // But `addLog` is synchronous in Zustand usually.
 
-                    // Check if any argument is an Error to extract stack trace
-                    let stackTrace: string | undefined
-                    const formattedArgs = args.map((arg) => {
-                        if (arg instanceof Error) {
-                            if (!stackTrace) stackTrace = arg.stack
-                            return `${arg.name}: ${arg.message}`
+                    try {
+                        // Call original console method first
+                        originalFn.apply(console, args)
+                    } catch (e) {
+                        // Ignore errors in original console (rare)
+                    }
+
+                    try {
+                        // Check if any argument is an Error to extract stack trace
+                        let stackTrace: string | undefined
+                        const formattedArgs = args.map((arg) => {
+                            if (arg instanceof Error) {
+                                if (!stackTrace) stackTrace = arg.stack
+                                return `${arg.name}: ${arg.message}`
+                            }
+                            return typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                        })
+
+                        const message = formattedArgs.join(' ')
+
+                        // Skip empty messages or internal React/framework noise
+                        if (!message || message.startsWith('[HMR]') || message.startsWith('[vite]')) {
+                            return
                         }
-                        return typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-                    })
 
-                    const message = formattedArgs.join(' ')
+                        // Dedup: skip if same message was logged within window
+                        const now = Date.now()
+                        const lastSeen = recentMessages.get(message)
+                        if (lastSeen && now - lastSeen < DEDUP_WINDOW_MS) {
+                            return // Skip duplicate
+                        }
+                        recentMessages.set(message, now)
 
-                    // Skip empty messages or internal React/framework noise
-                    if (!message || message.startsWith('[HMR]') || message.startsWith('[vite]')) {
-                        return
-                    }
-
-                    // Dedup: skip if same message was logged within window
-                    const now = Date.now()
-                    const lastSeen = recentMessages.get(message)
-                    if (lastSeen && now - lastSeen < DEDUP_WINDOW_MS) {
-                        return // Skip duplicate
-                    }
-                    recentMessages.set(message, now)
-
-                    // Cleanup old entries periodically
-                    if (recentMessages.size > 100) {
-                        for (const [msg, time] of recentMessages) {
-                            if (now - time > DEDUP_WINDOW_MS * 2) {
-                                recentMessages.delete(msg)
+                        // Cleanup old entries periodically (every 100 adds or so, simplifying)
+                        if (recentMessages.size > 100) {
+                            for (const [msg, time] of recentMessages) {
+                                if (now - time > DEDUP_WINDOW_MS * 2) {
+                                    recentMessages.delete(msg)
+                                }
                             }
                         }
-                    }
 
-                    // Determine source based on message content
-                    let source: 'system' | 'ytdlp' | 'ffmpeg' | 'ui' = 'system'
-                    if (message.toLowerCase().includes('yt-dlp') || message.toLowerCase().includes('ytdlp')) {
-                        source = 'ytdlp'
-                    } else if (message.toLowerCase().includes('ffmpeg') || message.toLowerCase().includes('ffprobe')) {
-                        source = 'ffmpeg'
-                    }
+                        // Determine source based on message content
+                        let source: 'system' | 'ytdlp' | 'ffmpeg' | 'ui' = 'system'
+                        if (message.toLowerCase().includes('yt-dlp') || message.toLowerCase().includes('ytdlp')) {
+                            source = 'ytdlp'
+                        } else if (message.toLowerCase().includes('ffmpeg') || message.toLowerCase().includes('ffprobe')) {
+                            source = 'ffmpeg'
+                        }
 
-                    // Add to store
-                    addLog({
-                        message,
-                        level,
-                        source,
-                        stackTrace
-                    })
+                        // Add to store
+                        addLog({
+                            message,
+                            level,
+                            source,
+                            stackTrace
+                        })
+                    } catch (err) {
+                        // Failsafe: if interception fails, don't break the app
+                        if (originalConsole.current?.error) {
+                            // We can't log to console because we intercepted it!
+                            // Just suppress.
+                        }
+                    }
                 }
             }
 

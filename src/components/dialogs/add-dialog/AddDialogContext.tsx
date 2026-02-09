@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react'
-import { VideoMeta, DialogOptions, DialogOptionSetters } from '../../../types'
+import { VideoMeta, DialogOptions, DialogOptionSetters, AppSettings } from '../../../types'
 import { LanguageOption } from '../../../lib/mediaUtils'
+import { TFunction } from 'i18next'
 
 interface AddDialogContextType {
     url: string
@@ -24,15 +25,14 @@ interface AddDialogContextType {
     availableLanguages?: LanguageOption[]
 
     // Utilities
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    t: any
+    t: TFunction
     browse: () => void
     handlePaste: () => void
     formatFileSize: (bytes?: number) => string
     estimatedSize: number
     isDiskFull: boolean
     diskFreeSpace: number | null
-    settings: any // Using any to avoid circular dependency with AppSettings for now, or import it if clean
+    settings: AppSettings
 }
 
 const AddDialogContext = createContext<AddDialogContextType | null>(null)

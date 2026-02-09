@@ -39,11 +39,11 @@ export function OptionCard({
                 onClick={() => !disabled && onClick?.()}
                 className={cn(
                     "flex items-center p-2.5 transition-all min-h-[48px] gap-3",
-                    disabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-white/5"
+                    disabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-secondary/40"
                 )}
             >
                 {icon && (
-                    <div className={cn("p-1.5 rounded-lg shrink-0 bg-white/10 text-muted-foreground")}>
+                    <div className={cn("p-1.5 rounded-lg shrink-0 bg-secondary/80 dark:bg-white/10 text-muted-foreground")}>
                         {icon}
                     </div>
                 )}
@@ -82,7 +82,7 @@ export function SettingCard({
         purple: checked ? "bg-purple-500/20 border-purple-500/50" : "bg-transparent border-border",
         emerald: checked ? "bg-emerald-500/10 border-emerald-500/30" : "bg-transparent border-border",
         blue: checked ? "bg-primary/10 border-primary/30" : "bg-transparent border-border",
-        neutral: checked ? "bg-secondary/50 border-white/10" : "bg-transparent border-border"
+        neutral: checked ? "bg-secondary/50 border-border/60 dark:border-white/10" : "bg-transparent border-border"
     }
 
     const iconBgClasses = {
@@ -90,8 +90,8 @@ export function SettingCard({
         orange: checked ? "bg-orange-500 text-white" : "bg-white/10 text-muted-foreground",
         purple: checked ? "bg-purple-500 text-white" : "bg-white/10 text-muted-foreground",
         emerald: checked ? "bg-emerald-500 text-white" : "bg-white/10 text-muted-foreground",
-        blue: checked ? "bg-primary text-white" : "bg-white/10 text-muted-foreground",
-        neutral: checked ? "bg-white text-black" : "bg-white/10 text-muted-foreground"
+        blue: checked ? "bg-primary text-white" : "bg-secondary/80 dark:bg-white/10 text-muted-foreground",
+        neutral: checked ? "bg-white dark:bg-white/90 text-black" : "bg-secondary/80 dark:bg-white/10 text-muted-foreground"
     }
 
     const switchClasses = {
@@ -109,7 +109,7 @@ export function SettingCard({
                 onClick={() => !disabled && (onClick ? onClick() : onCheckedChange(!checked))}
                 className={cn(
                     "flex items-center justify-between p-2.5 transition-all min-h-[50px]",
-                    disabled ? "opacity-50 cursor-not-allowed border-dashed" : "cursor-pointer hover:bg-white/5"
+                    disabled ? "opacity-50 cursor-not-allowed border-dashed" : "cursor-pointer hover:bg-secondary/40"
                 )}
             >
                 <div className="flex items-center gap-3 min-w-0">
@@ -249,7 +249,7 @@ export function ChoiceGroup<T extends string | number | undefined>({
                                     {Icon && (
                                         <div className={cn(
                                             "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mb-1",
-                                            isSelected ? "bg-white/10" : "bg-white/5"
+                                            isSelected ? "bg-white/20 dark:bg-white/10" : "bg-black/5 dark:bg-white/5"
                                         )}>
                                             <Icon className="w-4 h-4" />
                                         </div>

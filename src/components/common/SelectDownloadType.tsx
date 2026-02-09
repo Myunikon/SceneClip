@@ -66,7 +66,7 @@ export function SelectDownloadType() {
                                 { value: 240, label: "Low (240p)" },
                             ]}
                         />
-                        <div className="text-[10px] text-yellow-500/80 bg-yellow-500/5 p-2 rounded-lg border border-yellow-500/10 flex items-center gap-2">
+                        <div className="text-[10px] text-orange-600 dark:text-yellow-500/80 bg-orange-500/5 dark:bg-yellow-500/5 p-2 rounded-lg border border-orange-500/20 dark:border-yellow-500/10 flex items-center gap-2">
                             <span className="shrink-0">⚠️</span>
                             <span>GIFs are limited to 480p to prevent huge file sizes and crashes.</span>
                         </div>
@@ -262,14 +262,14 @@ function BestOptionButton({ isSelected, onClick, label, desc, icon, variant = 'v
                 "w-full relative flex items-center gap-4 p-4 rounded-xl transition-all text-left group overflow-hidden shadow-xl",
                 isSelected
                     ? gradientClass
-                    : "bg-card border border-border hover:bg-secondary/50"
+                    : "bg-white dark:bg-card border border-border/60 hover:bg-secondary/50"
             )}
         >
             <div className={cn(
                 "shrink-0 transition-colors flex items-center justify-center relative",
                 typeof icon === 'string'
                     ? "w-20 h-20 -my-4 -ml-2"
-                    : cn("p-3 rounded-xl bg-white/10 text-white")
+                    : cn("p-3 rounded-xl bg-white/20 dark:bg-white/10 text-white")
             )}>
                 {typeof icon === 'string' ? (
                     <img

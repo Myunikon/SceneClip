@@ -18,6 +18,12 @@ export function useRecovery() {
         return () => { mountedRef.current = false }
     }, [])
 
+    // Fix: Use ref to track the latest recoverDownloads function to avoid stale closures in Toast callbacks
+    const recoverDownloadsRef = useRef(recoverDownloads)
+    useEffect(() => {
+        recoverDownloadsRef.current = recoverDownloads
+    }, [recoverDownloads])
+
     useEffect(() => {
         // Only run once on mount
         if (hasChecked.current) return
@@ -42,7 +48,8 @@ export function useRecovery() {
                         label: 'Recover',
                         onClick: () => {
                             if (!mountedRef.current) return
-                            const recovered = recoverDownloads()
+                            // Use ref to get latest function instance
+                            const recovered = recoverDownloadsRef.current()
                             if (recovered > 0) {
                                 toast.success(`Recovered ${recovered} download${recovered > 1 ? 's' : ''}`)
                             }
@@ -59,5 +66,5 @@ export function useRecovery() {
                 }
             )
         }
-    }, [sanitizeTasks, getInterruptedCount, recoverDownloads, cleanupOldTasks, settings.historyRetentionDays])
+    }, [sanitizeTasks, getInterruptedCount, cleanupOldTasks, settings.historyRetentionDays])
 }

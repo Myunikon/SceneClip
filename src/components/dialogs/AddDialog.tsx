@@ -63,8 +63,8 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
     // Dialog class logic
     const hasMeta = !!meta
     const dialogClass = cn(
-        "glass-strong relative z-10 w-full overflow-hidden shadow-2xl flex flex-col border border-white/10 shrink-0 cq-dialog transition-all duration-500",
-        hasMeta ? "max-w-5xl h-[85vh] min-h-[500px] max-h-[90vh]" : "max-w-lg",
+        "glass-strong relative z-10 w-full overflow-hidden shadow-2xl flex flex-col border border-border/50 shrink-0 cq-dialog",
+        hasMeta ? "max-w-5xl h-[80vh] min-h-[500px]" : "max-w-[480px] h-auto",
         "rounded-2xl mx-4"
     )
 
@@ -80,7 +80,7 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
 
 
 
-    const formClass = 'flex flex-col flex-1 overflow-hidden bg-background dark:bg-background/40 dark:backdrop-blur-md'
+    const formClass = 'flex flex-col flex-1 overflow-hidden bg-background/40 backdrop-blur-md'
 
     const formattedSize = formatFileSize(estimatedSize || 0)
 
@@ -102,16 +102,16 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
                     />
 
                     <motion.div
+                        layout
                         variants={dialogVariants}
                         initial="initial"
                         animate="animate"
                         exit="exit"
                         transition={{
                             type: "spring",
-                            damping: 25,
-                            stiffness: 350,
-                            mass: 0.5,
-                            duration: 0.3
+                            damping: 30,
+                            stiffness: 400,
+                            mass: 0.8
                         }}
                         className={dialogClass}
                     >

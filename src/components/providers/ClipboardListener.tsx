@@ -65,7 +65,7 @@ export function ClipboardListener({ onFound, onNotificationClick }: ClipboardLis
 
     // 2. Listen for Backend 'link-detected' Event
     useEffect(() => {
-        if (!settings.enableDesktopNotifications) return
+        if (!settings.enableAutoClipboard) return
 
         let unlistenFn: UnlistenFn | undefined
         let isMounted = true
@@ -85,26 +85,28 @@ export function ClipboardListener({ onFound, onNotificationClick }: ClipboardLis
 
                     if (onFound) onFound(url)
 
-                    // Send Native Notification
-                    let permission = await isPermissionGranted()
-                    if (!permission) {
-                        const status = await requestPermission()
-                        permission = status === 'granted'
-                    }
+                    // Send Native Notification (Only if enabled globally)
+                    if (settings.enableDesktopNotifications) {
+                        let permission = await isPermissionGranted()
+                        if (!permission) {
+                            const status = await requestPermission()
+                            permission = status === 'granted'
+                        }
 
-                    if (permission) {
-                        sendNotification({
-                            title: t.title,
-                            body: url,
-                            actionTypeId: 'DOWNLOAD_ACTION',
-                            extra: { url },
-                        })
+                        if (permission) {
+                            sendNotification({
+                                title: t.title,
+                                body: url,
+                                actionTypeId: 'DOWNLOAD_ACTION',
+                                extra: { url },
+                            })
 
-                        useAppStore.getState().addLog({
-                            message: `[Monitor] URL detected: ${url}`,
-                            level: 'info',
-                            source: 'system'
-                        })
+                            useAppStore.getState().addLog({
+                                message: `[Monitor] URL detected: ${url}`,
+                                level: 'info',
+                                source: 'system'
+                            })
+                        }
                     }
                 })
 
@@ -124,7 +126,7 @@ export function ClipboardListener({ onFound, onNotificationClick }: ClipboardLis
             isMounted = false
             if (unlistenFn) unlistenFn()
         }
-    }, [settings.enableDesktopNotifications, t.title, onFound])
+    }, [settings.enableAutoClipboard, settings.enableDesktopNotifications, t.title, onFound])
 
     return null
 }

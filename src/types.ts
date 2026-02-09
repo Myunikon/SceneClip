@@ -241,6 +241,7 @@ export interface AppSettings {
     useChromeCookieUnlock: boolean
 
     enableDesktopNotifications: boolean // Send desktop notifications when app is in background
+    enableAutoClipboard: boolean // Automatically detect links from clipboard
     preventSuspendDuringDownload: boolean // Prevent system sleep during active downloads
 
     // Privacy

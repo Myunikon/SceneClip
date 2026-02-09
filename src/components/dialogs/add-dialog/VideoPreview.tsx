@@ -12,7 +12,8 @@ interface VideoPreviewProps {
     } | null
     error: boolean
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    t: any
+    t: (key: string, options?: any) => string
+
     url?: string
 }
 
@@ -34,6 +35,57 @@ export function VideoPreview({ loading, meta, error, t, url }: VideoPreviewProps
             setFocusedElementBeforePreview(null)
         }
     }, [isPreviewOpen, focusedElementBeforePreview])
+
+    // Focus Trap
+    useEffect(() => {
+        if (!isPreviewOpen) return
+
+        const handleFocusTrap = (e: KeyboardEvent) => {
+            if (e.key !== 'Tab') return
+
+            const modal = document.getElementById('video-preview-modal')
+            if (!modal) return
+
+            const focusableElements = modal.querySelectorAll(
+                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            )
+            const firstElement = focusableElements[0] as HTMLElement
+            const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement
+
+            if (e.shiftKey) {
+                if (document.activeElement === firstElement) {
+                    e.preventDefault()
+                    lastElement.focus()
+                }
+            } else {
+                if (document.activeElement === lastElement) {
+                    e.preventDefault()
+                    firstElement.focus()
+                }
+            }
+        }
+
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setIsPreviewOpen(false)
+        }
+
+        document.addEventListener('keydown', handleFocusTrap)
+        document.addEventListener('keydown', handleEscape)
+
+        // Initial focus
+        const modal = document.getElementById('video-preview-modal')
+        if (modal) {
+            // Small timeout to allow render
+            setTimeout(() => {
+                (modal.querySelector('button') as HTMLElement)?.focus()
+            }, 50)
+        }
+
+        return () => {
+            document.removeEventListener('keydown', handleFocusTrap)
+            document.removeEventListener('keydown', handleEscape)
+        }
+    }, [isPreviewOpen])
 
     const imageSrc = getProxiedSrc(meta?.thumbnail)
 
@@ -58,77 +110,85 @@ export function VideoPreview({ loading, meta, error, t, url }: VideoPreviewProps
     return (
         <>
             {/* --- 1. PREVIEW KECIL (THUMBNAIL) --- */}
-            <button
-                type="button"
-                className={`w-full relative flex items-center justify-center text-center border-b border-white/5 shrink-0 overflow-hidden group bg-black/20 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-inset transition-colors aspect-video ${loading || !meta || error ? '' : ''}`}
-                onClick={() => meta && !imgError && setIsPreviewOpen(true)}
-                onKeyDown={handleKeyDown}
-                disabled={loading || error || !meta}
-            >
-                {loading ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-black/20 backdrop-blur-sm animate-pulse">
-                        <div className="w-full h-full absolute inset-0 bg-secondary/40"></div>
-                        <div className="relative z-20 flex flex-col items-center gap-3">
-                            <div className="w-12 h-12 rounded-full bg-white/10 shadow-lg"></div>
-                            <div className="h-4 w-48 bg-white/10 rounded-full"></div>
-                            <div className="h-3 w-32 bg-white/5 rounded-full"></div>
-                        </div>
-                    </div>
-                ) : meta ? (
-                    <>
-                        {!imgError ? (
-                            <div className="relative w-full h-full cursor-zoom-in group">
-                                <img
-                                    src={imageSrc}
-                                    referrerPolicy="no-referrer"
-                                    className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105"
-                                    alt="Thumbnail"
-                                    draggable={false}
-                                    onError={() => setImgError(true)}
-                                />
-
-                                {/* PERBAIKAN 1: GRADASI LEBIH HALUS
-                                    - Mengurangi 'from-black/90' menjadi 'from-black/80'
-                                    - Menghapus 'via-black/20' agar tidak kotor di tengah
-                                    - Gradasi hanya fokus di bagian paling bawah untuk teks
-                                */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-80 transition-opacity duration-300 pointer-events-none"></div>
-
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 scale-75 group-hover:scale-100">
-                                    <div className="bg-black/50 backdrop-blur-md p-3 rounded-full text-white shadow-xl border border-white/10">
-                                        <ZoomIn className="w-6 h-6" />
+            <AnimatePresence mode="wait">
+                {(loading || meta || error) && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0, marginBottom: 0 }}
+                        animate={{ height: 'auto', opacity: 1, marginBottom: 16 }}
+                        exit={{ height: 0, opacity: 0, marginBottom: 0 }}
+                        className="relative w-full shrink-0 flex flex-col overflow-hidden"
+                    >
+                        <button
+                            type="button"
+                            className={`w-full relative flex items-center justify-center text-center rounded-xl overflow-hidden group focus:outline-none focus:ring-4 focus:ring-primary/20 focus:scale-[0.99] transition-all duration-500 aspect-video
+                            ${meta
+                                    ? 'bg-black shadow-lg border border-white/10'
+                                    : 'bg-secondary/30 dark:bg-black/20 border-2 border-dashed border-border/60' // Loading/Error state border
+                                }`}
+                            onClick={() => meta && !imgError && setIsPreviewOpen(true)}
+                            onKeyDown={handleKeyDown}
+                            disabled={loading || error || !meta}
+                        >
+                            {loading ? (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-black/20 backdrop-blur-sm animate-pulse">
+                                    <div className="w-full h-full absolute inset-0 bg-secondary/40"></div>
+                                    <div className="relative z-20 flex flex-col items-center gap-3">
+                                        <div className="w-16 h-16 rounded-full bg-white/10 shadow-lg mb-2"></div>
+                                        <div className="h-4 w-48 bg-white/10 rounded-full"></div>
+                                        <div className="h-3 w-32 bg-white/5 rounded-full"></div>
                                     </div>
                                 </div>
+                            ) : meta ? (
+                                <>
+                                    {!imgError ? (
+                                        <div className="relative w-full h-full cursor-zoom-in group">
+                                            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-500 z-10" />
+                                            <img
+                                                src={imageSrc}
+                                                referrerPolicy="no-referrer"
+                                                className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all duration-700 group-hover:scale-102"
+                                                alt="Thumbnail"
+                                                draggable={false}
+                                                onError={() => setImgError(true)}
+                                            />
 
-                                <div className="absolute bottom-0 left-0 right-0 p-6 text-left space-y-1.5">
-                                    <h4 className="font-bold text-white text-lg line-clamp-2 leading-tight drop-shadow-md pointer-events-none">
-                                        {meta.title}
-                                    </h4>
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-90 transition-opacity duration-300 pointer-events-none z-20"></div>
+
+                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-500 scale-90 group-hover:scale-100 z-30">
+                                                <div className="bg-white/10 backdrop-blur-md p-3 rounded-full text-white shadow-2xl border border-white/20">
+                                                    <ZoomIn className="w-6 h-6 drop-shadow-md" />
+                                                </div>
+                                            </div>
+
+                                            <div className="absolute bottom-0 left-0 right-0 p-8 text-left space-y-2 z-30 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                                                <h4 className="font-bold text-white text-xl line-clamp-2 leading-tight drop-shadow-lg pointer-events-none tracking-tight">
+                                                    {meta.title}
+                                                </h4>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-secondary/80 to-muted/80 dark:from-secondary/20 dark:to-muted/10 p-6 text-center animate-in fade-in duration-300">
+                                            <div className="p-5 bg-background/50 dark:bg-white/5 rounded-full mb-4 backdrop-blur-sm shadow-sm ring-1 ring-white/10">
+                                                <ImageOff className="w-10 h-10 text-muted-foreground/50" />
+                                            </div>
+                                            <span className="text-sm font-medium text-muted-foreground/70 max-w-[200px] line-clamp-2 leading-relaxed">
+                                                {t('dialog.preview.no_thumbnail') || t('dialog.preview.no_image_available') || 'No thumbnail available'}
+                                            </span>
+                                        </div>
+                                    )}
+                                </>
+                            ) : error ? (
+                                <div className="text-red-500 flex flex-col items-center animate-in zoom-in opacity-80 px-4 z-10">
+                                    <div className="p-4 bg-red-500/10 rounded-full mb-3">
+                                        <AlertCircle className="w-8 h-8 stroke-[1.5]" />
+                                    </div>
+                                    <p className="text-sm font-semibold">{t('dialog.preview.failed')}</p>
                                 </div>
-                            </div>
-                        ) : (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-secondary/80 to-muted/80 dark:from-secondary/20 dark:to-muted/10 p-6 text-center animate-in fade-in duration-300">
-                                <div className="p-4 bg-background/50 dark:bg-white/5 rounded-full mb-3 backdrop-blur-sm shadow-sm ring-1 ring-white/10">
-                                    <ImageOff className="w-8 h-8 text-muted-foreground/50" />
-                                </div>
-                                <span className="text-xs font-medium text-muted-foreground/70 max-w-[200px] line-clamp-2 leading-relaxed">
-                                    {t('dialog.preview.no_thumbnail') || t('dialog.preview.no_image_available') || 'No thumbnail available'}
-                                </span>
-                            </div>
-                        )}
-                    </>
-                ) : error ? (
-                    <div className="text-red-500 flex flex-col items-center animate-in zoom-in opacity-80 px-4 z-10">
-                        <AlertCircle className="w-8 h-8 mb-2 stroke-1" />
-                        <p className="text-xs font-semibold">{t('dialog.preview.failed')}</p>
-                    </div>
-                ) : (
-                    <div className="text-muted-foreground/40 flex flex-col items-center z-10">
-                        <Plus className="w-12 h-12 mb-2 stroke-1 opacity-50" />
-                        <p className="text-xs font-medium">{t('dialog.preview.instruction')}</p>
-                    </div>
+                            ) : null}
+                        </button>
+                    </motion.div>
                 )}
-            </button>
+            </AnimatePresence>
 
             {/* --- 2. LIGHTBOX (PREVIEW BESAR) --- */}
             {typeof document !== 'undefined' && createPortal(
@@ -140,6 +200,7 @@ export function VideoPreview({ loading, meta, error, t, url }: VideoPreviewProps
                             exit={{ opacity: 0 }}
                             className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 md:p-8"
                             onClick={() => setIsPreviewOpen(false)}
+                            id="video-preview-modal"
                         >
                             <motion.div
                                 initial={{ scale: 0.95, opacity: 0, y: 20 }}

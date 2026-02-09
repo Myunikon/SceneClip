@@ -18,9 +18,10 @@ export function useFileDrop({ isOpen, onDrop }: UseFileDropProps) {
 
         const setupListeners = async () => {
             unlistenDrop = await listen('tauri://file-drop', (event) => {
-                const payload = event.payload as string[]
-                if (payload && payload.length > 0) {
-                    onDrop(payload)
+                const payload = event.payload
+                // Runtime validation to ensure payload is a string array
+                if (Array.isArray(payload) && payload.every(p => typeof p === 'string') && payload.length > 0) {
+                    onDrop(payload as string[])
                 }
                 setIsDragging(false)
             })

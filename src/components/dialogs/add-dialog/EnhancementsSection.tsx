@@ -33,7 +33,7 @@ export function EnhancementsSection() {
     const supportsChapters = isYouTube && (meta?.chapters ? meta.chapters.length > 0 : false) && !isGif
 
     return (
-        <div className="pt-4 border-t border-white/5">
+        <div className="pt-4 border-t border-border/40">
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
@@ -42,7 +42,7 @@ export function EnhancementsSection() {
                 <h4 className="text-sm font-bold flex items-center gap-2 text-muted-foreground uppercase tracking-wider group-hover:text-foreground transition-colors">
                     <Settings className="w-3 h-3" /> {t('dialog.enhancements_label')}
                 </h4>
-                <div className={cn("p-1 rounded-md transition-all", isOpen ? "bg-white/10 text-foreground rotate-180" : "text-muted-foreground group-hover:bg-white/5")}>
+                <div className={cn("p-1 rounded-md transition-all", isOpen ? "bg-primary/10 text-primary rotate-180" : "text-muted-foreground group-hover:bg-secondary/50")}>
                     <ChevronDown className="w-4 h-4" />
                 </div>
             </button>

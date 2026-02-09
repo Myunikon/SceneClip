@@ -40,9 +40,19 @@ export function ClipSection({ maxDuration }: ClipSectionProps) {
             e = Math.max(0, e)
         }
 
-        // 2. Swap if inverted (both branches were identical, simplified)
-        if (s >= e) {
+        // 2. Swap if inverted (but only if difference is significant to avoid 0s clips if user made a mistake)
+        if (s > e) {
             [s, e] = [e, s]
+        }
+
+        // 3. Ensure minimum duration (1s) if they are equal or too close
+        if (e - s < 1) {
+            // If too close, try to push end. If end is max, push start back.
+            if (duration && e >= duration) {
+                s = Math.max(0, e - 1)
+            } else {
+                e = s + 1
+            }
         }
 
         setRangeStart(formatTime(s))
@@ -57,7 +67,7 @@ export function ClipSection({ maxDuration }: ClipSectionProps) {
                     title={format === 'audio' ? (t('dialog.trim_audio') || "Trim Audio") : t('dialog.trim_video')}
                     description={t('dialog.trim_desc') || "Cut specific portion of the video"}
                     activeColor="orange"
-                    className="!bg-card dark:!bg-black/20 !border-border dark:!border-white/10"
+                    className="!bg-card dark:!bg-black/20 !border-border/60 dark:!border-white/10"
                 >
                     {renderClipContent()}
                 </OptionCard>
@@ -70,7 +80,7 @@ export function ClipSection({ maxDuration }: ClipSectionProps) {
                     onCheckedChange={setIsClipping}
                     activeColor="orange"
                     expandableContent={renderClipContent()}
-                    className="!bg-card dark:!bg-black/20 !border-border dark:!border-white/10"
+                    className="!bg-card dark:!bg-black/20 !border-border/60 dark:!border-white/10"
                 />
             )}
         </div>
@@ -100,7 +110,7 @@ export function ClipSection({ maxDuration }: ClipSectionProps) {
                 <div className="flex items-center gap-2">
                     <div className={cn(
                         "flex flex-1 items-center gap-1.5 p-0.5 rounded-lg border bg-white dark:bg-black/20 shadow-sm transition-all focus-within:ring-2 focus-within:ring-primary/20",
-                        isInvalidRange ? "border-red-500/50" : "border-border dark:border-white/10"
+                        isInvalidRange ? "border-red-500/50" : "border-border/60 dark:border-white/10"
                     )}>
                         <input
                             className="w-full min-w-0 bg-transparent py-1.5 px-2 text-sm text-center font-mono outline-none placeholder:text-muted-foreground/30 focus:placeholder:text-muted-foreground/50 transition-colors"
@@ -126,7 +136,7 @@ export function ClipSection({ maxDuration }: ClipSectionProps) {
                             ? "bg-orange-500/10 border-orange-500/30 text-orange-600 dark:text-orange-400"
                             : (rangeStart && rangeEnd && clipDuration > 0)
                                 ? "bg-primary/10 border-primary/20 text-primary"
-                                : "bg-muted/50 border-border dark:border-white/10 text-muted-foreground"
+                                : "bg-muted/50 border-border/60 dark:border-white/10 text-muted-foreground"
                     )}>
                         <span className="text-[10px] opacity-70">⏱</span>
                         <span>

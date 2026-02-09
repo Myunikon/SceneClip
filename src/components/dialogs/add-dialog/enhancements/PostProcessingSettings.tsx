@@ -24,32 +24,28 @@ export const PostProcessingSettings: React.FC<PostProcessingSettingsProps> = ({
     presets,
     currentFormat
 }) => {
-    // Filtered presets
-    const filteredPresets = presets.filter((p: PostProcessorPreset) => {
+    // Filter Presets
+    const filteredPresets = presets.filter((p) => {
         if (currentFormat === 'audio') return p.type === 'audio' || p.type === 'general'
         return p.type === 'video' || p.type === 'general'
     })
 
-    // Determine current preset value for dropdown
-    const currentPresetArgs = filteredPresets.find(p => p.args === postProcessorArgs)?.args;
-    // If it matches a preset, use the preset args. 
-    // If it's set but not a preset, it's custom.
-    // If not set, empty string (meaning "Select Preset" placeholder if we had one, or just empty).
-    const isCustom = postProcessorArgs && !currentPresetArgs;
-    const dropDownValue = currentPresetArgs || (isCustom ? '-custom-' : '');
+    // Determine Logic
+    const currentPreset = filteredPresets.find(p => p.args === postProcessorArgs);
+    const isCustom = !!postProcessorArgs && !currentPreset;
+    const dropDownValue = currentPreset?.args || (isCustom ? '-custom-' : '');
 
-    // Local state for custom input to avoid global re-render on every keystroke
+    // Local state for custom input
     const [localCustomArgs, setLocalCustomArgs] = useState(isCustom ? postProcessorArgs : '');
 
     useEffect(() => {
         if (isCustom) {
-            setLocalCustomArgs(postProcessorArgs);
+            setLocalCustomArgs(postProcessorArgs || '');
         }
     }, [isCustom, postProcessorArgs]);
 
     const handleDropdownChange = (val: string) => {
         if (val === '-custom-') {
-            // Initialize custom input with current value to preserve previous settings
             const initialValue = postProcessorArgs || '';
             setLocalCustomArgs(initialValue);
             setPostProcessorArgs(initialValue);
@@ -62,7 +58,6 @@ export const PostProcessingSettings: React.FC<PostProcessingSettingsProps> = ({
         const trimmed = localCustomArgs.trim();
         if (trimmed !== postProcessorArgs) {
             if (!trimmed && postProcessorArgs) {
-                // Warn user about empty input
                 notify.warning(t('dialog.custom_args_empty') || 'Custom arguments cleared');
             }
             setPostProcessorArgs(trimmed);
@@ -70,15 +65,12 @@ export const PostProcessingSettings: React.FC<PostProcessingSettingsProps> = ({
     }
 
     const handleToggle = (isChecked: boolean) => {
-        if (isChecked) {
-            onChange(true);  // Notify parent that feature is enabled
-            // Set default args if none set
-            if (!postProcessorArgs) {
-                const firstPreset = filteredPresets[0];
-                setPostProcessorArgs(firstPreset?.args || '');  // Empty string, not '-custom-'
+        onChange(isChecked);
+        if (isChecked && !postProcessorArgs) {
+            // Apply first preset safely if available
+            if (filteredPresets.length > 0) {
+                setPostProcessorArgs(filteredPresets[0].args);
             }
-        } else {
-            onChange(false);
         }
     }
 
@@ -89,7 +81,6 @@ export const PostProcessingSettings: React.FC<PostProcessingSettingsProps> = ({
             description={postProcessorArgs ? t('dialog.post_proc_active') : t('dialog.post_proc_desc')}
             checked={checked}
             onCheckedChange={handleToggle}
-            onClick={() => handleToggle(!checked)}
             expandableContent={
                 <div className="p-3 space-y-3">
                     <div className="flex items-center gap-2 text-xs font-bold uppercase text-muted-foreground">
@@ -114,7 +105,7 @@ export const PostProcessingSettings: React.FC<PostProcessingSettingsProps> = ({
                             <label className="text-xs text-muted-foreground">{t('dialog.custom_args_label')}</label>
                             <input
                                 type="text"
-                                className="w-full bg-black/20 border border-white/10 rounded-md px-3 py-2 text-sm font-mono focus:outline-none focus:border-white/50 transition-all placeholder:text-muted-foreground/50"
+                                className="w-full bg-secondary/30 dark:bg-black/20 border border-border/60 dark:border-white/10 rounded-md px-3 py-2 text-sm font-mono focus:outline-none focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
                                 placeholder="-acodec libmp3lame -ab 320k"
                                 value={localCustomArgs}
                                 onChange={(e) => setLocalCustomArgs(e.target.value)}
@@ -124,7 +115,7 @@ export const PostProcessingSettings: React.FC<PostProcessingSettingsProps> = ({
                     )}
 
                     {postProcessorArgs && dropDownValue !== '-custom-' && (
-                        <code className="block text-[10px] font-mono bg-black/30 p-2 rounded text-muted-foreground break-all border border-white/10">
+                        <code className="block text-[10px] font-mono bg-secondary/50 dark:bg-black/30 p-2 rounded text-muted-foreground break-all border border-border/60 dark:border-white/10">
                             {postProcessorArgs}
                         </code>
                     )}

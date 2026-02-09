@@ -7,7 +7,7 @@ import { notify } from '../../../../lib/notify'
 
 interface SubtitlesSettingsProps {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    t: any
+    t: (key: string) => string
     checked: boolean
     onChange: (checked: boolean) => void
     disabled?: boolean
@@ -39,7 +39,7 @@ export const SubtitlesSettings: React.FC<SubtitlesSettingsProps> = ({
     // MKV: The King (Supports everything)
     // MP4/MOV: Supports text subs but usually requires SRT/MOV_TEXT
     // WEBM: Supports WebVTT but embedding SRT is hit-or-miss
-    const isEmbedSupported = !container || ['mkv', 'mp4', 'mov'].includes(container.toLowerCase())
+    const isEmbedSupported = !container || ['mkv', 'mp4', 'mov', 'webm'].includes(container.toLowerCase())
 
     const handleClick = () => {
         const newVal = !checked;
@@ -83,12 +83,12 @@ export const SubtitlesSettings: React.FC<SubtitlesSettingsProps> = ({
                             className={cn(
                                 "flex items-center justify-between p-3 rounded-xl border transition-all",
                                 isEmbedSupported
-                                    ? "border-white/5 cursor-pointer hover:bg-white/5"
-                                    : "border-transparent bg-white/5 opacity-50 cursor-not-allowed"
+                                    ? "border-border/40 cursor-pointer hover:bg-secondary/50"
+                                    : "border-transparent bg-secondary/30 opacity-50 cursor-not-allowed"
                             )}
                         >
                             <div className="flex items-center gap-3">
-                                <div className={cn("p-1.5 rounded-lg", embedSubtitles ? "bg-foreground text-background" : "bg-white/10 text-muted-foreground")}>
+                                <div className={cn("p-1.5 rounded-lg", embedSubtitles ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground")}>
                                     <Subtitles className="w-4 h-4" />
                                 </div>
                                 <div>
@@ -105,12 +105,12 @@ export const SubtitlesSettings: React.FC<SubtitlesSettingsProps> = ({
                                 checked={embedSubtitles}
                                 onCheckedChange={setEmbedSubtitles}
                                 disabled={!isEmbedSupported}
-                                className="data-[state=checked]:bg-white scale-90"
+                                className="scale-90"
                             />
                         </div>
 
                         {!embedSubtitles && (
-                            <div className="space-y-2 pt-1 border-t border-white/5">
+                            <div className="space-y-2 pt-1 border-t border-border/40">
                                 <div className="text-[10px] font-bold text-muted-foreground uppercase pl-1">{t('dialog.labels.fmt')}</div>
                                 <ChoiceGroup
                                     value={subtitleFormat}

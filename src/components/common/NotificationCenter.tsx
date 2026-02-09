@@ -84,9 +84,9 @@ export function NotificationCenter() {
 
             {/* Popover */}
             {isOpen && (
-                <div className="absolute bottom-full right-0 mb-2 w-80 max-h-[400px] bg-background/60 backdrop-blur-2xl border border-white/10 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] overflow-hidden animate-in slide-in-from-bottom-2 duration-300 z-50">
+                <div className="absolute bottom-full right-0 mb-2 w-80 max-h-[400px] bg-background/60 backdrop-blur-2xl border border-border/50 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] overflow-hidden animate-in slide-in-from-bottom-2 duration-300 z-50">
                     {/* Header */}
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-white/5">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-white/5">
                         <h3 className="font-medium text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                             <Bell className="w-3.5 h-3.5" />
                             {t.notifications?.title || "Notifications"}
@@ -131,7 +131,7 @@ export function NotificationCenter() {
                                 <p className="text-xs font-medium">{t.notifications?.empty || "No notifications"}</p>
                             </div>
                         ) : (
-                            <div className="divide-y divide-white/5">
+                            <div className="divide-y divide-border/40">
                                 {recentLogs.map((log) => {
                                     const style = typeStyles[log.level] || typeStyles.info
                                     const Icon = style.icon
@@ -150,7 +150,7 @@ export function NotificationCenter() {
                                     return (
                                         <div
                                             key={log.originalIndex}
-                                            className={`px-4 py-3 hover:bg-white/5 transition-colors group/item relative pr-8`}
+                                            className={`px-4 py-3 hover:bg-secondary/50 transition-colors group/item relative pr-8`}
                                         >
                                             <div className="flex gap-3 items-start">
                                                 <div className={`mt-0.5 p-1 rounded-full ${style.bg.replace('/10', '/20')}`}>
@@ -179,7 +179,7 @@ export function NotificationCenter() {
                                                             <X className="w-3 h-3" />
                                                         </button>
                                                     </TooltipTrigger>
-                                                    <TooltipContent className="bg-background/80 backdrop-blur-xl border-white/10">
+                                                    <TooltipContent className="bg-background/80 backdrop-blur-xl border-border/50">
                                                         <p>Dismiss</p>
                                                     </TooltipContent>
                                                 </Tooltip>

@@ -135,6 +135,8 @@ export const zh = {
             quit_desc: "应用将完全退出",
             desktop_notifications: "桌面通知",
             desktop_notifications_desc: "当应用程序在后台时显示系统通知",
+            auto_detect_clipboard: "自动检测链接",
+            auto_detect_clipboard_desc: "复制视频链接时自动提示下载",
             prevent_suspend: "防止休眠",
             prevent_suspend_desc: "下载过程中保持系统唤醒"
         },
@@ -257,11 +259,26 @@ export const zh = {
                 srt_fixer: "SRT 修复器",
                 srt_fixer_desc: "修复 YouTube 自动生成字幕中的重复行和重叠时间。",
                 metadata_enhancer: "元数据增强器",
-                metadata_enhancer_desc: "在文件中嵌入额外的元数据，如不喜欢数、章节和丰富的 info json。"
+                metadata_enhancer_desc: "在文件中嵌入额外的元数据，如不喜欢数、章节和丰富的 info json。",
+                smart_proxy: "智能代理轮换",
+                smart_proxy_desc: "自动轮换代理以避免 IP 封锁 (HTTP 429)。",
+                po_token: "PO Token 安全令牌",
+                po_token_desc: "使用 Proof of Origin 令牌绕过 YouTube 机器人检测。",
+                cookie_unlock: "解锁 Cookie 数据库",
+                cookie_unlock_desc: "允许访问浏览器锁定的 Cookie 数据库 (Windows)。",
+                po_token_label: "PO TOKEN",
+                po_token_placeholder: "手动输入令牌 (可选)...",
+                visitor_data_label: "访客数据 (VISITOR DATA)",
+                visitor_data_placeholder: "手动输入访客数据 (可选)..."
             },
             danger_zone_proxy: "危险区域 (代理)",
             danger_zone_binaries: "危险区域 (二进制)",
             danger_desc: "更改这些路径可能会导致应用损坏。",
+            tech_paths: "二进制路径",
+            js_runtime: "JS 运行时 (Node/Deno)",
+            js_runtime_desc: "对于稳定性和 4K YouTube 至关重要。如果为空则自动检测。",
+            detected_gpu: "检测到 GPU:",
+            unknown_integrated: "未知 / 集成显卡",
             redownload_ffmpeg: "重新下载 FFmpeg (强制)",
             redownload_help: "如果是 FFmpeg 损坏或缺少依赖项，请使用此功能。",
             confirm_redownload: "确定要强制重新下载 FFmpeg 吗？\\n\\n这将覆盖现有的 ‘ffmpeg.exe’，可能需要几分钟时间。",
@@ -406,7 +423,8 @@ export const zh = {
             secret_found: "发现秘密！",
             secret_desc: "您解锁了秘密开发者感谢徽章！",
             secret_sub: "（没有隐藏设置，纯粹为了好玩！）",
-            awesome: "太棒了！"
+            awesome: "太棒了！",
+            open_url_failed: "无法打开链接"
         },
 
 

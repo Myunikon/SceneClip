@@ -62,8 +62,10 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
 
     // React to external URL triggers (Notification click, Deep link)
     // This MUST run whenever initialUrl changes to catch the updates
+    // React to external URL triggers (Notification click, Deep link)
+    // This MUST run whenever initialUrl changes to catch the updates
     useEffect(() => {
-        if (initialUrl) {
+        if (initialUrl && initialUrl !== urlRef.current) {
             console.log("[AddDialog] Hydrating from external source:", initialUrl)
             setUrl(initialUrl)
             setIsOpen(true)
@@ -73,6 +75,7 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
     // Auto-paste from Clipboard on Open (Fallback)
     useEffect(() => {
         if (!isOpen) return
+        if (!settings.enableAutoClipboard) return
 
         // Use refs for fresh values in async callback (avoids stale closures)
         if (urlRef.current) return
@@ -140,8 +143,16 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
         const end = options.isClipping ? options.rangeEnd : ''
 
         const urls = options.batchMode
-            ? url.split('\n').map(u => u.trim()).filter(u => u.length > 0 && u.startsWith('http'))
+            ? url.split('\n').map(u => u.trim()).filter(u => isValidVideoUrl(u))
             : [url.trim()]
+
+        // Final Validation
+        if (urls.length === 0 || (!options.batchMode && !isValidVideoUrl(url))) {
+            notify.error(t('dialog.invalid_url_title') || "Invalid URL", {
+                description: t('dialog.invalid_url_desc') || "Please enter a valid video URL (http/https/rtmp/rtsp)"
+            })
+            return
+        }
 
         for (const singleUrl of urls) {
             addTask(singleUrl, {

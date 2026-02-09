@@ -6,9 +6,9 @@ import { ClipSection } from './ClipSection'
 import { ChoiceGroup } from '../../common'
 import { useAddDialogContext } from './AddDialogContext'
 
+import { TFunction } from 'i18next'
 // --- 1. KOMPONEN TAB TYPE ---
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function DownloadTypeTabs({ mode, onChange, t }: { mode: 'video' | 'audio' | 'gif', onChange: (m: 'video' | 'audio' | 'gif') => void, t: any }) {
+function DownloadTypeTabs({ mode, onChange, t }: { mode: 'video' | 'audio' | 'gif', onChange: (m: 'video' | 'audio' | 'gif') => void, t: TFunction }) {
 
     // Dynamic color based on mode
     const activeColor = mode === 'audio' ? 'purple' : mode === 'gif' ? 'orange' : 'primary'

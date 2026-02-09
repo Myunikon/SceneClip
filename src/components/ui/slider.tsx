@@ -39,7 +39,7 @@ export function Slider({ min, max, step = 1, value, onChange, disabled, classNam
             setDragging(false)
         }
 
-        document.addEventListener('pointermove', handlePointerMove)
+        document.addEventListener('pointermove', handlePointerMove, { passive: true })
         document.addEventListener('pointerup', handlePointerUp)
 
         return () => {
@@ -47,6 +47,30 @@ export function Slider({ min, max, step = 1, value, onChange, disabled, classNam
             document.removeEventListener('pointerup', handlePointerUp)
         }
     }, [dragging, min, max, step, onChange])
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (disabled) return
+        switch (e.key) {
+            case 'ArrowRight':
+            case 'ArrowUp':
+                e.preventDefault()
+                onChange(Math.min(max, value + step))
+                break
+            case 'ArrowLeft':
+            case 'ArrowDown':
+                e.preventDefault()
+                onChange(Math.max(min, value - step))
+                break
+            case 'Home':
+                e.preventDefault()
+                onChange(min)
+                break
+            case 'End':
+                e.preventDefault()
+                onChange(max)
+                break
+        }
+    }
 
     return (
         <div
@@ -74,8 +98,14 @@ export function Slider({ min, max, step = 1, value, onChange, disabled, classNam
 
                 {/* Thumb */}
                 <div
+                    role="slider"
+                    aria-valuemin={min}
+                    aria-valuemax={max}
+                    aria-valuenow={safeValue}
+                    tabIndex={disabled ? -1 : 0}
+                    onKeyDown={handleKeyDown}
                     className={cn(
-                        "absolute top-1/2 -translate-y-1/2 -ml-2.5 w-5 h-5 bg-background border-2 border-primary rounded-full shadow-md z-10 transition-transform",
+                        "absolute top-1/2 -translate-y-1/2 -ml-2.5 w-5 h-5 bg-background border-2 border-primary rounded-full shadow-md z-10 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                         dragging ? "scale-110 ring-4 ring-primary/20 cursor-grabbing" : "hover:scale-110 cursor-grab"
                     )}
                     style={{ left: `${percentage}%` }}

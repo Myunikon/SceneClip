@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Select } from '../ui'
 import { Switch } from '../ui'
@@ -5,18 +6,24 @@ import { AppSettings } from '../../store/slices/types'
 import { enable, disable } from '@tauri-apps/plugin-autostart'
 import { SettingItem, SettingSection } from './SettingItem'
 import { notify } from '../../lib/notify'
-import { Monitor, Power } from 'lucide-react'
+import { Monitor, Power, Loader2 } from 'lucide-react'
+import { SUPPORTED_LANGUAGES, THEMES, FONT_SIZES, CLOSE_ACTIONS, POST_DOWNLOAD_ACTIONS } from './constants'
 
 interface GeneralSettingsProps {
     settings: AppSettings
     setSetting: <K extends keyof AppSettings>(key: K, val: AppSettings[K]) => void
 }
 
-
-
 export function GeneralSettings({ settings, setSetting }: GeneralSettingsProps) {
     const { t, i18n } = useTranslation()
+    const [isTogglingAutostart, setIsTogglingAutostart] = useState(false)
+
+    // Fix: Race Condition & Error Handling
+    // Added loading state to prevent rapid toggling
     const handleAutostart = async (enabled: boolean) => {
+        if (isTogglingAutostart) return
+
+        setIsTogglingAutostart(true)
         try {
             if (enabled) {
                 await enable()
@@ -27,6 +34,9 @@ export function GeneralSettings({ settings, setSetting }: GeneralSettingsProps) 
         } catch (e) {
             console.error('Autostart toggle failed:', e)
             notify.error(t('settings.general.autostart_fail') || "Failed to toggle autostart", { description: String(e) })
+            // Revert the switch via UI state implication (since we didn't update store if failed)
+        } finally {
+            setIsTogglingAutostart(false)
         }
     }
 
@@ -51,12 +61,10 @@ export function GeneralSettings({ settings, setSetting }: GeneralSettingsProps) 
                                     setSetting('language', val as AppSettings['language']);
                                     i18n.changeLanguage(val);
                                 }}
-                                options={[
-                                    { value: "en", label: "English" },
-                                    { value: "id", label: "Indonesia" },
-                                    { value: "ms", label: "Melayu" },
-                                    { value: "zh", label: "Chinese" }
-                                ]}
+                                options={SUPPORTED_LANGUAGES.map(lang => ({
+                                    ...lang,
+                                    label: lang.label // In a real app we might translate label here too
+                                }))}
                             />
                         </div>
                     </SettingItem>
@@ -73,11 +81,10 @@ export function GeneralSettings({ settings, setSetting }: GeneralSettingsProps) 
                             <Select
                                 value={settings.theme}
                                 onChange={(val) => setSetting('theme', val as AppSettings['theme'])}
-                                options={[
-                                    { value: "system", label: t('settings.general.theme_system') },
-                                    { value: "light", label: t('settings.general.theme_light') },
-                                    { value: "dark", label: t('settings.general.theme_dark') }
-                                ]}
+                                options={THEMES.map(th => ({
+                                    value: th.value,
+                                    label: t(th.label)
+                                }))}
                             />
                         </div>
                     </SettingItem>
@@ -94,11 +101,10 @@ export function GeneralSettings({ settings, setSetting }: GeneralSettingsProps) 
                             <Select
                                 value={settings.frontendFontSize || 'medium'}
                                 onChange={(val) => setSetting('frontendFontSize', val as AppSettings['frontendFontSize'])}
-                                options={[
-                                    { value: "small", label: t('settings.general.font_small') },
-                                    { value: "medium", label: t('settings.general.font_medium') },
-                                    { value: "large", label: t('settings.general.font_large') }
-                                ]}
+                                options={FONT_SIZES.map(fs => ({
+                                    value: fs.value,
+                                    label: t(fs.label)
+                                }))}
                             />
                         </div>
                     </SettingItem>
@@ -116,7 +122,14 @@ export function GeneralSettings({ settings, setSetting }: GeneralSettingsProps) 
                         description={t('settings.general.launch_startup_desc')}
                         className="hover:bg-secondary/30 rounded-lg transition-colors cursor-pointer"
                     >
-                        <Switch checked={settings.launchAtStartup} onCheckedChange={handleAutostart} />
+                        <div className="flex items-center gap-2">
+                            {isTogglingAutostart && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+                            <Switch
+                                checked={settings.launchAtStartup}
+                                onCheckedChange={handleAutostart}
+                                disabled={isTogglingAutostart}
+                            />
+                        </div>
                     </SettingItem>
 
                     <SettingItem
@@ -127,10 +140,6 @@ export function GeneralSettings({ settings, setSetting }: GeneralSettingsProps) 
                         <Switch checked={settings.startMinimized} onCheckedChange={val => setSetting('startMinimized', val)} />
                     </SettingItem>
 
-
-
-
-
                     <SettingItem
                         title={t('settings.general.desktop_notifications') || "Desktop Notifications"}
                         description={t('settings.general.desktop_notifications_desc') || "Show notifications when in background"}
@@ -139,6 +148,17 @@ export function GeneralSettings({ settings, setSetting }: GeneralSettingsProps) 
                         <Switch
                             checked={settings.enableDesktopNotifications}
                             onCheckedChange={val => setSetting('enableDesktopNotifications', val)}
+                        />
+                    </SettingItem>
+
+                    <SettingItem
+                        title={t('settings.general.auto_detect_clipboard') || "Auto Detect Links"}
+                        description={t('settings.general.auto_detect_clipboard_desc') || "Automatically prompt to download when copying video links"}
+                        className="hover:bg-secondary/30 rounded-lg transition-colors cursor-pointer"
+                    >
+                        <Switch
+                            checked={settings.enableAutoClipboard}
+                            onCheckedChange={val => setSetting('enableAutoClipboard', val)}
                         />
                     </SettingItem>
 
@@ -165,10 +185,10 @@ export function GeneralSettings({ settings, setSetting }: GeneralSettingsProps) 
                             <Select
                                 value={settings.closeAction}
                                 onChange={(val) => setSetting('closeAction', val as AppSettings['closeAction'])}
-                                options={[
-                                    { value: 'minimize', label: t('settings.general.minimize_tray') || "Minimize to Tray" },
-                                    { value: 'quit', label: t('settings.general.quit_app') || "Quit Application" }
-                                ]}
+                                options={CLOSE_ACTIONS.map(a => ({
+                                    value: a.value,
+                                    label: t(a.label)
+                                }))}
                             />
                         </div>
                     </SettingItem>
@@ -186,11 +206,10 @@ export function GeneralSettings({ settings, setSetting }: GeneralSettingsProps) 
                             <Select
                                 value={settings.postDownloadAction || 'none'}
                                 onChange={(val) => setSetting('postDownloadAction', val as AppSettings['postDownloadAction'])}
-                                options={[
-                                    { value: "none", label: t('settings.advanced.post_actions.none') || "Do Nothing" },
-                                    { value: "sleep", label: t('settings.advanced.post_actions.sleep') || "Sleep System" },
-                                    { value: "shutdown", label: t('settings.advanced.post_actions.shutdown') || "Shutdown System" }
-                                ]}
+                                options={POST_DOWNLOAD_ACTIONS.map(a => ({
+                                    value: a.value,
+                                    label: t(a.label)
+                                }))}
                             />
                         </div>
                     </SettingItem>

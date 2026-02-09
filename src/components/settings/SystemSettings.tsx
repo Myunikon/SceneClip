@@ -10,9 +10,9 @@ import { useState, useEffect } from 'react'
 import { notify } from '../../lib/notify'
 import { validateBinary, detectBinaryType } from '../../lib/binary-validator'
 import { cn } from '../../lib/utils'
+import { useCallback } from 'react'
 
-// @ts-ignore - Reserved for future type-specific logic
-// const _detect = detectBinaryType;
+
 
 interface SystemSettingsProps {
     settings: AppSettings
@@ -34,9 +34,11 @@ function BinaryPathInput({ label, value, onChange, description, expectedType }: 
         loading: false
     })
 
-    const validate = async (path: string) => {
+    const validate = useCallback(async (path: string) => {
         if (!path || path.trim() === '' || path.includes('Auto-managed')) {
-            setStatus({ isValid: null, version: null, loading: false })
+            if (status.isValid !== null || status.loading) {
+                setStatus({ isValid: null, version: null, loading: false })
+            }
             return
         }
 
@@ -84,16 +86,18 @@ function BinaryPathInput({ label, value, onChange, description, expectedType }: 
                 description: "Critical verification error"
             })
         }
-    }
+    }, [expectedType, status.loading, status.isValid, t])
 
     // Validate on mount or when value changes
     useEffect(() => {
-        if (value && value.trim() !== '' && !value.includes('Auto-managed') && status.isValid === null) {
-            validate(value)
-        } else if (!value || value.trim() === '' || value.includes('Auto-managed')) {
-            setStatus({ isValid: null, version: null, loading: false })
+        const isAutoManaged = !value || value.trim() === '' || value.includes('Auto-managed');
+
+        if (!isAutoManaged && status.isValid === null && !status.loading) {
+            validate(value);
+        } else if (isAutoManaged && status.isValid !== null) {
+            setStatus({ isValid: null, version: null, loading: false });
         }
-    }, [value, status.isValid, validate])
+    }, [value, status.isValid, status.loading, validate])
 
 
     const handleBrowse = async () => {

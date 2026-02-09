@@ -1,9 +1,11 @@
+import { useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Download, Terminal as TerminalIcon, Scissors, Zap, Globe, AlertCircle, ChevronRight, Layers, Waypoints, Languages } from 'lucide-react'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { useTranslation, Trans } from 'react-i18next'
 import { Updater } from '../providers'
 import { AuroraText } from '@/registry/magicui/aurora-text'
+import { notify } from '../../lib/notify'
 
 
 interface AboutSettingsProps {
@@ -14,6 +16,27 @@ interface AboutSettingsProps {
 export function AboutSettings({ addLog, setShowEasterEgg }: AboutSettingsProps) {
     const { t } = useTranslation()
 
+    // Fix: Remove unsafe window as any. Use useRef for non-rendering state persistence.
+    const easterEggCount = useRef(0)
+
+    const handleEasterEggClick = () => {
+        easterEggCount.current += 1
+        if (easterEggCount.current === 5) {
+            addLog({ message: "🎉 EASTER EGG FOUND!", level: 'success', source: 'system' })
+            setShowEasterEgg(true)
+            easterEggCount.current = 0
+        }
+    }
+
+    // Fix: Safe URL opening with error handling
+    const handleOpenUrl = async (url: string) => {
+        try {
+            await openUrl(url)
+        } catch (error) {
+            console.error(`Failed to open URL: ${url}`, error)
+            notify.error(t('settings.about_page.open_url_failed') || "Failed to open link")
+        }
+    }
 
     const techItems = [
         { id: 'yt-dlp', name: 'yt-dlp', role: t('settings.about_page.role_core'), Icon: TerminalIcon, link: 'https://github.com/yt-dlp/yt-dlp', color: 'text-foreground' },
@@ -35,14 +58,7 @@ export function AboutSettings({ addLog, setShowEasterEgg }: AboutSettingsProps) 
                     className="w-24 h-24 bg-card rounded-[22px] shadow-xl flex items-center justify-center border border-border/50 cursor-pointer relative overflow-hidden group"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                        const newCount = (window as any)._ee_count = ((window as any)._ee_count || 0) + 1
-                        if (newCount === 5) {
-                            addLog({ message: "🎉 EASTER EGG FOUND!", level: 'success', source: 'system' })
-                            setShowEasterEgg(true)
-                                ; (window as any)._ee_count = 0
-                        }
-                    }}
+                    onClick={handleEasterEggClick}
                 >
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                     <Download className="w-12 h-12 text-primary" />
@@ -74,7 +90,7 @@ export function AboutSettings({ addLog, setShowEasterEgg }: AboutSettingsProps) 
                         <div
                             key={item.id}
                             className="flex items-center justify-between p-3 pl-4 hover:bg-muted/50 transition-colors cursor-pointer group active:scale-[0.99] active:bg-muted/80 duration-200"
-                            onClick={() => openUrl(item.link)}
+                            onClick={() => handleOpenUrl(item.link)}
                         >
                             <div className="flex items-center gap-3">
                                 <div className={`w-8 h-8 rounded-md bg-background flex items-center justify-center border border-border/50 shadow-sm group-hover:scale-110 transition-transform duration-300`}>
@@ -99,7 +115,7 @@ export function AboutSettings({ addLog, setShowEasterEgg }: AboutSettingsProps) 
                         components={[
                             <span className="text-red-500 hover:scale-110 transition-transform cursor-default">❤️</span>,
                             <button
-                                onClick={() => openUrl('https://github.com/Myunikon')}
+                                onClick={() => handleOpenUrl('https://github.com/Myunikon')}
                                 className="font-semibold text-foreground hover:text-primary transition-colors ml-0.5"
                             >
                                 Myunikon

@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Globe, Palette, HardDrive, Film, Info, FileClock, Cpu } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../../lib/utils'
 import { useAppStore } from '../../store'
@@ -15,23 +15,31 @@ import { MediaSettings } from './MediaSettings'
 import { NetworkSettings } from './NetworkSettings'
 import { SystemSettings } from './SystemSettings'
 import { AboutSettings } from './AboutSettings'
-// import { OverflowTooltip } from '../ui/tooltip'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 
 interface SidebarButtonProps {
     tab: { id: string; label: string; icon: React.ComponentType<{ className?: string }> }
     isActive: boolean
     onClick: () => void
+    buttonRef?: React.Ref<HTMLButtonElement>
+    onKeyDown?: (e: React.KeyboardEvent) => void
 }
 
-function SidebarButton({ tab, isActive, onClick }: SidebarButtonProps) {
+function SidebarButton({ tab, isActive, onClick, buttonRef, onKeyDown }: SidebarButtonProps) {
     const [isEnabled, setIsEnabled] = useState(false)
-    const buttonRef = useRef<HTMLButtonElement>(null)
+    const localRef = useRef<HTMLButtonElement>(null)
     const textRef = useRef<HTMLSpanElement>(null)
+
+    // Merge refs
+    const setRef = (element: HTMLButtonElement | null) => {
+        (localRef as React.MutableRefObject<HTMLButtonElement | null>).current = element
+        if (typeof buttonRef === 'function') buttonRef(element)
+        else if (buttonRef) (buttonRef as React.MutableRefObject<HTMLButtonElement | null>).current = element
+    }
 
     useEffect(() => {
         const check = () => {
-            const btn = buttonRef.current
+            const btn = localRef.current
             const txt = textRef.current
             if (!btn || !txt) return
 
@@ -48,7 +56,7 @@ function SidebarButton({ tab, isActive, onClick }: SidebarButtonProps) {
 
         check()
         const observer = new ResizeObserver(check)
-        if (buttonRef.current) observer.observe(buttonRef.current)
+        if (localRef.current) observer.observe(localRef.current)
         if (textRef.current) observer.observe(textRef.current)
 
         return () => observer.disconnect()
@@ -58,10 +66,14 @@ function SidebarButton({ tab, isActive, onClick }: SidebarButtonProps) {
         <Tooltip side="right" open={isEnabled ? undefined : false}>
             <TooltipTrigger asChild>
                 <button
-                    ref={buttonRef}
+                    ref={setRef}
                     onClick={onClick}
+                    onKeyDown={onKeyDown}
+                    role="tab"
+                    aria-selected={isActive}
+                    tabIndex={isActive ? 0 : -1}
                     className={cn(
-                        "relative flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl text-left transition-all duration-200 group sidebar-button",
+                        "relative flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-full text-left transition-all duration-200 group sidebar-button focus:outline-none focus:ring-1 focus:ring-primary/50",
                         isActive
                             ? "bg-primary/10 text-primary shadow-sm"
                             : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground"
@@ -90,6 +102,8 @@ export interface SettingsViewProps {
     initialTab?: 'general' | 'downloads' | 'media' | 'network' | 'system' | 'about' | 'logs'
 }
 
+type TabId = 'general' | 'downloads' | 'media' | 'network' | 'system' | 'about' | 'logs';
+
 export function SettingsView({ initialTab }: SettingsViewProps) {
     const { settings, updateSettings, addLog } = useAppStore(
         useShallow((s) => ({
@@ -101,25 +115,18 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
     const { t } = useTranslation()
     const [showEasterEgg, setShowEasterEgg] = useState(false)
 
-    // Auto-Save
-    const setSetting = <K extends keyof AppSettings>(key: K, val: AppSettings[K]) => {
+    // Auto-Save helper
+    const setSetting = useCallback(<K extends keyof AppSettings>(key: K, val: AppSettings[K]) => {
         updateSettings({ [key]: val })
-    }
+    }, [updateSettings])
 
-    const [activeTab, setActiveTab] = useState<'general' | 'downloads' | 'media' | 'network' | 'system' | 'about' | 'logs'>('general')
+    const [activeTab, setActiveTab] = useState<TabId>(initialTab || 'general')
 
-    // Deep Linking
-    useState(() => {
+    // Fixed: Deep Linking using useEffect instead of setState initializer anti-pattern
+    useEffect(() => {
         if (initialTab) setActiveTab(initialTab)
-    })
+    }, [initialTab])
 
-    const [prevInitialTab, setPrevInitialTab] = useState(initialTab)
-    if (initialTab !== prevInitialTab) {
-        setPrevInitialTab(initialTab)
-        if (initialTab) setActiveTab(initialTab)
-    }
-
-    type TabId = 'general' | 'downloads' | 'media' | 'network' | 'system' | 'about' | 'logs'
     const tabs = [
         { id: 'general' as TabId, label: t('settings.tabs.general') || "General", icon: Palette },
         { id: 'downloads' as TabId, label: t('settings.tabs.downloads') || "Downloads", icon: HardDrive },
@@ -133,56 +140,90 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
     const scrollRef = useRef<HTMLDivElement>(null)
     const [isScrolled, setIsScrolled] = useState(false)
 
-    const handleScroll = () => {
-        if (!scrollRef.current) return
-        setIsScrolled(scrollRef.current.scrollTop > 20)
-    }
+    // Fixed: Debounced scroll handler to avoid performance issues
+    useEffect(() => {
+        const el = scrollRef.current
+        if (!el) return
+
+        let timeoutId: number
+        const handleScroll = () => {
+            if (timeoutId) cancelAnimationFrame(timeoutId)
+            timeoutId = requestAnimationFrame(() => {
+                setIsScrolled(el.scrollTop > 20)
+            })
+        }
+
+        el.addEventListener('scroll', handleScroll, { passive: true })
+        return () => {
+            el.removeEventListener('scroll', handleScroll)
+            if (timeoutId) cancelAnimationFrame(timeoutId)
+        }
+    }, [])
 
     const activeTabLabel = tabs.find(t => t.id === activeTab)?.label
+
+    // Keyboard Navigation
+    const buttonRefs = useRef<(HTMLButtonElement | null)[]>([])
+
+    const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            const nextIndex = (index + 1) % tabs.length
+            buttonRefs.current[nextIndex]?.focus()
+            setActiveTab(tabs[nextIndex].id)
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            const prevIndex = (index - 1 + tabs.length) % tabs.length
+            buttonRefs.current[prevIndex]?.focus()
+            setActiveTab(tabs[prevIndex].id)
+        }
+    }
 
     return (
         <div className="h-full flex flex-row overflow-hidden bg-background cq-settings-view">
             {/* Easter Egg Modal Overlay */}
-            {showEasterEgg && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 text-center">
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={() => setShowEasterEgg(false)}
-                        className="absolute inset-0 bg-black/80 backdrop-blur-md"
-                    />
-                    <motion.div
-                        initial={{ scale: 0.5, rotate: -10, opacity: 0 }}
-                        animate={{ scale: 1, rotate: 0, opacity: 1 }}
-                        exit={{ scale: 0.5, rotate: 10, opacity: 0 }}
-                        className="bg-gradient-to-br from-orange-900 to-slate-900 border border-orange-500/30 p-8 rounded-3xl shadow-2xl relative z-10 text-center max-w-sm w-full mx-auto"
-                    >
+            <AnimatePresence>
+                {showEasterEgg && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 text-center">
                         <motion.div
-                            animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
-                            transition={{ repeat: Infinity, duration: 2 }}
-                            className="text-6xl mb-4 select-none"
-                        >
-                            🐣
-                        </motion.div>
-                        <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-400 mb-2">
-                            {t('settings.about_page.secret_found')}
-                        </h3>
-                        <p className="text-muted-foreground mb-6">
-                            {t('settings.about_page.secret_desc')} <br />
-                            <span className="text-xs opacity-50">{t('settings.about_page.secret_sub')}</span>
-                        </p>
-                        <button
+                            key="overlay"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
                             onClick={() => setShowEasterEgg(false)}
-                            className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-full transition-all hover:scale-105 active:scale-95 shadow-lg shadow-orange-500/25"
+                            className="absolute inset-0 bg-black/80 backdrop-blur-md"
+                        />
+                        <motion.div
+                            key="modal"
+                            initial={{ scale: 0.5, rotate: -10, opacity: 0 }}
+                            animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                            exit={{ scale: 0.5, rotate: 10, opacity: 0 }}
+                            className="bg-gradient-to-br from-orange-900 to-slate-900 border border-orange-500/30 p-8 rounded-3xl shadow-2xl relative z-10 text-center max-w-sm w-full mx-auto"
                         >
-                            {t('settings.about_page.awesome') || "Awesome!"}
-                        </button>
-                    </motion.div>
-                </div>
-            )}
-
-
+                            <motion.div
+                                animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
+                                transition={{ repeat: Infinity, duration: 2 }}
+                                className="text-6xl mb-4 select-none"
+                            >
+                                🐣
+                            </motion.div>
+                            <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-400 mb-2">
+                                {t('settings.about_page.secret_found')}
+                            </h3>
+                            <p className="text-muted-foreground mb-6">
+                                {t('settings.about_page.secret_desc')} <br />
+                                <span className="text-xs opacity-50">{t('settings.about_page.secret_sub')}</span>
+                            </p>
+                            <button
+                                onClick={() => setShowEasterEgg(false)}
+                                className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-full transition-all hover:scale-105 active:scale-95 shadow-lg shadow-orange-500/25 focus:outline-none focus:ring-2 focus:ring-white/50"
+                            >
+                                {t('settings.about_page.awesome') || "Awesome!"}
+                            </button>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* FLUID ADAPTIVE SIDEBAR: Space-aware resizing */}
             <div className="flex flex-col flex-shrink-0 flex-grow-0 sidebar-container cq-sidebar bg-secondary/10 border-r border-border/40 backdrop-blur-xl pt-6 px-3">
@@ -190,13 +231,15 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
                     <h2 className="text-xl font-bold tracking-tight text-foreground/80 truncate">{t('settings.title') || "Settings"}</h2>
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                    {tabs.map(tab => (
+                <div className="flex flex-col gap-1.5" role="tablist" aria-orientation="vertical">
+                    {tabs.map((tab, index) => (
                         <SidebarButton
                             key={tab.id}
                             tab={tab}
                             isActive={activeTab === tab.id}
                             onClick={() => setActiveTab(tab.id)}
+                            buttonRef={(el) => { buttonRefs.current[index] = el }}
+                            onKeyDown={(e) => handleKeyDown(e, index)}
                         />
                     ))}
                 </div>
@@ -213,7 +256,6 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
 
                 <div
                     ref={scrollRef}
-                    onScroll={handleScroll}
                     className="flex-1 overflow-y-auto px-4 sm:px-[clamp(1rem,5vw,2rem)] pb-20 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20"
                 >
                     <div className="max-w-4xl mx-auto w-full">

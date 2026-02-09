@@ -29,11 +29,14 @@ export function useTheme(themeSetting: { theme: AppSettings['theme'], frontendFo
         applyTheme()
 
         // Listen for system changes if in system mode
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+        const handler = () => applyTheme()
+
         if (themeSetting.theme === 'system') {
-            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-            const handler = () => applyTheme()
             mediaQuery.addEventListener('change', handler)
-            return () => mediaQuery.removeEventListener('change', handler)
         }
+
+        // Cleanup: removeEventListener is safe to call even if not added
+        return () => mediaQuery.removeEventListener('change', handler)
     }, [themeSetting.theme, themeSetting.frontendFontSize])
 }

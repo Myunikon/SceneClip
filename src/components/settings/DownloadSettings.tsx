@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Switch } from '../ui'
 import { Select } from '../ui' // Reused for "Insert Variable"
@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { AppSettings } from '../../store/slices/types'
 import { SettingItem, SettingSection } from './SettingItem'
 import { Folder, FileText } from 'lucide-react'
+import { TOKEN_OPTIONS } from './constants'
 
 interface DownloadSettingsProps {
     settings: AppSettings
@@ -17,11 +18,24 @@ export function DownloadSettings({ settings, setSetting }: DownloadSettingsProps
     const { t } = useTranslation()
     const [pathWarning, setPathWarning] = useState<boolean>(false)
 
+    // Fix: Memory leak & Unsafe cast
+    // Added cleanup function with isCancelled flag
     useEffect(() => {
         if (!settings.downloadPath) return
+
+        let isCancelled = false
+
         invoke('validate_path', { path: settings.downloadPath })
-            .then(isValid => setPathWarning(!isValid as boolean))
-            .catch(() => setPathWarning(true))
+            .then(isValid => {
+                if (!isCancelled) {
+                    setPathWarning(isValid === false) // Safe boolean check
+                }
+            })
+            .catch(() => {
+                if (!isCancelled) setPathWarning(true)
+            })
+
+        return () => { isCancelled = true }
     }, [settings.downloadPath])
 
     const handleInsertToken = (token: string) => {
@@ -29,53 +43,52 @@ export function DownloadSettings({ settings, setSetting }: DownloadSettingsProps
         setSetting('filenameTemplate', current + token)
     }
 
-    // Mock preview logic
-    const getPreview = () => {
+    // Fix: Memoized Preview Logic + Better Regex
+    const previewText = useMemo(() => {
         const mockValues: Record<string, string> = {
             '{title}': t('filename_preview.example_title') || 'My Awesome Video',
             '{author}': t('filename_preview.example_uploader') || 'CoolCreator',
             '{id}': 'dQw4w9WgXcQ',
             '{res}': '1080p',
             '{site}': 'YouTube',
-            '{date}': '24-12-2025'
+            '{date}': '2025-12-24'
         }
+
         let preview = settings.filenameTemplate || '{title}'
 
-        // Remove legacy {ext} if user pasted it
+        // 1. Remove user-typed {ext} variable if present (legacy)
         preview = preview.replace(/{ext}/gi, '')
-            .replace(/\.\./g, '.') // clean up double dots
 
-        // Replace vars
+        // 2. Replace variables
         Object.entries(mockValues).forEach(([key, val]) => {
-            preview = preview.replace(new RegExp(key, 'gi'), val)
+            // Escape special chars in key just in case, though known tokens are safe
+            preview = preview.replace(new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), val)
         })
 
-        // Clean trailing/leading separators
-        preview = preview.replace(/^[._-]+|[._-]+$/g, '')
+        // 3. Clean up double dots/separators
+        preview = preview
+            .replace(/\.\.+/g, '.')  // Replace multiple dots with one
+            .replace(/[._-]$/, '')   // Remove trailing separators
+            .replace(/^[._-]/, '')   // Remove leading separators
 
-        // Always append ext for preview, but check if user already typed one
-        const commonExts = ['.mp4', '.mkv', '.webm', '.mp3', '.m4a', '.wav', '.gif', '.png', '.jpg', '.jpeg', '.ts', '.mov', '.avi']
+        // 4. Smart Extension Handling
+        // If user already typed an extension like .mp3, don't add default
+        const commonExts = ['.mp4', '.mkv', '.webm', '.mp3', '.m4a', '.wav', '.gif', '.png', '.jpg', '.jpeg']
         const hasExt = commonExts.some(ext => preview.toLowerCase().endsWith(ext))
 
         if (hasExt) return preview
+
+        // Default extension based on audio/video mode preference would be ideal, 
+        // but for general preview .mp4 is a safe default for video.
         return `${preview}.mp4`
-    }
+    }, [settings.filenameTemplate, t])
 
-    // Prepare tokens list
-    const allTokens = [
-        { value: '{title}', label: t('downloads.tokens.title') },
-        { value: '{author}', label: t('downloads.tokens.author') },
-        { value: '{res}', label: t('downloads.tokens.res') },
-        { value: '{site}', label: t('downloads.tokens.site') },
-        { value: '{date}', label: t('downloads.tokens.date') },
-        { value: '{id}', label: t('downloads.tokens.id') },
-    ]
-
-    // Filter out used tokens
-    const currentTemplate = settings.filenameTemplate || ''
-    const availableTokens = allTokens.filter(token =>
-        !currentTemplate.toLowerCase().includes(token.value.toLowerCase())
-    )
+    // Fix: Token Logic - Show all tokens available (removed filter)
+    // User complaint #10: "User might want to use {title} again"
+    const availableTokens = TOKEN_OPTIONS.map(token => ({
+        value: token.value,
+        label: t(token.label)
+    }))
 
     return (
         <div className="space-y-6">
@@ -96,7 +109,7 @@ export function DownloadSettings({ settings, setSetting }: DownloadSettingsProps
                                     {settings.downloadPath || 'Downloads'}
                                 </span>
                                 {pathWarning && (
-                                    <span className="text-[10px] text-red-500 block">
+                                    <span className="text-[10px] text-red-500 block animate-in fade-in slide-in-from-top-1">
                                         {t('settings.downloads.path_invalid') || "Path not found"}
                                     </span>
                                 )}
@@ -107,7 +120,7 @@ export function DownloadSettings({ settings, setSetting }: DownloadSettingsProps
                                 const p = await openDialog({ directory: true })
                                 if (p) setSetting('downloadPath', p)
                             }}
-                            className="bg-secondary/80 hover:bg-secondary text-secondary-foreground px-3 py-1.5 rounded-md text-xs font-medium border border-border/50 transition-colors whitespace-nowrap"
+                            className="bg-secondary/80 hover:bg-secondary text-secondary-foreground px-3 py-1.5 rounded-md text-xs font-medium border border-border/50 transition-colors whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-primary/50"
                         >
                             {t('downloads.change_folder')}
                         </button>
@@ -122,8 +135,6 @@ export function DownloadSettings({ settings, setSetting }: DownloadSettingsProps
                 </div>
             </SettingSection>
 
-
-
             <SettingSection title={t('settings.downloads.defaults')}>
                 <div className="space-y-4">
                     <div className="space-y-2">
@@ -137,7 +148,6 @@ export function DownloadSettings({ settings, setSetting }: DownloadSettingsProps
                                     placeholder={t('downloads.insert_token')}
                                     options={availableTokens}
                                     className="h-8 text-xs bg-background"
-                                    disabled={availableTokens.length === 0}
                                 />
                             </div>
                         </div>
@@ -155,7 +165,7 @@ export function DownloadSettings({ settings, setSetting }: DownloadSettingsProps
                             <div>
                                 <span className="font-semibold text-foreground/80 mr-1.5">{t('filename_preview.label')}:</span>
                                 <span className="font-mono bg-secondary/50 px-1.5 py-0.5 rounded text-foreground/90 break-all">
-                                    {getPreview()}
+                                    {previewText}
                                 </span>
                                 <div className="mt-1 opacity-60 text-[10px]">
                                     {t('settings.downloads.example_note')}

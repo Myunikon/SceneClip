@@ -22,39 +22,44 @@ export function useExportEstimator({ filePath, originalSizeStr, mediaType, prese
     useEffect(() => {
         const id = ++requestIdCounter.current
 
-        const runEstimation = async () => {
-            if (!originalSizeStr && !filePath) {
-                setEstimatedSize(null)
-                return
-            }
-
-            try {
-                const bytes = await invoke<number>('estimate_export_size', {
-                    params: {
-                        file_path: filePath || null,
-                        original_size_str: originalSizeStr || null,
-                        media_type: mediaType,
-                        preset,
-                        crf,
-                        audio_bitrate: audioBitrate
-                    }
-                })
-
-                // Only update if this is still the most recent request
-                if (id === requestIdCounter.current) {
-                    if (bytes === 0) {
-                        setEstimatedSize(null)
-                    } else {
-                        const mb = (bytes / (1024 * 1024)).toFixed(1)
-                        setEstimatedSize(`${mb} MB`)
-                    }
+        // Debounce estimation to prevent backend spam when sliders are moved rapidly
+        const timeoutId = setTimeout(() => {
+            const runEstimation = async () => {
+                if (!originalSizeStr && !filePath) {
+                    setEstimatedSize(null)
+                    return
                 }
-            } catch (error) {
-                console.warn("[Estimator] Calculation skipped or failed:", error)
-            }
-        }
 
-        runEstimation()
+                try {
+                    const bytes = await invoke<number>('estimate_export_size', {
+                        params: {
+                            file_path: filePath || null,
+                            original_size_str: originalSizeStr || null,
+                            media_type: mediaType,
+                            preset,
+                            crf,
+                            audio_bitrate: audioBitrate
+                        }
+                    })
+
+                    // Only update if this is still the most recent request
+                    if (id === requestIdCounter.current) {
+                        if (bytes === 0) {
+                            setEstimatedSize(null)
+                        } else {
+                            const mb = (bytes / (1024 * 1024)).toFixed(1)
+                            setEstimatedSize(`${mb} MB`)
+                        }
+                    }
+                } catch (error) {
+                    console.warn("[Estimator] Calculation skipped or failed:", error)
+                }
+            }
+
+            runEstimation()
+        }, 500) // 500ms debounce
+
+        return () => clearTimeout(timeoutId)
     }, [filePath, originalSizeStr, mediaType, preset, crf, audioBitrate])
 
     return estimatedSize

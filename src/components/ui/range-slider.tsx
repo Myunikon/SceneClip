@@ -13,6 +13,12 @@ export function RangeSlider({ duration, start, end, onChange, disabled }: RangeS
     const trackRef = useRef<HTMLDivElement>(null)
     const [dragging, setDragging] = useState<'start' | 'end' | null>(null)
 
+    // Use refs for values needed in event handlers to avoid re-binding listeners
+    const stateRef = useRef({ duration, start, end, onChange })
+    useEffect(() => {
+        stateRef.current = { duration, start, end, onChange }
+    }, [duration, start, end, onChange])
+
     // Calculate percentage positions
     const safeStart = Math.min(start, end)
     const safeEnd = Math.max(start, end)
@@ -20,40 +26,42 @@ export function RangeSlider({ duration, start, end, onChange, disabled }: RangeS
     const startPct = duration > 0 ? Math.min(100, Math.max(0, (safeStart / duration) * 100)) : 0
     const endPct = duration > 0 ? Math.min(100, Math.max(0, (safeEnd / duration) * 100)) : 100
 
-    // Global Pointer Move/Up handlers to handle dragging even when cursor leaves the element
+
+    // Fix: Redesigned Drag Logic to avoid repeated addEventListener
     useEffect(() => {
         if (!dragging) return
 
-        const handlePointerMove = (e: PointerEvent) => {
+        const onMove = (e: PointerEvent) => {
             if (!trackRef.current) return
+            const { duration, start, end, onChange } = stateRef.current
+
             const rect = trackRef.current.getBoundingClientRect()
             const x = e.clientX - rect.left
             const pct = Math.min(1, Math.max(0, x / rect.width))
             const val = Math.round(pct * duration)
+            const safeE = Math.max(start, end)
+            const safeS = Math.min(start, end)
 
             if (dragging === 'start') {
-                const newStart = Math.min(val, safeEnd - 1) // Prevent crossing specific logic if needed, or just let it clamp
-                // Ensure we don't push past the end
-                onChange(Math.min(newStart, safeEnd), safeEnd)
+                // Prevent crossing
+                const newStart = Math.min(val, safeE - 1)
+                onChange(Math.min(newStart, safeE), safeE)
             } else {
-                const newEnd = Math.max(val, safeStart + 1)
-                onChange(safeStart, Math.max(newEnd, safeStart))
+                const newEnd = Math.max(val, safeS + 1)
+                onChange(safeS, Math.max(newEnd, safeS))
             }
         }
 
-        const handlePointerUp = () => {
-            setDragging(null)
-        }
+        const onUp = () => setDragging(null)
 
-        window.addEventListener('pointermove', handlePointerMove)
-        window.addEventListener('pointerup', handlePointerUp)
+        window.addEventListener('pointermove', onMove, { passive: true }) // Performance fix
+        window.addEventListener('pointerup', onUp)
 
         return () => {
-            window.removeEventListener('pointermove', handlePointerMove)
-            window.removeEventListener('pointerup', handlePointerUp)
+            window.removeEventListener('pointermove', onMove)
+            window.removeEventListener('pointerup', onUp)
         }
-    }, [dragging, duration, safeStart, safeEnd, onChange])
-
+    }, [dragging]) // Only re-bind when drag state changes (start/stop)
 
     const formatTime = (s: number) => {
         const h = Math.floor(s / 3600)
@@ -74,14 +82,25 @@ export function RangeSlider({ duration, start, end, onChange, disabled }: RangeS
 
                 {/* Thumb Start */}
                 <div
+                    role="slider"
+                    aria-label="Start Time"
+                    aria-valuemin={0}
+                    aria-valuemax={safeEnd}
+                    aria-valuenow={safeStart}
+                    tabIndex={disabled ? -1 : 0}
                     className={cn(
-                        "group absolute top-1/2 -translate-y-1/2 -ml-2.5 w-5 h-5 bg-background border-2 border-primary rounded-full shadow-lg cursor-grab active:cursor-grabbing z-20 flex items-center justify-center transition-transform hover:scale-110",
+                        "group absolute top-1/2 -translate-y-1/2 -ml-2.5 w-5 h-5 bg-background border-2 border-primary rounded-full shadow-lg cursor-grab active:cursor-grabbing z-20 flex items-center justify-center transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                         dragging === 'start' && "scale-110 ring-4 ring-primary/20"
                     )}
                     style={{ left: `${startPct}%` }}
                     onPointerDown={(e) => {
                         e.preventDefault()
                         setDragging('start')
+                    }}
+                    onKeyDown={(e) => {
+                        if (disabled) return
+                        if (e.key === 'ArrowRight') onChange(Math.min(safeStart + 1, safeEnd - 1), safeEnd)
+                        if (e.key === 'ArrowLeft') onChange(Math.max(0, safeStart - 1), safeEnd)
                     }}
                 >
                     <div className={cn(
@@ -94,14 +113,25 @@ export function RangeSlider({ duration, start, end, onChange, disabled }: RangeS
 
                 {/* Thumb End */}
                 <div
+                    role="slider"
+                    aria-label="End Time"
+                    aria-valuemin={safeStart}
+                    aria-valuemax={duration}
+                    aria-valuenow={safeEnd}
+                    tabIndex={disabled ? -1 : 0}
                     className={cn(
-                        "group absolute top-1/2 -translate-y-1/2 -ml-2.5 w-5 h-5 bg-background border-2 border-primary rounded-full shadow-lg cursor-grab active:cursor-grabbing z-20 flex items-center justify-center transition-transform hover:scale-110",
+                        "group absolute top-1/2 -translate-y-1/2 -ml-2.5 w-5 h-5 bg-background border-2 border-primary rounded-full shadow-lg cursor-grab active:cursor-grabbing z-20 flex items-center justify-center transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                         dragging === 'end' && "scale-110 ring-4 ring-primary/20"
                     )}
                     style={{ left: `${endPct}%` }}
                     onPointerDown={(e) => {
                         e.preventDefault()
                         setDragging('end')
+                    }}
+                    onKeyDown={(e) => {
+                        if (disabled) return
+                        if (e.key === 'ArrowRight') onChange(safeStart, Math.min(duration, safeEnd + 1))
+                        if (e.key === 'ArrowLeft') onChange(safeStart, Math.max(safeStart + 1, safeEnd - 1))
                     }}
                 >
                     <div className={cn(

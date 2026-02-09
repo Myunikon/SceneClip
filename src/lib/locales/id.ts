@@ -139,6 +139,8 @@ export const id = {
             quit_desc: "Aplikasi berhenti sepenuhnya",
             desktop_notifications: "Notifikasi Desktop",
             desktop_notifications_desc: "Tampilkan notifikasi sistem saat aplikasi di latar belakang",
+            auto_detect_clipboard: "Deteksi Link Otomatis",
+            auto_detect_clipboard_desc: "Otomatis tawarkan unduh saat menyalin link video",
             prevent_suspend: "Cegah Mode Tidur",
             prevent_suspend_desc: "Jaga sistem tetap aktif saat unduhan berjalan"
         },

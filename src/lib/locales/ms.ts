@@ -137,6 +137,8 @@ export const ms = {
             quit_desc: "Aplikasi ditamatkan sepenuhnya",
             desktop_notifications: "Notifikasi Desktop",
             desktop_notifications_desc: "Tunjukkan notifikasi sistem apabila aplikasi di latar belakang",
+            auto_detect_clipboard: "Kesan Pautan Automatik",
+            auto_detect_clipboard_desc: "Automatik tawarkan muat turun apabila menyalin pautan video",
             prevent_suspend: "Elak Mod Tidur",
             prevent_suspend_desc: "Pastikan sistem kekal aktif semasa muat turun berjalan"
         },
@@ -259,11 +261,26 @@ export const ms = {
                 srt_fixer: "SRT Fixer",
                 srt_fixer_desc: "Baiki baris bertindih dan masa yang tidak tepat pada sari kata automatik YouTube.",
                 metadata_enhancer: "Metadata Enhancer",
-                metadata_enhancer_desc: "Sematkan metadata tambahan seperti dislike, bab, dan info json ke dalam fail."
+                metadata_enhancer_desc: "Sematkan metadata tambahan seperti dislike, bab, dan info json ke dalam fail.",
+                smart_proxy: "Putaran Proksi Pintar",
+                smart_proxy_desc: "Putar proksi secara automatik untuk memintas HTTP 429.",
+                po_token: "Keselamatan Token PO",
+                po_token_desc: "Pintas pengesanan bot YouTube menggunakan token Proof of Origin.",
+                cookie_unlock: "Buka Kunci Pangkalan Data Kuki",
+                cookie_unlock_desc: "Benarkan akses ke pangkalan data kuki penyemak imbas yang dikunci (Windows).",
+                po_token_label: "TOKEN PO",
+                po_token_placeholder: "Masukkan token secara manual (pilihan)...",
+                visitor_data_label: "DATA PELAWAT",
+                visitor_data_placeholder: "Masukkan data pelawat secara manual (pilihan)..."
             },
             danger_zone_proxy: "Zon Bahaya (Proxy)",
             danger_zone_binaries: "Zon Bahaya (Binari)",
             danger_desc: "Menukar laluan ini boleh merosakkan aplikasi.",
+            tech_paths: "Laluan Binari",
+            js_runtime: "JS Runtime (Node/Deno)",
+            js_runtime_desc: "Penting untuk kestabilan & YouTube 4K. Dikesan secara automatik jika kosong.",
+            detected_gpu: "GPU Dikesan:",
+            unknown_integrated: "Tidak Diketahui / Bersepadu",
             redownload_ffmpeg: "Muat Turun Semula FFmpeg (Paksa)",
             redownload_help: "Gunakan jika FFmpeg rosak atau hilang.",
             confirm_redownload: "Anda pasti mahu memuat turun semula FFmpeg?\\n\\nIni akan menimpa ‘ffmpeg.exe’ sedia ada.",
@@ -408,7 +425,8 @@ export const ms = {
             secret_found: "Rahsia Ditemui!",
             secret_desc: "Anda membuka lencana penghargaan pembangun rahsia!",
             secret_sub: "(Tiada tetapan tersembunyi, hanya suasana baik!)",
-            awesome: "Hebat!"
+            awesome: "Hebat!",
+            open_url_failed: "Gagal membuka pautan"
         },
 
 

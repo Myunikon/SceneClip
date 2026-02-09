@@ -65,11 +65,15 @@ export function ShortcutsPopover({ isOpen, onClose }: ShortcutsPopoverProps) {
                     initial={{ opacity: 0, scale: 0.95, y: -8, filter: "blur(4px)" }}
                     animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
                     exit={{ opacity: 0, scale: 0.95, y: -8, filter: "blur(4px)" }}
-                    transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                    transition={{
+                        opacity: { duration: 0.2 },
+                        filter: { duration: 0.2 },
+                        default: { type: "spring", stiffness: 260, damping: 20 }
+                    }}
                     style={{ transformOrigin: "top right" }}
                     className={cn(
                         "absolute top-14 right-20 z-50 w-72 flex flex-col",
-                        "bg-popover/80 backdrop-blur-xl border border-white/10",
+                        "bg-popover/80 backdrop-blur-xl border border-border/50",
                         "rounded-xl shadow-2xl overflow-hidden ring-1 ring-black/5"
                     )}
                 >

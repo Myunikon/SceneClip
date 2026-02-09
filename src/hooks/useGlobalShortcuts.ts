@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { IS_MAC } from '../lib/platform'
 
@@ -11,6 +11,8 @@ interface ShortcutsHandlers {
 }
 
 export function useGlobalShortcuts({ onNewTask, onSettings, onKeyring, onHistory, onDownloads }: ShortcutsHandlers) {
+    const isTogglingRef = useRef(false)
+
     useEffect(() => {
         const handleKeyDown = async (e: KeyboardEvent) => {
             if (e.defaultPrevented) return
@@ -37,8 +39,6 @@ export function useGlobalShortcuts({ onNewTask, onSettings, onKeyring, onHistory
             }
 
             // History: Ctrl + H (Win) vs Cmd + Shift + H (Mac)
-            // Note: Cmd + H is macOS native "Hide Window", we must count it.
-            // Using Shift helps avoid conflict.
             if (IS_MAC) {
                 if (e.metaKey && e.shiftKey && e.key.toLowerCase() === 'h') {
                     e.preventDefault()
@@ -68,11 +68,25 @@ export function useGlobalShortcuts({ onNewTask, onSettings, onKeyring, onHistory
             const isF11 = e.key === 'F11'
             const isMacFullscreen = IS_MAC && e.metaKey && e.ctrlKey && e.key.toLowerCase() === 'f'
 
-            if ((isF11 || isMacFullscreen) && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
-                e.preventDefault() // prevent browser F11
-                const win = getCurrentWindow()
-                const isFull = await win.isFullscreen()
-                await win.setFullscreen(!isFull)
+            const target = e.target as HTMLElement
+            const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+
+            if ((isF11 || isMacFullscreen) && !isInput) {
+                e.preventDefault()
+
+                // Prevent race conditions with a lock
+                if (isTogglingRef.current) return
+                isTogglingRef.current = true
+
+                try {
+                    const win = getCurrentWindow()
+                    const isFull = await win.isFullscreen()
+                    await win.setFullscreen(!isFull)
+                } catch (error) {
+                    console.error('Failed to toggle fullscreen:', error)
+                } finally {
+                    isTogglingRef.current = false
+                }
             }
         }
 

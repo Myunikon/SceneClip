@@ -1,4 +1,5 @@
 import { Clipboard, List, Link, X, Globe, FolderOpen } from 'lucide-react'
+import { TFunction } from 'i18next'
 
 import { cn } from '../../../lib/utils'
 import { notify } from '../../../lib/notify'
@@ -9,8 +10,7 @@ interface UrlInputProps {
     url: string
     onChange: (val: string) => void
     onPaste: () => void
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    t: any
+    t: TFunction
     batchMode?: boolean
     onBatchModeChange?: (batch: boolean) => void
 }
@@ -46,28 +46,29 @@ export function UrlInput({ url, onChange, onPaste, t, batchMode = false, onBatch
     }
 
     return (
-        <div className="space-y-3">
-            <div className="flex items-center justify-between">
-                <label className="text-xs font-bold uppercase text-muted-foreground tracking-wider flex items-center gap-1.5">
-                    <Globe className="w-3 h-3 text-primary" />
+        <div className="space-y-3 cq-p-2">
+            <div className="flex items-center justify-between px-1">
+                <label className="text-[10px] font-bold uppercase text-muted-foreground/60 tracking-[0.1em] flex items-center gap-1.5">
+                    <Globe className="w-3 h-3 opacity-70" />
                     {t('dialog.url_label')}
                 </label>
+
                 {onBatchModeChange && (
                     <TooltipProvider>
-                        <Tooltip side="left">
+                        <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button
                                     type="button"
+                                    variant="ghost"
+                                    size="sm"
                                     onClick={() => onBatchModeChange(!batchMode)}
                                     className={cn(
-                                        "h-auto w-auto text-xs px-2.5 py-1 rounded-full flex items-center gap-1.5 transition-all font-medium border",
-                                        batchMode
-                                            ? 'bg-primary text-primary-foreground border-primary shadow-sm hover:bg-primary/90'
-                                            : 'bg-secondary/50 text-muted-foreground border-transparent hover:bg-secondary hover:text-foreground'
+                                        "h-5 px-2 text-[10px] font-bold uppercase tracking-wider transition-colors gap-1.5",
+                                        batchMode ? "text-primary hover:bg-primary/10" : "text-muted-foreground hover:text-foreground"
                                     )}
                                 >
                                     {batchMode ? <Link className="w-3 h-3" /> : <List className="w-3 h-3" />}
-                                    {batchMode ? t('url_input.single_switch') : t('url_input.batch_switch')}
+                                    <span>{batchMode ? t('url_input.single_switch') : t('url_input.batch_switch')}</span>
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -83,25 +84,25 @@ export function UrlInput({ url, onChange, onPaste, t, batchMode = false, onBatch
                     <div className="relative">
                         <textarea
                             required
-                            className="w-full h-32 p-3 pl-10 rounded-lg bg-secondary/30 hover:bg-secondary/50 border border-transparent focus:bg-background focus:border-primary/30 text-[13px] font-medium focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-muted-foreground/40 resize-none font-mono leading-relaxed"
+                            className="w-full h-32 p-3 pl-3 rounded-xl bg-white dark:bg-black/20 border border-border/60 focus:bg-background focus:border-primary/40 text-sm font-medium focus:ring-4 focus:ring-primary/5 outline-none transition-all placeholder:text-muted-foreground/30 resize-none font-mono leading-relaxed shadow-sm"
                             placeholder={t('url_input.placeholder_batch')}
                             value={url}
                             onChange={e => onChange(e.target.value)}
                             autoFocus
                         />
-                        <div className="absolute left-3 top-3 text-muted-foreground/50">
-                            <List className="w-4 h-4" />
-                        </div>
-                        {/* Batch Import Button inside Textarea (Floating bottom-right) */}
+                        {/* Batch Import Button - Floating Bottom Right */}
                         <TooltipProvider>
-                            <Tooltip side="left">
+                            <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button
                                         type="button"
+                                        variant="secondary"
+                                        size="sm"
                                         onClick={handleBatchImport}
-                                        className="h-auto w-auto absolute right-3 bottom-3 p-1.5 rounded-md bg-background/50 hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all border border-border/50 shadow-sm backdrop-blur-sm"
+                                        className="absolute right-3 bottom-3 h-7 px-2 text-xs font-medium bg-background/80 backdrop-blur-sm border border-border/50 shadow-sm hover:text-primary gap-1.5"
                                     >
-                                        <FolderOpen className="w-4 h-4" />
+                                        <FolderOpen className="w-3.5 h-3.5" />
+                                        <span>{t('dialog.batch_import_btn') || 'Import'}</span>
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -112,73 +113,83 @@ export function UrlInput({ url, onChange, onPaste, t, batchMode = false, onBatch
                     </div>
                 ) : (
                     <div className="relative">
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 transition-colors group-focus-within:text-primary">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/30 transition-colors group-focus-within:text-primary/60 pointer-events-none">
                             <Link className="w-4 h-4" />
                         </div>
                         <input
                             required
                             type="url"
-                            className="w-full h-12 pl-12 pr-20 rounded-xl bg-secondary/30 hover:bg-secondary/50 border border-transparent focus:bg-background focus:border-primary/50 text-[14px] font-medium 
-                            outline-none transition-all duration-200 placeholder:text-muted-foreground/40
-                            focus:ring-2 focus:ring-primary/10 focus:shadow-[0_0_0_4px_rgba(var(--primary),0.05)]"
+                            className={cn(
+                                "w-full h-10 pl-10 rounded-lg bg-white dark:bg-black/20 border border-border/60 focus:bg-background focus:border-primary/40 text-[13px] font-sans font-medium outline-none transition-all duration-300 placeholder:text-muted-foreground/30 focus:ring-4 focus:ring-primary/5 shadow-sm",
+                                url ? "pr-20" : "pr-20" // Space for actions
+                            )}
                             placeholder={t('url_input.placeholder_single')}
                             value={url}
                             onChange={e => onChange(e.target.value)}
                             autoFocus
                         />
-                        {url && (
-                            <Button
-                                type="button"
-                                onClick={() => onChange('')}
-                                className="h-auto w-auto absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full bg-black/20 hover:bg-black/30 text-white/50 hover:text-white transition-colors"
-                            >
-                                <X className="w-3 h-3" />
-                            </Button>
-                        )}
-                        {!url && (
-                            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                                <TooltipProvider>
-                                    <Tooltip side="top">
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                type="button"
-                                                onClick={handleBatchImport}
-                                                className="h-auto w-auto p-1 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all"
-                                            >
-                                                <FolderOpen className="w-3.5 h-3.5" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>{t('dialog.batch_import_btn')}</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                                <div className="w-px h-3 bg-border/50" />
-                                <TooltipProvider>
-                                    <Tooltip side="top">
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                type="button"
-                                                onClick={onPaste}
-                                                className="h-auto w-auto p-1 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all"
-                                            >
-                                                <Clipboard className="w-3.5 h-3.5" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>{t('url_input.paste_clipboard')}</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            </div>
-                        )}
+
+                        {/* Right Actions: Clear | Paste | Import */}
+                        <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                            {url && (
+                                <button
+                                    type="button"
+                                    onClick={() => onChange('')}
+                                    className="h-7 w-7 rounded-md hover:bg-destructive/10 text-muted-foreground/50 hover:text-destructive transition-all flex items-center justify-center mr-1"
+                                    aria-label="Clear"
+                                >
+                                    <X className="w-3.5 h-3.5" />
+                                </button>
+                            )}
+
+                            {!url && (
+                                <>
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={onPaste}
+                                                    className="h-7 w-7 text-muted-foreground/70 hover:text-primary hover:bg-primary/10"
+                                                >
+                                                    <Clipboard className="w-3.5 h-3.5" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>{t('url_input.paste_clipboard')}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={handleBatchImport}
+                                                    className="h-7 w-7 text-muted-foreground/70 hover:text-primary hover:bg-primary/10"
+                                                >
+                                                    <FolderOpen className="w-3.5 h-3.5" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>{t('dialog.batch_import_btn')}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>
+
             {batchMode && (
-                <p className="text-xs text-muted-foreground/70 pl-1">
+                <p className="text-[10px] text-muted-foreground/60 px-1 italic">
                     {t('url_input.batch_desc')}
                 </p>
             )}

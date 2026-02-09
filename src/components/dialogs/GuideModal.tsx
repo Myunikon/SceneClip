@@ -94,9 +94,13 @@ export function GuideModal({ isOpen, onClose }: GuideModalProps) {
                     initial={{ opacity: 0, scale: 0.95, y: -8, filter: "blur(4px)" }}
                     animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
                     exit={{ opacity: 0, scale: 0.95, y: -8, filter: "blur(4px)" }}
-                    transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                    transition={{
+                        opacity: { duration: 0.2 },
+                        filter: { duration: 0.2 },
+                        default: { type: "spring", stiffness: 260, damping: 20 }
+                    }}
                     style={{ transformOrigin: "top right" }}
-                    className="absolute top-14 right-12 z-50 w-80 max-h-[500px] flex flex-col bg-popover/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden ring-1 ring-black/5"
+                    className="absolute top-14 right-12 z-50 w-80 max-h-[500px] flex flex-col bg-popover/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl overflow-hidden ring-1 ring-black/5"
                 >
                     <AnimatePresence mode="wait" initial={false}>
                         {currentView === null ? (

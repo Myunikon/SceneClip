@@ -54,6 +54,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     useChromeCookieUnlock: false, // Default: OFF
 
     enableDesktopNotifications: true, // Default: enabled
+    enableAutoClipboard: false, // Default: disabled
     preventSuspendDuringDownload: true, // Default: prevent sleep during downloads (ON)
     removeSourceMetadata: false,
     enabledPresetIds: [],

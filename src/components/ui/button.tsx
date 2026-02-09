@@ -49,15 +49,42 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         size,
         asChild = false,
         disableRipple = false,
-        rippleColor = "", // Default depends on variant, can be set per instance
+        rippleColor,
         rippleDuration = "600ms",
         onClick,
         children,
         ...props
     }, ref) => {
         const Comp = asChild ? Slot : "button"
-
         const [buttonRipples, setButtonRipples] = React.useState<Array<{ x: number; y: number; size: number; key: number }>>([])
+
+        // Fix: Memory Leak & Cleanup Logic
+        React.useEffect(() => {
+            return () => setButtonRipples([])
+        }, [])
+
+        const parseDuration = (val: string) => {
+            if (val.endsWith('ms')) return parseInt(val)
+            if (val.endsWith('s')) return parseFloat(val) * 1000
+            return parseInt(val) || 600
+        }
+        const durationMs = parseDuration(rippleDuration)
+
+        const createRipple = (event: React.MouseEvent<HTMLButtonElement>) => {
+            const button = event.currentTarget
+            const rect = button.getBoundingClientRect()
+            const size = Math.max(rect.width, rect.height)
+            const x = event.clientX - rect.left - size / 2
+            const y = event.clientY - rect.top - size / 2
+            const key = Date.now() + Math.random()
+
+            setButtonRipples((prev) => [...prev, { x, y, size, key }])
+
+            // Self-cleaning timeout, but component unmount is handled by useEffect above
+            setTimeout(() => {
+                setButtonRipples((prev) => prev.filter((ripple) => ripple.key !== key))
+            }, durationMs)
+        }
 
         const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
             if (!disableRipple && !asChild) {
@@ -66,48 +93,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             onClick?.(event)
         }
 
-        const createRipple = (event: React.MouseEvent<HTMLButtonElement>) => {
-            const button = event.currentTarget
-            const rect = button.getBoundingClientRect()
-            const size = Math.max(rect.width, rect.height)
-            const x = event.clientX - rect.left - size / 2
-            const y = event.clientY - rect.top - size / 2
-
-            const key = Date.now() + Math.random() // Avoid collision
-            const newRipple = { x, y, size, key }
-            setButtonRipples((prevRipples) => [...prevRipples, newRipple])
-
-            // Parse duration efficiently
-            let durationMs = 600
-            if (rippleDuration.endsWith('ms')) {
-                durationMs = parseInt(rippleDuration)
-            } else if (rippleDuration.endsWith('s')) {
-                durationMs = parseFloat(rippleDuration) * 1000
-            } else {
-                const parsed = parseInt(rippleDuration)
-                if (!isNaN(parsed)) durationMs = parsed
-            }
-
-            // Each ripple manages its own cleanup timeout independently
-            setTimeout(() => {
-                setButtonRipples((prevRipples) =>
-                    prevRipples.filter((ripple) => ripple.key !== key)
-                )
-            }, durationMs)
-        }
-
-
-
-        // CSS variable for color can be improved, but inline style works for now.
-        // For dark mode compatibility on ghost/outline, ideally we use 'full' current text color or a css variable.
-        // But for this quick implementation, a semi-transparent white or black logic covers 90%. 
-        // Better: Use `currentColor` with opacity?
-        // Let's use `bg-foreground` with low opacity via class if possible, or stick to this.
-        // Actually, `currentColor` is best for ghost/outline.
-
-        const finalRippleColor = rippleColor || (
-            (variant === 'default' || variant === 'destructive' || variant === 'accent') ? 'rgba(255, 255, 255, 0.3)' : 'currentColor'
-        )
+        // Logic simplification for ripple color
+        const isSolid = variant === 'default' || variant === 'destructive' || variant === 'accent' || variant === 'secondary'
+        const defaultRippleColor = isSolid ? 'rgba(255, 255, 255, 0.2)' : 'currentColor'
+        const finalRippleColor = rippleColor || defaultRippleColor
 
         return (
             <Comp
@@ -121,16 +110,21 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                     <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
                         {buttonRipples.map((ripple) => (
                             <span
-                                className="absolute animate-rippling rounded-full opacity-30 bg-foreground"
+                                className={cn(
+                                    "absolute animate-rippling rounded-full bg-foreground",
+                                    // Use class for opacity/color defaults if not overridden inline
+                                    finalRippleColor === 'currentColor' && "opacity-20"
+                                )}
                                 key={ripple.key}
                                 style={{
                                     width: `${ripple.size}px`,
                                     height: `${ripple.size}px`,
                                     top: `${ripple.y}px`,
                                     left: `${ripple.x}px`,
-                                    backgroundColor: finalRippleColor === 'currentColor' ? undefined : finalRippleColor, // If currentColor, let class handle it (bg-foreground is close enough or we use inline)
                                     transform: `scale(0)`,
                                     animationDuration: rippleDuration,
+                                    // Only apply inline if not currentColor to avoid overriding class utility
+                                    backgroundColor: finalRippleColor !== 'currentColor' ? finalRippleColor : undefined
                                 }}
                             />
                         ))}

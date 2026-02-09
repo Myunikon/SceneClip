@@ -135,6 +135,8 @@ export const en = {
             quit_desc: "App terminates completely",
             desktop_notifications: "Desktop Notifications",
             desktop_notifications_desc: "Show system notifications when app is in background",
+            auto_detect_clipboard: "Auto Detect Links",
+            auto_detect_clipboard_desc: "Automatically prompt to download when copying video links",
             prevent_suspend: "Prevent Sleep",
             prevent_suspend_desc: "Keep system awake during downloads",
             post_processing: "Post-Processing"
@@ -444,7 +446,8 @@ export const en = {
             secret_found: "Secret Found!",
             secret_desc: "You unlocked the secret developer appreciation badge!",
             secret_sub: "(No hidden settings, just good vibes!)",
-            awesome: "Awesome!"
+            awesome: "Awesome!",
+            open_url_failed: "Failed to open link"
         },
 
 

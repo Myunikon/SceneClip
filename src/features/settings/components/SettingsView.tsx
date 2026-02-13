@@ -2,11 +2,11 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { Globe, Palette, HardDrive, Film, Info, FileClock, Cpu } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { cn } from '../../lib/utils'
-import { useAppStore } from '../../store'
+import { cn } from '@/lib/utils'
+import { useAppStore } from '@/store'
 import { useShallow } from 'zustand/react/shallow'
 import { TerminalView } from './TerminalView'
-import { AppSettings } from '../../store/slices/types'
+import { AppSettings } from '@/store/slices/types'
 
 // COMPONENTS
 import { GeneralSettings } from './GeneralSettings'
@@ -15,7 +15,7 @@ import { MediaSettings } from './MediaSettings'
 import { NetworkSettings } from './NetworkSettings'
 import { SystemSettings } from './SystemSettings'
 import { AboutSettings } from './AboutSettings'
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface SidebarButtonProps {
     tab: { id: string; label: string; icon: React.ComponentType<{ className?: string }> }

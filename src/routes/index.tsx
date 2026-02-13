@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { DownloadsView } from '../components/downloads'
+import { DownloadsView } from '../features/downloads/components'
 import { motion } from 'framer-motion'
 
 export const Route = createFileRoute('/')({

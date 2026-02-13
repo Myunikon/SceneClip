@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
-import { notify } from '../../lib/notify'
-import { useAppStore, DownloadTask } from '../../store'
+import { notify } from '@/lib/notify'
+import { useAppStore, DownloadTask } from '@/store'
 import { useShallow } from 'zustand/react/shallow'
 import { useTranslation } from 'react-i18next'
 import { invoke } from '@tauri-apps/api/core'
@@ -21,10 +21,10 @@ import {
 import { openPath } from '@tauri-apps/plugin-opener'
 import { exists } from '@tauri-apps/plugin-fs'
 
-import { CommandModal, ConfirmDialog } from '../dialogs'
-import { CompressDialog } from '../dialogs'
-import { parseSize, cn } from '../../lib/utils'
-import { SegmentedControl } from '../ui'
+import { CommandModal, ConfirmDialog } from '@/components/dialogs'
+import { CompressDialog } from '@/components/dialogs'
+import { parseSize, cn } from '@/lib/utils'
+import { SegmentedControl } from '@/components/ui'
 import { HistoryItem } from './HistoryItem'
 
 

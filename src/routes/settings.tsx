@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { SettingsView } from '../components/settings'
+import { SettingsView } from '../features/settings/components'
 import { motion } from 'framer-motion'
 
 export const Route = createFileRoute('/settings')({

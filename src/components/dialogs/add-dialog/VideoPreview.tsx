@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { AlertCircle, Plus, ImageOff, X, ExternalLink, ZoomIn } from 'lucide-react'
+import { AlertCircle, ImageOff, X, ExternalLink, ZoomIn } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import { openUrl } from '@tauri-apps/plugin-opener'

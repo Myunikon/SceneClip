@@ -3,9 +3,9 @@ import { motion } from 'framer-motion'
 import { Download, Terminal as TerminalIcon, Scissors, Zap, Globe, AlertCircle, ChevronRight, Layers, Waypoints, Languages } from 'lucide-react'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { useTranslation, Trans } from 'react-i18next'
-import { Updater } from '../providers'
+import { Updater } from '@/components/providers'
 import { AuroraText } from '@/registry/magicui/aurora-text'
-import { notify } from '../../lib/notify'
+import { notify } from '@/lib/notify'
 
 
 interface AboutSettingsProps {

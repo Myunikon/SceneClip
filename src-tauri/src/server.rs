@@ -55,10 +55,41 @@ async fn start_server(app_handle: AppHandle) {
         .with_state(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 19575));
-    log::info!("Server listening on {}", addr);
 
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    // Retry binding with exponential backoff to handle TIME_WAIT sockets
+    let mut attempts = 0;
+    let max_attempts = 5;
+    let listener = loop {
+        match tokio::net::TcpListener::bind(addr).await {
+            Ok(l) => {
+                log::info!("Server listening on {}", addr);
+                break l;
+            }
+            Err(e) => {
+                attempts += 1;
+                if attempts >= max_attempts {
+                    log::error!(
+                        "Failed to bind server after {} attempts: {}. Extension API disabled.",
+                        max_attempts,
+                        e
+                    );
+                    return; // Graceful exit - app still works, just no extension API
+                }
+                log::warn!(
+                    "Port {} busy (attempt {}/{}), retrying... ({})",
+                    addr.port(),
+                    attempts,
+                    max_attempts,
+                    e
+                );
+                tokio::time::sleep(std::time::Duration::from_millis(500 * attempts as u64)).await;
+            }
+        }
+    };
+
+    if let Err(e) = axum::serve(listener, app).await {
+        log::error!("Server error: {}", e);
+    }
 }
 
 async fn health_check() -> impl IntoResponse {

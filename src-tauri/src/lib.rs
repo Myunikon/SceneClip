@@ -293,7 +293,7 @@ pub fn run() {
                 // 1. Check for Active Downloads (Exit Guard)
                 let queue_state = app.state::<std::sync::Arc<crate::download_queue::QueueState>>();
                 let has_active_downloads = {
-                    let tasks = queue_state.tasks.lock().unwrap();
+                    let tasks = queue_state.tasks.lock().unwrap_or_else(|e| e.into_inner());
                     tasks.values().any(|t| {
                         matches!(
                             t.status,

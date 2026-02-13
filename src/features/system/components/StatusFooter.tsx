@@ -1,34 +1,14 @@
-import { useState, useEffect } from 'react'
 import { useRouter } from '@tanstack/react-router'
 import { GpuIndicator } from './GpuIndicator'
-import { invoke } from '@tauri-apps/api/core'
 import { openPath } from '@tauri-apps/plugin-opener'
 import { ArrowDownToLine, Layers, HardDrive, FolderOpen } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { cn } from '../../lib/utils'
-import { NotificationCenter } from '../common'
-import { useAppStore } from '../../store'
+import { cn } from '@/lib/utils'
+import { NotificationCenter } from '@/components/common'
+import { useAppStore } from '@/store'
 import { useShallow } from 'zustand/react/shallow'
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
-
-interface DiskInfo {
-    name: string
-    mount_point: string
-    total_space: number
-    available_space: number
-}
-
-interface SystemStats {
-    cpu_usage: number
-    memory_used: number
-    memory_total: number
-    memory_percent: number
-    download_speed: number
-    upload_speed: number
-    disk_free: number
-    disk_total: number
-    disks: DiskInfo[]
-}
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { useSystemStats } from '../queries/useSystemStats'
 
 function formatBytes(bytes: number): string {
     if (bytes < 1024) return `${bytes.toFixed(0)} B`
@@ -44,8 +24,6 @@ function formatSpeed(bytesPerSec: number): string {
 }
 
 export function StatusFooter() {
-    const [stats, setStats] = useState<SystemStats | null>(null)
-    const [error, setError] = useState(false)
     const { settings, tasks, gpuType } = useAppStore(
         useShallow((s) => ({
             settings: s.settings,
@@ -59,56 +37,11 @@ export function StatusFooter() {
     // Font size styling
     const fontSizeStyle = settings.frontendFontSize === 'small' ? '11px' : settings.frontendFontSize === 'large' ? '14px' : '12px'
 
-    // Smart Polling Logic
+    // Smart Polling Logic - TanStack Query handles polling automatically
     const hasActiveDownloads = tasks.some(t => t.status === 'downloading' || t.status === 'fetching_info' || t.status === 'processing')
 
-    useEffect(() => {
-        let isMounted = true
-        let timeoutId: NodeJS.Timeout
-
-        const fetchStats = async () => {
-            // Pause if window is hidden (minimized/background tab) to save resources
-            if (document.hidden) return
-
-            try {
-                const result = await invoke<SystemStats>('get_system_stats', { downloadPath: settings.downloadPath })
-                if (isMounted) {
-                    setStats(result)
-                    setError(false)
-                }
-            } catch (e) {
-                console.error('Failed to get system stats:', e)
-                if (isMounted) setError(true)
-            }
-
-            // Schedule next poll based on activity
-            // Active: 800ms for real-time speed updates
-            // Idle: 8s for general system monitoring
-            const nextInterval = hasActiveDownloads ? 800 : 8000
-            if (isMounted) {
-                timeoutId = setTimeout(fetchStats, nextInterval)
-            }
-        }
-
-        // Initial fetch
-        fetchStats()
-
-        // Resume immediately on visibility change
-        const handleVisibilityChange = () => {
-            if (!document.hidden) {
-                // Clear existing timeout to prevent double-firing and fetch immediately
-                clearTimeout(timeoutId)
-                fetchStats()
-            }
-        }
-        document.addEventListener("visibilitychange", handleVisibilityChange)
-
-        return () => {
-            isMounted = false
-            clearTimeout(timeoutId)
-            document.removeEventListener("visibilitychange", handleVisibilityChange)
-        }
-    }, [settings.downloadPath, hasActiveDownloads])
+    // ✨ TanStack Query: Replaces 45+ lines of useEffect + useState + polling logic
+    const { data: stats, isError: error } = useSystemStats(settings.downloadPath, hasActiveDownloads)
 
     // Helper to get current display disk (Target download path)
     const currentDisk = stats?.disks?.find(d =>

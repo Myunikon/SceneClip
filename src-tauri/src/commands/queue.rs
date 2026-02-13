@@ -152,8 +152,8 @@ pub async fn resume_queue(state: State<'_, Arc<QueueState>>) -> Result<(), Strin
 pub async fn get_queue_state(
     state: State<'_, Arc<QueueState>>,
 ) -> Result<Vec<DownloadTask>, String> {
-    let tasks = state.tasks.lock().unwrap();
-    let order = state.queue_order.lock().unwrap();
+    let tasks = state.tasks.lock().unwrap_or_else(|e| e.into_inner());
+    let order = state.queue_order.lock().unwrap_or_else(|e| e.into_inner());
 
     let mut result = Vec::new();
     for id in order.iter() {
@@ -166,7 +166,7 @@ pub async fn get_queue_state(
 
 #[tauri::command]
 pub async fn verify_file_sizes(state: tauri::State<'_, Arc<QueueState>>) -> Result<(), String> {
-    let mut tasks = state.tasks.lock().unwrap();
+    let mut tasks = state.tasks.lock().unwrap_or_else(|e| e.into_inner());
     let mut changed = false;
 
     for task in tasks.values_mut() {

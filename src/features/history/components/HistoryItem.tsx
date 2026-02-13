@@ -1,19 +1,19 @@
-import { DownloadTask } from '../../store'
+import { DownloadTask } from '@/store'
 import {
     FileVideo, Music, FolderOpen, Play,
     Trash2, RefreshCw, Terminal,
     ExternalLink, FileUp, Minimize2
 } from 'lucide-react'
-import { cn, formatRange } from '../../lib/utils'
-import youtubeIcon from '../../assets/platforms/youtube.png'
-import instagramIcon from '../../assets/platforms/instagram.png'
-import tiktokIcon from '../../assets/platforms/tiktok.png'
-import facebookIcon from '../../assets/platforms/facebook.png'
-import xIcon from '../../assets/platforms/x.png'
+import { cn, formatRange } from '@/lib/utils'
+import youtubeIcon from '@/assets/platforms/youtube.png'
+import instagramIcon from '@/assets/platforms/instagram.png'
+import tiktokIcon from '@/assets/platforms/tiktok.png'
+import facebookIcon from '@/assets/platforms/facebook.png'
+import xIcon from '@/assets/platforms/x.png'
 import { Globe } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipTrigger, OverflowTooltip } from '../ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger, OverflowTooltip } from '@/components/ui/tooltip'
 import { open as openUrl } from '@tauri-apps/plugin-shell'
-import { getProxiedSrc } from '../../lib/image-proxy'
+import { getProxiedSrc } from '@/lib/image-proxy'
 
 // Helper for source icon
 const getSourceInfo = (url: string) => {

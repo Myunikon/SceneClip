@@ -434,7 +434,9 @@ lazy_static::lazy_static! {
 
 #[tauri::command]
 pub async fn cancel_update(binary: String) -> Result<(), String> {
-    let mut handles = UPDATE_ABORT_HANDLES.lock().unwrap();
+    let mut handles = UPDATE_ABORT_HANDLES
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
     if let Some(handle) = handles.remove(&binary) {
         handle.abort();
     }
@@ -586,7 +588,9 @@ pub async fn update_binary(app: AppHandle, binary: String) -> Result<String, Str
 
     let abort_handle = update_task.abort_handle();
     {
-        let mut map = UPDATE_ABORT_HANDLES.lock().unwrap();
+        let mut map = UPDATE_ABORT_HANDLES
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         map.insert(binary_clone.clone(), abort_handle);
     }
 
@@ -610,7 +614,9 @@ pub async fn update_binary(app: AppHandle, binary: String) -> Result<String, Str
     };
 
     {
-        let mut map = UPDATE_ABORT_HANDLES.lock().unwrap();
+        let mut map = UPDATE_ABORT_HANDLES
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         map.remove(&binary_clone);
     }
 

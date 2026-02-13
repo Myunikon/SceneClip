@@ -7,14 +7,22 @@ vi.mock('@tauri-apps/api/path', () => ({
   appDataDir: vi.fn(() => Promise.resolve('/home/user/.appdata')),
 }))
 
+// Mock Tauri Core API (invoke for backend calls)
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: vi.fn(() => Promise.resolve(null)),
+  Channel: vi.fn().mockImplementation(() => ({
+    onMessage: vi.fn(),
+  })),
+}))
+
 vi.mock('@tauri-apps/plugin-shell', () => ({
   Command: {
     sidecar: vi.fn(() => ({
       execute: vi.fn(() => Promise.resolve({ stdout: '', stderr: '', code: 0 })),
     })),
     create: vi.fn(() => ({
-        execute: vi.fn(() => Promise.resolve({ stdout: '', stderr: '', code: 0 })),
-        on: vi.fn(),
+      execute: vi.fn(() => Promise.resolve({ stdout: '', stderr: '', code: 0 })),
+      on: vi.fn(),
     }))
   },
   open: vi.fn(),
@@ -29,57 +37,57 @@ vi.mock('@tauri-apps/plugin-dialog', () => ({
 }))
 
 vi.mock('@tauri-apps/plugin-opener', () => ({
-    openUrl: vi.fn(),
-    openPath: vi.fn(),
+  openUrl: vi.fn(),
+  openPath: vi.fn(),
 }))
 
 vi.mock('@tauri-apps/plugin-fs', () => ({
-    exists: vi.fn(() => Promise.resolve(true)),
-    createDir: vi.fn(),
-    writeFile: vi.fn(),
-    readTextFile: vi.fn(),
+  exists: vi.fn(() => Promise.resolve(true)),
+  createDir: vi.fn(),
+  writeFile: vi.fn(),
+  readTextFile: vi.fn(),
 }))
 
 vi.mock('@tauri-apps/plugin-os', () => ({
-    platform: vi.fn(() => 'windows'), // Default to windows for tests
-    type: vi.fn(() => 'Windows_NT'),
-    version: vi.fn(() => '10.0.0'),
-    arch: vi.fn(() => 'x64'),
+  platform: vi.fn(() => 'windows'), // Default to windows for tests
+  type: vi.fn(() => 'Windows_NT'),
+  version: vi.fn(() => '10.0.0'),
+  arch: vi.fn(() => 'x64'),
 }))
 
 vi.mock('@tauri-apps/plugin-http', () => ({
-    fetch: vi.fn(() => Promise.resolve({
-        ok: true,
-        headers: { get: () => '100' },
-        body: {
-            getReader: () => ({
-                read: () => Promise.resolve({ done: true, value: new Uint8Array() })
-            })
-        },
-        arrayBuffer: () => Promise.resolve(new ArrayBuffer(0))
-    })),
+  fetch: vi.fn(() => Promise.resolve({
+    ok: true,
+    headers: { get: () => '100' },
+    body: {
+      getReader: () => ({
+        read: () => Promise.resolve({ done: true, value: new Uint8Array() })
+      })
+    },
+    arrayBuffer: () => Promise.resolve(new ArrayBuffer(0))
+  })),
 }))
 
 // Missing Tauri Plugin Mocks (Added for completeness)
 vi.mock('@tauri-apps/plugin-clipboard-manager', () => ({
-    readText: vi.fn(() => Promise.resolve('')),
-    writeText: vi.fn(() => Promise.resolve()),
+  readText: vi.fn(() => Promise.resolve('')),
+  writeText: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('@tauri-apps/plugin-notification', () => ({
-    sendNotification: vi.fn(() => Promise.resolve()),
-    requestPermission: vi.fn(() => Promise.resolve('granted')),
-    isPermissionGranted: vi.fn(() => Promise.resolve(true)),
+  sendNotification: vi.fn(() => Promise.resolve()),
+  requestPermission: vi.fn(() => Promise.resolve('granted')),
+  isPermissionGranted: vi.fn(() => Promise.resolve(true)),
 }))
 
 vi.mock('@tauri-apps/plugin-autostart', () => ({
-    enable: vi.fn(() => Promise.resolve()),
-    disable: vi.fn(() => Promise.resolve()),
-    isEnabled: vi.fn(() => Promise.resolve(false)),
+  enable: vi.fn(() => Promise.resolve()),
+  disable: vi.fn(() => Promise.resolve()),
+  isEnabled: vi.fn(() => Promise.resolve(false)),
 }))
 
 vi.mock('@tauri-apps/plugin-deep-link', () => ({
-    onOpenUrl: vi.fn(() => Promise.resolve(() => {})),
+  onOpenUrl: vi.fn(() => Promise.resolve(() => { })),
 }))
 
 // Mock matchMedia
@@ -99,19 +107,19 @@ Object.defineProperty(window, 'matchMedia', {
 
 // Mock ResizeObserver
 globalThis.ResizeObserver = class ResizeObserver {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
+  observe() { }
+  unobserve() { }
+  disconnect() { }
 }
 // Mock Web Animations API
 Element.prototype.animate = vi.fn().mockImplementation(() => ({
-    finished: Promise.resolve(),
-    cancel: vi.fn(),
-    play: vi.fn(),
-    pause: vi.fn(),
-    reverse: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
+  finished: Promise.resolve(),
+  cancel: vi.fn(),
+  play: vi.fn(),
+  pause: vi.fn(),
+  reverse: vi.fn(),
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
 }))
 // Mock HTMLDialogElement
 window.HTMLDialogElement.prototype.show = vi.fn();

@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Switch, Select, Slider, Button } from '../ui'
-import { AppSettings } from '../../store/slices/types'
+import { Switch, Select, Slider, Button } from '@/components/ui'
+import { AppSettings } from '@/store/slices/types'
 import { SettingItem, SettingSection } from './SettingItem'
 import { Key, FolderOpen, X } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
-import { cn } from '../../lib/utils'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 
-import { validateUrlBackend } from '../../lib/validators'
+import { validateUrlBackend } from '@/lib/validators'
 
 interface NetworkSettingsProps {
     settings: AppSettings

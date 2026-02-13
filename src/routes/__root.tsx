@@ -24,7 +24,7 @@ import { AppHeader } from '../components/layout'
 import { AppLayout } from '../components/layout'
 import { ContextMenu } from '../components/common'
 import { TooltipProvider } from '../components/ui/tooltip'
-import { StatusFooter } from '../components/statusbar'
+import { StatusFooter } from '../features/system/components'
 
 
 export const Route = createRootRoute({

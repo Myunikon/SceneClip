@@ -1,8 +1,8 @@
-import { useAppStore } from '../../store'
+import { useAppStore } from '@/store'
 import { useShallow } from 'zustand/react/shallow'
 import { DownloadEmptyState } from './DownloadEmptyState'
 import { DownloadItem } from './DownloadItem'
-import { ErrorBoundary } from '../common/ErrorBoundary'
+import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 
 const ACTIVE_STATUSES = ['pending', 'fetching_info', 'downloading', 'paused', 'processing', 'error']
 

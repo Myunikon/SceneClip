@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { HistoryView } from '../components/history'
+import { HistoryView } from '../features/history/components'
 import { motion } from 'framer-motion'
 
 export const Route = createFileRoute('/history')({

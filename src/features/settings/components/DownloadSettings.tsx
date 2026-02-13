@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import { Switch } from '../ui'
-import { Select } from '../ui' // Reused for "Insert Variable"
+import { Switch } from '@/components/ui'
+import { Select } from '@/components/ui' // Reused for "Insert Variable"
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { useTranslation } from 'react-i18next'
-import { AppSettings } from '../../store/slices/types'
+import { AppSettings } from '@/store/slices/types'
 import { SettingItem, SettingSection } from './SettingItem'
 import { Folder, FileText } from 'lucide-react'
 import { TOKEN_OPTIONS } from './constants'

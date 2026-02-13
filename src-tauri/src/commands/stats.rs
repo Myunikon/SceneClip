@@ -61,7 +61,7 @@ pub fn get_system_stats(
 
     // Calculate speed
     let (download_speed, upload_speed) = {
-        let mut last = LAST_NET_CHECK.lock().unwrap();
+        let mut last = LAST_NET_CHECK.lock().unwrap_or_else(|e| e.into_inner());
         let now = Instant::now();
 
         let speeds = if let Some((last_time, last_rx, last_tx)) = *last {

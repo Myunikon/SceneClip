@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useTranslation, Trans } from 'react-i18next'
-import { Select } from '../ui'
-import { Switch } from '../ui'
-import { AppSettings } from '../../store/slices/types'
-import { PostProcessorPreset } from '../../types'
+import { Select } from '@/components/ui'
+import { Switch } from '@/components/ui'
+import { AppSettings } from '@/store/slices/types'
+import { PostProcessorPreset } from '@/types'
 import { SettingItem, SettingSection } from './SettingItem'
 import { Check, Plus, Trash2, X, Sliders } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipTrigger, OverflowTooltip } from '../ui/tooltip'
-import { cn } from '../../lib/utils'
+import { Tooltip, TooltipContent, TooltipTrigger, OverflowTooltip } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 
 
 interface MediaSettingsProps {

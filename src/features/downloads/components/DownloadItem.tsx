@@ -1,16 +1,16 @@
 import { useState } from 'react'
 import { Pause, Play, StopCircle, Trash2, FolderOpen, RefreshCcw, Terminal, FileVideo, FileAudio, FileImage, Copy, Check } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipTrigger, OverflowTooltip } from '../ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger, OverflowTooltip } from '@/components/ui/tooltip'
 import { openPath } from '@tauri-apps/plugin-opener'
 import { writeText } from '@tauri-apps/plugin-clipboard-manager'
 import { useTranslation } from 'react-i18next'
-import { cn, formatRange } from '../../lib/utils'
-import { useAppStore } from '../../store'
+import { cn, formatRange } from '@/lib/utils'
+import { useAppStore } from '@/store'
 import { useShallow } from 'zustand/react/shallow'
-import { CommandModal } from '../dialogs'
-import { ConfirmDialog } from '../dialogs'
-import { notify } from '../../lib/notify'
-import { formatEtaHumanReadable } from '../../lib/formatters'
+import { CommandModal } from '@/components/dialogs'
+import { ConfirmDialog } from '@/components/dialogs'
+import { notify } from '@/lib/notify'
+import { formatEtaHumanReadable } from '@/lib/formatters'
 
 interface DownloadItemProps {
     taskId: string

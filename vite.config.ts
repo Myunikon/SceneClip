@@ -54,6 +54,8 @@ export default defineConfig(async () => ({
           'vendor-react': ['react', 'react-dom'],
           // UI libraries - changes occasionally
           'vendor-ui': ['framer-motion', 'lucide-react', 'sonner'],
+          // TanStack - data fetching and routing
+          'vendor-tanstack': ['@tanstack/react-query', '@tanstack/react-router'],
           // Tauri APIs - rarely changes
           'vendor-tauri': [
             '@tauri-apps/api',

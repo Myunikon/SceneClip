@@ -3,7 +3,7 @@ import { useTranslation, Trans } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { TypingAnimation } from '@/registry/magicui/typing-animation'
-import { getShortcutSymbol } from '../../lib/platform'
+import { getShortcutSymbol } from '@/lib/platform'
 
 export function DownloadEmptyState() {
     const { t } = useTranslation()

@@ -26,6 +26,7 @@ export interface DownloadTask {
   range?: string
   format?: string
   log?: string
+  errorMessage?: string  // Maps to backend 'error_message' (camelCase via serde)
   path?: string // Save folder
   filePath?: string // Full path to file
   scheduledTime?: number // Timestamp for scheduled start

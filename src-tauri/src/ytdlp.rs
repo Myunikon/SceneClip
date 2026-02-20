@@ -7,7 +7,7 @@ use tauri::{AppHandle, Manager};
 use url::Url;
 
 // --- Constants ---
-const DEFAULTS_SOCKET_TIMEOUT: &str = "15";
+const DEFAULTS_SOCKET_TIMEOUT: &str = "60";
 
 // --- Structs ---
 
@@ -834,21 +834,19 @@ pub async fn build_ytdlp_args(
         }
     }
 
-    if !settings.binary_path_ffmpeg.trim().is_empty() {
-        args.push("--ffmpeg-location".to_string());
-        args.push(settings.binary_path_ffmpeg.clone());
-    }
+    // NOTE: --ffmpeg-location is already handled above via resolve_ffmpeg_path()
+    // Removed duplicate block that used to push settings.binary_path_ffmpeg directly.
 
-    if settings.use_aria2c {
+    if is_clipping {
+        // Force FFmpeg downloader for "Trim First" behavior (partial download via Range headers)
+        // This ensures consistent behavior across generic sites/HLS without downloading full file first.
+        args.push("--downloader".to_string());
+        args.push("ffmpeg".to_string());
+    } else if settings.use_aria2c {
         args.push("--downloader".to_string());
         args.push("aria2c".to_string());
         args.push("--downloader-args".to_string());
         args.push("aria2c:--summary-interval=0 --enable-color=false -x 16 -k 1M".to_string());
-
-        if is_clipping {
-            args.push("--format-sort".to_string());
-            args.push("proto:https".to_string());
-        }
     }
 
     if is_clipping || is_gif {
@@ -916,11 +914,11 @@ pub async fn build_ytdlp_args(
 
         let codec = options.video_codec.as_deref().unwrap_or("auto");
         let format_string = match codec {
-            "h264" => format!("bestvideo{}[vcodec^=avc]+bestaudio[ext=m4a]/best{}[ext=mp4]/bestvideo{}+bestaudio/best{}", h, h, h, h),
-            "av1" => format!("bestvideo{}[vcodec^=av01]+bestaudio/bestvideo{}[vcodec^=vp9]+bestaudio/bestvideo{}+bestaudio/best{}", h, h, h, h),
-            "vp9" => format!("bestvideo{}[vcodec^=vp9]+bestaudio/bestvideo{}+bestaudio/best{}", h, h, h),
-            "hevc" => format!("bestvideo{}[vcodec^=hevc]+bestaudio/bestvideo{}[vcodec^=hev1]+bestaudio/bestvideo{}[vcodec^=hvc1]+bestaudio/bestvideo{}+bestaudio/best{}", h, h, h, h, h),
-            _ => format!("bestvideo{}+bestaudio/best{}", h, h),
+            "h264" => format!("bestvideo{}[vcodec^=avc]+bestaudio[ext=m4a]/best{}[ext=mp4]/bestvideo{}+bestaudio/best{}/best{}", h, h, h, h, h),
+            "av1" => format!("bestvideo{}[vcodec^=av01]+bestaudio/bestvideo{}[vcodec^=vp9]+bestaudio/bestvideo{}+bestaudio/best{}/best{}", h, h, h, h, h),
+            "vp9" => format!("bestvideo{}[vcodec^=vp9]+bestaudio/bestvideo{}+bestaudio/best{}/best{}", h, h, h, h),
+            "hevc" => format!("bestvideo{}[vcodec^=hevc]+bestaudio/bestvideo{}[vcodec^=hev1]+bestaudio/bestvideo{}[vcodec^=hvc1]+bestaudio/bestvideo{}+bestaudio/best{}/best{}", h, h, h, h, h, h),
+            _ => format!("bestvideo{}+bestaudio/best{}/best{}", h, h, h),
         };
         args.push("-f".to_string());
         args.push(format_string);
@@ -1109,7 +1107,21 @@ pub async fn build_ytdlp_args(
     if options.audio_normalization.unwrap_or(false) && fmt != "gif" {
         let has_custom_audio = ffmpeg_args.iter().any(|a| a.contains("-c:a "));
         if !has_custom_audio {
-            ffmpeg_args.push("-c:a aac -b:a 192k".to_string());
+            // Determine target format/codec
+            let target_format = options.audio_format.as_deref().unwrap_or("mp3");
+            let target_bitrate = options.audio_bitrate.as_deref().unwrap_or("192");
+
+            // Map format to ffmpeg encoder
+            let (codec, bitrate_flag) = match target_format {
+                "mp3" => ("libmp3lame", format!("-b:a {}k", target_bitrate)),
+                "m4a" | "aac" => ("aac", format!("-b:a {}k", target_bitrate)),
+                "opus" => ("libopus", format!("-b:a {}k", target_bitrate)),
+                "flac" => ("flac", "".to_string()), // FLAC is lossless, bitrate arg often ignored/invalid for encoder
+                "wav" => ("pcm_s16le", "".to_string()), // WAV is uncompressed pcm
+                _ => ("aac", "192k".to_string()),   // Fallback
+            };
+
+            ffmpeg_args.push(format!("-c:a {} {}", codec, bitrate_flag));
         }
     }
 

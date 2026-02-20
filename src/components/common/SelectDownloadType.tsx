@@ -45,11 +45,7 @@ export function SelectDownloadType() {
                 const label = `${h}p`
                 return { value: `${h}p`, label }
             })
-        : [
-            { value: '1080p', label: '1080p' },
-            { value: '720p', label: '720p' },
-            { value: '480p', label: '480p' },
-        ]
+        : []
 
     return (
         <div className="space-y-4 p-1">

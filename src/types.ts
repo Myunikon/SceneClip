@@ -33,13 +33,21 @@ export interface VideoMeta {
     duration?: number
     uploader?: string
     description?: string
-    view_count?: number
-    upload_date?: string
+    viewCount?: number
+    uploadDate?: string
     formats?: YtFormat[]
+    // Pre-calculated summary fields from backend
+    resolutions?: number[]
+    videoCodecs?: string[]
+    audioCodecs?: string[]
+    audioBitrates?: number[]
+    isGeneric?: boolean
+
     subtitles?: Record<string, YtSubtitle[]>
     automatic_captions?: Record<string, YtSubtitle[]>
     hasSubtitles?: boolean
-    filesize_approx?: number
+    filesize?: number
+    filesizeApprox?: number
     chapters?: VideoChapter[]
     is_live?: boolean
     containers?: string[]

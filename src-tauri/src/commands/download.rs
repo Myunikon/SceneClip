@@ -693,6 +693,30 @@ pub async fn get_download_args(
     Ok(args)
 }
 
+/// Extracted Metadata for Frontend
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ParsedMetadata {
+    pub id: Option<String>,
+    pub title: String,
+    pub duration: Option<f64>,
+    pub thumbnail: Option<String>,
+    pub resolutions: Vec<u32>,
+    pub video_codecs: Vec<String>,
+    pub audio_codecs: Vec<String>,
+    pub audio_bitrates: Vec<u32>,
+    pub is_generic: bool,
+    pub filesize: Option<f64>,
+    pub filesize_approx: Option<f64>,
+    pub view_count: Option<u64>,
+    pub upload_date: Option<String>,
+    pub uploader: Option<String>,
+    pub description: Option<String>,
+    pub formats: Vec<serde_json::Value>,
+    pub subtitles: Option<serde_json::Value>,
+    pub automatic_captions: Option<serde_json::Value>,
+}
+
 /// Fetch video metadata (JSON)
 #[tauri::command]
 pub async fn get_video_metadata(
@@ -700,7 +724,7 @@ pub async fn get_video_metadata(
     url: String,
     settings: AppSettings,
     sites: tauri::State<'_, Arc<crate::ytdlp::SupportedSites>>,
-) -> Result<serde_json::Value, String> {
+) -> Result<ParsedMetadata, String> {
     // Whitelist check
     if !sites.matches(&url) {
         return Err("URL not in supported sites list".to_string());
@@ -723,7 +747,131 @@ pub async fn get_video_metadata(
     if output.status.success() {
         let json: serde_json::Value = serde_json::from_slice(&output.stdout)
             .map_err(|e| format!("Failed to parse JSON: {}", e))?;
-        Ok(json)
+
+        // Extract summary data
+        let mut resolutions = std::collections::HashSet::new();
+        let mut video_codecs = std::collections::HashSet::new();
+        let mut audio_codecs = std::collections::HashSet::new();
+        let mut audio_bitrates = std::collections::HashSet::new();
+        let mut is_generic = false;
+
+        if let Some(extractor) = json.get("extractor").and_then(|v| v.as_str()) {
+            if extractor == "generic" {
+                is_generic = true;
+            }
+        }
+
+        if let Some(formats) = json.get("formats").and_then(|f| f.as_array()) {
+            for fmt in formats {
+                // Resolution
+                if let Some(h) = fmt.get("height").and_then(|v| v.as_u64()) {
+                    if h > 0 {
+                        resolutions.insert(h as u32);
+                    }
+                }
+                // Video Codec
+                if let Some(vc) = fmt.get("vcodec").and_then(|v| v.as_str()) {
+                    if vc != "none" {
+                        let v = vc.to_lowercase();
+                        if v.starts_with("avc1") || v.starts_with("h264") {
+                            video_codecs.insert("h264".to_string());
+                        } else if v.starts_with("vp9") {
+                            video_codecs.insert("vp9".to_string());
+                        } else if v.starts_with("av01") {
+                            video_codecs.insert("av1".to_string());
+                        } else if v.starts_with("hev1")
+                            || v.starts_with("hvc1")
+                            || v.starts_with("hevc")
+                        {
+                            video_codecs.insert("hevc".to_string());
+                        }
+                    }
+                }
+                // Audio Codec
+                if let Some(ac) = fmt.get("acodec").and_then(|v| v.as_str()) {
+                    if ac != "none" {
+                        let a = ac.to_lowercase();
+                        if a.starts_with("mp4a") {
+                            audio_codecs.insert("m4a".to_string());
+                        } else if a.contains("opus") {
+                            audio_codecs.insert("opus".to_string());
+                        } else if a.contains("vorbis") {
+                            audio_codecs.insert("ogg".to_string());
+                        } else if a.contains("flac") {
+                            audio_codecs.insert("flac".to_string());
+                        } else if a.contains("wav") {
+                            audio_codecs.insert("wav".to_string());
+                        }
+                    }
+                }
+                // Audio Bitrate
+                if let Some(abr) = fmt.get("abr").and_then(|v| v.as_f64()) {
+                    if abr > 0.0 {
+                        // Bucket bitrates roughly
+                        let abr_int = abr as u32;
+                        let buckets = [64, 128, 192, 256, 320];
+                        let mut closest = 128;
+                        let mut min_diff = i32::MAX;
+                        for &b in &buckets {
+                            let diff = (b as i32 - abr_int as i32).abs();
+                            if diff < min_diff {
+                                min_diff = diff;
+                                closest = b;
+                            }
+                        }
+                        audio_bitrates.insert(closest);
+                    }
+                }
+            }
+        }
+
+        // Sort results
+        let mut sorted_res: Vec<u32> = resolutions.into_iter().collect();
+        sorted_res.sort_by(|a, b| b.cmp(a)); // Descending
+
+        // Construct response
+        Ok(ParsedMetadata {
+            id: json.get("id").and_then(|v| v.as_str()).map(String::from),
+            title: json
+                .get("title")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Unknown")
+                .to_string(),
+            duration: json.get("duration").and_then(|v| v.as_f64()),
+            thumbnail: json
+                .get("thumbnail")
+                .and_then(|v| v.as_str())
+                .map(String::from),
+            resolutions: sorted_res,
+            video_codecs: video_codecs.into_iter().collect(),
+            audio_codecs: audio_codecs.into_iter().collect(),
+            audio_bitrates: audio_bitrates.into_iter().collect(),
+            is_generic,
+
+            filesize: json.get("filesize").and_then(|v| v.as_f64()),
+            filesize_approx: json.get("filesize_approx").and_then(|v| v.as_f64()),
+            view_count: json.get("view_count").and_then(|v| v.as_u64()),
+            upload_date: json
+                .get("upload_date")
+                .and_then(|v| v.as_str())
+                .map(String::from),
+            uploader: json
+                .get("uploader")
+                .and_then(|v| v.as_str())
+                .map(String::from),
+            description: json
+                .get("description")
+                .and_then(|v| v.as_str())
+                .map(String::from),
+
+            formats: json
+                .get("formats")
+                .and_then(|f| f.as_array())
+                .cloned()
+                .unwrap_or_default(),
+            subtitles: json.get("subtitles").cloned(),
+            automatic_captions: json.get("automatic_captions").cloned(),
+        })
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         Err(stderr.to_string())

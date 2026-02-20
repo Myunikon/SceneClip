@@ -110,10 +110,10 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
 
 
     // Compute Available Formats & Options using pure utils
-    const availableResolutions = getAvailableResolutions(meta?.formats)
-    const availableAudioBitrates = getAvailableAudioBitrates(meta?.formats)
-    const availableVideoCodecs = getAvailableVideoCodecs(meta?.formats)
-    const availableAudioCodecs = getAvailableAudioCodecs(meta?.formats)
+    const availableResolutions = getAvailableResolutions(meta || undefined)
+    const availableAudioBitrates = getAvailableAudioBitrates(meta || undefined)
+    const availableVideoCodecs = getAvailableVideoCodecs(meta || undefined)
+    const availableAudioCodecs = getAvailableAudioCodecs(meta || undefined)
     const availableContainers = meta?.containers || []
     const availableLanguages = getAvailableLanguages(meta)
 

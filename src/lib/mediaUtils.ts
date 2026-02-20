@@ -1,116 +1,46 @@
 import { invoke } from '@tauri-apps/api/core'
 import { parseTime } from './utils'
+import { VideoMeta } from '../types'
 
 export interface LanguageOption {
     id: string
     label: string
 }
 
-export interface ParsedMetadata {
-    title: string
-    duration: number
-    resolutions: number[]
-    audioBitrates: number[]
-    videoCodecs: string[]
-    audioCodecs: string[]
-    containers: string[]
-    languages: LanguageOption[]
-    thumbnail?: string
-    filesize?: number
-    filesizeApprox?: number
-}
+export interface ParsedMetadata extends VideoMeta { }
 
 /**
  * Parses raw yt-dlp JSON metadata using the Rust backend.
- * Logic migrated to Rust for type safety and stability.
  */
-export const parseVideoMetadata = async (rawJson: any): Promise<ParsedMetadata> => {
+export const parseVideoMetadata = async (rawJson: any): Promise<VideoMeta> => {
     try {
-        return await invoke<ParsedMetadata>('parse_video_metadata', { rawJson })
+        // Now returns the fully populated object directly from backend command
+        return await invoke<VideoMeta>('get_video_metadata', { rawJson })
     } catch (error) {
         console.error("[Rust] Failed to parse video metadata:", error)
         throw error
     }
 }
 
-// Backward compatibility helpers (optimized to use parsed metadata if available)
 
-/**
- * @deprecated Use the new parseVideoMetadata (Rust) instead. This legacy path is kept for backward compatibility.
- */
-export const getAvailableResolutions = (meta: ParsedMetadata | any[] | undefined): number[] => {
+export const getAvailableResolutions = (meta: VideoMeta | undefined): number[] => {
     if (!meta) return []
-    if (Array.isArray(meta)) {
-        // Legacy path (used in some components)
-        const heights = meta.map((f: any) => f.height).filter((h: any) => typeof h === 'number' && h > 0)
-        return [...new Set(heights)].sort((a, b) => b - a) as number[]
-    }
-    return meta.resolutions
+    return meta.resolutions || []
 }
 
-/**
- * @deprecated Use the new parseVideoMetadata (Rust) instead. This legacy path is kept for backward compatibility.
- */
-export const getAvailableAudioBitrates = (meta: ParsedMetadata | any[] | undefined): number[] => {
+export const getAvailableAudioBitrates = (meta: VideoMeta | undefined): number[] => {
     if (!meta) return []
-    if (Array.isArray(meta)) {
-        // Legacy path
-        const bitrates = meta
-            .filter((f: any) => f.acodec !== 'none' && f.abr)
-            .map((f: any) => Math.round(f.abr))
-
-        const buckets = [64, 128, 192, 256, 320]
-        const valid = bitrates.reduce((acc: number[], cur: number) => {
-            const closest: number = buckets.reduce((prev, curr) => Math.abs(curr - cur) < Math.abs(prev - cur) ? curr : prev)
-            if (!acc.includes(closest)) acc.push(closest)
-            return acc
-        }, [])
-        return valid.sort((a: number, b: number) => b - a)
-    }
-    return meta.audioBitrates
+    return meta.audioBitrates || []
 }
 
-/**
- * @deprecated Use the new parseVideoMetadata (Rust) instead. This legacy path is kept for backward compatibility.
- */
-export const getAvailableVideoCodecs = (meta: ParsedMetadata | any[] | undefined): string[] => {
+export const getAvailableVideoCodecs = (meta: VideoMeta | undefined): string[] => {
     if (!meta) return []
-    if (Array.isArray(meta)) {
-        // Legacy path
-        const codecs = new Set<string>()
-        meta.forEach((f: any) => {
-            if (!f.vcodec || f.vcodec === 'none') return
-            const v = f.vcodec.toLowerCase()
-            if (v.startsWith('avc1') || v.startsWith('h264')) codecs.add('h264')
-            else if (v.startsWith('vp9')) codecs.add('vp9')
-            else if (v.startsWith('av01')) codecs.add('av1')
-            else if (v.startsWith('hev1') || v.startsWith('hvc1') || v.startsWith('hevc')) codecs.add('hevc')
-        })
-        return Array.from(codecs)
-    }
-    return meta.videoCodecs
+    return meta.videoCodecs || []
 }
 
-/**
- * @deprecated Use the new parseVideoMetadata (Rust) instead. This legacy path is kept for backward compatibility.
- */
-export const getAvailableAudioCodecs = (meta: ParsedMetadata | any[] | undefined): string[] => {
+export const getAvailableAudioCodecs = (meta: VideoMeta | undefined): string[] => {
     if (!meta) return []
-    if (Array.isArray(meta)) {
-        // Legacy path
-        const codecs = new Set<string>()
-        meta.forEach((f: any) => {
-            if (!f.acodec || f.acodec === 'none') return
-            const a = f.acodec.toLowerCase()
-            if (a.startsWith('mp4a')) codecs.add('m4a')
-            else if (a.includes('opus')) codecs.add('opus')
-            else if (a.includes('vorbis')) codecs.add('ogg')
-            else if (a.includes('flac')) codecs.add('flac')
-            else if (a.includes('wav')) codecs.add('wav')
-        })
-        return Array.from(codecs)
-    }
-    return meta.audioCodecs
+    return meta.audioCodecs || []
 }
 
 /**

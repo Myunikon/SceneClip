@@ -688,6 +688,12 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                 crate::commands::download::DownloadEvent::Error {
                                     message, ..
                                 } => {
+                                    log::error!(
+                                        "[Queue] Download error for {}: {}",
+                                        task_id,
+                                        message
+                                    );
+
                                     // AUTO-RETRY LOGIC
                                     let mut should_retry = false;
                                     let mut delay = 0;
@@ -720,6 +726,7 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                                 "Auto-retry {}/{} in {}s",
                                                 retry_num, max_retries, delay
                                             ));
+                                            t.error_message = Some(message.clone());
 
                                             // Schedule it
                                             let now = std::time::SystemTime::now()
@@ -730,6 +737,7 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                         } else {
                                             t.status = TaskStatus::Error;
                                             t.status_detail = Some(message.clone());
+                                            t.error_message = Some(message.clone());
                                         }
                                     });
 
@@ -751,6 +759,36 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                                 &app_retry,
                                             );
                                             emit_queue_update(&app_retry, &state_retry);
+                                        });
+                                    }
+                                }
+                                crate::commands::download::DownloadEvent::Log {
+                                    message,
+                                    level,
+                                    ..
+                                } => {
+                                    // Capture yt-dlp log messages (warnings, errors, info) into task state
+                                    // so they're visible in the UI when errors occur
+                                    if level == "warning" || level == "error" {
+                                        log::warn!(
+                                            "[Queue] yt-dlp {}: {} (task: {})",
+                                            level,
+                                            message,
+                                            task_id
+                                        );
+                                        state_monitor.update_task(&task_id, |t| {
+                                            // Append to error_message (keep last 10 lines)
+                                            let mut lines: Vec<String> = t
+                                                .error_message
+                                                .as_ref()
+                                                .map(|m| m.lines().map(String::from).collect())
+                                                .unwrap_or_default();
+                                            lines.push(message.clone());
+                                            // Keep only last 10 lines to prevent unbounded growth
+                                            while lines.len() > 10 {
+                                                lines.remove(0);
+                                            }
+                                            t.error_message = Some(lines.join("\n"));
                                         });
                                     }
                                 }

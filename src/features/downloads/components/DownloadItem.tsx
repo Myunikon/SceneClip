@@ -55,10 +55,13 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
         return <FileVideo className="w-5 h-5" strokeWidth={1.5} />
     }
 
+    // Resolve the best available error text from all possible fields
+    const errorText = task.statusDetail || task.errorMessage || task.log || ''
+
     const handleCopyError = async () => {
-        if (!task.log) return
+        if (!errorText) return
         try {
-            await writeText(task.log)
+            await writeText(errorText)
             setIsCopying(true)
             setTimeout(() => setIsCopying(false), 2000)
             notify.info(t('common.copied') || 'Copied to clipboard')
@@ -193,7 +196,7 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
                         {task.status === 'error' ? (
                             <div className="flex items-start gap-2 max-w-full">
                                 <span className="flex-1 select-text cursor-text break-words whitespace-normal leading-relaxed hover:text-destructive/90">
-                                    {task.log || 'Download failed'}
+                                    {errorText || 'Download failed'}
                                 </span>
                                 <Tooltip>
                                     <TooltipTrigger asChild>

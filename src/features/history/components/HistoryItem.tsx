@@ -4,6 +4,7 @@ import {
     Trash2, RefreshCw, Terminal,
     ExternalLink, FileUp, Minimize2
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { cn, formatRange } from '@/lib/utils'
 import youtubeIcon from '@/assets/platforms/youtube.png'
 import instagramIcon from '@/assets/platforms/instagram.png'
@@ -252,15 +253,17 @@ function IconButton({ onClick, icon: Icon, title, color }: IconButtonProps) {
     return (
         <Tooltip>
             <TooltipTrigger asChild>
-                <button
+                <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={(e) => { e.stopPropagation(); onClick() }}
                     className={cn(
-                        "p-1.5 rounded-lg transition-all active:scale-95",
+                        "p-1.5 h-7 w-7 rounded-lg transition-all active:scale-95",
                         colors[color]
                     )}
                 >
                     <Icon className="w-4 h-4" />
-                </button>
+                </Button>
             </TooltipTrigger>
             <TooltipContent>
                 <p>{title}</p>

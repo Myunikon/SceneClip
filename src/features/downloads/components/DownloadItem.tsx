@@ -5,6 +5,7 @@ import { openPath } from '@tauri-apps/plugin-opener'
 import { writeText } from '@tauri-apps/plugin-clipboard-manager'
 import { useTranslation } from 'react-i18next'
 import { cn, formatRange } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/store'
 import { useShallow } from 'zustand/react/shallow'
 import { CommandModal } from '@/components/dialogs'
@@ -228,9 +229,9 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
                     {task.status === 'downloading' && (
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <button onClick={() => isClipped ? setShowClipPauseWarning(true) : pauseTask(task.id)} className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-foreground/80">
+                                <Button variant="ghost" size="icon" onClick={() => isClipped ? setShowClipPauseWarning(true) : pauseTask(task.id)} className="h-7 w-7 p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-foreground/80">
                                     <Pause className="w-4 h-4 fill-current" />
-                                </button>
+                                </Button>
                             </TooltipTrigger>
                             <TooltipContent><p>{t('common.pause') || 'Pause'}</p></TooltipContent>
                         </Tooltip>
@@ -238,9 +239,9 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
                     {task.status === 'paused' && (
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <button onClick={() => resumeTask(task.id)} className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-foreground/80">
+                                <Button variant="ghost" size="icon" onClick={() => resumeTask(task.id)} className="h-7 w-7 p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-foreground/80">
                                     <Play className="w-4 h-4 fill-current" />
-                                </button>
+                                </Button>
                             </TooltipTrigger>
                             <TooltipContent><p>{t('common.resume') || 'Resume'}</p></TooltipContent>
                         </Tooltip>
@@ -249,9 +250,9 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
                     {['downloading', 'paused'].includes(task.status) && (
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <button onClick={() => setShowCancelConfirm(true)} className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive">
+                                <Button variant="ghost" size="icon" onClick={() => setShowCancelConfirm(true)} className="h-7 w-7 p-1.5 rounded-md hover:bg-destructive/10 text-destructive">
                                     <StopCircle className="w-4 h-4" />
-                                </button>
+                                </Button>
                             </TooltipTrigger>
                             <TooltipContent><p>{t('common.cancel') || 'Cancel'}</p></TooltipContent>
                         </Tooltip>
@@ -260,9 +261,9 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
                     {task.status === 'completed' && (
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <button onClick={handleOpenFolder} className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-blue-500">
+                                <Button variant="ghost" size="icon" onClick={handleOpenFolder} className="h-7 w-7 p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-blue-500">
                                     <FolderOpen className="w-4 h-4" />
-                                </button>
+                                </Button>
                             </TooltipTrigger>
                             <TooltipContent><p>{t('common.open_folder') || 'Open Folder'}</p></TooltipContent>
                         </Tooltip>
@@ -271,9 +272,9 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
                     {['error', 'stopped'].includes(task.status) && (
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <button onClick={() => retryTask(task.id)} className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-foreground/80">
+                                <Button variant="ghost" size="icon" onClick={() => retryTask(task.id)} className="h-7 w-7 p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-foreground/80">
                                     <RefreshCcw className="w-4 h-4" />
-                                </button>
+                                </Button>
                             </TooltipTrigger>
                             <TooltipContent><p>{t('common.retry') || 'Retry'}</p></TooltipContent>
                         </Tooltip>
@@ -283,9 +284,9 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
                     {['completed', 'error', 'stopped', 'pending'].includes(task.status) && (
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <button onClick={() => clearTask(task.id)} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
+                                <Button variant="ghost" size="icon" onClick={() => clearTask(task.id)} className="h-7 w-7 p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
                                     <Trash2 className="w-4 h-4" />
-                                </button>
+                                </Button>
                             </TooltipTrigger>
                             <TooltipContent><p>{t('common.remove') || 'Remove'}</p></TooltipContent>
                         </Tooltip>
@@ -295,9 +296,9 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
                     {settings.developerMode && (
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <button onClick={() => setShowCommandModal(true)} className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground">
+                                <Button variant="ghost" size="icon" onClick={() => setShowCommandModal(true)} className="h-7 w-7 p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground">
                                     <Terminal className="w-4 h-4" />
-                                </button>
+                                </Button>
                             </TooltipTrigger>
                             <TooltipContent><p>{t('common.logs') || 'View Logs'}</p></TooltipContent>
                         </Tooltip>

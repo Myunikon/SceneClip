@@ -67,6 +67,10 @@ pub struct QueueState {
     pub notify: Arc<Notify>,
     pub persistence_path: Option<PathBuf>, // FIX: Store Path, NOT AppHandle
     pub cached_prevent_suspend: Arc<Mutex<bool>>,
+    pub cached_enable_notifications: Arc<Mutex<bool>>,
+    pub cached_post_download_action: Arc<Mutex<String>>,
+    pub active_keepawake: Arc<Mutex<Option<keepawake::KeepAwake>>>,
+    pub previous_active_count: Arc<Mutex<usize>>,
     pub dirty: Arc<AtomicBool>,
 }
 
@@ -84,6 +88,10 @@ impl QueueState {
             notify: Arc::new(Notify::new()),
             persistence_path,
             cached_prevent_suspend: Arc::new(Mutex::new(true)),
+            cached_enable_notifications: Arc::new(Mutex::new(true)),
+            cached_post_download_action: Arc::new(Mutex::new("none".to_string())),
+            active_keepawake: Arc::new(Mutex::new(None)),
+            previous_active_count: Arc::new(Mutex::new(0)),
             dirty: Arc::new(AtomicBool::new(false)),
         };
         // Attempt to load existing queue
@@ -132,16 +140,35 @@ impl QueueState {
 
     pub fn refresh_settings_cache(&self, app: &AppHandle) {
         let mut prevent_suspend = true;
+        let mut enable_notifications = true;
+        let mut post_action = "none".to_string();
+
         if let Ok(store) = app.store("settings.json") {
             if let Some(val) = store.get("preventSuspendDuringDownload") {
                 prevent_suspend = val.as_bool().unwrap_or(true);
             }
+            if let Some(val) = store.get("enableDesktopNotifications") {
+                enable_notifications = val.as_bool().unwrap_or(true);
+            }
+            if let Some(val) = store.get("postDownloadAction") {
+                if let Some(s) = val.as_str() {
+                    post_action = s.to_string();
+                }
+            }
         }
-        let mut cache = self
+
+        *self
             .cached_prevent_suspend
             .lock()
-            .unwrap_or_else(|e| e.into_inner());
-        *cache = prevent_suspend;
+            .unwrap_or_else(|e| e.into_inner()) = prevent_suspend;
+        *self
+            .cached_enable_notifications
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = enable_notifications;
+        *self
+            .cached_post_download_action
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = post_action;
     }
 
     pub fn load(&self) {
@@ -449,25 +476,34 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
         state.refresh_settings_cache(&app);
 
         // 2. Fetch Concurrency & History Settings from Store
+        // FIX: Zustand persist stores data at "app-storage-v5-clean" -> "state" -> "settings"
+        // Previously read from root keys which always returned None (fallback to defaults).
         let (limit, retention_days, max_items) = {
             let mut conc = 3;
             let mut days = 30;
             let mut max = 100;
 
             if let Ok(store) = app.store("settings.json") {
-                if let Some(val) = store.get("concurrentDownloads") {
-                    if let Some(v) = val.as_u64() {
-                        conc = v as usize;
-                    }
-                }
-                if let Some(val) = store.get("historyRetentionDays") {
-                    if let Some(v) = val.as_u64() {
-                        days = v as u32;
-                    }
-                }
-                if let Some(val) = store.get("maxHistoryItems") {
-                    if let Some(v) = val.as_i64() {
-                        max = v as i32;
+                let key = "app-storage-v5-clean";
+                if let Some(root) = store.get(key) {
+                    if let Some(settings_val) = root.get("state").and_then(|s| s.get("settings")) {
+                        if let Some(v) = settings_val
+                            .get("concurrentDownloads")
+                            .and_then(|v| v.as_u64())
+                        {
+                            conc = v as usize;
+                        }
+                        if let Some(v) = settings_val
+                            .get("historyRetentionDays")
+                            .and_then(|v| v.as_u64())
+                        {
+                            days = v as u32;
+                        }
+                        if let Some(v) =
+                            settings_val.get("maxHistoryItems").and_then(|v| v.as_i64())
+                        {
+                            max = v as i32;
+                        }
                     }
                 }
             }
@@ -506,6 +542,76 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default()
                 .as_secs();
+
+            // Handle KeepAwake
+            let prevent_suspend = *state
+                .cached_prevent_suspend
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
+            let mut keepawake_guard = state
+                .active_keepawake
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
+
+            if active_count > 0 && prevent_suspend {
+                if keepawake_guard.is_none() {
+                    log::info!("Activating system keep-awake (downloads active)");
+                    if let Ok(awake) = keepawake::Builder::default()
+                        .display(false)
+                        .idle(true)
+                        .sleep(true)
+                        .create()
+                    {
+                        *keepawake_guard = Some(awake);
+                    }
+                }
+            } else {
+                if keepawake_guard.is_some() {
+                    log::info!("Deactivating system keep-awake (no active downloads)");
+                    *keepawake_guard = None; // Drops the struct and allows sleep
+                }
+            }
+
+            // Post-Download Action (Transition from >0 to 0)
+            let mut prev_count_guard = state
+                .previous_active_count
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
+            let prev_count = *prev_count_guard;
+            *prev_count_guard = active_count;
+
+            if prev_count > 0 && active_count == 0 {
+                let post_action = state
+                    .cached_post_download_action
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .clone();
+                if post_action != "none" {
+                    log::info!(
+                        "Queue finished. Found post-download action: {}",
+                        post_action
+                    );
+
+                    // Reset setting to none to prevent loop upon next wake/restart
+                    if let Ok(store) = app.store("settings.json") {
+                        let _ = store.set("postDownloadAction", serde_json::json!("none"));
+                        let _ = store.save();
+                        // Pre-update the cache
+                        *state
+                            .cached_post_download_action
+                            .lock()
+                            .unwrap_or_else(|e| e.into_inner()) = "none".to_string();
+                    }
+
+                    if post_action == "shutdown" {
+                        log::warn!("Initiating system shutdown!");
+                        let _ = system_shutdown::shutdown();
+                    } else if post_action == "sleep" {
+                        log::warn!("Initiating system sleep!");
+                        let _ = system_shutdown::sleep();
+                    }
+                }
+            }
 
             // Pick next task: Either 'Pending' or 'Scheduled' (if time hit)
             let next = if active_count < limit {
@@ -677,12 +783,18 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                         .unwrap_or(false);
 
                                     if !focus {
-                                        let _ = app_monitor
-                                            .notification()
-                                            .builder()
-                                            .title("Download Complete")
-                                            .body(format!("Saved to: {}", file_path))
-                                            .show();
+                                        let enable_notifs = *state_monitor
+                                            .cached_enable_notifications
+                                            .lock()
+                                            .unwrap_or_else(|e| e.into_inner());
+                                        if enable_notifs {
+                                            let _ = app_monitor
+                                                .notification()
+                                                .builder()
+                                                .title("Download Complete")
+                                                .body(format!("Saved to: {}", file_path))
+                                                .show();
+                                        }
                                     }
                                 }
                                 crate::commands::download::DownloadEvent::Error {

@@ -82,8 +82,8 @@ pub struct PostProcessorPreset {
     pub is_default: bool,
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug, Default)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase", default)]
 pub struct AppSettings {
     pub theme: String,
     pub language: String,
@@ -136,6 +136,61 @@ pub struct AppSettings {
     // Performance & Quality (Advanced)
     pub post_processor_presets: Vec<PostProcessorPreset>,
     pub enabled_preset_ids: Vec<String>,
+}
+
+// Manual Default implementation matching frontend DEFAULT_SETTINGS (createSettingsSlice.ts)
+impl Default for AppSettings {
+    fn default() -> Self {
+        Self {
+            theme: "light".to_string(),
+            language: "en".to_string(),
+            launch_at_startup: false,
+            start_minimized: false,
+            close_action: "quit".to_string(),
+            download_path: String::new(),
+            always_ask_path: false,
+            filename_template: "{title}".to_string(),
+            resolution: "Best".to_string(),
+            container: "mp4".to_string(),
+            hardware_decoding: false,
+            concurrent_downloads: 2,
+            speed_limit: String::new(),
+            use_aria2c: false,
+            proxy: String::new(),
+            user_agent: String::new(),
+            frontend_font_size: "medium".to_string(),
+            cookie_source: "none".to_string(),
+            browser_type: Some("chrome".to_string()),
+            cookie_path: None,
+            use_sponsor_block: false,
+            sponsor_segments: vec![
+                "sponsor".to_string(),
+                "selfpromo".to_string(),
+                "interaction".to_string(),
+            ],
+            binary_path_yt_dlp: String::new(),
+            binary_path_ffmpeg: String::new(),
+            binary_path_ffprobe: String::new(),
+            binary_path_node: String::new(),
+            embed_metadata: true,
+            embed_thumbnail: true,
+            embed_chapters: false,
+            use_metadata_enhancer: false,
+            use_smart_proxy: false,
+            use_replay_gain: false,
+            use_po_token: false,
+            po_token: String::new(),
+            visitor_data: String::new(),
+            use_chrome_cookie_unlock: false,
+            enable_desktop_notifications: true,
+            prevent_suspend_during_download: true,
+            remove_source_metadata: false,
+            history_retention_days: 30,
+            max_history_items: 100,
+            post_processor_presets: Vec::new(),
+            enabled_preset_ids: Vec::new(),
+        }
+    }
 }
 
 use std::process::Command;

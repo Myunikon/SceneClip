@@ -128,8 +128,8 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
         let savePath = options.path
 
         // Always Ask Where to Save
-        if (settings.alwaysAskPath && !savePath) {
-            const selectedPath = await openDialog({ directory: true, title: 'Choose Download Location' })
+        if (settings.alwaysAskPath) {
+            const selectedPath = await openDialog({ directory: true, title: 'Choose Download Location', defaultPath: savePath || undefined })
             if (selectedPath) {
                 savePath = selectedPath
             } else {

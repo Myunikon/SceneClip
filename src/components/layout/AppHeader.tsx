@@ -1,5 +1,4 @@
 import { Download, History, Settings, HelpCircle, PlusCircle, Keyboard, Lock } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from '@tanstack/react-router'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
@@ -13,7 +12,7 @@ interface AppHeaderProps {
 }
 
 
-const MotionButton = motion.create(Button)
+
 
 
 export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeaderProps) {
@@ -48,19 +47,12 @@ export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeade
                         key={tab.id}
                         to={tab.path}
                         className={cn(
-                            "relative px-4 py-1.5 rounded-full text-sm font-medium flex items-center gap-2 z-10 transition-colors whitespace-nowrap header-nav-item",
+                            "relative px-4 py-1.5 rounded-full text-sm font-medium flex items-center gap-2 z-10 whitespace-nowrap header-nav-item",
                             activeTab === tab.id
-                                ? "text-primary"
+                                ? "text-primary shadow-sm bg-background"
                                 : "text-muted-foreground hover:text-foreground"
                         )}
                     >
-                        {activeTab === tab.id && (
-                            <motion.div
-                                layoutId="nav-pill"
-                                className="absolute inset-0 bg-background rounded-full shadow-sm -z-10"
-                                transition={{ type: "spring", bounce: 0, duration: 0.3 }}
-                            />
-                        )}
                         <tab.icon className="w-4 h-4 relative z-10" />
                         <span className="relative z-10 header-label">{tab.label}</span>
                     </Link>
@@ -100,15 +92,13 @@ export function AppHeader({ openDialog, onOpenGuide, onOpenShortcuts }: AppHeade
                 </Tooltip>
 
                 <div className="flex items-center">
-                    <MotionButton
+                    <Button
                         onClick={openDialog}
-                        layout="position"
-                        transition={{ duration: 0.2 }}
-                        className="h-auto w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-full flex items-center gap-2 shadow-lg shadow-primary/20 text-sm font-bold whitespace-nowrap active:scale-95 transition-shadow justify-center header-new-btn"
+                        className="h-auto w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-full flex items-center gap-2 shadow-lg shadow-primary/20 text-sm font-bold whitespace-nowrap justify-center header-new-btn"
                     >
                         <span className="header-new-btn-label">{t('downloads.new_download')}</span>
                         <PlusCircle className="w-4 h-4 header-new-btn-icon" />
-                    </MotionButton>
+                    </Button>
                 </div>
             </div>
         </header>

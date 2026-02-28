@@ -53,7 +53,7 @@ export function StatusFooter() {
 
     // StatusBar class - Apple Style Frosted Glass
     // strong blur, very light background for "vibrancy", subtle top border
-    const barClass = "fixed bottom-0 left-0 right-0 z-40 bg-background/60 backdrop-blur-2xl border-t border-white/5 px-5 py-2 transition-all duration-300 shadow-[0_-1px_20px_rgba(0,0,0,0.1)]"
+    const barClass = "fixed bottom-0 left-0 right-0 z-40 bg-background/60 backdrop-blur-2xl border-t border-white/5 px-5 py-2 shadow-[0_-1px_20px_rgba(0,0,0,0.1)]"
 
     // Calculate global progress
     // Calculate global progress
@@ -79,8 +79,8 @@ export function StatusFooter() {
     const diskColor = currentDisk ? getDiskColor(currentDisk.available_space, currentDisk.total_space) : "text-primary/50"
 
     // Common Button Style for Status Bar Items
-    // No background hover, just opacity/scale shift for cleaner look
-    const statusItemClass = "h-auto w-auto flex items-center gap-2 p-1 rounded-md transition-all duration-200 cursor-pointer text-muted-foreground/80 hover:text-foreground active:scale-95 active:opacity-70"
+    // No background hover, just opacity shift for cleaner look without size scaling
+    const statusItemClass = "h-auto w-auto flex items-center gap-2 p-1 rounded-md cursor-pointer text-muted-foreground/80 hover:text-foreground active:opacity-70"
 
     return (
         <div className={cn(barClass, "relative cq-footer")}>
@@ -88,7 +88,7 @@ export function StatusFooter() {
             {activeDownloads.length > 0 && (
                 <div className="absolute top-0 left-0 right-0 h-[2px] bg-border/10 overflow-hidden">
                     <div
-                        className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all duration-300 ease-out"
+                        className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all ease-out"
                         style={{ width: `${globalProgress}%` }}
                     />
                 </div>
@@ -155,7 +155,7 @@ export function StatusFooter() {
                     {/* Queue - Smart Tooltip & Status */}
                     <Tooltip side="top">
                         <TooltipTrigger asChild>
-                            <div className={`flex items-center gap-2 cursor-help transition-all duration-300 ${tasks.some(t => t.status === 'downloading' || t.status === 'pending') ? 'opacity-100' : 'opacity-40 hover:opacity-80'}`}>
+                            <div className={`flex items-center gap-2 cursor-help ${tasks.some(t => t.status === 'downloading' || t.status === 'pending') ? 'opacity-100' : 'opacity-40 hover:opacity-80'}`}>
                                 <Layers className={`w-3.5 h-3.5 ${tasks.some(t => t.status === 'downloading') ? 'text-indigo-400' : 'text-muted-foreground'}`} />
                                 <span>
                                     {(() => {
@@ -212,14 +212,14 @@ export function StatusFooter() {
                     <Tooltip side="top">
                         <TooltipTrigger asChild>
                             <button
-                                onClick={() => navigateToSettings('advanced')}
+                                onClick={() => navigateToSettings('system')}
                                 className={`${statusItemClass} hover:opacity-100 opacity-80`}
                             >
                                 <GpuIndicator gpuType={gpuType as "nvidia" | "amd" | "intel" | "apple" | "cpu"} hardwareDecoding={settings.hardwareDecoding} />
                             </button>
                         </TooltipTrigger>
                         <TooltipContent className="bg-background/80 backdrop-blur-xl border-white/10">
-                            <p className="text-xs font-medium">{settings.hardwareDecoding ? `${t('statusbar.hw_accel')} (Click to configure)` : "Software Decoding (Click to enable GPU)"}</p>
+                            <p className="text-xs font-medium">{settings.hardwareDecoding ? `${t('statusbar.hw_accel')} (Click to configure)` : "Software Decoding"}</p>
                         </TooltipContent>
                     </Tooltip>
 

@@ -34,7 +34,7 @@ export function ConfirmationModal({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 supports-[backdrop-filter]:bg-black/60 supports-[backdrop-filter]:backdrop-blur-sm"
                 onClick={onClose}
             >
                 <motion.div

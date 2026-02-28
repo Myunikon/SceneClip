@@ -58,7 +58,7 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
     }))
 
     // Styles
-    const backdropClass = 'absolute inset-0 bg-black/60 backdrop-blur-sm'
+    const backdropClass = 'absolute inset-0 bg-black/80 supports-[backdrop-filter]:bg-black/60 supports-[backdrop-filter]:backdrop-blur-sm'
 
     // Dialog class logic
     const hasMeta = !!meta
@@ -80,7 +80,7 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
 
 
 
-    const formClass = 'flex flex-col flex-1 overflow-hidden bg-background/40 backdrop-blur-md'
+    const formClass = 'flex flex-col flex-1 overflow-hidden bg-background/80 supports-[backdrop-filter]:bg-background/40 supports-[backdrop-filter]:backdrop-blur-md'
 
     const formattedSize = formatFileSize(estimatedSize || 0)
 
@@ -118,7 +118,7 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
                         <form onSubmit={handleSubmit} className={formClass}>
 
                             {/* --- HEADER (Apple Sheet Style) --- */}
-                            <div className="relative flex items-center justify-center px-4 py-3 border-b border-border/40 bg-background/80 backdrop-blur-md shrink-0 z-20 h-[50px]">
+                            <div className="relative flex items-center justify-center px-4 py-3 border-b border-border/40 bg-background/95 supports-[backdrop-filter]:bg-background/80 supports-[backdrop-filter]:backdrop-blur-md shrink-0 z-20 h-[50px]">
                                 <div className="font-semibold text-[15px] text-foreground">
                                     {meta ? t('dialog.customize_download') : t('dialog.new_download')}
                                 </div>
@@ -141,7 +141,7 @@ export const AddDialog = forwardRef<AddDialogHandle, AddDialogProps>((props, ref
                                 </AddDialogProvider>
                             </div>
 
-                            <div className="flex justify-between items-center p-4 border-t border-border/40 bg-background/80 backdrop-blur-md shrink-0 gap-4 z-20">
+                            <div className="flex justify-between items-center p-4 border-t border-border/40 bg-background/95 supports-[backdrop-filter]:bg-background/80 supports-[backdrop-filter]:backdrop-blur-md shrink-0 gap-4 z-20">
                                 <div className="flex-1 min-w-0">
                                     {(estimatedSize || (meta?.formats)) && hasMeta && (
                                         <div className="flex flex-col animate-in fade-in slide-in-from-bottom-2">

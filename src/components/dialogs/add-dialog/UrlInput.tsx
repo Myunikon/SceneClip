@@ -99,7 +99,7 @@ export function UrlInput({ url, onChange, onPaste, t, batchMode = false, onBatch
                                         variant="secondary"
                                         size="sm"
                                         onClick={handleBatchImport}
-                                        className="absolute right-3 bottom-3 h-7 px-2 text-xs font-medium bg-background/80 backdrop-blur-sm border border-border/50 shadow-sm hover:text-primary gap-1.5"
+                                        className="absolute right-3 bottom-3 h-7 px-2 text-xs font-medium bg-background supports-[backdrop-filter]:bg-background/80 supports-[backdrop-filter]:backdrop-blur-sm border border-border/50 shadow-sm hover:text-primary gap-1.5"
                                     >
                                         <FolderOpen className="w-3.5 h-3.5" />
                                         <span>{t('dialog.batch_import_btn') || 'Import'}</span>

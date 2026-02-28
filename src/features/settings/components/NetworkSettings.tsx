@@ -147,7 +147,7 @@ export function NetworkSettings({ settings, setSetting }: NetworkSettingsProps) 
                             </div>
                             <div className="grid gap-1.5">
                                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                    {t('settings.advanced.visitor_data_label') || "Visitor Data"}
+                                    {t('settings.advanced.content_enhancements.visitor_data_label') || "Visitor Data"}
                                 </label>
                                 <input
                                     type="text"

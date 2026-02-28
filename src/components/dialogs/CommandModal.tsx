@@ -124,7 +124,7 @@ export function CommandModal({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={onClose}
-                    className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                    className="absolute inset-0 bg-black/80 supports-[backdrop-filter]:bg-black/60 supports-[backdrop-filter]:backdrop-blur-sm"
                 />
                 <motion.div
                     initial={{ scale: 0.95, opacity: 0, y: 10 }}

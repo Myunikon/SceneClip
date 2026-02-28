@@ -52,6 +52,8 @@ pub struct YtDlpOptions {
     // JS Runtime override
     pub js_runtime_path: Option<String>,
     pub disable_js_runtime: Option<bool>,
+    // Schedule
+    pub scheduled_time: Option<u64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]

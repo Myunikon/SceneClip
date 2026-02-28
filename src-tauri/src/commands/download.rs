@@ -439,13 +439,15 @@ async fn perform_download_attempt(
     let sender_stderr = sender.clone();
     let stderr_is_clipping = is_clipping;
     let stderr_clip_duration = clip_duration_secs;
+    let stderr_is_audio = is_audio_mode;
+    let stderr_is_gif = is_gif;
 
     // Spawn stderr handler (Parse FFmpeg progress for realtime trim updates)
     let stderr_handle = tokio::spawn(async move {
         let reader = AsyncBufReader::new(stderr);
         let mut lines = reader.lines();
         let mut error_buffer: VecDeque<String> = VecDeque::new();
-        let mut last_percent: f64 = 80.0;
+        let mut last_percent: f64 = 0.0;
 
         while let Ok(Some(line)) = lines.next_line().await {
             // Parse FFmpeg time= for realtime trim progress
@@ -455,9 +457,18 @@ async fn perform_download_attempt(
                         let time_str = time_match.as_str();
                         let current_secs = parse_time_to_seconds(Some(time_str));
 
-                        // Calculate progress: 80% (download done) + up to 19% (trim progress)
+                        // FFmpeg downloader does download+trim in one pass
+                        // Map time= to 0-99% of total clip duration
                         let trim_progress = (current_secs / stderr_clip_duration).min(1.0);
-                        let percent = 80.0 + (trim_progress * 19.0);
+                        let percent = (trim_progress * 99.0).min(99.0);
+
+                        let status_text = if stderr_is_gif {
+                            "Creating GIF..."
+                        } else if stderr_is_audio {
+                            "Processing audio..."
+                        } else {
+                            "Downloading & Trimming..."
+                        };
 
                         // Throttle: only send if changed by at least 1%
                         if (percent - last_percent).abs() > 1.0 {
@@ -481,7 +492,7 @@ async fn perform_download_attempt(
                                     "Finishing...".to_string()
                                 },
                                 total_size: "N/A".to_string(),
-                                status: "Trimming video...".to_string(),
+                                status: status_text.to_string(),
                                 speed_raw: None,
                                 eta_raw: Some(remaining_secs),
                             });

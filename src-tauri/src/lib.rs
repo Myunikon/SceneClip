@@ -112,6 +112,7 @@ pub fn run() {
 
             let tray_builder = TrayIconBuilder::with_id("tray")
                 .menu(&menu)
+                .tooltip("SceneClip")
                 .show_menu_on_left_click(true)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "quit" => {

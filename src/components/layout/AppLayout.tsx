@@ -104,7 +104,7 @@ export function AppLayout({ children, isOffline }: AppLayoutProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 supports-[backdrop-filter]:bg-black/60 supports-[backdrop-filter]:backdrop-blur-sm p-4"
             onClick={() => setShowExitDialog(false)} // Close on click outside
           >
             <motion.div

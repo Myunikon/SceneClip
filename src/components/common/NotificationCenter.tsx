@@ -84,7 +84,7 @@ export function NotificationCenter() {
 
             {/* Popover */}
             {isOpen && (
-                <div className="absolute bottom-full right-0 mb-2 w-80 max-h-[400px] bg-background/60 backdrop-blur-2xl border border-border/50 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] overflow-hidden animate-in slide-in-from-bottom-2 duration-300 z-50">
+                <div className="absolute bottom-full right-0 mb-2 w-80 max-h-[400px] bg-background/95 supports-[backdrop-filter]:bg-background/60 supports-[backdrop-filter]:backdrop-blur-2xl border border-border/50 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] overflow-hidden animate-in slide-in-from-bottom-2 duration-300 z-50">
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-white/5">
                         <h3 className="font-medium text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2">

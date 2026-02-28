@@ -130,12 +130,14 @@ export function VideoPreview({ loading, meta, error, t, url }: VideoPreviewProps
                             disabled={loading || error || !meta}
                         >
                             {loading ? (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-black/20 backdrop-blur-sm animate-pulse">
-                                    <div className="w-full h-full absolute inset-0 bg-secondary/40"></div>
-                                    <div className="relative z-20 flex flex-col items-center gap-3">
-                                        <div className="w-16 h-16 rounded-full bg-white/10 shadow-lg mb-2"></div>
-                                        <div className="h-4 w-48 bg-white/10 rounded-full"></div>
-                                        <div className="h-3 w-32 bg-white/5 rounded-full"></div>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-black/60 supports-[backdrop-filter]:bg-black/20 supports-[backdrop-filter]:backdrop-blur-sm">
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center animate-pulse">
+                                        <div className="w-full h-full absolute inset-0 bg-secondary/40"></div>
+                                        <div className="relative z-20 flex flex-col items-center gap-3">
+                                            <div className="w-16 h-16 rounded-full bg-white/10 shadow-lg mb-2"></div>
+                                            <div className="h-4 w-48 bg-white/10 rounded-full"></div>
+                                            <div className="h-3 w-32 bg-white/5 rounded-full"></div>
+                                        </div>
                                     </div>
                                 </div>
                             ) : meta ? (
@@ -154,8 +156,8 @@ export function VideoPreview({ loading, meta, error, t, url }: VideoPreviewProps
 
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-90 transition-opacity duration-300 pointer-events-none z-20"></div>
 
-                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-500 scale-90 group-hover:scale-100 z-30">
-                                                <div className="bg-white/10 backdrop-blur-md p-3 rounded-full text-white shadow-2xl border border-white/20">
+                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 scale-90 group-hover:scale-100 z-30">
+                                                <div className="bg-black/40 p-3 rounded-full text-white shadow-2xl border border-white/20">
                                                     <ZoomIn className="w-6 h-6 drop-shadow-md" />
                                                 </div>
                                             </div>
@@ -168,7 +170,7 @@ export function VideoPreview({ loading, meta, error, t, url }: VideoPreviewProps
                                         </div>
                                     ) : (
                                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-secondary/80 to-muted/80 dark:from-secondary/20 dark:to-muted/10 p-6 text-center animate-in fade-in duration-300">
-                                            <div className="p-5 bg-background/50 dark:bg-white/5 rounded-full mb-4 backdrop-blur-sm shadow-sm ring-1 ring-white/10">
+                                            <div className="p-5 bg-background dark:bg-white/10 supports-[backdrop-filter]:bg-background/50 supports-[backdrop-filter]:dark:bg-white/5 rounded-full mb-4 supports-[backdrop-filter]:backdrop-blur-sm shadow-sm ring-1 ring-white/10">
                                                 <ImageOff className="w-10 h-10 text-muted-foreground/50" />
                                             </div>
                                             <span className="text-sm font-medium text-muted-foreground/70 max-w-[200px] line-clamp-2 leading-relaxed">
@@ -198,7 +200,7 @@ export function VideoPreview({ loading, meta, error, t, url }: VideoPreviewProps
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 md:p-8"
+                            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 supports-[backdrop-filter]:bg-black/90 supports-[backdrop-filter]:backdrop-blur-xl p-4 md:p-8"
                             onClick={() => setIsPreviewOpen(false)}
                             id="video-preview-modal"
                         >
@@ -220,7 +222,7 @@ export function VideoPreview({ loading, meta, error, t, url }: VideoPreviewProps
 
                                     <button
                                         onClick={() => setIsPreviewOpen(false)}
-                                        className="absolute top-4 right-4 p-2.5 bg-black/50 hover:bg-red-500/80 rounded-full text-white/70 hover:text-white transition-all backdrop-blur-md border border-white/10 shadow-lg"
+                                        className="absolute top-4 right-4 p-2.5 bg-black/80 supports-[backdrop-filter]:bg-black/50 hover:bg-red-500 hover:supports-[backdrop-filter]:bg-red-500/80 rounded-full text-white/70 hover:text-white transition-all supports-[backdrop-filter]:backdrop-blur-md border border-white/10 shadow-lg"
                                         title="Close Preview (Esc)"
                                     >
                                         <X className="w-5 h-5" />

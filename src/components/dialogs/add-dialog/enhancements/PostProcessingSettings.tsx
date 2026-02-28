@@ -22,16 +22,13 @@ export const PostProcessingSettings: React.FC<PostProcessingSettingsProps> = ({
     postProcessorArgs,
     setPostProcessorArgs,
     presets,
-    currentFormat
+    currentFormat: _currentFormat
 }) => {
-    // Filter Presets
-    const filteredPresets = presets.filter((p) => {
-        if (currentFormat === 'audio') return p.type === 'audio' || p.type === 'general'
-        return p.type === 'video' || p.type === 'general'
-    })
+    // Show ALL presets (no format-based filtering) to keep in sync with Settings
+    const allPresets = presets;
 
     // Determine Logic
-    const currentPreset = filteredPresets.find(p => p.args === postProcessorArgs);
+    const currentPreset = allPresets.find(p => p.args === postProcessorArgs);
     const isCustom = !!postProcessorArgs && !currentPreset;
     const dropDownValue = currentPreset?.args || (isCustom ? '-custom-' : '');
 
@@ -68,8 +65,8 @@ export const PostProcessingSettings: React.FC<PostProcessingSettingsProps> = ({
         onChange(isChecked);
         if (isChecked && !postProcessorArgs) {
             // Apply first preset safely if available
-            if (filteredPresets.length > 0) {
-                setPostProcessorArgs(filteredPresets[0].args);
+            if (allPresets.length > 0) {
+                setPostProcessorArgs(allPresets[0].args);
             }
         }
     }
@@ -90,13 +87,10 @@ export const PostProcessingSettings: React.FC<PostProcessingSettingsProps> = ({
                     <PopUpButton
                         value={dropDownValue}
                         onChange={handleDropdownChange}
-                        options={[
-                            { value: '-custom-', label: t('dialog.custom_preset') },
-                            ...filteredPresets.map((preset) => ({
-                                value: preset.args,
-                                label: preset.name
-                            }))
-                        ]}
+                        options={allPresets.map((preset) => ({
+                            value: preset.args,
+                            label: `${preset.name} [${preset.type.toUpperCase()}]`
+                        }))}
                         className="w-full"
                     />
 

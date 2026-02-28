@@ -38,14 +38,14 @@ export function Onboarding() {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 supports-[backdrop-filter]:bg-black/20 supports-[backdrop-filter]:backdrop-blur-sm p-4">
       {/*  */}
       <motion.div
         initial={{ y: 20, opacity: 0, scale: 0.98 }}
         animate={{ y: 0, opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
-        className="w-full max-w-[420px] bg-background/95 border border-black/5 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden flex flex-col items-center text-center pb-8 pt-10"
+        className="w-full max-w-[420px] bg-background border border-black/5 dark:border-white/10 supports-[backdrop-filter]:bg-background/95 supports-[backdrop-filter]:backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden flex flex-col items-center text-center pb-8 pt-10"
       >
 
         {/* Minimal Header (No big icon, just Title) */}

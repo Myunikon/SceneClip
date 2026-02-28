@@ -48,7 +48,9 @@ pub async fn add_to_queue(
         range: None,
         format: options.format.clone(),
         file_path: None,
-        scheduled_time: None,
+        // Frontend sends scheduledTime in milliseconds (JS Date.getTime()),
+        // but queue processor compares against seconds (.as_secs()), so convert ms -> s
+        scheduled_time: options.scheduled_time.map(|ms| ms / 1000),
         retry_count: Some(0),
         ytdlp_command: None,
         file_size: None,

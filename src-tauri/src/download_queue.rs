@@ -836,6 +836,40 @@ fn emit_queue_update(app: &AppHandle, state: &QueueState) {
     let tasks_guard = state.tasks.lock().unwrap_or_else(|e| e.into_inner());
     let order_guard = state.queue_order.lock().unwrap_or_else(|e| e.into_inner());
 
+    // --- Tray Tooltip Progress ---
+    if let Some(tray) = app.tray_by_id("tray") {
+        let active_tasks: Vec<&DownloadTask> = tasks_guard
+            .values()
+            .filter(|t| {
+                matches!(
+                    t.status,
+                    TaskStatus::Downloading
+                        | TaskStatus::Processing
+                        | TaskStatus::Queued
+                        | TaskStatus::FetchingInfo
+                )
+            })
+            .collect();
+
+        let tooltip = if active_tasks.is_empty() {
+            "SceneClip".to_string()
+        } else if active_tasks.len() == 1 {
+            let task = active_tasks[0];
+            format!("{} - ({:.0}%)", task.title, task.progress)
+        } else {
+            let avg_progress =
+                active_tasks.iter().map(|t| t.progress).sum::<f64>() / active_tasks.len() as f64;
+            let first_title = &active_tasks[0].title;
+            format!(
+                "{} +{} - ({:.0}%)",
+                first_title,
+                active_tasks.len() - 1,
+                avg_progress
+            )
+        };
+        let _ = tray.set_tooltip(Some(&tooltip));
+    }
+
     // 1. Power Lock Check (Internal Logic)
     let prevent_setting = *state
         .cached_prevent_suspend

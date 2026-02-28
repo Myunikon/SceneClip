@@ -117,7 +117,8 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
 
     // Auto-Save helper
     const setSetting = useCallback(<K extends keyof AppSettings>(key: K, val: AppSettings[K]) => {
-        updateSettings({ [key]: val })
+        // Defer to avoid setState-during-render cascade with AppGuard
+        queueMicrotask(() => updateSettings({ [key]: val }))
     }, [updateSettings])
 
     const [activeTab, setActiveTab] = useState<TabId>(initialTab || 'general')
@@ -191,7 +192,7 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setShowEasterEgg(false)}
-                            className="absolute inset-0 bg-black/80 backdrop-blur-md"
+                            className="absolute inset-0 bg-black/95 supports-[backdrop-filter]:bg-black/80 supports-[backdrop-filter]:backdrop-blur-md"
                         />
                         <motion.div
                             key="modal"
@@ -226,7 +227,7 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
             </AnimatePresence>
 
             {/* FLUID ADAPTIVE SIDEBAR: Space-aware resizing */}
-            <div className="flex flex-col flex-shrink-0 flex-grow-0 sidebar-container cq-sidebar bg-secondary/10 border-r border-border/40 backdrop-blur-xl pt-6 px-3">
+            <div className="flex flex-col flex-shrink-0 flex-grow-0 sidebar-container cq-sidebar bg-secondary border-r border-border/40 supports-[backdrop-filter]:bg-secondary/10 supports-[backdrop-filter]:backdrop-blur-xl pt-6 px-3">
                 <div className="px-3 mb-6 sidebar-title">
                     <h2 className="text-xl font-bold tracking-tight text-foreground/80 truncate">{t('settings.title') || "Settings"}</h2>
                 </div>

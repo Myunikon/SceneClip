@@ -283,33 +283,35 @@ async function setupTarget(key, config) {
         }
 
         // 3. Setup Aria2c
-        const aria2Name = `aria2c-${config.triple}${config.ext}`;
-        const aria2Path = path.join(BIN_DIR, aria2Name);
+        if (config.aria2Url) {
+            const aria2Name = `aria2c-${config.triple}${config.ext}`;
+            const aria2Path = path.join(BIN_DIR, aria2Name);
 
-        if (!fs.existsSync(aria2Path)) {
-            let archiveName = 'aria2_archive';
-            if (config.aria2Url.endsWith('.zip')) archiveName += '.zip';
-            else if (config.aria2Url.endsWith('.tar.bz2')) archiveName += '.tar.bz2';
+            if (!fs.existsSync(aria2Path)) {
+                let archiveName = 'aria2_archive';
+                if (config.aria2Url.endsWith('.zip')) archiveName += '.zip';
+                else if (config.aria2Url.endsWith('.tar.bz2')) archiveName += '.tar.bz2';
 
-            const archivePath = path.join(tempDir, archiveName);
-            console.log(`[DOWNLOAD] aria2c from ${config.aria2Url}...`);
-            await downloadFile(config.aria2Url, archivePath);
-            await extractArchive(archivePath, tempDir);
+                const archivePath = path.join(tempDir, archiveName);
+                console.log(`[DOWNLOAD] aria2c from ${config.aria2Url}...`);
+                await downloadFile(config.aria2Url, archivePath);
+                await extractArchive(archivePath, tempDir);
 
-            // 3. Setup Aria2c
+                const targetBinaryName = config.platform === 'win32' ? 'aria2c.exe' : 'aria2c';
+                const foundBinary = findFile(tempDir, targetBinaryName);
 
-            const targetBinaryName = config.platform === 'win32' ? 'aria2c.exe' : 'aria2c';
-            const foundBinary = findFile(tempDir, targetBinaryName);
-
-            if (foundBinary) {
-                fs.copyFileSync(foundBinary, aria2Path);
-                fs.chmodSync(aria2Path, 0o755);
-                console.log(`[OK] Saved ${aria2Name}`);
+                if (foundBinary) {
+                    fs.copyFileSync(foundBinary, aria2Path);
+                    fs.chmodSync(aria2Path, 0o755);
+                    console.log(`[OK] Saved ${aria2Name}`);
+                } else {
+                    console.error(`[ERROR] Could not find ${targetBinaryName} in extracted archive for ${key}`);
+                }
             } else {
-                console.error(`[ERROR] Could not find ${targetBinaryName} in extracted archive for ${key}`);
+                console.log(`[SKIP] ${aria2Name} exists`);
             }
         } else {
-            console.log(`[SKIP] ${aria2Name} exists`);
+            console.log('[INFO] Skipping aria2c (No binary URL for this target). aria2c is optional.');
         }
 
         // 4. Setup rsgain (ReplayGain)

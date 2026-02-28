@@ -152,6 +152,45 @@ jobs:
               fi
             fi
 
+      # 3. Create stubs for any missing sidecars (Tauri requires ALL externalBin to exist at build time)
+      - name: Create stubs for missing sidecars
+        shell: bash
+        run: |
+            # Determine the target triple(s) for this build
+            TRIPLES=()
+            if [ "${{ matrix.platform }}" == "windows-latest" ]; then
+              if [ "${{ matrix.args }}" == "--target aarch64-pc-windows-msvc" ]; then
+                TRIPLES=("aarch64-pc-windows-msvc")
+                EXT=".exe"
+              elif [ "${{ matrix.args }}" == "--target i686-pc-windows-msvc" ]; then
+                TRIPLES=("i686-pc-windows-msvc")
+                EXT=".exe"
+              else
+                TRIPLES=("x86_64-pc-windows-msvc")
+                EXT=".exe"
+              fi
+            elif [ "${{ matrix.platform }}" == "macos-latest" ]; then
+              TRIPLES=("aarch64-apple-darwin" "x86_64-apple-darwin")
+              EXT=""
+            else
+              TRIPLES=("x86_64-unknown-linux-gnu")
+              EXT=""
+            fi
+
+            BINS=("yt-dlp" "ffmpeg" "ffprobe" "aria2c" "rsgain" "deno")
+
+            for triple in "${TRIPLES[@]}"; do
+              for bin in "${BINS[@]}"; do
+                FILE="src-tauri/bin/${bin}-${triple}${EXT}"
+                if [ ! -f "$FILE" ]; then
+                  echo "[STUB] Creating placeholder: $FILE"
+                  touch "$FILE"
+                  chmod +x "$FILE" 2>/dev/null || true
+                fi
+              done
+            done
+            echo "All sidecars verified/stubbed."
+
       # --- Build App ---
       - name: Build the app
         env:

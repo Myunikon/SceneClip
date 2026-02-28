@@ -16,9 +16,10 @@ jobs:
         include:
           # --- Windows (Native MSYS2) ---
           - os: windows-latest
-            # Tauri sidecar name (Using -gnu for MinGW build consistency)
-            target_filename: ffmpeg-x86_64-pc-windows-gnu.exe 
-            # Use MSYS2 shell
+            platform_name: win-x64
+            # Tauri sidecar name (must match MSVC triple used in release.yml)
+            target_filename: ffmpeg-x86_64-pc-windows-msvc.exe 
+            # Use MSYS2 shell for building
             shell_type: "msys2 {0}"
             install_cmd: >-
               pacman -S --noconfirm --needed 
@@ -165,7 +166,7 @@ jobs:
         run: ls -R binaries/
 
       - name: Update 'binaries-ffmpeg' Tag Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: binaries-ffmpeg
           name: "Custom Minimal Binaries"

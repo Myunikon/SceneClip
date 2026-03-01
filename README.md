@@ -155,6 +155,8 @@ SceneClip/
 │   │   └── ytdlp.rs    # Core yt-dlp wrapper logic
 │   └── tauri.conf.json # Configuration
 │
+├── CONTRIBUTING.md     # Guidelines for contributing to the project
+├── SECURITY.md         # Vulnerability reporting and security policies
 └── README.md
 ```
 
@@ -272,7 +274,8 @@ Contributions are welcome! Here's how you can help:
 2.  **Suggest Features**: Open a feature request issue with a detailed description of the use case.
 3.  **Submit Pull Requests**: Fork the repo, create a branch, make your changes, and submit a PR.
 
-Please ensure your code follows the existing style and includes appropriate tests where applicable.
+For detailed instructions, please read our **[Contributing Guidelines](CONTRIBUTING.md)**.
+If you discover a security vulnerability, please refer to our **[Security Policy](SECURITY.md)** instead of opening a public issue.
 
 ---
 

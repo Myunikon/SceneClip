@@ -285,7 +285,8 @@ jobs:
           mkdir -p "$portable_dir"
           
           # Copy binary and sidecars
-          cp "src-tauri/target/release/SceneClip" "$portable_dir/"
+          # Note: On Linux, Tauri outputs the binary with a lowercase name matching the Cargo package name
+          cp "src-tauri/target/release/sceneclip" "$portable_dir/SceneClip"
           cp src-tauri/bin/*-x86_64-unknown-linux-gnu "$portable_dir/" || true
           
           tar -czf "SceneClip_${version}_linux_x64_portable.tar.gz" "$portable_dir"

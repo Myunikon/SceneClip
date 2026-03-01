@@ -191,6 +191,11 @@ jobs:
             done
             echo "All sidecars verified/stubbed."
 
+      # --- Create Required Directories ---
+      - name: Create Required Directories
+        shell: bash
+        run: mkdir -p src-tauri/resources/plugins
+
       # --- Build App ---
       - name: Build the app
         env:

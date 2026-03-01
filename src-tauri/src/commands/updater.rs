@@ -686,7 +686,7 @@ pub async fn install_app_update(app: AppHandle) -> Result<(), String> {
 
     // 2. Identify Current State
     let current_exe = std::env::current_exe().map_err(|e| e.to_string())?;
-    let parent_dir = current_exe.parent().ok_or("No parent dir")?;
+    let _parent_dir = current_exe.parent().ok_or("No parent dir")?;
 
     // Detect architecture
     let arch = std::env::consts::ARCH; // "x86_64", "aarch64", etc.
@@ -696,7 +696,7 @@ pub async fn install_app_update(app: AppHandle) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     let asset = {
         // Check if installed (Inno Setup indicator)
-        let is_installed = parent_dir.join("unins000.exe").exists()
+        let is_installed = _parent_dir.join("unins000.exe").exists()
             || current_exe
                 .to_string_lossy()
                 .to_lowercase()
@@ -809,7 +809,7 @@ pub async fn install_app_update(app: AppHandle) -> Result<(), String> {
     // --- WINDOWS ---
     #[cfg(target_os = "windows")]
     {
-        let is_installed = parent_dir.join("unins000.exe").exists()
+        let is_installed = _parent_dir.join("unins000.exe").exists()
             || current_exe
                 .to_string_lossy()
                 .to_lowercase()
@@ -882,7 +882,7 @@ pub async fn install_app_update(app: AppHandle) -> Result<(), String> {
         }
 
         // Find the mount point (typically /Volumes/SceneClip or similar)
-        let mount_info = std::process::Command::new("hdiutil")
+        let _mount_info = std::process::Command::new("hdiutil")
             .args(["info", "-plist"])
             .output()
             .map_err(|e| format!("Failed to get mount info: {}", e))?;

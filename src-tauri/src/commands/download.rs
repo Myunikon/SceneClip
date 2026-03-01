@@ -251,6 +251,7 @@ async fn perform_download_attempt(
     });
 
     // 6. Spawn Process (Async)
+    #[allow(unused_mut)]
     let mut std_command = std::process::Command::new(&ytdlp_path);
 
     // Hide window on Windows

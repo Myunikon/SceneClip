@@ -152,8 +152,8 @@ jobs:
               fi
             fi
 
-      # 3. Create stubs for any missing sidecars (Tauri requires ALL externalBin to exist at build time)
-      - name: Create stubs for missing sidecars
+      # 3. Create stubs or copy binaries for macOS Universal Build
+      - name: Create stubs and macOS Universal binaries
         shell: bash
         run: |
             # Determine the target triple(s) for this build
@@ -170,7 +170,7 @@ jobs:
                 EXT=".exe"
               fi
             elif [ "${{ matrix.platform }}" == "macos-latest" ]; then
-              TRIPLES=("aarch64-apple-darwin" "x86_64-apple-darwin")
+              TRIPLES=("aarch64-apple-darwin" "x86_64-apple-darwin" "universal-apple-darwin")
               EXT=""
             else
               TRIPLES=("x86_64-unknown-linux-gnu")
@@ -183,9 +183,28 @@ jobs:
               for bin in "${BINS[@]}"; do
                 FILE="src-tauri/bin/${bin}-${triple}${EXT}"
                 if [ ! -f "$FILE" ]; then
-                  echo "[STUB] Creating placeholder: $FILE"
-                  touch "$FILE"
-                  chmod +x "$FILE" 2>/dev/null || true
+                  # macOS Universal needs actual binaries, not just a stub, 
+                  # otherwise runtime execution on macOS will fail.
+                  if [ "$triple" == "universal-apple-darwin" ]; then
+                    FILE_X64="src-tauri/bin/${bin}-x86_64-apple-darwin"
+                    FILE_ARM="src-tauri/bin/${bin}-aarch64-apple-darwin"
+                    if [ -f "$FILE_X64" ] && [ -f "$FILE_ARM" ]; then
+                      # Try to lipo, if it fails (e.g. bash scripts like yt-dlp macOS release usually are), just copy x64
+                      lipo -create -output "$FILE" "$FILE_X64" "$FILE_ARM" 2>/dev/null || cp "$FILE_X64" "$FILE"
+                    elif [ -f "$FILE_X64" ]; then
+                      cp "$FILE_X64" "$FILE"
+                    elif [ -f "$FILE_ARM" ]; then
+                      cp "$FILE_ARM" "$FILE"
+                    else
+                      echo "[STUB] Creating placeholder: $FILE"
+                      touch "$FILE"
+                      chmod +x "$FILE" 2>/dev/null || true
+                    fi
+                  else
+                    echo "[STUB] Creating placeholder: $FILE"
+                    touch "$FILE"
+                    chmod +x "$FILE" 2>/dev/null || true
+                  fi
                 fi
               done
             done

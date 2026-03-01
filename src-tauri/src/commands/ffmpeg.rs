@@ -153,6 +153,7 @@ pub async fn compress_media(
     args.push(output_path.clone());
 
     // --- Execute ---
+    #[allow(unused_mut)]
     let mut std_command = std::process::Command::new(&ffmpeg_path);
 
     #[cfg(windows)]
@@ -357,6 +358,7 @@ pub async fn split_media_chapters(
         args.push("0".to_string());
         args.push(output_path.to_string_lossy().to_string());
 
+        #[allow(unused_mut)]
         let mut std_command = std::process::Command::new(&ffmpeg_path);
 
         #[cfg(target_os = "windows")]

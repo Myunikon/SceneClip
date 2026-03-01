@@ -89,7 +89,9 @@ pub async fn check_gpu_support(app_handle: AppHandle) -> Result<GpuInfo, String>
     }
 
     // 2. Get Actual GPU Model Name (OS Level)
+    #[allow(unused_assignments)]
     let mut model_name = "Unknown Model".to_string();
+    #[allow(unused_assignments)]
     let mut detected_os_vendor = "none";
 
     #[cfg(target_os = "windows")]
@@ -202,6 +204,7 @@ pub async fn check_gpu_support(app_handle: AppHandle) -> Result<GpuInfo, String>
     ));
 
     // 3. Get CPU Info (Added to fix frontend popup issue)
+    #[allow(unused_mut)]
     let mut cpu_info_str = String::new();
     #[cfg(target_os = "windows")]
     {

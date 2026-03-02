@@ -28,25 +28,25 @@ jobs:
         run: mkdir -p src-tauri/bin
 
       - name: Download All Binaries (Windows x64)
-        run: node scripts/setup-binaries.js --target win-x64
+        run: npm run setup-binaries -- --target win-x64
 
       - name: Download All Binaries (Windows ARM64)
-        run: node scripts/setup-binaries.js --target win-arm64
+        run: npm run setup-binaries -- --target win-arm64
 
       - name: Download All Binaries (Windows x86)
-        run: node scripts/setup-binaries.js --target win-x86
+        run: npm run setup-binaries -- --target win-x86
 
       - name: Download All Binaries (macOS x64)
-        run: node scripts/setup-binaries.js --target mac-x64
+        run: npm run setup-binaries -- --target mac-x64
 
       - name: Download All Binaries (macOS arm64)
-        run: node scripts/setup-binaries.js --target mac-arm64
+        run: npm run setup-binaries -- --target mac-arm64
 
       - name: Download All Binaries (Linux x64)
-        run: node scripts/setup-binaries.js --target linux-x64
+        run: npm run setup-binaries -- --target linux-x64
 
       - name: Download All Binaries (Linux ARM64)
-        run: node scripts/setup-binaries.js --target linux-arm64
+        run: npm run setup-binaries -- --target linux-arm64
 
       - name: List Gathered Binaries
         run: |

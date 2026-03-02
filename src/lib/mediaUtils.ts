@@ -1,5 +1,4 @@
 import { invoke } from '@tauri-apps/api/core'
-import { parseTime } from './utils'
 import { VideoMeta } from '../types'
 
 export interface LanguageOption {
@@ -79,63 +78,17 @@ export interface SizeEstimationOptions {
 }
 
 /**
- * Note: estimateDownloadSize logic is complex and relies on specific format selection.
- * For now, we keep it in TS but it is a candidate for the next migration phase.
+ * Note: estimateDownloadSize has been migrated to the Rust backend for performance and type-safety.
  */
-export const estimateDownloadSize = (meta: any, options: Partial<SizeEstimationOptions>): number => {
-    if (!meta) return 0
-    const filesize = meta.filesize || meta.filesizeApprox || 0
-    if (!filesize && !meta.formats) return 0
-
-    const total = meta.duration || 1
-    let ratio = 1
-
-    if (options.isClipping) {
-        const s = parseTime(options.rangeStart || '')
-        const e = options.rangeEnd ? parseTime(options.rangeEnd) : total
-        const duration = Math.max(0, Math.min(e, total) - Math.max(0, s))
-        ratio = duration / total
+export const estimateDownloadSize = async (meta: any, options: Partial<SizeEstimationOptions>): Promise<number> => {
+    try {
+        return await invoke<number>('estimate_download_size', {
+            meta,
+            options
+        })
+    } catch (e) {
+        console.error("[Rust] Failed to estimate download size:", e)
+        return 0
     }
-
-    let baseSize = 0
-    if (meta.formats) {
-        const audioFormats = meta.formats.filter((f: any) => f.acodec !== 'none' && f.vcodec === 'none')
-        const bestAudio = audioFormats.sort((a: any, b: any) => (b.filesize || b.filesize_approx || 0) - (a.filesize || a.filesize_approx || 0))[0]
-        const audioSize = bestAudio?.filesize || bestAudio?.filesize_approx || 0
-
-        if (options.format === 'audio') {
-            const targetBitrate = parseInt(options.audioBitrate || '128')
-            if (audioFormats.length > 0) {
-                const targetAudio = audioFormats.reduce((prev: any, curr: any) =>
-                    (Math.abs((curr.abr || 0) - targetBitrate) < Math.abs((prev.abr || 0) - targetBitrate) ? curr : prev)
-                )
-                baseSize = targetAudio?.filesize || targetAudio?.filesize_approx || audioSize
-            } else {
-                baseSize = audioSize
-            }
-        } else if (options.format === 'gif') {
-            const h = options.gifScale || meta.height || 480
-            const fps = options.gifFps || 15
-            const baseFactor = (h / 480) * (fps / 15) * 0.5 * 1024 * 1024
-            baseSize = baseFactor * total
-        } else if (options.format === 'Best') {
-            const videoFormats = meta.formats.filter((f: any) => f.vcodec !== 'none')
-            const bestVideo = videoFormats.sort((a: any, b: any) => (b.filesize || b.filesize_approx || 0) - (a.filesize || a.filesize_approx || 0))[0]
-            baseSize = (bestVideo?.filesize || bestVideo?.filesize_approx || 0) + audioSize
-        } else {
-            const targetHeight = parseInt(options.format || '0')
-            const videoFormats = meta.formats.filter((f: any) => f.height === targetHeight && f.vcodec !== 'none')
-            if (videoFormats.length > 0) {
-                const bestVideo = videoFormats.sort((a: any, b: any) => (b.filesize || b.filesize_approx || 0) - (a.filesize || a.filesize_approx || 0))[0]
-                baseSize = (bestVideo?.filesize || bestVideo?.filesize_approx || 0) + audioSize
-            } else {
-                baseSize = filesize
-            }
-        }
-    } else {
-        baseSize = filesize
-    }
-
-    return baseSize * ratio
 }
 

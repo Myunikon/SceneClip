@@ -319,6 +319,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref_name }}
+          draft: true
           files: |
             src-tauri/target/**/bundle/nsis/*.exe
             src-tauri/target/**/bundle/msi/*.msi
@@ -327,3 +328,18 @@ jobs:
             src-tauri/target/**/bundle/rpm/*.rpm
             src-tauri/target/**/bundle/appimage/*.AppImage
             ${{ env.PORTABLE_ZIP }}
+
+  # ---------------------------------------------------------
+  # JOB 3: PUBLISH RELEASE (After all builds complete)
+  # ---------------------------------------------------------
+  publish-release:
+    needs: [create-release, release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          draft: false

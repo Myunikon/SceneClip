@@ -13,7 +13,7 @@
     "benchmark": "node scripts/benchmark.js",
     "test": "vitest",
     "lint": "eslint .",
-    "setup-binaries": "node scripts/setup-binaries.js"
+    "setup-binaries": "cd src-tauri && cargo run --bin setup_binaries --"
   },
   "dependencies": {
     "@floating-ui/react": "^0.27.17",

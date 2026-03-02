@@ -13,6 +13,55 @@ pub enum MediaType {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DownloadEstimationOptions {
+    pub is_clipping: bool,
+    pub range_start: Option<String>,
+    pub range_end: Option<String>,
+    pub format: Option<String>,
+    pub audio_bitrate: Option<String>,
+    pub gif_scale: Option<u32>,
+    pub gif_fps: Option<u32>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct YtdlpFormat {
+    pub acodec: Option<String>,
+    pub vcodec: Option<String>,
+    pub filesize: Option<f64>,
+    pub filesize_approx: Option<f64>,
+    pub abr: Option<f64>,
+    pub height: Option<u32>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct YtdlpMeta {
+    pub filesize: Option<f64>,
+    pub filesize_approx: Option<f64>,
+    pub duration: Option<f64>,
+    pub formats: Option<Vec<YtdlpFormat>>,
+    pub height: Option<u32>,
+}
+
+fn parse_time(time_str: &str) -> f64 {
+    let parts: Vec<&str> = time_str.split(':').collect();
+    let mut seconds = 0.0;
+
+    if parts.len() == 3 {
+        seconds += parts[0].parse::<f64>().unwrap_or(0.0) * 3600.0;
+        seconds += parts[1].parse::<f64>().unwrap_or(0.0) * 60.0;
+        seconds += parts[2].parse::<f64>().unwrap_or(0.0);
+    } else if parts.len() == 2 {
+        seconds += parts[0].parse::<f64>().unwrap_or(0.0) * 60.0;
+        seconds += parts[1].parse::<f64>().unwrap_or(0.0);
+    } else if parts.len() == 1 {
+        seconds += parts[0].parse::<f64>().unwrap_or(0.0);
+    }
+
+    seconds
+}
+
+#[derive(Debug, Deserialize)]
 pub struct EstimationParams {
     pub file_path: Option<String>,
     pub original_size_str: Option<String>,
@@ -190,4 +239,154 @@ pub async fn estimate_export_size(
     } else {
         estimated as u64
     })
+}
+
+#[tauri::command]
+pub async fn estimate_download_size(
+    meta: Option<YtdlpMeta>,
+    options: DownloadEstimationOptions,
+) -> Result<u64, String> {
+    log::info!("Estimating download size...");
+
+    let meta = match meta {
+        Some(m) => m,
+        None => return Ok(0),
+    };
+
+    let filesize = meta.filesize.or(meta.filesize_approx).unwrap_or(0.0);
+    if filesize == 0.0 && meta.formats.is_none() {
+        return Ok(0);
+    }
+
+    let total = meta.duration.unwrap_or(1.0).max(1.0);
+    let mut ratio = 1.0;
+
+    if options.is_clipping {
+        let s = parse_time(options.range_start.as_deref().unwrap_or(""));
+        let e = if let Some(end_str) = &options.range_end {
+            parse_time(end_str)
+        } else {
+            total
+        };
+
+        // Math.max(0, Math.min(e, total) - Math.max(0, s))
+        let min_e_total = e.min(total);
+        let max_0_s = s.max(0.0);
+        let duration = (min_e_total - max_0_s).max(0.0);
+
+        ratio = duration / total;
+    }
+
+    let base_size;
+
+    if let Some(formats) = meta.formats {
+        // filter: f.acodec !== 'none' && f.vcodec === 'none'
+        let mut audio_formats: Vec<_> = formats
+            .iter()
+            .filter(|f| f.acodec.as_deref() != Some("none") && f.vcodec.as_deref() == Some("none"))
+            .collect();
+
+        // sort: (b.filesize || b.filesize_approx || 0) - (a.filesize || a.filesize_approx || 0)
+        audio_formats.sort_by(|a, b| {
+            let b_size = b.filesize.or(b.filesize_approx).unwrap_or(0.0);
+            let a_size = a.filesize.or(a.filesize_approx).unwrap_or(0.0);
+            b_size
+                .partial_cmp(&a_size)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        let best_audio = audio_formats.first();
+        let audio_size = best_audio
+            .and_then(|f| f.filesize.or(f.filesize_approx))
+            .unwrap_or(0.0);
+
+        let format_pref = options.format.as_deref().unwrap_or("");
+
+        if format_pref == "audio" {
+            let target_bitrate: f64 = options
+                .audio_bitrate
+                .as_deref()
+                .unwrap_or("128")
+                .parse()
+                .unwrap_or(128.0);
+            if !audio_formats.is_empty() {
+                let target_audio = audio_formats.into_iter().reduce(|prev, curr| {
+                    let curr_diff = (curr.abr.unwrap_or(0.0) - target_bitrate).abs();
+                    let prev_diff = (prev.abr.unwrap_or(0.0) - target_bitrate).abs();
+                    if curr_diff < prev_diff {
+                        curr
+                    } else {
+                        prev
+                    }
+                });
+                base_size = target_audio
+                    .and_then(|f| f.filesize.or(f.filesize_approx))
+                    .unwrap_or(audio_size);
+            } else {
+                base_size = audio_size;
+            }
+        } else if format_pref == "gif" {
+            let h = options
+                .gif_scale
+                .unwrap_or_else(|| meta.height.unwrap_or(480)) as f64;
+            let fps = options.gif_fps.unwrap_or(15) as f64;
+            let base_factor = (h / 480.0) * (fps / 15.0) * 0.5 * 1024.0 * 1024.0;
+            base_size = base_factor * total;
+        } else if format_pref == "Best" {
+            let mut video_formats: Vec<_> = formats
+                .iter()
+                .filter(|f| f.vcodec.as_deref() != Some("none"))
+                .collect();
+
+            video_formats.sort_by(|a, b| {
+                let b_size = b.filesize.or(b.filesize_approx).unwrap_or(0.0);
+                let a_size = a.filesize.or(a.filesize_approx).unwrap_or(0.0);
+                b_size
+                    .partial_cmp(&a_size)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            });
+
+            let best_video = video_formats.first();
+            let video_size = best_video
+                .and_then(|f| f.filesize.or(f.filesize_approx))
+                .unwrap_or(0.0);
+
+            base_size = video_size + audio_size;
+        } else {
+            let target_height: u32 = format_pref.parse().unwrap_or(0);
+            let mut video_formats: Vec<_> = formats
+                .iter()
+                .filter(|f| f.height == Some(target_height) && f.vcodec.as_deref() != Some("none"))
+                .collect();
+
+            if !video_formats.is_empty() {
+                video_formats.sort_by(|a, b| {
+                    let b_size = b.filesize.or(b.filesize_approx).unwrap_or(0.0);
+                    let a_size = a.filesize.or(a.filesize_approx).unwrap_or(0.0);
+                    b_size
+                        .partial_cmp(&a_size)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                });
+
+                let best_video = video_formats.first();
+                let video_size = best_video
+                    .and_then(|f| f.filesize.or(f.filesize_approx))
+                    .unwrap_or(0.0);
+
+                base_size = video_size + audio_size;
+            } else {
+                base_size = filesize;
+            }
+        }
+    } else {
+        base_size = filesize;
+    }
+
+    let final_size = base_size * ratio;
+
+    if final_size > u64::MAX as f64 {
+        Ok(u64::MAX)
+    } else {
+        Ok(final_size as u64)
+    }
 }

@@ -38,6 +38,7 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
 
     const [isOpen, setIsOpen] = useState(false)
     const [url, setUrl] = useState('')
+    const [estimatedSize, setEstimatedSize] = useState(0)
 
     // Refs to avoid stale closures in async callbacks
     const urlRef = useRef(url)
@@ -117,8 +118,27 @@ export function useAddDialog({ addTask, initialUrl, initialCookies, initialUserA
     const availableContainers = meta?.containers || []
     const availableLanguages = getAvailableLanguages(meta)
 
-    // Estimated Size Calculation
-    const estimatedSize = estimateDownloadSize(meta, options)
+    // Estimated Size Calculation (Async via Rust)
+    useEffect(() => {
+        let isMounted = true;
+        const fetchEstimation = async () => {
+            if (!meta) {
+                if (isMounted) setEstimatedSize(0)
+                return;
+            }
+            const size = await estimateDownloadSize(meta, options)
+            if (isMounted) {
+                setEstimatedSize(size)
+            }
+        }
+
+        // Add a small debounce if needed, though Rust is fast
+        const timeout = setTimeout(fetchEstimation, 150)
+        return () => {
+            isMounted = false
+            clearTimeout(timeout)
+        }
+    }, [meta, options])
 
     // Moved formatFileSize to lib/utils/formatBytes
 

@@ -264,38 +264,112 @@ pub fn set_window_effects(app_handle: AppHandle, enable: bool) -> Result<(), Str
     }
     Ok(())
 }
+
+#[derive(serde::Serialize)]
+pub struct ValidationResult {
+    pub is_valid: bool,
+    pub version: Option<String>,
+    pub error: Option<String>,
+}
+
+#[derive(serde::Serialize)]
+pub struct ValidationReport {
+    pub ffmpeg: ValidationResult,
+    pub ytdlp: ValidationResult,
+}
+
 #[command]
-pub async fn validate_binary(path: String, flag: String) -> Result<String, String> {
-    let mut cmd = tokio::process::Command::new(&path);
+pub async fn validate_all_sidecars(app_handle: AppHandle) -> Result<ValidationReport, String> {
+    log::info!("[System] Validating sidecars...");
+    use tauri_plugin_shell::ShellExt;
 
-    #[cfg(target_os = "windows")]
-    {
-        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
-    }
+    // Validate FFmpeg
+    let mut ffmpeg_res = ValidationResult {
+        is_valid: false,
+        version: None,
+        error: None,
+    };
 
-    cmd.arg(&flag);
+    match app_handle.shell().sidecar("bin/ffmpeg") {
+        Ok(sidecar) => {
+            let cmd = sidecar.arg("-version");
 
-    match cmd.output().await {
-        Ok(output) => {
-            if output.status.success() {
-                let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-                if stdout.trim().is_empty() {
-                    // Fallback to stderr for some binaries that output version info there
-                    Ok(String::from_utf8_lossy(&output.stderr).to_string())
-                } else {
-                    Ok(stdout)
+            match cmd.output().await {
+                Ok(output) if output.status.success() => {
+                    let stdout = String::from_utf8_lossy(&output.stdout);
+                    let first_line = stdout.lines().next().unwrap_or("").to_string();
+                    let lower_stdout = stdout.to_lowercase();
+
+                    if lower_stdout.contains("gyan.dev")
+                        && (lower_stdout.contains("--enable-libxml2")
+                            || lower_stdout.contains("full"))
+                    {
+                        ffmpeg_res.error = Some("Non-Essentials FFmpeg detected. Please use FFmpeg Essentials to save space.".to_string());
+                        ffmpeg_res.version = Some(first_line);
+                    } else if lower_stdout.contains("ffmpeg") {
+                        ffmpeg_res.is_valid = true;
+                        ffmpeg_res.version = Some(first_line);
+                    } else {
+                        ffmpeg_res.error =
+                            Some("Unexpected output or identity mismatch".to_string());
+                    }
                 }
-            } else {
-                let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-                if stderr.trim().is_empty() {
-                    Err(format!("Exit code: {}", output.status.code().unwrap_or(-1)))
-                } else {
-                    Err(stderr)
+                Ok(output) => {
+                    ffmpeg_res.error = Some(String::from_utf8_lossy(&output.stderr).to_string());
+                }
+                Err(e) => {
+                    ffmpeg_res.error = Some(e.to_string());
                 }
             }
         }
-        Err(e) => Err(format!("Execution failed: {}", e)),
+        Err(e) => {
+            ffmpeg_res.error = Some(format!("Failed to retrieve ffmpeg sidecar: {}", e));
+        }
     }
+
+    // Validate yt-dlp
+    let mut ytdlp_res = ValidationResult {
+        is_valid: false,
+        version: None,
+        error: None,
+    };
+
+    match app_handle.shell().sidecar("bin/yt-dlp") {
+        Ok(sidecar) => {
+            let cmd = sidecar.arg("--version");
+
+            match cmd.output().await {
+                Ok(output) if output.status.success() => {
+                    let stdout = String::from_utf8_lossy(&output.stdout);
+                    let version = stdout.trim().to_string();
+
+                    // Rust equivalent of /^\d{4}\.\d{2}\.\d{2}/
+                    let re = regex::Regex::new(r"^\d{4}\.\d{2}\.\d{2}").unwrap();
+                    if re.is_match(&version) {
+                        ytdlp_res.is_valid = true;
+                        ytdlp_res.version = Some(version);
+                    } else {
+                        ytdlp_res.error =
+                            Some("yt-dlp output format mismatch or invalid".to_string());
+                    }
+                }
+                Ok(output) => {
+                    ytdlp_res.error = Some(String::from_utf8_lossy(&output.stderr).to_string());
+                }
+                Err(e) => {
+                    ytdlp_res.error = Some(e.to_string());
+                }
+            }
+        }
+        Err(e) => {
+            ytdlp_res.error = Some(format!("Failed to retrieve yt-dlp sidecar: {}", e));
+        }
+    }
+
+    Ok(ValidationReport {
+        ffmpeg: ffmpeg_res,
+        ytdlp: ytdlp_res,
+    })
 }
 #[command]
 pub async fn open_log_dir(app_handle: AppHandle) -> Result<(), String> {

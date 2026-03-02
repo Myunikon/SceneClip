@@ -62,7 +62,7 @@ pub fn run() {
             commands::system::force_exit,
             commands::system::check_gpu_support,
             commands::system::set_window_effects,
-            commands::system::validate_binary,
+            commands::system::validate_all_sidecars,
             commands::system::open_log_dir,
             commands::process::suspend_process,
             commands::process::resume_process,
@@ -103,6 +103,7 @@ pub fn run() {
             commands::notifications::notify_background,
             commands::metadata::parse_video_metadata,
             commands::analysis::estimate_export_size,
+            commands::analysis::estimate_download_size,
             commands::io::parse_batch_file,
         ])
         .setup(|app| {

@@ -371,6 +371,167 @@ pub async fn validate_all_sidecars(app_handle: AppHandle) -> Result<ValidationRe
         ytdlp: ytdlp_res,
     })
 }
+
+#[command]
+pub async fn validate_single_binary(
+    path: String,
+    binary_type: String,
+) -> Result<ValidationResult, String> {
+    log::info!(
+        "[System] Validating single binary: {} (type: {})",
+        path,
+        binary_type
+    );
+
+    let (args, check_fn): (&[&str], Box<dyn Fn(&str) -> ValidationResult + Send>) =
+        match binary_type.as_str() {
+            "ytdlp" => (
+                &["--version"],
+                Box::new(|stdout: &str| {
+                    let version = stdout.trim().to_string();
+                    let re = regex::Regex::new(r"^\d{4}\.\d{2}\.\d{2}").unwrap();
+                    if re.is_match(&version) {
+                        ValidationResult {
+                            is_valid: true,
+                            version: Some(version),
+                            error: None,
+                        }
+                    } else {
+                        ValidationResult {
+                            is_valid: false,
+                            version: None,
+                            error: Some("Version format mismatch".to_string()),
+                        }
+                    }
+                }),
+            ),
+            "ffmpeg" => (
+                &["-version"] as &[&str],
+                Box::new(|stdout: &str| {
+                    let first_line = stdout.lines().next().unwrap_or("").to_string();
+                    if stdout.to_lowercase().contains("ffmpeg") {
+                        ValidationResult {
+                            is_valid: true,
+                            version: Some(first_line),
+                            error: None,
+                        }
+                    } else {
+                        ValidationResult {
+                            is_valid: false,
+                            version: None,
+                            error: Some("Identity mismatch".to_string()),
+                        }
+                    }
+                }) as Box<dyn Fn(&str) -> ValidationResult + Send>,
+            ),
+            "ffprobe" => (
+                &["-version"],
+                Box::new(|stdout: &str| {
+                    let first_line = stdout.lines().next().unwrap_or("").to_string();
+                    if stdout.to_lowercase().contains("ffprobe") {
+                        ValidationResult {
+                            is_valid: true,
+                            version: Some(first_line),
+                            error: None,
+                        }
+                    } else {
+                        ValidationResult {
+                            is_valid: false,
+                            version: None,
+                            error: Some("Identity mismatch".to_string()),
+                        }
+                    }
+                }),
+            ),
+            "node" => (
+                &["--version"],
+                Box::new(|stdout: &str| {
+                    let version = stdout.trim().to_string();
+                    if version.starts_with('v') {
+                        ValidationResult {
+                            is_valid: true,
+                            version: Some(version),
+                            error: None,
+                        }
+                    } else {
+                        ValidationResult {
+                            is_valid: false,
+                            version: None,
+                            error: Some("Not a valid Node.js binary".to_string()),
+                        }
+                    }
+                }),
+            ),
+            "deno" => (
+                &["--version"],
+                Box::new(|stdout: &str| {
+                    let version = stdout.trim().to_string();
+                    if stdout.to_lowercase().contains("deno") {
+                        ValidationResult {
+                            is_valid: true,
+                            version: Some(version.lines().next().unwrap_or("").to_string()),
+                            error: None,
+                        }
+                    } else {
+                        ValidationResult {
+                            is_valid: false,
+                            version: None,
+                            error: Some("Not a valid Deno binary".to_string()),
+                        }
+                    }
+                }),
+            ),
+            "bun" => (
+                &["--version"],
+                Box::new(|stdout: &str| {
+                    let version = stdout.trim().to_string();
+                    if !version.is_empty() {
+                        ValidationResult {
+                            is_valid: true,
+                            version: Some(version),
+                            error: None,
+                        }
+                    } else {
+                        ValidationResult {
+                            is_valid: false,
+                            version: None,
+                            error: Some("Not a valid Bun binary".to_string()),
+                        }
+                    }
+                }),
+            ),
+            _ => return Err(format!("Unknown binary type: {}", binary_type)),
+        };
+
+    let mut cmd = tokio::process::Command::new(&path);
+    cmd.args(args);
+    #[cfg(target_os = "windows")]
+    {
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    }
+
+    match cmd.output().await {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            if output.status.success() {
+                Ok(check_fn(&stdout))
+            } else {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                Ok(ValidationResult {
+                    is_valid: false,
+                    version: None,
+                    error: Some(format!("Process exited with error: {}", stderr.trim())),
+                })
+            }
+        }
+        Err(e) => Ok(ValidationResult {
+            is_valid: false,
+            version: None,
+            error: Some(format!("Failed to execute: {}", e)),
+        }),
+    }
+}
+
 #[command]
 pub async fn open_log_dir(app_handle: AppHandle) -> Result<(), String> {
     log::info!("[System] Opening log directory");

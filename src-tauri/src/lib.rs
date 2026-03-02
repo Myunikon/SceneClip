@@ -63,6 +63,7 @@ pub fn run() {
             commands::system::check_gpu_support,
             commands::system::set_window_effects,
             commands::system::validate_all_sidecars,
+            commands::system::validate_single_binary,
             commands::system::open_log_dir,
             commands::process::suspend_process,
             commands::process::resume_process,

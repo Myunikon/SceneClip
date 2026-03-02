@@ -10,6 +10,38 @@ export interface ValidationResult {
     error?: string;
 }
 
+/**
+ * Infers binary type from a file path based on the filename.
+ * Returns null if the type cannot be determined.
+ */
+export function detectBinaryType(path: string): BinaryType | null {
+    const name = path.replace(/\\/g, '/').split('/').pop()?.toLowerCase() ?? '';
+    const base = name.replace(/\.exe$/i, '');
+
+    if (base.includes('yt-dlp') || base.includes('ytdlp') || base === 'yt-dlp_x86') return 'ytdlp';
+    if (base === 'ffprobe') return 'ffprobe';
+    if (base.includes('ffmpeg')) return 'ffmpeg';
+    if (base.includes('node')) return 'node';
+    if (base.includes('deno')) return 'deno';
+    if (base.includes('bun')) return 'bun';
+    return null;
+}
+
+/**
+ * Validates a single binary at the given path by invoking it and checking its output.
+ */
+export async function validateBinary(path: string, type: BinaryType): Promise<ValidationResult> {
+    try {
+        const result = await invoke<ValidationResult>('validate_single_binary', { path, binaryType: type });
+        return result;
+    } catch (e) {
+        return {
+            isValid: false,
+            error: e instanceof Error ? e.message : String(e),
+        };
+    }
+}
+
 export interface ValidationReport {
     ffmpeg: ValidationResult;
     ytdlp: ValidationResult;

@@ -678,6 +678,9 @@ export const id = {
     trim_video: "Potong Video",
     trim_audio: "Potong Audio",
     trim_desc: "Potong bagian spesifik video",
+    from: "Dari",
+    to: "Sampai",
+    clip_duration: "Durasi",
     metadata_required: "Metadata diperlukan untuk slider",
     time_error: "Waktu mulai harus sebelum waktu selesai",
 

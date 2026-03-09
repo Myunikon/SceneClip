@@ -560,6 +560,9 @@ export const en = {
             bitrate_quality: "Bitrate Quality"
         },
 
+        from: "From",
+        to: "To",
+        clip_duration: "Duration",
         metadata_required: "Metadata required for slider",
         time_error: "Start time must be before End time",
 

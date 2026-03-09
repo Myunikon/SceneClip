@@ -533,6 +533,9 @@ export const ms = {
         trim_video: "Potong Video",
         trim_audio: "Potong Audio",
         trim_desc: "Potong bahagian spesifik video",
+        from: "Dari",
+        to: "Hingga",
+        clip_duration: "Tempoh",
         metadata_required: "Metadata diperlukan untuk peluncur",
         time_error: "Masa mula mesti sebelum masa tamat",
 

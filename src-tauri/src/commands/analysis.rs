@@ -319,19 +319,49 @@ pub async fn estimate_download_size(
                         prev
                     }
                 });
-                base_size = target_audio
+                let from_meta = target_audio
                     .and_then(|f| f.filesize.or(f.filesize_approx))
-                    .unwrap_or(audio_size);
+                    .unwrap_or(0.0);
+                if from_meta > 0.0 {
+                    base_size = from_meta;
+                } else {
+                    // Fallback: estimate from bitrate * duration
+                    // bitrate in kbps, duration in seconds -> bytes
+                    base_size = (target_bitrate * 1000.0 / 8.0) * total;
+                }
             } else {
-                base_size = audio_size;
+                // No audio formats in metadata at all - estimate from bitrate
+                if audio_size > 0.0 {
+                    base_size = audio_size;
+                } else {
+                    let target_bitrate: f64 = options
+                        .audio_bitrate
+                        .as_deref()
+                        .unwrap_or("128")
+                        .parse()
+                        .unwrap_or(128.0);
+                    base_size = (target_bitrate * 1000.0 / 8.0) * total;
+                }
             }
         } else if format_pref == "gif" {
             let h = options
                 .gif_scale
                 .unwrap_or_else(|| meta.height.unwrap_or(480)) as f64;
             let fps = options.gif_fps.unwrap_or(15) as f64;
+            // Use clip duration for GIF if clipping is active
+            let gif_duration = if options.is_clipping {
+                let s = parse_time(options.range_start.as_deref().unwrap_or(""));
+                let e = if let Some(end_str) = &options.range_end {
+                    parse_time(end_str)
+                } else {
+                    total
+                };
+                (e.min(total) - s.max(0.0)).max(1.0)
+            } else {
+                total
+            };
             let base_factor = (h / 480.0) * (fps / 15.0) * 0.5 * 1024.0 * 1024.0;
-            base_size = base_factor * total;
+            base_size = base_factor * gif_duration;
         } else if format_pref == "Best" {
             let mut video_formats: Vec<_> = formats
                 .iter()
@@ -353,7 +383,9 @@ pub async fn estimate_download_size(
 
             base_size = video_size + audio_size;
         } else {
-            let target_height: u32 = format_pref.parse().unwrap_or(0);
+            // FIX: Strip 'p'/'P' suffix from resolution strings like "1080p" -> "1080"
+            let height_str: String = format_pref.chars().filter(|c| c.is_numeric()).collect();
+            let target_height: u32 = height_str.parse().unwrap_or(0);
             let mut video_formats: Vec<_> = formats
                 .iter()
                 .filter(|f| f.height == Some(target_height) && f.vcodec.as_deref() != Some("none"))
@@ -373,9 +405,68 @@ pub async fn estimate_download_size(
                     .and_then(|f| f.filesize.or(f.filesize_approx))
                     .unwrap_or(0.0);
 
-                base_size = video_size + audio_size;
+                // If the chosen format has a valid filesize, use it
+                if video_size > 0.0 {
+                    base_size = video_size + audio_size;
+                } else {
+                    // Fallback: estimate based on best video scaled by resolution ratio
+                    let all_video: Vec<_> = formats
+                        .iter()
+                        .filter(|f| f.vcodec.as_deref() != Some("none"))
+                        .collect();
+                    let best_known = all_video
+                        .iter()
+                        .filter_map(|f| {
+                            let sz = f.filesize.or(f.filesize_approx).unwrap_or(0.0);
+                            let h = f.height.unwrap_or(0) as f64;
+                            if sz > 0.0 && h > 0.0 {
+                                Some((sz, h))
+                            } else {
+                                None
+                            }
+                        })
+                        .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
+
+                    if let Some((known_size, known_h)) = best_known {
+                        // Scale by pixels² ratio (quadratic scaling)
+                        let scale = (target_height as f64 / known_h).powi(2).min(1.5);
+                        base_size = known_size * scale + audio_size;
+                    } else {
+                        // Absolute fallback to top-level filesize
+                        base_size = if filesize > 0.0 {
+                            filesize
+                        } else {
+                            filesize + audio_size
+                        };
+                    }
+                }
             } else {
-                base_size = filesize;
+                // No exact height match - try nearest resolution
+                let all_video: Vec<_> = formats
+                    .iter()
+                    .filter(|f| f.vcodec.as_deref() != Some("none") && f.height.is_some())
+                    .collect();
+
+                if !all_video.is_empty() && target_height > 0 {
+                    // Find nearest resolution
+                    let nearest = all_video.iter().min_by_key(|f| {
+                        (f.height.unwrap_or(0) as i64 - target_height as i64).unsigned_abs()
+                    });
+                    if let Some(near) = nearest {
+                        let near_size = near.filesize.or(near.filesize_approx).unwrap_or(0.0);
+                        let near_h = near.height.unwrap_or(1) as f64;
+                        if near_size > 0.0 {
+                            let scale = (target_height as f64 / near_h).powi(2).min(1.5);
+                            base_size = near_size * scale + audio_size;
+                        } else {
+                            base_size = filesize;
+                        }
+                    } else {
+                        base_size = filesize;
+                    }
+                } else {
+                    base_size = filesize;
+                }
             }
         }
     } else {

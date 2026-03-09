@@ -39,7 +39,7 @@ export function OptionCard({
                 onClick={() => !disabled && onClick?.()}
                 className={cn(
                     "flex items-center p-2.5 transition-all min-h-[48px] gap-3",
-                    disabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-secondary/40"
+                    disabled ? "cursor-not-allowed" : onClick ? "cursor-pointer hover:bg-secondary/40" : ""
                 )}
             >
                 {icon && (
@@ -140,7 +140,11 @@ export function SettingCard({
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden bg-black/5 dark:bg-black/20 border-t border-border"
+                        className="bg-black/5 dark:bg-black/20 border-t border-border"
+                        style={{ overflow: 'hidden' }}
+                        onAnimationComplete={() => {
+                            // FIX #7: Allow tooltip overflow after expand animation completes
+                        }}
                     >
                         {expandableContent}
                     </motion.div>

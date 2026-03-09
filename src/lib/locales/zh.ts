@@ -542,6 +542,9 @@ export const zh = {
         trim_video: "裁剪视频",
         trim_audio: "裁剪音频",
         trim_desc: "裁剪视频的特定部分",
+        from: "开始",
+        to: "结束",
+        clip_duration: "时长",
         metadata_required: "滑块需要元数据",
         time_error: "开始时间必须在结束时间之前",
 

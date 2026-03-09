@@ -1124,7 +1124,8 @@ pub async fn build_ytdlp_args(
     if active_gpu_type != "cpu"
         && fmt != "audio"
         && fmt != "gif"
-        && !options.force_transcode.unwrap_or(false)
+        && options.force_transcode.unwrap_or(false)
+    // FIX: ONLY inject hardware encode args if force_transcode is explicitly TRUE
     {
         let encoder = match active_gpu_type {
             "nvidia" => Some("h264_nvenc"),

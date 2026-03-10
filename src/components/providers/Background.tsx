@@ -1,21 +1,21 @@
 
 
 export function Background() {
-  // Animated decorative blobs
+  // Static decorative gradients — no animation for GPU performance
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-      {/* Light Mode Blobs (Pastel & Subtle) */}
+      {/* Light Mode Blobs (Static) */}
       <div className="block dark:hidden" style={{ contentVisibility: 'auto', contain: 'paint' }}>
-        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-orange-200/40 blur-[40px] animate-blob"></div>
-        <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-red-100/50 blur-[40px] animate-blob animation-delay-2000"></div>
-        <div className="absolute bottom-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-purple-200/30 blur-[40px] animate-blob animation-delay-4000"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-orange-200/40 blur-[40px]"></div>
+        <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-red-100/50 blur-[40px]"></div>
+        <div className="absolute bottom-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-purple-200/30 blur-[40px]"></div>
       </div>
 
-      {/* Dark Mode Blobs (Vibrant) */}
+      {/* Dark Mode Blobs (Static) */}
       <div className="hidden dark:block" style={{ contentVisibility: 'auto', contain: 'paint' }}>
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-orange-600/20 blur-[30px] animate-blob"></div>
-        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-red-600/20 blur-[30px] animate-blob animation-delay-2000"></div>
-        <div className="absolute bottom-[-20%] left-[20%] w-[50%] h-[50%] rounded-full bg-purple-600/20 blur-[30px] animate-blob animation-delay-4000"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-orange-600/20 blur-[30px]"></div>
+        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-red-600/20 blur-[30px]"></div>
+        <div className="absolute bottom-[-20%] left-[20%] w-[50%] h-[50%] rounded-full bg-purple-600/20 blur-[30px]"></div>
       </div>
     </div>
   )

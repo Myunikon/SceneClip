@@ -107,7 +107,7 @@ export function Select({ value, onChange, options, placeholder, className, disab
             {isOpen && coords && createPortal(
                 <div
                     ref={listRef}
-                    className="fixed z-[9999] mt-1 overflow-hidden rounded-xl border border-border/50 bg-popover/95 backdrop-blur-xl shadow-xl animate-in fade-in zoom-in-95 duration-100"
+                    className="fixed z-[9999] mt-1 overflow-hidden rounded-xl border border-border/50 bg-popover/95 backdrop-blur-xl shadow-xl animate-in fade-in duration-150"
                     style={{
                         top: coords.top,
                         left: coords.left,

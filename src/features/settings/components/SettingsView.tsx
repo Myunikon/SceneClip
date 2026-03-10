@@ -73,14 +73,14 @@ function SidebarButton({ tab, isActive, onClick, buttonRef, onKeyDown }: Sidebar
                     aria-selected={isActive}
                     tabIndex={isActive ? 0 : -1}
                     className={cn(
-                        "relative flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-full text-left transition-all duration-200 group sidebar-button focus:outline-none focus:ring-1 focus:ring-primary/50",
+                        "relative flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-full text-left transition-colors duration-200 group sidebar-button focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary/40 focus-visible:outline-offset-1",
                         isActive
-                            ? "bg-primary/10 text-primary shadow-sm"
+                            ? "bg-primary/10 text-primary"
                             : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground"
                     )}
                 >
                     <tab.icon className={cn(
-                        "w-5 h-5 shrink-0 transition-transform group-hover:scale-110",
+                        "w-5 h-5 shrink-0",
                         isActive ? "opacity-100" : "opacity-70"
                     )} />
                     <span
@@ -192,35 +192,59 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setShowEasterEgg(false)}
-                            className="absolute inset-0 bg-black/95 supports-[backdrop-filter]:bg-black/80 supports-[backdrop-filter]:backdrop-blur-md"
+                            className="absolute inset-0 bg-black/90"
                         />
                         <motion.div
                             key="modal"
                             initial={{ scale: 0.5, rotate: -10, opacity: 0 }}
                             animate={{ scale: 1, rotate: 0, opacity: 1 }}
                             exit={{ scale: 0.5, rotate: 10, opacity: 0 }}
-                            className="bg-gradient-to-br from-orange-900 to-slate-900 border border-orange-500/30 p-8 rounded-3xl shadow-2xl relative z-10 text-center max-w-sm w-full mx-auto"
+                            transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
+                            className="relative z-10 w-full max-w-xs mx-auto"
                         >
-                            <motion.div
-                                animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
-                                transition={{ repeat: Infinity, duration: 2 }}
-                                className="text-6xl mb-4 select-none"
-                            >
-                                🐣
-                            </motion.div>
-                            <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-400 mb-2">
-                                {t('settings.about_page.secret_found')}
-                            </h3>
-                            <p className="text-muted-foreground mb-6">
-                                {t('settings.about_page.secret_desc')} <br />
-                                <span className="text-xs opacity-50">{t('settings.about_page.secret_sub')}</span>
-                            </p>
-                            <button
-                                onClick={() => setShowEasterEgg(false)}
-                                className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-full transition-all hover:scale-105 active:scale-95 shadow-lg shadow-orange-500/25 focus:outline-none focus:ring-2 focus:ring-white/50"
-                            >
-                                {t('settings.about_page.awesome') || "Awesome!"}
-                            </button>
+                            {/* Card with glassmorphism + inner glow */}
+                            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-orange-950/80 via-stone-900/90 to-slate-950/80 p-8 text-center shadow-[0_0_80px_-12px_rgba(249,115,22,0.3)]">
+                                {/* Radial glow behind card */}
+                                <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-40 h-40 rounded-full bg-orange-500/20 blur-3xl pointer-events-none" />
+                                <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-32 h-32 rounded-full bg-purple-500/15 blur-3xl pointer-events-none" />
+
+                                {/* Inner border glow ring */}
+                                <div className="absolute inset-[1px] rounded-[23px] border border-white/[0.06] pointer-events-none" />
+
+                                {/* Emoji with CSS bounce-in */}
+                                <div className="relative mb-5">
+                                    <div className="text-7xl select-none animate-in zoom-in-50 duration-500">
+                                        🐣
+                                    </div>
+                                    {/* Subtle glow under emoji */}
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                        <div className="w-16 h-16 rounded-full bg-orange-500/20 blur-xl" />
+                                    </div>
+                                </div>
+
+                                {/* Title with wider gradient */}
+                                <h3 className="text-2xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-400 to-rose-400">
+                                    {t('settings.about_page.secret_found')}
+                                </h3>
+
+                                {/* Description */}
+                                <p className="text-white/60 text-sm mb-1 leading-relaxed">
+                                    {t('settings.about_page.secret_desc')}
+                                </p>
+                                <p className="text-white/30 text-xs mb-7">
+                                    {t('settings.about_page.secret_sub')}
+                                </p>
+
+                                {/* Premium button with shine effect */}
+                                <button
+                                    onClick={() => setShowEasterEgg(false)}
+                                    className="group relative overflow-hidden bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-semibold py-2.5 px-8 rounded-full transition-all duration-300 hover:scale-[1.03] active:scale-95 shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:ring-offset-2 focus:ring-offset-transparent"
+                                >
+                                    {/* Shine sweep on hover */}
+                                    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                                    <span className="relative">{t('settings.about_page.awesome') || "Awesome!"}</span>
+                                </button>
+                            </div>
                         </motion.div>
                     </div>
                 )}
@@ -261,7 +285,7 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
                 >
                     <div className="max-w-4xl mx-auto w-full">
                         <div className="pt-8 pb-6 sm:pt-10 sm:pb-8">
-                            <h1 className="text-3xl sm:text-[clamp(1.875rem,5vw,2.25rem)] font-bold tracking-tight text-foreground animate-in fade-in slide-in-from-bottom-2 duration-500">
+                            <h1 className="text-3xl sm:text-[clamp(1.875rem,5vw,2.25rem)] font-bold tracking-tight text-foreground">
                                 {activeTabLabel}
                             </h1>
                         </div>
@@ -304,7 +328,7 @@ export function SettingsView({ initialTab }: SettingsViewProps) {
                             )}
 
 
-                            <div className={cn("h-[calc(100vh-200px)] min-h-[400px] animate-in fade-in slide-in-from-bottom-2", activeTab === 'logs' ? 'block' : 'hidden')}>
+                            <div className={cn("h-[calc(100vh-200px)] min-h-[400px]", activeTab === 'logs' ? 'block' : 'hidden')}>
                                 <TerminalView />
                             </div>
 

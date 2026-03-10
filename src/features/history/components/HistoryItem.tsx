@@ -60,7 +60,7 @@ export const HistoryItem = ({
     onRetry,
     onCompress,
     onViewCommand,
-    index,
+    index: _index,
     language,
     t,
     developerMode
@@ -74,11 +74,8 @@ export const HistoryItem = ({
 
     return (
         <div
-            style={{ animationDelay: `${index * 30}ms` }}
-            // Removed mx-2, my-1, rounded-xl to make it flat. Added hover:bg-secondary/50 for row effect.
-            // Removed border except transparent to keep size stable.
             className={cn(
-                "group relative flex items-center gap-4 px-6 py-3 transition-colors duration-200 hover:bg-secondary/30 animate-in fade-in slide-in-from-bottom-1 fill-mode-backwards cursor-default select-none",
+                "group relative flex items-center gap-4 px-6 py-3 transition-colors duration-200 hover:bg-secondary/30 cursor-default select-none",
                 // Removed bg-primary/5 for selection
                 isSelected && "",
                 isMissing && "opacity-70 grayscale-[0.5]"
@@ -220,7 +217,7 @@ export const HistoryItem = ({
 
             {/* 4. Selection Checkbox (MOVED TO RIGHT) */}
             {isSelectionMode && (
-                <div className="shrink-0 transition-opacity duration-200 animate-in fade-in ml-2">
+                <div className="shrink-0 ml-2">
                     <div className={cn(
                         "w-5 h-5 rounded-full border flex items-center justify-center transition-all cursor-pointer",
                         // Removed blue background. Used simple border/icon logic.

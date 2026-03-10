@@ -41,8 +41,8 @@
     --destructive-foreground: 0 0% 100%;
 
     /* Borders (Cool-gray tinted) */
-    --border: 220 13% 91%;
-    /* Cool gray: #E5E7EB */
+    --border: 220 13% 92%;
+    /* Lighter border for light mode — Apple-like subtlety */
     --input: 220 13% 87%;
     /* Slightly darker for affordance: #D1D5DB */
     --ring: 240 6% 10%;
@@ -103,10 +103,10 @@
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 20% 98%;
 
-    --border: 210 3% 20%;
-    /* Visible border definition */
-    --input: 210 3% 16%;
-    /* Slightly distinct form fields */
+    --border: 210 3% 18%;
+    /* Subtle border — rely on spacing/materials per Apple HIG */
+    --input: 210 3% 18%;
+    /* Match border for consistency */
     --ring: 210 3% 84%;
 
     /* === Shadow System (Deep black shadows) === */
@@ -118,7 +118,7 @@
 
     /* Dark Mode Glass Variables */
     --glass-opacity: 0.7;
-    --glass-border: 1px solid hsl(210 3% 25% / 0.3);
+    --glass-border: 1px solid hsl(210 3% 22% / 0.2);
     --glass-shadow: var(--shadow-lg);
   }
 }

@@ -1,5 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { motion } from 'framer-motion'
 import { KeyringManager } from '@/features/settings/components/KeyringManager'
 import { useAppStore } from '../store'
 import { AppSettings } from '../store/slices/types'
@@ -19,14 +18,7 @@ function KeyringPage() {
     }
 
     return (
-        <motion.div
-            key="keyring"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.02 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="w-full h-full bg-background/50 flex flex-col overflow-hidden"
-        >
+        <div className="w-full h-full bg-background/50 flex flex-col overflow-hidden animate-in fade-in zoom-in-[0.98] duration-200">
             {/* Header */}
             <div className="shrink-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/50 px-8 py-6">
                 <div className="max-w-4xl mx-auto">
@@ -47,6 +39,6 @@ function KeyringPage() {
                     />
                 </div>
             </div>
-        </motion.div>
+        </div>
     )
 }

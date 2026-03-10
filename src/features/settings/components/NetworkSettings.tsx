@@ -132,7 +132,7 @@ export function NetworkSettings({ settings, setSetting }: NetworkSettingsProps) 
                     </SettingItem>
 
                     {settings.usePoToken && (
-                        <div className="pl-6 space-y-3 pt-2 border-l-2 border-primary/20 ml-2 animate-in slide-in-from-left-2 duration-300">
+                        <div className="pl-6 space-y-3 pt-2 border-l-2 border-primary/20 ml-2">
                             <div className="grid gap-1.5">
                                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                     {t('settings.advanced.content_enhancements.po_token_label')}
@@ -183,7 +183,7 @@ export function NetworkSettings({ settings, setSetting }: NetworkSettingsProps) 
                     </SettingItem>
 
                     {settings.cookieSource === 'browser' && (
-                        <div className="animate-in fade-in slide-in-from-top-1">
+                        <div>
                             <SettingItem title={t('settings.advanced.browser_type') || "Browser"} layout="vertical">
                                 <Select
                                     value={settings.browserType || 'chrome'}
@@ -202,7 +202,7 @@ export function NetworkSettings({ settings, setSetting }: NetworkSettingsProps) 
                     )}
 
                     {settings.cookieSource === 'txt' && (
-                        <div className="animate-in fade-in zoom-in-95 duration-200">
+                        <div>
                             <SettingItem
                                 title={t('settings.advanced.cookie_path') || "Cookie File"}
                                 layout="vertical"

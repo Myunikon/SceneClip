@@ -123,7 +123,7 @@ export function MediaSettings({ settings, setSetting }: MediaSettingsProps) {
                 </SettingItem>
 
                 {settings.useSponsorBlock && (
-                    <div className="mt-4 animate-in fade-in slide-in-from-top-1">
+                    <div className="mt-4">
                         <p className="text-xs font-semibold uppercase text-muted-foreground mb-3">
                             {t('settings.quality.skip_segments')}
                         </p>
@@ -311,7 +311,7 @@ export function MediaSettings({ settings, setSetting }: MediaSettingsProps) {
 
                 {/* Add Preset Form */}
                 {isAddingPreset && (
-                    <div className="mt-4 rounded-xl border border-border/50 bg-card shadow-sm animate-in zoom-in-95 duration-200">
+                    <div className="mt-4 rounded-xl border border-border/50 bg-card shadow-sm">
                         <div className="p-3 border-b border-border/40 bg-muted/30 flex items-center justify-between rounded-t-xl">
                             <h4 className="text-sm font-semibold flex items-center gap-2">
                                 <Sliders className="w-4 h-4 text-primary" />

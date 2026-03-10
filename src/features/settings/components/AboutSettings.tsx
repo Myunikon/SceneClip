@@ -85,7 +85,7 @@ export function AboutSettings({ addLog, setShowEasterEgg }: AboutSettingsProps) 
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider ml-4">
                     {t('settings.about_page.core')}
                 </h3>
-                <div className="border rounded-xl overflow-hidden bg-card/50 divide-y divide-border/50 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-150 fill-mode-forwards">
+                <div className="border rounded-xl overflow-hidden bg-card/50 divide-y divide-border/50">
                     {techItems.map((item) => (
                         <div
                             key={item.id}

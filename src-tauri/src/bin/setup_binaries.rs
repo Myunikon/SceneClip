@@ -414,7 +414,7 @@ fn main() {
 
     if download_all {
         println!("Mode: Download ALL platforms (Windows, macOS, Linux)");
-        for key in &["win-x64", "win-x86", "mac-x64", "mac-arm64", "linux-x64"] {
+        for key in &["win-x64", "win-arm64", "win-x86", "mac-x64", "mac-arm64", "linux-x64", "linux-arm64"] {
             if let Some(config) = TargetConfig::get(key) {
                 setup_target(key, &config, bin_dir);
             }

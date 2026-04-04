@@ -6,10 +6,12 @@ use tauri::{
     Emitter, Manager,
 };
 
+mod binary_resolver;
 mod commands;
 mod download_queue;
 mod server;
-mod ytdlp; // Added
+pub mod store_helpers;
+mod ytdlp;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

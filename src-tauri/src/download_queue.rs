@@ -143,14 +143,14 @@ impl QueueState {
         let mut enable_notifications = true;
         let mut post_action = "none".to_string();
 
-        if let Ok(store) = app.store("settings.json") {
-            if let Some(val) = store.get("preventSuspendDuringDownload") {
+        if let Some(settings_val) = crate::store_helpers::get_settings_value(app) {
+            if let Some(val) = settings_val.get("preventSuspendDuringDownload") {
                 prevent_suspend = val.as_bool().unwrap_or(true);
             }
-            if let Some(val) = store.get("enableDesktopNotifications") {
+            if let Some(val) = settings_val.get("enableDesktopNotifications") {
                 enable_notifications = val.as_bool().unwrap_or(true);
             }
-            if let Some(val) = store.get("postDownloadAction") {
+            if let Some(val) = settings_val.get("postDownloadAction") {
                 if let Some(s) = val.as_str() {
                     post_action = s.to_string();
                 }
@@ -476,35 +476,20 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
         state.refresh_settings_cache(&app);
 
         // 2. Fetch Concurrency & History Settings from Store
-        // FIX: Zustand persist stores data at "app-storage-v5-clean" -> "state" -> "settings"
-        // Previously read from root keys which always returned None (fallback to defaults).
         let (limit, retention_days, max_items) = {
             let mut conc = 3;
             let mut days = 30;
             let mut max = 100;
 
-            if let Ok(store) = app.store("settings.json") {
-                let key = "app-storage-v5-clean";
-                if let Some(root) = store.get(key) {
-                    if let Some(settings_val) = root.get("state").and_then(|s| s.get("settings")) {
-                        if let Some(v) = settings_val
-                            .get("concurrentDownloads")
-                            .and_then(|v| v.as_u64())
-                        {
-                            conc = v as usize;
-                        }
-                        if let Some(v) = settings_val
-                            .get("historyRetentionDays")
-                            .and_then(|v| v.as_u64())
-                        {
-                            days = v as u32;
-                        }
-                        if let Some(v) =
-                            settings_val.get("maxHistoryItems").and_then(|v| v.as_i64())
-                        {
-                            max = v as i32;
-                        }
-                    }
+            if let Some(settings_val) = crate::store_helpers::get_settings_value(&app) {
+                if let Some(v) = settings_val.get("concurrentDownloads").and_then(|v| v.as_u64()) {
+                    conc = v as usize;
+                }
+                if let Some(v) = settings_val.get("historyRetentionDays").and_then(|v| v.as_u64()) {
+                    days = v as u32;
+                }
+                if let Some(v) = settings_val.get("maxHistoryItems").and_then(|v| v.as_i64()) {
+                    max = v as i32;
                 }
             }
             (if conc == 0 { 3 } else { conc }, days, max)

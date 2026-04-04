@@ -1,3 +1,4 @@
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs;
@@ -5,6 +6,35 @@ use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 use url::Url;
+
+lazy_static! {
+    /// Generic tokens to exclude when extracting site keywords from yt-dlp extractors.
+    /// These are common content-type or navigation words that would cause false positive
+    /// URL matches if used as keywords (e.g., "video" would match any URL containing "video").
+    static ref GENERIC_TOKENS: HashSet<&'static str> = [
+        // Content types
+        "video", "videos", "audio", "embed", "clip", "clips",
+        "live", "livestream", "stream",
+        // Navigation / collections
+        "playlist", "playlists", "list",
+        "channel", "channels", "user", "users",
+        "group", "groups", "story", "stories",
+        "topic", "topics", "search",
+        // Music / media
+        "album", "albums", "track", "tracks",
+        "episode", "episodes", "series",
+        "season", "seasons", "movie", "movies",
+        "show", "shows",
+        // Publishing
+        "article", "articles", "page", "pages",
+        "post", "posts", "feed", "feeds",
+        "tab", "recommended",
+        // News / media categories
+        "news", "music", "radio", "player", "media", "tv",
+        // Misc
+        "generic", "unknown", "watch", "link", "share",
+    ].iter().copied().collect();
+}
 
 // --- Constants ---
 const DEFAULTS_SOCKET_TIMEOUT: &str = "60";
@@ -319,70 +349,8 @@ impl SupportedSites {
         } else {
             // Split by colon to handle things like "youtube:clip" -> "youtube"
             for part in token.split(':') {
-                // Skip generic words to avoid false positives
                 let part = part.trim();
-                if part.len() >= 3
-                    // Content Types
-                    && part != "video"
-                    && part != "videos"
-                    && part != "audio"
-                    && part != "embed"
-                    && part != "clip"
-                    && part != "clips"
-                    && part != "live"
-                    && part != "livestream"
-                    && part != "stream"
-                    && part != "playlist"
-                    && part != "playlists"
-                    && part != "list"
-                    && part != "channel"
-                    && part != "channels"
-                    && part != "user"
-                    && part != "users"
-                    && part != "group"
-                    && part != "groups"
-                    && part != "story"
-                    && part != "stories"
-                    && part != "topic"
-                    && part != "topics"
-                    && part != "search"
-                    && part != "album"
-                    && part != "albums"
-                    && part != "track"
-                    && part != "tracks"
-                    && part != "episode"
-                    && part != "episodes"
-                    && part != "series"
-                    && part != "season"
-                    && part != "seasons"
-                    && part != "movie"
-                    && part != "movies"
-                    && part != "show"
-                    && part != "shows"
-                    && part != "article"
-                    && part != "articles"
-                    && part != "page"
-                    && part != "pages"
-                    && part != "post"
-                    && part != "posts"
-                    && part != "feed"
-                    && part != "feeds"
-                    && part != "tab"
-                    && part != "recommended"
-                    // News / Media
-                    && part != "news"
-                    && part != "music"
-                    && part != "radio"
-                    && part != "player"
-                    && part != "media"
-                    && part != "tv" // len 2 but consistent
-                    // Misc
-                    && part != "generic"
-                    && part != "unknown"
-                    && part != "watch"
-                    && part != "link"
-                    && part != "share"
-                {
+                if part.len() >= 3 && !GENERIC_TOKENS.contains(part) {
                     keywords.insert(part.to_string());
                 }
             }
@@ -446,136 +414,32 @@ impl SupportedSites {
 }
 
 pub fn load_settings(app: &AppHandle) -> AppSettings {
-    use tauri_plugin_store::StoreExt;
-    let store = match app.store("settings.json") {
-        Ok(s) => s,
-        Err(_) => return AppSettings::default(),
-    };
-
-    let key = "app-storage-v5-clean";
-    if let Some(v) = store.get(key) {
-        if let Some(state) = v.get("state") {
-            if let Some(settings_val) = state.get("settings") {
-                if let Ok(settings) = serde_json::from_value::<AppSettings>(settings_val.clone()) {
-                    return settings;
-                }
-            }
+    if let Some(settings_val) = crate::store_helpers::get_settings_value(app) {
+        if let Ok(settings) = serde_json::from_value::<AppSettings>(settings_val) {
+            return settings;
         }
     }
-
     AppSettings::default()
 }
 
 pub fn load_gpu_type(app: &AppHandle) -> String {
-    use tauri_plugin_store::StoreExt;
-    let store = match app.store("settings.json") {
-        Ok(s) => s,
-        Err(_) => return "auto".to_string(),
-    };
-
-    let key = "app-storage-v5-clean";
-    if let Some(v) = store.get(key) {
-        if let Some(state) = v.get("state") {
-            if let Some(gpu_val) = state.get("gpuType") {
-                if let Some(gpu) = gpu_val.as_str() {
-                    return gpu.to_string();
-                }
-            }
-        }
-    }
-
-    "auto".to_string()
+    crate::store_helpers::get_state_value(app, "gpuType")
+        .and_then(|v| v.as_str().map(|s| s.to_string()))
+        .unwrap_or_else(|| "auto".to_string())
 }
 
 // --- Logic ---
 
 pub fn resolve_binary_path(app: &AppHandle, binary_name: &str) -> String {
-    // 1. Check AppLocalData (Writable Update Storage) - PRIORITY
-    if let Ok(local_dir) = app.path().app_local_data_dir() {
-        #[cfg(target_os = "windows")]
-        let exe_name = if binary_name.ends_with(".exe") {
-            binary_name.to_string()
-        } else {
-            format!("{}.exe", binary_name)
-        };
-        #[cfg(not(target_os = "windows"))]
-        let exe_name = binary_name.to_string();
-
-        let local_path = local_dir.join(&exe_name);
-        if local_path.exists() {
-            return local_path.to_string_lossy().to_string();
-        }
-    }
-
-    // 2. Attempt to find bundled sidecar
-    if let Ok(mut exe_path) = std::env::current_exe() {
-        exe_path.pop(); // Parent dir
-
-        #[cfg(target_os = "windows")]
-        let exe_name = if binary_name.ends_with(".exe") {
-            binary_name.to_string()
-        } else {
-            format!("{}.exe", binary_name)
-        };
-        #[cfg(not(target_os = "windows"))]
-        let exe_name = binary_name.to_string();
-
-        // Check flat in root (tauri dev/prod)
-        let flat_path = exe_path.join(&exe_name);
-        if flat_path.exists() {
-            return flat_path.to_string_lossy().to_string();
-        }
-
-        // Check bin/ subdir
-        let bin_path = exe_path.join("bin").join(&exe_name);
-        if bin_path.exists() {
-            return bin_path.to_string_lossy().to_string();
-        }
-
-        // Sidecar scan (for names like binary-triple.exe)
-        let binary_name_lower = binary_name.to_lowercase();
-        let scan_dirs = vec![exe_path.clone(), exe_path.join("bin")];
-
-        for dir in scan_dirs {
-            if let Ok(entries) = std::fs::read_dir(dir) {
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                        let stem_lower = stem.to_lowercase();
-                        if stem_lower.starts_with(&binary_name_lower) {
-                            #[cfg(target_os = "windows")]
-                            let is_exe = path
-                                .extension()
-                                .map_or(false, |e| e.to_ascii_lowercase() == "exe");
-                            #[cfg(not(target_os = "windows"))]
-                            let is_exe = true;
-
-                            if is_exe {
-                                return path.to_string_lossy().to_string();
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Fallback to system PATH
-    binary_name.to_string()
+    crate::binary_resolver::resolve_to_string(app, binary_name)
 }
 
 pub fn resolve_ytdlp_path(app: &AppHandle, configured_path: &str) -> String {
-    if !configured_path.is_empty() {
-        return configured_path.to_string();
-    }
-    resolve_binary_path(app, "yt-dlp")
+    crate::binary_resolver::resolve_configured(app, "yt-dlp", configured_path)
 }
 
 pub fn resolve_ffmpeg_path(app: &AppHandle, configured_path: &str) -> String {
-    if !configured_path.is_empty() {
-        return configured_path.to_string();
-    }
-    resolve_binary_path(app, "ffmpeg")
+    crate::binary_resolver::resolve_configured(app, "ffmpeg", configured_path)
 }
 
 pub fn is_youtube_url(url: &str) -> bool {

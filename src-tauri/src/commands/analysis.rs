@@ -1,8 +1,35 @@
+use lazy_static::lazy_static;
 use regex::Regex;
 use serde::Deserialize;
 use std::path::Path;
 use tauri::AppHandle;
 use tauri_plugin_shell::ShellExt;
+
+lazy_static! {
+    /// Pre-compiled regex for parsing size strings like "1.5 GB", "200 MiB", "500kb".
+    static ref SIZE_RE: Regex = Regex::new(r"([\d.,]+)\s*([A-Z]*)").unwrap();
+}
+
+// ─── Shared Constants ────────────────────────────────────────────────
+
+/// Bitrate fallback formula: kbps → bytes/sec → total bytes.
+/// `target_bitrate` is in kbps.
+fn bitrate_bytes(kbps: f64, duration_secs: f64) -> f64 {
+    (kbps * 1000.0 / 8.0) * duration_secs
+}
+
+/// Safely clamp an `f64` to `u64`, saturating at `u64::MAX`.
+fn clamp_to_u64(value: f64) -> u64 {
+    if value <= 0.0 {
+        0
+    } else if value >= u64::MAX as f64 {
+        u64::MAX
+    } else {
+        value as u64
+    }
+}
+
+// ─── Data Types ──────────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -29,6 +56,7 @@ pub struct YtdlpFormat {
     pub acodec: Option<String>,
     pub vcodec: Option<String>,
     pub filesize: Option<f64>,
+    #[serde(alias = "filesizeApprox")]
     pub filesize_approx: Option<f64>,
     pub abr: Option<f64>,
     pub height: Option<u32>,
@@ -37,28 +65,11 @@ pub struct YtdlpFormat {
 #[derive(Debug, Deserialize)]
 pub struct YtdlpMeta {
     pub filesize: Option<f64>,
+    #[serde(alias = "filesizeApprox")]
     pub filesize_approx: Option<f64>,
     pub duration: Option<f64>,
     pub formats: Option<Vec<YtdlpFormat>>,
     pub height: Option<u32>,
-}
-
-fn parse_time(time_str: &str) -> f64 {
-    let parts: Vec<&str> = time_str.split(':').collect();
-    let mut seconds = 0.0;
-
-    if parts.len() == 3 {
-        seconds += parts[0].parse::<f64>().unwrap_or(0.0) * 3600.0;
-        seconds += parts[1].parse::<f64>().unwrap_or(0.0) * 60.0;
-        seconds += parts[2].parse::<f64>().unwrap_or(0.0);
-    } else if parts.len() == 2 {
-        seconds += parts[0].parse::<f64>().unwrap_or(0.0) * 60.0;
-        seconds += parts[1].parse::<f64>().unwrap_or(0.0);
-    } else if parts.len() == 1 {
-        seconds += parts[0].parse::<f64>().unwrap_or(0.0);
-    }
-
-    seconds
 }
 
 #[derive(Debug, Deserialize)]
@@ -82,33 +93,64 @@ struct FfprobeFormat {
     bit_rate: Option<String>,
 }
 
+// ─── Parsing Helpers ─────────────────────────────────────────────────
+
+/// Parses time strings in `HH:MM:SS`, `MM:SS`, or `SS` format into seconds.
+fn parse_time(time_str: &str) -> f64 {
+    if time_str.is_empty() {
+        return 0.0;
+    }
+
+    let parts: Vec<&str> = time_str.split(':').collect();
+    let mut seconds = 0.0;
+
+    let parse_part = |s: &str| -> f64 {
+        s.parse::<f64>().unwrap_or_else(|_| {
+            log::warn!("Failed to parse time component '{}' in '{}'", s, time_str);
+            0.0
+        })
+    };
+
+    match parts.len() {
+        3 => {
+            seconds += parse_part(parts[0]) * 3600.0;
+            seconds += parse_part(parts[1]) * 60.0;
+            seconds += parse_part(parts[2]);
+        }
+        2 => {
+            seconds += parse_part(parts[0]) * 60.0;
+            seconds += parse_part(parts[1]);
+        }
+        1 => {
+            seconds += parse_part(parts[0]);
+        }
+        _ => {}
+    }
+
+    seconds
+}
+
 /// Parses strings like "1.5 GB", "200 MiB", "500kb" into bytes.
+///
+/// Note: GB and GiB are both treated as binary (1024-based) for consistency
+/// with how yt-dlp and most media tools report sizes.
 fn parse_size_to_bytes(s: &str) -> u64 {
     let s = s.trim().to_uppercase();
 
-    // Regex to capture numeric part and unit part
-    // Matches "123", "1.5", "1,5", with optional unit "GB", "KiB", etc.
-    let re = match Regex::new(r"([\d.,]+)\s*([A-Z]*)") {
-        Ok(r) => r,
-        Err(_) => return 0, // Should never happen with valid regex
-    };
-
-    let caps = match re.captures(&s) {
+    let caps = match SIZE_RE.captures(&s) {
         Some(c) => c,
         None => return 0,
     };
 
-    // Parse number (handle both dot and comma)
     let num_str = caps.get(1).map_or("0", |m| m.as_str()).replace(',', ".");
     let value: f64 = num_str.parse().unwrap_or(0.0);
 
     let unit = caps.get(2).map_or("", |m| m.as_str());
 
-    // multipliers (handling decimal and binary prefixes roughly same for safety or strictly)
     let multiplier = match unit {
-        "G" | "GB" | "GIB" => 1_073_741_824.0, // 1024^3
-        "M" | "MB" | "MIB" => 1_048_576.0,     // 1024^2
-        "K" | "KB" | "KIB" => 1_024.0,         // 1024
+        "G" | "GB" | "GIB" => 1_073_741_824.0,
+        "M" | "MB" | "MIB" => 1_048_576.0,
+        "K" | "KB" | "KIB" => 1_024.0,
         "T" | "TB" | "TIB" => 1_099_511_627_776.0,
         _ => 1.0,
     };
@@ -116,21 +158,215 @@ fn parse_size_to_bytes(s: &str) -> u64 {
     (value * multiplier) as u64
 }
 
+/// Parses bitrate strings like "128", "128k", "1.5mbps" into kbps.
 fn parse_bitrate_kbps(s: &str) -> u32 {
     let s = s.to_lowercase();
     let clean: String = s
         .chars()
-        .filter(|c| c.is_digit(10) || *c == '.' || *c == ',')
+        .filter(|c| c.is_ascii_digit() || *c == '.' || *c == ',')
         .collect();
     let val: f32 = clean.replace(',', ".").parse().unwrap_or(0.0);
 
-    if s.contains('m') {
+    if s.contains("mbps") || s.contains("mb/s") || s.contains("mbit") {
         (val * 1000.0) as u32
     } else {
         val as u32
     }
 }
 
+// ─── Format Helpers ──────────────────────────────────────────────────
+
+/// Returns the best available filesize for a format entry.
+fn get_format_size(f: &YtdlpFormat) -> f64 {
+    f.filesize.or(f.filesize_approx).unwrap_or(0.0)
+}
+
+/// Predicate: true if the format is a video-only stream.
+fn is_video_stream(f: &YtdlpFormat) -> bool {
+    f.vcodec.as_deref() != Some("none")
+}
+
+/// Predicate: true if the format is an audio-only stream.
+fn is_audio_only_stream(f: &YtdlpFormat) -> bool {
+    f.acodec.as_deref() != Some("none") && f.vcodec.as_deref() == Some("none")
+}
+
+/// Sort format references by filesize descending (largest first).
+fn sort_formats_desc(formats: &mut [&YtdlpFormat]) {
+    formats.sort_by(|a, b| {
+        get_format_size(b)
+            .partial_cmp(&get_format_size(a))
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+}
+
+/// Returns the largest filesize among the given format refs.
+fn largest_format_size(formats: &mut Vec<&YtdlpFormat>) -> f64 {
+    sort_formats_desc(formats);
+    formats.first().map(|f| get_format_size(f)).unwrap_or(0.0)
+}
+
+/// Finds the format whose `abr` is closest to `target_bitrate` (in kbps).
+fn find_closest_audio_format<'a>(
+    audio_formats: Vec<&'a YtdlpFormat>,
+    target_bitrate: f64,
+) -> Option<&'a YtdlpFormat> {
+    audio_formats.into_iter().reduce(|prev, curr| {
+        let curr_diff = (curr.abr.unwrap_or(0.0) - target_bitrate).abs();
+        let prev_diff = (prev.abr.unwrap_or(0.0) - target_bitrate).abs();
+        if curr_diff < prev_diff { curr } else { prev }
+    })
+}
+
+// ─── Estimation Logic ────────────────────────────────────────────────
+
+/// Returns the fraction of the video that's being clipped (0.0–1.0).
+/// Returns 1.0 if not clipping, or if total duration is invalid.
+fn calculate_clip_ratio(options: &DownloadEstimationOptions, total: f64) -> f64 {
+    if !options.is_clipping || total <= 0.0 {
+        return 1.0;
+    }
+
+    let s = parse_time(options.range_start.as_deref().unwrap_or(""));
+    let e = if let Some(end_str) = &options.range_end {
+        parse_time(end_str)
+    } else {
+        total
+    };
+
+    let duration = (e.min(total) - s.max(0.0)).max(0.0);
+    duration / total
+}
+
+/// Estimates size by scaling a known resolution's size to a target resolution.
+/// Uses quadratic scaling (area-proportional) capped at 1.5x.
+fn calculate_scaled_fallback(target_height: u32, known_size: f64, known_h: f64, audio_size: f64) -> f64 {
+    if known_h <= 0.0 {
+        return known_size + audio_size;
+    }
+    let scale = (target_height as f64 / known_h).powi(2).min(1.5);
+    known_size * scale + audio_size
+}
+
+/// Estimates GIF output size based on resolution, fps, and duration.
+fn calculate_gif_size(options: &DownloadEstimationOptions, total: f64, meta_height: Option<u32>) -> f64 {
+    let h = options.gif_scale.unwrap_or_else(|| meta_height.unwrap_or(480)) as f64;
+    let fps = options.gif_fps.unwrap_or(15) as f64;
+
+    // Reuse clip ratio logic, but enforce min 1s for GIF so we never estimate 0
+    let gif_duration = (calculate_clip_ratio(options, total) * total).max(1.0);
+
+    let base_factor = (h / 480.0) * (fps / 15.0) * 0.5 * 1024.0 * 1024.0;
+    base_factor * gif_duration
+}
+
+/// Estimates audio-only download size for a target bitrate.
+fn calculate_audio_size(options: &DownloadEstimationOptions, formats: &[YtdlpFormat], total: f64, audio_size: f64) -> f64 {
+    let target_bitrate: f64 = options
+        .audio_bitrate
+        .as_deref()
+        .unwrap_or("128")
+        .parse()
+        .unwrap_or(128.0);
+
+    let audio_formats: Vec<_> = formats.iter().filter(|f| is_audio_only_stream(f)).collect();
+
+    if audio_formats.is_empty() {
+        return if audio_size > 0.0 { audio_size } else { bitrate_bytes(target_bitrate, total) };
+    }
+
+    let from_meta = find_closest_audio_format(audio_formats, target_bitrate)
+        .map(|f| get_format_size(f))
+        .unwrap_or(0.0);
+
+    if from_meta > 0.0 { from_meta } else { bitrate_bytes(target_bitrate, total) }
+}
+
+/// Estimates size of the "Best" quality download (largest video + best audio).
+fn calculate_best_size(formats: &[YtdlpFormat], audio_size: f64) -> f64 {
+    let mut video_formats: Vec<_> = formats.iter().filter(|f| is_video_stream(f)).collect();
+    let video_size = largest_format_size(&mut video_formats);
+    video_size + audio_size
+}
+
+/// Estimates download size for a specific resolution target.
+///
+/// Fallback chain:
+/// 1. Exact height match → use its filesize
+/// 2. Any video with known size → scale proportionally to target height
+/// 3. Nearest height match → scale proportionally
+/// 4. Global fallback filesize
+fn calculate_resolution_size(
+    formats: &[YtdlpFormat],
+    target_height: u32,
+    audio_size: f64,
+    fallback_filesize: f64,
+) -> f64 {
+    // 1. Try exact height match
+    let mut exact_matches: Vec<_> = formats
+        .iter()
+        .filter(|f| f.height == Some(target_height) && is_video_stream(f))
+        .collect();
+
+    if !exact_matches.is_empty() {
+        let video_size = largest_format_size(&mut exact_matches);
+
+        if video_size > 0.0 {
+            return video_size + audio_size;
+        }
+
+        // Exact height found but no filesize — try scaling from any known format
+        if let Some((known_size, known_h)) = find_best_known_video(formats) {
+            return calculate_scaled_fallback(target_height, known_size, known_h, audio_size);
+        }
+
+        return if fallback_filesize > 0.0 { fallback_filesize } else { audio_size };
+    }
+
+    // 2. No exact match — find the nearest resolution and scale
+    let all_video: Vec<_> = formats
+        .iter()
+        .filter(|f| is_video_stream(f) && f.height.is_some())
+        .collect();
+
+    if all_video.is_empty() || target_height == 0 {
+        return fallback_filesize;
+    }
+
+    let nearest = all_video.iter().min_by_key(|f| {
+        (f.height.unwrap_or(0) as i64 - target_height as i64).unsigned_abs()
+    });
+
+    if let Some(near) = nearest {
+        let near_size = get_format_size(near);
+        let near_h = near.height.unwrap_or(1) as f64;
+
+        if near_size > 0.0 {
+            return calculate_scaled_fallback(target_height, near_size, near_h, audio_size);
+        }
+    }
+
+    fallback_filesize
+}
+
+/// Finds the video format with the highest resolution that has a known filesize.
+/// Returns `(filesize, height)`.
+fn find_best_known_video(formats: &[YtdlpFormat]) -> Option<(f64, f64)> {
+    formats
+        .iter()
+        .filter(|f| is_video_stream(f))
+        .filter_map(|f| {
+            let sz = get_format_size(f);
+            let h = f.height.unwrap_or(0) as f64;
+            if sz > 0.0 && h > 0.0 { Some((sz, h)) } else { None }
+        })
+        .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
+}
+
+// ─── Tauri Commands ──────────────────────────────────────────────────
+
+/// Estimates the output file size after re-encoding / compressing a local file.
+/// Uses ffprobe to get actual bitrate, or falls back to a parsed size string.
 #[tauri::command]
 pub async fn estimate_export_size(
     app_handle: AppHandle,
@@ -138,109 +374,22 @@ pub async fn estimate_export_size(
 ) -> Result<u64, String> {
     log::info!("Estimating export size for: {:?}", params);
 
-    let mut duration_secs: Option<f64> = None;
-    let mut actual_bitrate: Option<u64> = None;
+    let (duration_secs, actual_bitrate) = probe_file_info(&app_handle, params.file_path.as_deref()).await;
 
-    if let Some(ref path) = params.file_path {
-        if Path::new(path).exists() {
-            let sidecar_cmd = match app_handle.shell().sidecar("ffprobe") {
-                Ok(cmd) => cmd,
-                Err(e) => {
-                    log::error!("Sidecar ffprobe not found: {}", e);
-                    return Err(format!("ffprobe sidecar missing: {}", e));
-                }
-            };
-
-            let output = sidecar_cmd
-                .args([
-                    "-v",
-                    "error",
-                    "-show_entries",
-                    "format=duration,bit_rate",
-                    "-of",
-                    "json",
-                    path,
-                ])
-                .output()
-                .await
-                .map_err(|e| {
-                    log::error!("FFprobe exec failed: {}", e);
-                    format!("analysis error: {}", e)
-                })?;
-
-            if output.status.success() {
-                if let Ok(json_out) = serde_json::from_slice::<FfprobeOutput>(&output.stdout) {
-                    if let Some(format) = json_out.format {
-                        duration_secs = format.duration.and_then(|d| d.parse().ok());
-                        actual_bitrate = format.bit_rate.and_then(|b| b.parse().ok());
-                    }
-                }
-            }
-        }
-    }
-
-    let base_bytes = if let (Some(d), Some(b)) = (duration_secs, actual_bitrate) {
-        // Safe arithmetic with saturation to prevent overflow
-        // d * (b / 8.0)
-        let bits = b as f64;
-        let bytes_per_sec = bits / 8.0;
-        let total = d * bytes_per_sec;
-
-        // Clamp to u64::MAX to prevent overflow loops
-        if total > u64::MAX as f64 {
-            u64::MAX
-        } else {
-            total as u64
-        }
-    } else if let Some(ref size_str) = params.original_size_str {
-        parse_size_to_bytes(size_str)
-    } else {
-        0
+    let base_bytes = match (duration_secs, actual_bitrate) {
+        (Some(d), Some(b)) => clamp_to_u64(d * (b as f64 / 8.0)),
+        _ => params.original_size_str.as_deref().map_or(0, parse_size_to_bytes),
     };
 
     if base_bytes == 0 {
         return Ok(0);
     }
 
-    let ratio = if params.media_type == MediaType::Audio {
-        match params.preset.as_str() {
-            "wa" => 0.3,
-            "social" => 0.7,
-            "archive" => 1.0,
-            _ => {
-                let bit = parse_bitrate_kbps(&params.audio_bitrate);
-                if bit >= 320 {
-                    1.0
-                } else if bit >= 128 {
-                    0.7
-                } else {
-                    0.4
-                }
-            }
-        }
-    } else if params.media_type == MediaType::Video {
-        // CRF Estimation Table
-        // Range mapping for compression ratios
-        match params.crf {
-            0..=17 => 1.05,  // Near-lossless (can be larger than source!)
-            18..=22 => 0.95, // High Quality
-            23..=27 => 0.60, // Good Balance
-            28..=34 => 0.30, // Low Bitrate
-            _ => 0.15,       // Very Low (35+)
-        }
-    } else {
-        1.0
-    };
-
-    // Calculate final size with overflow check
-    let estimated = base_bytes as f64 * ratio;
-    Ok(if estimated > u64::MAX as f64 {
-        u64::MAX
-    } else {
-        estimated as u64
-    })
+    let ratio = estimate_compression_ratio(&params);
+    Ok(clamp_to_u64(base_bytes as f64 * ratio))
 }
 
+/// Estimates the download size for a remote video based on yt-dlp metadata.
 #[tauri::command]
 pub async fn estimate_download_size(
     meta: Option<YtdlpMeta>,
@@ -259,225 +408,99 @@ pub async fn estimate_download_size(
     }
 
     let total = meta.duration.unwrap_or(1.0).max(1.0);
-    let mut ratio = 1.0;
+    let clip_ratio = calculate_clip_ratio(&options, total);
 
-    if options.is_clipping {
-        let s = parse_time(options.range_start.as_deref().unwrap_or(""));
-        let e = if let Some(end_str) = &options.range_end {
-            parse_time(end_str)
-        } else {
-            total
-        };
+    let base_size = match &meta.formats {
+        Some(formats) => {
+            let mut audio_refs: Vec<_> = formats.iter().filter(|f| is_audio_only_stream(f)).collect();
+            let audio_size = largest_format_size(&mut audio_refs);
+            let format_pref = options.format.as_deref().unwrap_or("").to_lowercase();
 
-        // Math.max(0, Math.min(e, total) - Math.max(0, s))
-        let min_e_total = e.min(total);
-        let max_0_s = s.max(0.0);
-        let duration = (min_e_total - max_0_s).max(0.0);
-
-        ratio = duration / total;
-    }
-
-    let base_size;
-
-    if let Some(formats) = meta.formats {
-        // filter: f.acodec !== 'none' && f.vcodec === 'none'
-        let mut audio_formats: Vec<_> = formats
-            .iter()
-            .filter(|f| f.acodec.as_deref() != Some("none") && f.vcodec.as_deref() == Some("none"))
-            .collect();
-
-        // sort: (b.filesize || b.filesize_approx || 0) - (a.filesize || a.filesize_approx || 0)
-        audio_formats.sort_by(|a, b| {
-            let b_size = b.filesize.or(b.filesize_approx).unwrap_or(0.0);
-            let a_size = a.filesize.or(a.filesize_approx).unwrap_or(0.0);
-            b_size
-                .partial_cmp(&a_size)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
-
-        let best_audio = audio_formats.first();
-        let audio_size = best_audio
-            .and_then(|f| f.filesize.or(f.filesize_approx))
-            .unwrap_or(0.0);
-
-        let format_pref = options.format.as_deref().unwrap_or("");
-
-        if format_pref == "audio" {
-            let target_bitrate: f64 = options
-                .audio_bitrate
-                .as_deref()
-                .unwrap_or("128")
-                .parse()
-                .unwrap_or(128.0);
-            if !audio_formats.is_empty() {
-                let target_audio = audio_formats.into_iter().reduce(|prev, curr| {
-                    let curr_diff = (curr.abr.unwrap_or(0.0) - target_bitrate).abs();
-                    let prev_diff = (prev.abr.unwrap_or(0.0) - target_bitrate).abs();
-                    if curr_diff < prev_diff {
-                        curr
-                    } else {
-                        prev
-                    }
-                });
-                let from_meta = target_audio
-                    .and_then(|f| f.filesize.or(f.filesize_approx))
-                    .unwrap_or(0.0);
-                if from_meta > 0.0 {
-                    base_size = from_meta;
-                } else {
-                    // Fallback: estimate from bitrate * duration
-                    // bitrate in kbps, duration in seconds -> bytes
-                    base_size = (target_bitrate * 1000.0 / 8.0) * total;
-                }
-            } else {
-                // No audio formats in metadata at all - estimate from bitrate
-                if audio_size > 0.0 {
-                    base_size = audio_size;
-                } else {
-                    let target_bitrate: f64 = options
-                        .audio_bitrate
-                        .as_deref()
-                        .unwrap_or("128")
-                        .parse()
-                        .unwrap_or(128.0);
-                    base_size = (target_bitrate * 1000.0 / 8.0) * total;
-                }
-            }
-        } else if format_pref == "gif" {
-            let h = options
-                .gif_scale
-                .unwrap_or_else(|| meta.height.unwrap_or(480)) as f64;
-            let fps = options.gif_fps.unwrap_or(15) as f64;
-            // Use clip duration for GIF if clipping is active
-            let gif_duration = if options.is_clipping {
-                let s = parse_time(options.range_start.as_deref().unwrap_or(""));
-                let e = if let Some(end_str) = &options.range_end {
-                    parse_time(end_str)
-                } else {
-                    total
-                };
-                (e.min(total) - s.max(0.0)).max(1.0)
-            } else {
-                total
-            };
-            let base_factor = (h / 480.0) * (fps / 15.0) * 0.5 * 1024.0 * 1024.0;
-            base_size = base_factor * gif_duration;
-        } else if format_pref == "Best" {
-            let mut video_formats: Vec<_> = formats
-                .iter()
-                .filter(|f| f.vcodec.as_deref() != Some("none"))
-                .collect();
-
-            video_formats.sort_by(|a, b| {
-                let b_size = b.filesize.or(b.filesize_approx).unwrap_or(0.0);
-                let a_size = a.filesize.or(a.filesize_approx).unwrap_or(0.0);
-                b_size
-                    .partial_cmp(&a_size)
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            });
-
-            let best_video = video_formats.first();
-            let video_size = best_video
-                .and_then(|f| f.filesize.or(f.filesize_approx))
-                .unwrap_or(0.0);
-
-            base_size = video_size + audio_size;
-        } else {
-            // FIX: Strip 'p'/'P' suffix from resolution strings like "1080p" -> "1080"
-            let height_str: String = format_pref.chars().filter(|c| c.is_numeric()).collect();
-            let target_height: u32 = height_str.parse().unwrap_or(0);
-            let mut video_formats: Vec<_> = formats
-                .iter()
-                .filter(|f| f.height == Some(target_height) && f.vcodec.as_deref() != Some("none"))
-                .collect();
-
-            if !video_formats.is_empty() {
-                video_formats.sort_by(|a, b| {
-                    let b_size = b.filesize.or(b.filesize_approx).unwrap_or(0.0);
-                    let a_size = a.filesize.or(a.filesize_approx).unwrap_or(0.0);
-                    b_size
-                        .partial_cmp(&a_size)
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                });
-
-                let best_video = video_formats.first();
-                let video_size = best_video
-                    .and_then(|f| f.filesize.or(f.filesize_approx))
-                    .unwrap_or(0.0);
-
-                // If the chosen format has a valid filesize, use it
-                if video_size > 0.0 {
-                    base_size = video_size + audio_size;
-                } else {
-                    // Fallback: estimate based on best video scaled by resolution ratio
-                    let all_video: Vec<_> = formats
-                        .iter()
-                        .filter(|f| f.vcodec.as_deref() != Some("none"))
-                        .collect();
-                    let best_known = all_video
-                        .iter()
-                        .filter_map(|f| {
-                            let sz = f.filesize.or(f.filesize_approx).unwrap_or(0.0);
-                            let h = f.height.unwrap_or(0) as f64;
-                            if sz > 0.0 && h > 0.0 {
-                                Some((sz, h))
-                            } else {
-                                None
-                            }
-                        })
-                        .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
-
-                    if let Some((known_size, known_h)) = best_known {
-                        // Scale by pixels² ratio (quadratic scaling)
-                        let scale = (target_height as f64 / known_h).powi(2).min(1.5);
-                        base_size = known_size * scale + audio_size;
-                    } else {
-                        // Absolute fallback to top-level filesize
-                        base_size = if filesize > 0.0 {
-                            filesize
-                        } else {
-                            filesize + audio_size
-                        };
-                    }
-                }
-            } else {
-                // No exact height match - try nearest resolution
-                let all_video: Vec<_> = formats
-                    .iter()
-                    .filter(|f| f.vcodec.as_deref() != Some("none") && f.height.is_some())
-                    .collect();
-
-                if !all_video.is_empty() && target_height > 0 {
-                    // Find nearest resolution
-                    let nearest = all_video.iter().min_by_key(|f| {
-                        (f.height.unwrap_or(0) as i64 - target_height as i64).unsigned_abs()
-                    });
-                    if let Some(near) = nearest {
-                        let near_size = near.filesize.or(near.filesize_approx).unwrap_or(0.0);
-                        let near_h = near.height.unwrap_or(1) as f64;
-                        if near_size > 0.0 {
-                            let scale = (target_height as f64 / near_h).powi(2).min(1.5);
-                            base_size = near_size * scale + audio_size;
-                        } else {
-                            base_size = filesize;
-                        }
-                    } else {
-                        base_size = filesize;
-                    }
-                } else {
-                    base_size = filesize;
+            match format_pref.as_str() {
+                "audio" => calculate_audio_size(&options, formats, total, audio_size),
+                "gif" => calculate_gif_size(&options, total, meta.height),
+                "best" => calculate_best_size(formats, audio_size),
+                _ => {
+                    let height_str: String = format_pref.chars().filter(|c| c.is_numeric()).collect();
+                    let target_height: u32 = height_str.parse().unwrap_or(0);
+                    calculate_resolution_size(formats, target_height, audio_size, filesize)
                 }
             }
         }
-    } else {
-        base_size = filesize;
+        None => filesize,
+    };
+
+    Ok(clamp_to_u64(base_size * clip_ratio))
+}
+
+// ─── Internal Helpers ────────────────────────────────────────────────
+
+/// Runs ffprobe on a local file and returns (duration_secs, bitrate_bps).
+async fn probe_file_info(app_handle: &AppHandle, file_path: Option<&str>) -> (Option<f64>, Option<u64>) {
+    let path = match file_path {
+        Some(p) if Path::new(p).exists() => p,
+        _ => return (None, None),
+    };
+
+    let sidecar_cmd = match app_handle.shell().sidecar("ffprobe") {
+        Ok(cmd) => cmd,
+        Err(e) => {
+            log::error!("Sidecar ffprobe not found: {}", e);
+            return (None, None);
+        }
+    };
+
+    let output = match sidecar_cmd
+        .args(["-v", "error", "-show_entries", "format=duration,bit_rate", "-of", "json", path])
+        .output()
+        .await
+    {
+        Ok(o) => o,
+        Err(e) => {
+            log::error!("FFprobe exec failed: {}", e);
+            return (None, None);
+        }
+    };
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        log::warn!("FFprobe failed for {:?}: {}", path, stderr);
+        return (None, None);
     }
 
-    let final_size = base_size * ratio;
+    match serde_json::from_slice::<FfprobeOutput>(&output.stdout) {
+        Ok(json_out) => {
+            let format = json_out.format;
+            let duration = format.as_ref().and_then(|f| f.duration.as_ref()?.parse().ok());
+            let bitrate = format.as_ref().and_then(|f| f.bit_rate.as_ref()?.parse().ok());
+            (duration, bitrate)
+        }
+        Err(_) => {
+            log::warn!("FFprobe returned unparseable JSON for {:?}", path);
+            (None, None)
+        }
+    }
+}
 
-    if final_size > u64::MAX as f64 {
-        Ok(u64::MAX)
-    } else {
-        Ok(final_size as u64)
+/// Determines the compression ratio for a given export preset + media type.
+fn estimate_compression_ratio(params: &EstimationParams) -> f64 {
+    match params.media_type {
+        MediaType::Audio => match params.preset.as_str() {
+            "wa" => 0.3,
+            "social" => 0.7,
+            "archive" => 1.0,
+            _ => {
+                let bit = parse_bitrate_kbps(&params.audio_bitrate);
+                if bit >= 320 { 1.0 } else if bit >= 128 { 0.7 } else { 0.4 }
+            }
+        },
+        MediaType::Video => match params.crf {
+            0..=17 => 1.05,  // Near-lossless (can be larger than source!)
+            18..=22 => 0.95, // High quality
+            23..=27 => 0.60, // Good balance
+            28..=34 => 0.30, // Low bitrate
+            _ => 0.15,       // Very low (35+)
+        },
+        MediaType::Image => 1.0,
     }
 }

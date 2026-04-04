@@ -47,91 +47,11 @@ struct ProgressEvent {
 // --- Helpers ---
 
 fn get_writable_binary_path(app: &AppHandle, binary_name: &str) -> PathBuf {
-    let app_local_data = app.path().app_local_data_dir().unwrap();
-    if !app_local_data.exists() {
-        let _ = fs::create_dir_all(&app_local_data);
-    }
-
-    #[cfg(target_os = "windows")]
-    let filename = if binary_name.ends_with(".exe") {
-        binary_name.to_string()
-    } else {
-        format!("{}.exe", binary_name)
-    };
-    #[cfg(not(target_os = "windows"))]
-    let filename = binary_name.to_string();
-
-    app_local_data.join(filename)
+    crate::binary_resolver::writable_path(app, binary_name)
 }
 
 fn find_active_binary(app: &AppHandle, binary_name: &str) -> PathBuf {
-    let writable_path = get_writable_binary_path(app, binary_name);
-    if writable_path.exists() {
-        return writable_path;
-    }
-
-    if let Ok(mut exe_path) = std::env::current_exe() {
-        exe_path.pop(); // Parent dir
-
-        #[cfg(target_os = "windows")]
-        let filename = if binary_name.ends_with(".exe") {
-            binary_name.to_string()
-        } else {
-            format!("{}.exe", binary_name)
-        };
-        #[cfg(not(target_os = "windows"))]
-        let filename = binary_name.to_string();
-
-        let flat = exe_path.join(&filename);
-        if flat.exists() {
-            return flat;
-        }
-
-        let bin = exe_path.join("bin").join(&filename);
-        if bin.exists() {
-            return bin;
-        }
-
-        let binary_name_lower = binary_name.to_lowercase();
-        if let Ok(entries) = std::fs::read_dir(&exe_path) {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                    let stem_lower = stem.to_lowercase();
-                    if stem_lower.starts_with(&binary_name_lower) {
-                        if path
-                            .extension()
-                            .map_or(false, |e| e.to_ascii_lowercase() == "exe")
-                            || path.extension().is_none()
-                        {
-                            return path;
-                        }
-                    }
-                }
-            }
-        }
-
-        let bin_dir = exe_path.join("bin");
-        if let Ok(entries) = std::fs::read_dir(bin_dir) {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                    let stem_lower = stem.to_lowercase();
-                    if stem_lower.starts_with(&binary_name_lower) {
-                        if path
-                            .extension()
-                            .map_or(false, |e| e.to_ascii_lowercase() == "exe")
-                            || path.extension().is_none()
-                        {
-                            return path;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    PathBuf::from(binary_name)
+    crate::binary_resolver::resolve(app, binary_name)
 }
 
 fn strip_ansi(s: &str) -> String {
@@ -1024,13 +944,33 @@ pub async fn install_app_update(app: AppHandle) -> Result<(), String> {
 }
 
 fn get_target_pattern(binary: &str) -> (String, String) {
+    let arch = std::env::consts::ARCH; // "x86_64", "aarch64", etc.
+
     #[cfg(target_os = "windows")]
     {
         match binary {
-            "ffmpeg" => ("win64-gpl".to_string(), "zip".to_string()),
-            "aria2c" => ("win-64bit".to_string(), "zip".to_string()),
-            "rsgain" => ("win64".to_string(), "zip".to_string()),
-            "deno" => ("x86_64-pc-windows-msvc".to_string(), "zip".to_string()),
+            "ffmpeg" => {
+                if arch == "aarch64" {
+                    ("winarm64-gpl".to_string(), "zip".to_string())
+                } else {
+                    ("win64-gpl".to_string(), "zip".to_string())
+                }
+            }
+            "aria2c" => {
+                if arch == "aarch64" {
+                    ("arm64".to_string(), "zip".to_string())
+                } else {
+                    ("win-64bit".to_string(), "zip".to_string())
+                }
+            }
+            "rsgain" => ("win64".to_string(), "zip".to_string()), // No ARM64 build available
+            "deno" => {
+                if arch == "aarch64" {
+                    ("aarch64-pc-windows-msvc".to_string(), "zip".to_string())
+                } else {
+                    ("x86_64-pc-windows-msvc".to_string(), "zip".to_string())
+                }
+            }
             _ => ("".to_string(), "".to_string()),
         }
     }
@@ -1039,16 +979,34 @@ fn get_target_pattern(binary: &str) -> (String, String) {
         match binary {
             "ffmpeg" => ("".to_string(), "".to_string()),
             "aria2c" => ("osx".to_string(), "tar.bz2".to_string()),
-            "deno" => ("aarch64-apple-darwin".to_string(), "zip".to_string()),
+            "deno" => {
+                if arch == "aarch64" {
+                    ("aarch64-apple-darwin".to_string(), "zip".to_string())
+                } else {
+                    ("x86_64-apple-darwin".to_string(), "zip".to_string())
+                }
+            }
             _ => ("".to_string(), "".to_string()),
         }
     }
     #[cfg(target_os = "linux")]
     {
         match binary {
-            "ffmpeg" => ("linux64-gpl".to_string(), "tar.xz".to_string()),
+            "ffmpeg" => {
+                if arch == "aarch64" {
+                    ("linuxarm64-gpl".to_string(), "tar.xz".to_string())
+                } else {
+                    ("linux64-gpl".to_string(), "tar.xz".to_string())
+                }
+            }
             "aria2c" => ("linux-gnu".to_string(), "tar.bz2".to_string()),
-            "deno" => ("unknown-linux-gnu".to_string(), "zip".to_string()),
+            "deno" => {
+                if arch == "aarch64" {
+                    ("aarch64-unknown-linux-gnu".to_string(), "zip".to_string())
+                } else {
+                    ("x86_64-unknown-linux-gnu".to_string(), "zip".to_string())
+                }
+            }
             _ => ("".to_string(), "".to_string()),
         }
     }

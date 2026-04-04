@@ -38,8 +38,10 @@ jobs:
             name: "win-x64"
           - platform: macos-latest
             args: "--target universal-apple-darwin"
+            name: "mac-universal"
           - platform: ubuntu-22.04
             args: ""
+            name: "linux-x64"
           - platform: windows-latest
             args: "--target aarch64-pc-windows-msvc"
             name: "win-arm64"
@@ -100,7 +102,7 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      # --- SIDECARE BINARIES SETUP (Optimized) ---
+      # --- SIDECAR BINARIES SETUP (Optimized) ---
       
       # 1. Download Sidecar Binaries (Pre-prepared)
       - name: Download Sidecar Binaries
@@ -147,6 +149,8 @@ jobs:
                  npm run setup-binaries -- --target win-x64 --target win-x86 --target win-arm64
               elif [ "${{ matrix.platform }}" == "macos-latest" ]; then
                  npm run setup-binaries -- --target mac-x64 --target mac-arm64
+              elif [ "${{ matrix.name }}" == "linux-arm64" ]; then
+                 npm run setup-binaries -- --target linux-arm64
               else
                  npm run setup-binaries -- --target linux-x64
               fi

@@ -394,7 +394,12 @@ impl QueueState {
                         Err(e) => Err(format!("Failed to resume process: {}", e)),
                     }
                 } else {
-                    Err("Task has no active process".to_string())
+                    // Hybrid Phase 2 (Hard Pause Wakeup): Task was flushed to disk. Re-queue it.
+                    log::info!("[Queue] Hard-Resume triggered for task {}", id);
+                    task.status = TaskStatus::Pending;
+                    task.status_detail = Some("Resuming from disk...".to_string());
+                    task.error_message = None; // clear outdated errors
+                    Ok(())
                 }
             } else {
                 Err("Task not found".to_string())
@@ -780,6 +785,9 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                     ..
                                 } => {
                                     state_monitor.update_task(&task_id, |t| {
+                                        if matches!(t.status, TaskStatus::Paused | TaskStatus::Stopped) {
+                                            return;
+                                        }
                                         t.status = TaskStatus::Completed;
                                         t.progress = 100.0;
                                         t.file_path = Some(file_path.clone());
@@ -831,18 +839,16 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                 crate::commands::download::DownloadEvent::Error {
                                     message, ..
                                 } => {
-                                    log::error!(
-                                        "[Queue] Download error for {}: {}",
-                                        task_id,
-                                        message
-                                    );
-
                                     // AUTO-RETRY LOGIC
                                     let mut should_retry = false;
                                     let mut delay = 0;
                                     let mut retry_num = 0;
 
                                     state_monitor.update_task(&task_id, |t| {
+                                        if matches!(t.status, TaskStatus::Paused | TaskStatus::Stopped) {
+                                            return;
+                                        }
+                                        
                                         let max_retries = 3;
                                         let current = t.retry_count.unwrap_or(0);
 
@@ -910,16 +916,11 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                     level,
                                     ..
                                 } => {
-                                    // Capture yt-dlp log messages (warnings, errors, info) into task state
-                                    // so they're visible in the UI when errors occur
                                     if level == "warning" || level == "error" {
-                                        log::warn!(
-                                            "[Queue] yt-dlp {}: {} (task: {})",
-                                            level,
-                                            message,
-                                            task_id
-                                        );
                                         state_monitor.update_task(&task_id, |t| {
+                                            if matches!(t.status, TaskStatus::Paused | TaskStatus::Stopped) {
+                                                return;
+                                            }
                                             // Append to error_message (keep last 10 lines)
                                             let mut lines: Vec<String> = t
                                                 .error_message
@@ -927,7 +928,6 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                                 .map(|m| m.lines().map(String::from).collect())
                                                 .unwrap_or_default();
                                             lines.push(message.clone());
-                                            // Keep only last 10 lines to prevent unbounded growth
                                             while lines.len() > 10 {
                                                 lines.remove(0);
                                             }

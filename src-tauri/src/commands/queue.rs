@@ -118,7 +118,62 @@ pub async fn pause_task(
     id: String,
 ) -> Result<(), String> {
     log::info!("User paused task: {}", id);
-    state.pause_task(&id, &app)
+    let res = state.pause_task(&id, &app);
+
+    if res.is_ok() {
+        // Hybrid State Machine: Phase 1 (Soft Pause) -> Phase 2 (Hard Pause)
+        let state_arc = (*state).clone();
+        let app_handle = app.clone();
+        let task_id = id.clone();
+
+        tokio::spawn(async move {
+            tokio::time::sleep(tokio::time::Duration::from_secs(180)).await;
+
+            let (should_hard_pause, pid) = {
+                let tasks = state_arc.tasks.lock().unwrap_or_else(|e| e.into_inner());
+                if let Some(task) = tasks.get(&task_id) {
+                    // Check if the task is still Soft Paused (has a PID and is in Paused state)
+                    if task.status == TaskStatus::Paused && task.pid.is_some() {
+                        (true, task.pid.unwrap())
+                    } else {
+                        (false, 0)
+                    }
+                } else {
+                    (false, 0)
+                }
+            };
+
+            if should_hard_pause {
+                log::info!(
+                    "Task {} soft-pause expired (3 mins). Transitioning to Hard Pause...",
+                    task_id
+                );
+                // Wake up process so it can gracefully flush to `.part` disk file when killed
+                let _ = crate::commands::process::resume_process(pid);
+                // Gracefully kill the process tree
+                let _ = crate::commands::process::kill_process_tree(pid);
+
+                {
+                    let mut tasks = state_arc.tasks.lock().unwrap_or_else(|e| e.into_inner());
+                    if let Some(task) = tasks.get_mut(&task_id) {
+                        task.pid = None; // Nullifying PID uniquely represents PausedHard
+                        task.status_detail = Some("Paused (Hibernating)".to_string());
+                    }
+                }
+
+                let mut handles = state_arc.abort_handles.lock().unwrap_or_else(|e| e.into_inner());
+                if let Some(handle) = handles.remove(&task_id) {
+                    handle.abort(); // Clear thread resources
+                }
+
+                state_arc.save();
+                // Send event to UI so status_detail updates
+                crate::download_queue::emit_queue_update(&app_handle, &state_arc);
+            }
+        });
+    }
+
+    res
 }
 
 #[tauri::command]

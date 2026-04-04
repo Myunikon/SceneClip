@@ -296,6 +296,8 @@ export const ms = {
             import_btn: "Import",
             reset_defaults: "Tetapkan Semula",
             alerts: {
+                force_stop_success: "Semua proses latar belakang dihentikan secara paksa!",
+                force_stop_fail: "Gagal menghentikan: ",
                 export_success: "Sejarah berjaya dieksport!",
                 export_fail: "Gagal mengeksport sejarah: ",
                 import_success: "Berjaya mengimport {{n}} tugasan!",
@@ -333,6 +335,7 @@ export const ms = {
             history_max_items: "Maks Item Sejarah",
             history_item_count: "{{count}} Item",
             btn_replay_welcome: "Main Semula Intro",
+            btn_force_stop_all: "Henti Paksa Semua Proses Latar Belakang",
             btn_reset_data: "Tetap Semula Data & Tetapan",
             btn_export_history: "Eksport Sejarah (.json)",
             btn_import_history: "Import Sejarah (.json)"

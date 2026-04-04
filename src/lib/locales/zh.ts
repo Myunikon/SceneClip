@@ -294,6 +294,8 @@ export const zh = {
             import_btn: "导入",
             reset_defaults: "重置为默认值",
             alerts: {
+                force_stop_success: "已强制停止所有后台进程！",
+                force_stop_fail: "强制停止失败：",
                 export_success: "历史记录导出成功！",
                 export_fail: "导出历史记录失败：",
                 import_success: "成功导入 {{n}} 个任务！",
@@ -331,6 +333,7 @@ export const zh = {
             history_max_items: "最大历史项目数",
             history_item_count: "{{count}} 个项目",
             btn_replay_welcome: "重播欢迎页",
+            btn_force_stop_all: "强制停止所有后台进程",
             btn_reset_data: "重置所有数据与设置",
             btn_export_history: "导出历史 (.json)",
             btn_import_history: "导入历史 (.json)"

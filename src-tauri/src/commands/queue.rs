@@ -68,17 +68,19 @@ pub async fn remove_from_queue(
     app: tauri::AppHandle,
     id: String,
 ) -> Result<(), String> {
-    // Scope the lock to ensure it is dropped before awaiting
-    // Now returns Option<DownloadTask> so we can cleanup files
+    // remove_task now kills process tree FIRST, then removes from maps,
+    // then aborts tokio handle. This ensures all processes are dead.
     let removed_task_opt = state.remove_task(&id, &app);
 
     if let Some(task) = removed_task_opt {
         log::info!("User removed task: {} (URL: {})", id, task.url);
-        // 1. Process Cancellation (Force Kill)
+
+        // Safety: also try cancel_download_internal in case abort handle
+        // was stored elsewhere or kill_on_drop needs to trigger
         let _ =
             crate::commands::download::cancel_download_internal(id, state.inner().clone()).await;
 
-        // 2. File Cleanup
+        // File Cleanup
         if let Some(path_str) = task.file_path {
             let path = std::path::Path::new(&path_str);
             let mut candidates = Vec::new();
@@ -90,17 +92,11 @@ pub async fn remove_from_queue(
             }
 
             // Always try to remove partial/temp files associated with this download
-            // Pattern 1: .part appended to full name (yt-dlp default)
-            // e.g. "video.mp4.part"
             if let Some(file_name) = path.file_name() {
                 if let Some(parent) = path.parent() {
-                    // specific yt-dlp part file: video.mp4.part
                     candidates.push(parent.join(format!("{}.part", file_name.to_string_lossy())));
-                    // specific yt-dlp meta file: video.mp4.ytdl
                     candidates.push(parent.join(format!("{}.ytdl", file_name.to_string_lossy())));
 
-                    // Also try replacing extension (rare but possible depending on config)
-                    // e.g. video.part instead of video.mp4 (if temp-filename configured differently)
                     if let Some(stem) = path.file_stem() {
                         candidates.push(parent.join(format!("{}.part", stem.to_string_lossy())));
                     }
@@ -108,8 +104,6 @@ pub async fn remove_from_queue(
             }
 
             for p in candidates {
-                // remove_file returns error if file doesn't exist, which we can safely ignore
-                // This atomic attempt is safer than checking exists() first (TOCTOU)
                 let _ = std::fs::remove_file(p);
             }
         }

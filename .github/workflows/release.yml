@@ -105,27 +105,17 @@ jobs:
       # --- SIDECAR BINARIES SETUP (Optimized) ---
       
       # 1. Download Sidecar Binaries (Pre-prepared)
-      - name: Download Sidecar Binaries
-        id: download_sidecars
-        uses: dsaltares/fetch-gh-release-asset@master
-        continue-on-error: true
-        with:
-          repo: ${{ github.repository }}
-          version: tags/binaries-sidecars
-          file: "*" # Download all binaries from 'binaries-sidecars' tag
-          target: "src-tauri/bin/"
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download Custom FFmpeg
-        id: download_ffmpeg
-        uses: dsaltares/fetch-gh-release-asset@master
-        continue-on-error: true
-        with:
-          repo: ${{ github.repository }}
-          version: tags/binaries-ffmpeg
-          file: "*" # Download all binaries from 'binaries-ffmpeg' tag
-          target: "src-tauri/bin/"
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download Pre-built Sidecars
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p src-tauri/bin
+          echo "Downloading sidecars..."
+          gh release download binaries-sidecars -D src-tauri/bin/ -R ${{ github.repository }} --pattern "*" || echo "Failed to download standard sidecars"
+          
+          echo "Downloading custom ffmpeg..."
+          gh release download binaries-ffmpeg -D src-tauri/bin/ -R ${{ github.repository }} --pattern "*" || echo "Failed to download custom ffmpeg"
         
       - name: Grant Permissions (Linux/Mac)
         if: matrix.platform != 'windows-latest'
@@ -143,7 +133,7 @@ jobs:
               MISSING=true
             fi
             
-            if [ "${{ steps.download_sidecars.outcome }}" == "failure" ] || [ "${{ steps.download_ffmpeg.outcome }}" == "failure" ] || [ "$MISSING" == "true" ]; then
+            if [ "$MISSING" == "true" ]; then
               echo "Sidecars missing or download failed. Running setup script..."
               if [ "${{ matrix.platform }}" == "windows-latest" ]; then
                  npm run setup-binaries -- --target win-x64 --target win-x86 --target win-arm64

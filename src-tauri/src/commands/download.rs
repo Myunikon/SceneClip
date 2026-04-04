@@ -619,6 +619,25 @@ pub async fn download_media_internal(
                     });
                     // Disable JS Runtime for next attempt
                     current_options.disable_js_runtime = Some(true);
+                } else if error_lower.contains("sign in to confirm")
+                    || error_lower.contains("confirm you")
+                    || error_lower.contains("bot")
+                    || error_lower.contains("precondition")
+                    || error_lower.contains("not valid json")
+                    || error_lower.contains("player_response")
+                    || error_lower.contains("nsig")
+                    || error_lower.contains("http error 403")
+                    || error_lower.contains("403")
+                {
+                    // YouTube anti-bot detection errors.
+                    // These are common with newer YouTube protection mechanisms.
+                    let _ = sender.send(DownloadEvent::Log {
+                        id: id.clone(),
+                        message:
+                            "YouTube anti-bot detection triggered. Retrying with different client..."
+                                .to_string(),
+                        level: "warning".to_string(),
+                    });
                 } else if error_lower.contains("error number -138")
                     || error_lower.contains("timed out")
                     || error_lower.contains("timeout")

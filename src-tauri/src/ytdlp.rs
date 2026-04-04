@@ -729,11 +729,6 @@ pub async fn build_ytdlp_args(
 
                 args.push("--js-runtimes".to_string());
                 args.push(format!("{}:{}", runtime_type, path));
-
-                if runtime_type == "deno" || runtime_type == "bun" {
-                    args.push("--remote-components".to_string());
-                    args.push("ejs:npm".to_string());
-                }
             }
         }
 
@@ -759,10 +754,16 @@ pub async fn build_ytdlp_args(
     // Removed duplicate block that used to push settings.binary_path_ffmpeg directly.
 
     if is_clipping {
-        // Force FFmpeg downloader for "Trim First" behavior (partial download via Range headers)
-        // This ensures consistent behavior across generic sites/HLS without downloading full file first.
-        args.push("--downloader".to_string());
-        args.push("ffmpeg".to_string());
+        // Use FFmpeg downloader ONLY for non-YouTube/non-DASH sites.
+        // YouTube DASH streams require yt-dlp's native downloader because:
+        // 1. YouTube signs each fragment URL individually — ffmpeg can't authenticate
+        // 2. yt-dlp natively supports --download-sections with DASH (downloads only needed segments)
+        // 3. FFmpeg downloader on YouTube causes 403 Forbidden errors
+        // For generic/direct-link sites, FFmpeg downloader is still needed for HTTP Range seeking.
+        if !is_youtube_url(url) {
+            args.push("--downloader".to_string());
+            args.push("ffmpeg".to_string());
+        }
     } else if settings.use_aria2c {
         args.push("--downloader".to_string());
         args.push("aria2c".to_string());
@@ -1160,6 +1161,12 @@ pub async fn build_ytdlp_args(
         }
         args.push("--extractor-args".to_string());
         args.push(format!("youtube:{}", yt_args));
+    } else if is_youtube_url(url) {
+        // Fallback: Use web + default client combination for better anti-bot resilience
+        // when user hasn't configured po_token authentication.
+        // The 'web' client is more resistant to bot detection than 'android' or 'ios'.
+        args.push("--extractor-args".to_string());
+        args.push("youtube:player_client=web,default".to_string());
     }
 
     if let Some(cookies) = &options.cookies {

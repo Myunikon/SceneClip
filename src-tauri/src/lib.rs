@@ -70,6 +70,7 @@ pub fn run() {
             commands::process::suspend_process,
             commands::process::resume_process,
             commands::process::kill_process_tree,
+            commands::process::force_stop_all_processes,
             commands::power::prevent_suspend,
             commands::power::is_suspend_inhibited,
             commands::stats::get_system_stats,
@@ -159,18 +160,18 @@ pub fn run() {
                 let _ = apply_blur(&window, Some((0, 0, 0, 0)));
 
                 // --- 1. START MINIMIZED LOGIC ---
-                use tauri_plugin_store::StoreExt;
+
                 log::info!("Attempting to load settings for window configuration...");
                 
-                let start_minimized = match app.store("settings.json") {
-                    Ok(store) => {
+                let start_minimized = match crate::store_helpers::get_settings_value(app.handle()) {
+                    Some(settings) => {
                         log::info!("Settings store loaded successfully.");
-                        store.get("startMinimized")
+                        settings.get("startMinimized")
                             .and_then(|v| v.as_bool())
                             .unwrap_or(false)
                     },
-                    Err(e) => {
-                        log::error!("CRITICAL: Failed to load settings store at startup: {}. Continuing with defaults.", e);
+                    None => {
+                        log::error!("CRITICAL: Failed to load settings from Zustand store at startup. Continuing with defaults.");
                         false
                     }
                 };
@@ -321,13 +322,13 @@ pub fn run() {
                 }
 
                 // 2. Normal Close Logic (Check Settings)
-                use tauri_plugin_store::StoreExt;
+
 
                 // We attempt to load store differently depending on context
                 // but app_handle has access to it.
-                if let Ok(store) = app.store("settings.json") {
+                if let Some(settings) = crate::store_helpers::get_settings_value(app) {
                     // Check 'closeAction' (default 'quit' or 'minimize')
-                    let close_action = store
+                    let close_action = settings
                         .get("closeAction")
                         .and_then(|v| v.as_str().map(|s| s.to_string()))
                         .unwrap_or_else(|| "quit".to_string()); // Default to quit if not set

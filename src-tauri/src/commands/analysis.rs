@@ -85,12 +85,19 @@ pub struct EstimationParams {
 #[derive(Debug, Deserialize)]
 struct FfprobeOutput {
     format: Option<FfprobeFormat>,
+    streams: Option<Vec<FfprobeStream>>,
 }
 
 #[derive(Debug, Deserialize)]
 struct FfprobeFormat {
     duration: Option<String>,
     bit_rate: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct FfprobeStream {
+    width: Option<u32>,
+    height: Option<u32>,
 }
 
 // ─── Parsing Helpers ─────────────────────────────────────────────────
@@ -235,7 +242,10 @@ fn calculate_clip_ratio(options: &DownloadEstimationOptions, total: f64) -> f64 
     };
 
     let duration = (e.min(total) - s.max(0.0)).max(0.0);
-    duration / total
+    let ratio = duration / total;
+    
+    // 15% VBR Buffer, capped at 1.0 (so a clip is never estimated larger than the full video base format)
+    (ratio * 1.15).min(1.0)
 }
 
 /// Estimates size by scaling a known resolution's size to a target resolution.
@@ -244,7 +254,8 @@ fn calculate_scaled_fallback(target_height: u32, known_size: f64, known_h: f64, 
     if known_h <= 0.0 {
         return known_size + audio_size;
     }
-    let scale = (target_height as f64 / known_h).powi(2).min(1.5);
+    // Sublinear scaling (power 1.5) due to macroblock/motion-vector efficiency in codecs. Capped at 4.0x to prevent extreme inflation.
+    let scale = (target_height as f64 / known_h).powf(1.5).min(4.0);
     known_size * scale + audio_size
 }
 
@@ -253,11 +264,9 @@ fn calculate_gif_size(options: &DownloadEstimationOptions, total: f64, meta_heig
     let h = options.gif_scale.unwrap_or_else(|| meta_height.unwrap_or(480)) as f64;
     let fps = options.gif_fps.unwrap_or(15) as f64;
 
-    // Reuse clip ratio logic, but enforce min 1s for GIF so we never estimate 0
-    let gif_duration = (calculate_clip_ratio(options, total) * total).max(1.0);
-
+    // Use full duration. The clip ratio will be applied at the end of estimate_download_size!
     let base_factor = (h / 480.0) * (fps / 15.0) * 0.5 * 1024.0 * 1024.0;
-    base_factor * gif_duration
+    base_factor * total.max(1.0)
 }
 
 /// Estimates audio-only download size for a target bitrate.
@@ -374,19 +383,42 @@ pub async fn estimate_export_size(
 ) -> Result<u64, String> {
     log::info!("Estimating export size for: {:?}", params);
 
-    let (duration_secs, actual_bitrate) = probe_file_info(&app_handle, params.file_path.as_deref()).await;
+    let (duration_secs, actual_bitrate, probe_height) = probe_file_info(&app_handle, params.file_path.as_deref()).await;
 
-    let base_bytes = match (duration_secs, actual_bitrate) {
-        (Some(d), Some(b)) => clamp_to_u64(d * (b as f64 / 8.0)),
-        _ => params.original_size_str.as_deref().map_or(0, parse_size_to_bytes),
+    let duration = duration_secs.unwrap_or(1.0).max(1.0);
+    
+    let base_bytes = match params.media_type {
+        MediaType::Video => {
+            // Solve the CRF Paradox: Ignore original bitrate; apply empirical Baseline Bitrate instead.
+            let base_kbps = match probe_height.unwrap_or(1080) {
+                h if h >= 4320 => 35_000.0, // 8K
+                h if h >= 2160 => 15_000.0, // 4K
+                h if h >= 1440 => 8_000.0,  // 2K
+                h if h >= 1080 => 4_000.0,  // 1080p
+                h if h >= 720  => 2_500.0,  // 720p
+                h if h >= 480  => 1_200.0,  // 480p
+                h if h >= 360  => 700.0,    // 360p
+                _              => 2_500.0,  // Default fallback
+            };
+            clamp_to_u64(bitrate_bytes(base_kbps, duration))
+        },
+        _ => {
+            // Audio mostly respects exact bitrate
+            match (duration_secs, actual_bitrate) {
+                (Some(d), Some(b)) => clamp_to_u64(d * (b as f64 / 8.0)),
+                _ => params.original_size_str.as_deref().map_or(0, parse_size_to_bytes),
+            }
+        }
     };
 
     if base_bytes == 0 {
         return Ok(0);
     }
 
-    let ratio = estimate_compression_ratio(&params);
-    Ok(clamp_to_u64(base_bytes as f64 * ratio))
+    let crf_multiplier = estimate_compression_ratio(&params);
+    let with_container_overhead = (base_bytes as f64 * crf_multiplier) * 1.01;
+
+    Ok(clamp_to_u64(with_container_overhead))
 }
 
 /// Estimates the download size for a remote video based on yt-dlp metadata.
@@ -430,42 +462,43 @@ pub async fn estimate_download_size(
         None => filesize,
     };
 
-    Ok(clamp_to_u64(base_size * clip_ratio))
+    let final_size = (base_size * clip_ratio) * 1.01; // Global 1.01x container format overhead
+    Ok(clamp_to_u64(final_size))
 }
 
 // ─── Internal Helpers ────────────────────────────────────────────────
 
 /// Runs ffprobe on a local file and returns (duration_secs, bitrate_bps).
-async fn probe_file_info(app_handle: &AppHandle, file_path: Option<&str>) -> (Option<f64>, Option<u64>) {
+async fn probe_file_info(app_handle: &AppHandle, file_path: Option<&str>) -> (Option<f64>, Option<u64>, Option<u32>) {
     let path = match file_path {
         Some(p) if Path::new(p).exists() => p,
-        _ => return (None, None),
+        _ => return (None, None, None),
     };
 
     let sidecar_cmd = match app_handle.shell().sidecar("ffprobe") {
         Ok(cmd) => cmd,
         Err(e) => {
             log::error!("Sidecar ffprobe not found: {}", e);
-            return (None, None);
+            return (None, None, None);
         }
     };
 
     let output = match sidecar_cmd
-        .args(["-v", "error", "-show_entries", "format=duration,bit_rate", "-of", "json", path])
+        .args(["-v", "error", "-show_entries", "format=duration,bit_rate:stream=width,height", "-of", "json", path])
         .output()
         .await
     {
         Ok(o) => o,
         Err(e) => {
             log::error!("FFprobe exec failed: {}", e);
-            return (None, None);
+            return (None, None, None);
         }
     };
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         log::warn!("FFprobe failed for {:?}: {}", path, stderr);
-        return (None, None);
+        return (None, None, None);
     }
 
     match serde_json::from_slice::<FfprobeOutput>(&output.stdout) {
@@ -473,11 +506,12 @@ async fn probe_file_info(app_handle: &AppHandle, file_path: Option<&str>) -> (Op
             let format = json_out.format;
             let duration = format.as_ref().and_then(|f| f.duration.as_ref()?.parse().ok());
             let bitrate = format.as_ref().and_then(|f| f.bit_rate.as_ref()?.parse().ok());
-            (duration, bitrate)
+            let height = json_out.streams.and_then(|streams| streams.into_iter().find_map(|s| s.height));
+            (duration, bitrate, height)
         }
         Err(_) => {
             log::warn!("FFprobe returned unparseable JSON for {:?}", path);
-            (None, None)
+            (None, None, None)
         }
     }
 }
@@ -495,11 +529,11 @@ fn estimate_compression_ratio(params: &EstimationParams) -> f64 {
             }
         },
         MediaType::Video => match params.crf {
-            0..=17 => 1.05,  // Near-lossless (can be larger than source!)
-            18..=22 => 0.95, // High quality
-            23..=27 => 0.60, // Good balance
-            28..=34 => 0.30, // Low bitrate
-            _ => 0.15,       // Very low (35+)
+            0..=17 => 1.50,  // Significantly larger than empirical baseline
+            18..=22 => 1.00, // Baseline equivalent
+            23..=27 => 0.70, // Standard compression
+            28..=34 => 0.40, // High compression
+            _ => 0.20,       // Maximum compression (35+)
         },
         MediaType::Image => 1.0,
     }

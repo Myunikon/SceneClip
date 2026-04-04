@@ -135,6 +135,15 @@ export const createVideoSlice: StateCreator<AppState, [], [], VideoSlice> = (set
         },
 
         stopTask: async (id) => {
+            // Kill process tree FIRST for immediate effect.
+            // This ensures yt-dlp + all child processes (ffmpeg, aria2c, deno)
+            // are dead before we remove from queue.
+            const task = get().tasksById[id];
+            if (task?.pid) {
+                try {
+                    await invoke('kill_process_tree', { pid: task.pid });
+                } catch { /* process might already be dead */ }
+            }
             await invoke('remove_from_queue', { id });
         },
 

@@ -11,6 +11,7 @@ import { notify } from '@/lib/notify'
 import { validateBinary, detectBinaryType } from '@/lib/binary-validator'
 import { cn } from '@/lib/utils'
 import { useCallback } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 
 
 
@@ -393,6 +394,20 @@ export function SystemSettings({ settings, setSetting, updateSettings }: SystemS
                     </button>
 
                     <div className="h-px bg-border/40 my-1" />
+
+                    <button
+                        onClick={async () => {
+                            try {
+                                await invoke('force_stop_all_processes')
+                                notify.success(t('settings.advanced.alerts.force_stop_success') || "All background processes force stopped")
+                            } catch (e) {
+                                notify.error((t('settings.advanced.alerts.force_stop_fail') || "Failed to force stop: ") + String(e))
+                            }
+                        }}
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg hover:bg-orange-500/10 text-orange-500 transition-colors group text-left mb-1"
+                    >
+                        <span className="font-medium">{t('settings.advanced.btn_force_stop_all') || "Force Stop All Background Processes"}</span>
+                    </button>
 
                     <button
                         onClick={() => setShowResetConfirm(true)}

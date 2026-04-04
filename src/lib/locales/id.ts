@@ -299,6 +299,8 @@ export const id = {
             import_btn: "Impor",
             reset_defaults: "Reset ke Awal",
             alerts: {
+                force_stop_success: "Semua proses latar belakang dihentikan paksa!",
+                force_stop_fail: "Gagal menghentikan: ",
                 export_success: "Riwayat berhasil diekspor!",
                 export_fail: "Gagal mengekspor riwayat: ",
                 import_success: "Berhasil mengimpor {{n}} tugas!",
@@ -351,6 +353,7 @@ export const id = {
             history_item_count: "{{count}} Item",
 
             btn_replay_welcome: "Putar Intro",
+            btn_force_stop_all: "Hentikan Paksa Semua Proses Latar Belakang",
             btn_reset_data: "Reset Semua Data & Pengaturan",
             btn_export_history: "Ekspor Riwayat (.json)",
             btn_import_history: "Impor Riwayat (.json)"

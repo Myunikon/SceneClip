@@ -299,6 +299,8 @@ export const en = {
 
 
             alerts: {
+                force_stop_success: "All background processes force stopped!",
+                force_stop_fail: "Failed to force stop: ",
                 export_success: "History exported successfully!",
                 export_fail: "Failed to export history: ",
                 import_success: "Successfully imported {{n}} tasks!",
@@ -325,6 +327,7 @@ export const en = {
             detected_gpu: "Detected GPU:",
             unknown_integrated: "Unknown / Integrated",
             btn_replay_welcome: "Replay Welcome",
+            btn_force_stop_all: "Force Stop All Background Processes",
             btn_reset_data: "Reset All Data & Settings",
             btn_export_history: "Export History (.json)",
             btn_import_history: "Import History (.json)",

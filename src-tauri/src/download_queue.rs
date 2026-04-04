@@ -8,7 +8,7 @@ use std::sync::{
 };
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_notification::NotificationExt;
-use tauri_plugin_store::StoreExt;
+
 use tokio::sync::Notify;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -283,6 +283,32 @@ impl QueueState {
     }
 
     pub fn remove_task(&self, id: &str, app: &AppHandle) -> Option<DownloadTask> {
+        // CRITICAL: Kill process tree FIRST (before removing from maps/handles)
+        // This ensures yt-dlp and ALL child processes (ffmpeg, aria2c, deno) are dead
+        // before we clean up internal state.
+        {
+            let tasks = self.tasks.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(task) = tasks.get(id) {
+                if let Some(pid) = task.pid {
+                    if matches!(
+                        task.status,
+                        TaskStatus::Downloading
+                            | TaskStatus::Paused
+                            | TaskStatus::Processing
+                            | TaskStatus::FetchingInfo
+                            | TaskStatus::Queued
+                    ) {
+                        log::info!(
+                            "[Queue] Killing process tree for task {} (PID: {})",
+                            id,
+                            pid
+                        );
+                        let _ = crate::commands::process::kill_process_tree(pid);
+                    }
+                }
+            }
+        }
+
         let mut removed_task: Option<DownloadTask> = None;
         let mut removed = false;
         {
@@ -298,7 +324,7 @@ impl QueueState {
             }
         }
 
-        // Abort if running
+        // Abort tokio task (also triggers kill_on_drop for the Command)
         if removed {
             let mut handles = self.abort_handles.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(handle) = handles.remove(id) {
@@ -482,10 +508,16 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
             let mut max = 100;
 
             if let Some(settings_val) = crate::store_helpers::get_settings_value(&app) {
-                if let Some(v) = settings_val.get("concurrentDownloads").and_then(|v| v.as_u64()) {
+                if let Some(v) = settings_val
+                    .get("concurrentDownloads")
+                    .and_then(|v| v.as_u64())
+                {
                     conc = v as usize;
                 }
-                if let Some(v) = settings_val.get("historyRetentionDays").and_then(|v| v.as_u64()) {
+                if let Some(v) = settings_val
+                    .get("historyRetentionDays")
+                    .and_then(|v| v.as_u64())
+                {
                     days = v as u32;
                 }
                 if let Some(v) = settings_val.get("maxHistoryItems").and_then(|v| v.as_i64()) {
@@ -578,15 +610,18 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                     );
 
                     // Reset setting to none to prevent loop upon next wake/restart
-                    if let Ok(store) = app.store("settings.json") {
-                        let _ = store.set("postDownloadAction", serde_json::json!("none"));
-                        let _ = store.save();
-                        // Pre-update the cache
-                        *state
-                            .cached_post_download_action
-                            .lock()
-                            .unwrap_or_else(|e| e.into_inner()) = "none".to_string();
+                    if let Err(e) = crate::store_helpers::set_settings_value(
+                        &app,
+                        "postDownloadAction",
+                        serde_json::json!("none"),
+                    ) {
+                        log::warn!("Failed to persist postDownloadAction change: {}", e);
                     }
+                    // Pre-update the cache
+                    *state
+                        .cached_post_download_action
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner()) = "none".to_string();
 
                     if post_action == "shutdown" {
                         log::warn!("Initiating system shutdown!");
@@ -719,6 +754,17 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                     ..
                                 } => {
                                     state_monitor.update_task(&task_id, |t| {
+                                        // CRITICAL GUARD: Don't override Paused/Stopped status
+                                        // with progress events. The monitor loop may receive
+                                        // buffered stdout events after pause/stop was triggered,
+                                        // which would incorrectly reset the status back to Downloading.
+                                        if matches!(
+                                            t.status,
+                                            crate::download_queue::TaskStatus::Paused
+                                                | crate::download_queue::TaskStatus::Stopped
+                                        ) {
+                                            return;
+                                        }
                                         t.progress = percent;
                                         t.speed = Some(speed);
                                         t.eta = Some(eta);
@@ -928,7 +974,7 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
     }
 }
 
-fn emit_queue_update(app: &AppHandle, state: &QueueState) {
+pub fn emit_queue_update(app: &AppHandle, state: &QueueState) {
     // SINGLE ATOMIC LOCK SCOPE to prevent TOCTOU race conditions
     let tasks_guard = state.tasks.lock().unwrap_or_else(|e| e.into_inner());
     let order_guard = state.queue_order.lock().unwrap_or_else(|e| e.into_inner());

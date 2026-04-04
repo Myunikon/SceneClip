@@ -270,3 +270,69 @@ pub fn suspend_process(pid: u32) -> Result<(), String> {
 pub fn resume_process(pid: u32) -> Result<(), String> {
     resume_process_tree(pid)
 }
+
+#[command]
+pub fn force_stop_all_processes(state: tauri::State<'_, std::sync::Arc<crate::download_queue::QueueState>>, app: tauri::AppHandle) -> Result<(), String> {
+    log::info!("Force stopping all child processes...");
+    // 1. Stop all active downloads in queue
+    {
+        let mut tasks = state.tasks.lock().unwrap_or_else(|e| e.into_inner());
+        for (_, task) in tasks.iter_mut() {
+            if let Some(pid) = task.pid {
+                if matches!(task.status, 
+                    crate::download_queue::TaskStatus::Downloading
+                    | crate::download_queue::TaskStatus::FetchingInfo
+                    | crate::download_queue::TaskStatus::Processing
+                    | crate::download_queue::TaskStatus::Paused
+                    | crate::download_queue::TaskStatus::Queued) 
+                {
+                    log::info!("Killing process tree for task {} (PID: {})", task.id, pid);
+                    let _ = kill_process_tree(pid);
+                    task.status = crate::download_queue::TaskStatus::Stopped;
+                    task.status_detail = Some("Force stopped".to_string());
+                }
+            }
+        }
+    }
+    
+    // Save state and notify
+    state.save_now();
+    crate::download_queue::emit_queue_update(&app, &state);
+    state.notify.notify_one();
+    
+    // 2. We can also do a pass with sysinfo to catch any rogue ffmpeg/yt-dlp/deno processes
+    let mut sys = SYSTEM.lock().map_err(|e| e.to_string())?;
+    sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+    
+    let my_pid = match sysinfo::get_current_pid() {
+        Ok(p) => p,
+        Err(_) => return Ok(()),
+    };
+    
+    let my_tree = collect_process_tree(my_pid, &sys);
+    let target_names = ["ffmpeg", "yt-dlp", "deno", "aria2c", "rsgain", "ffprobe"];
+    
+    for pid in my_tree {
+        if pid == my_pid { continue; }
+        if let Some(process) = sys.process(pid) {
+            let name = process.name().to_string_lossy().to_lowercase();
+            let mut matches = false;
+            for t in target_names {
+                if name.contains(t) {
+                    matches = true;
+                    break;
+                }
+            }
+            if matches {
+                log::info!("Force killing rogue process: {} (PID: {})", process.name().to_string_lossy(), pid.as_u32());
+                #[cfg(target_os = "windows")]
+                process.kill();
+                #[cfg(not(target_os = "windows"))]
+                process.kill_with(sysinfo::Signal::Kill);
+            }
+        }
+    }
+
+    Ok(())
+}
+

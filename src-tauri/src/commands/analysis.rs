@@ -96,6 +96,7 @@ struct FfprobeFormat {
 
 #[derive(Debug, Deserialize)]
 struct FfprobeStream {
+    #[allow(dead_code)]
     width: Option<u32>,
     height: Option<u32>,
 }

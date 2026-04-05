@@ -15,7 +15,8 @@ export const id = {
         logs: "Log",
         remove: "Hapus",
         retry: "Coba Lagi",
-        unknown: "Tidak Diketahui"
+        unknown: "Tidak Diketahui",
+        view_terminal: "Lihat Terminal"
     },
     error_boundary: {
         title: "Ada yang salah nih.",
@@ -556,7 +557,10 @@ export const id = {
         copy: "Salin",
         copy_line: "Salin Baris",
         ready: "Sistem siap. Menunggu tugas...",
-        no_logs: "Tidak ada log {{filter}} ditemukan."
+        no_logs: "Tidak ada log {{filter}} ditemukan.",
+        no_output: "Menunggu output...",
+        no_output_hint: "Output akan muncul di sini saat proses dimulai",
+        dev_hint: "Output proses mentah untuk debugging"
     },
 
     onboarding: {

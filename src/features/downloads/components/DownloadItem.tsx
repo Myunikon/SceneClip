@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pause, Play, StopCircle, Trash2, FolderOpen, RefreshCcw, Terminal, FileVideo, FileAudio, FileImage, Copy, Check } from 'lucide-react'
+import { Pause, Play, StopCircle, Trash2, FolderOpen, RefreshCcw, Terminal, SquareTerminal, FileVideo, FileAudio, FileImage, Copy, Check } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger, OverflowTooltip } from '@/components/ui/tooltip'
 import { openPath } from '@tauri-apps/plugin-opener'
 import { writeText } from '@tauri-apps/plugin-clipboard-manager'
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/store'
 import { useShallow } from 'zustand/react/shallow'
 import { CommandModal } from '@/components/dialogs'
+import { TerminalOutputModal } from '@/components/dialogs'
 import { ConfirmDialog } from '@/components/dialogs'
 import { notify } from '@/lib/notify'
 import { formatEtaHumanReadable } from '@/lib/formatters'
@@ -33,6 +34,7 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
         }))
     )
     const [showCommandModal, setShowCommandModal] = useState(false)
+    const [showTerminalModal, setShowTerminalModal] = useState(false)
     const [showCancelConfirm, setShowCancelConfirm] = useState(false)
     const [showClipPauseWarning, setShowClipPauseWarning] = useState(false)
     const [isCopying, setIsCopying] = useState(false)
@@ -294,6 +296,7 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
 
                     {/* Logs - Strictly for Developer Mode */}
                     {settings.developerMode && (
+                        <>
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button variant="ghost" size="icon" onClick={() => setShowCommandModal(true)} className="h-7 w-7 p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground">
@@ -302,6 +305,18 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
                             </TooltipTrigger>
                             <TooltipContent><p>{t('common.logs') || 'View Logs'}</p></TooltipContent>
                         </Tooltip>
+                        {/* Live Terminal Output - Active downloads only */}
+                        {['downloading', 'processing', 'fetching_info', 'queued', 'pending', 'paused', 'error'].includes(task.status) && (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" onClick={() => setShowTerminalModal(true)} className="h-7 w-7 p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 text-emerald-500/80 hover:text-emerald-500">
+                                        <SquareTerminal className="w-4 h-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>{t('common.view_terminal') || 'View Terminal'}</p></TooltipContent>
+                            </Tooltip>
+                        )}
+                        </>
                     )}
                 </div>
 
@@ -333,6 +348,11 @@ export function DownloadItem({ taskId }: DownloadItemProps) {
                 task={task}
                 isOpen={showCommandModal}
                 onClose={() => setShowCommandModal(false)}
+            />
+            <TerminalOutputModal
+                task={task}
+                isOpen={showTerminalModal}
+                onClose={() => setShowTerminalModal(false)}
             />
         </>
     )

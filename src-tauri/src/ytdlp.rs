@@ -977,6 +977,10 @@ pub async fn build_ytdlp_args(
         args.push("--download-sections".to_string());
         args.push(format!("*{}-{}", start, end));
         args.push("--force-keyframes-at-cuts".to_string());
+        
+        // Add FFmpeg reconnect options to prevent Error -138 during HTTPS stream clipping
+        args.push("--downloader-args".to_string());
+        args.push("ffmpeg:-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -http_persistent 1".to_string());
     }
 
     // Consolidated FFmpeg Args

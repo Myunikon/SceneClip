@@ -15,7 +15,8 @@ export const zh = {
         logs: "日志",
         remove: "删除",
         retry: "重试",
-        unknown: "未知"
+        unknown: "未知",
+        view_terminal: "查看终端"
     },
     error_boundary: {
         title: "出了点问题。",
@@ -1046,7 +1047,10 @@ export const zh = {
         copy: "复制",
         copy_line: "复制行",
         ready: "系统就绪。等待任务...",
-        no_logs: "未找到 {{filter}} 日志。"
+        no_logs: "未找到 {{filter}} 日志。",
+        no_output: "等待输出...",
+        no_output_hint: "进程启动后输出将显示在此处",
+        dev_hint: "原始进程输出，用于调试"
     },
 
     // ETA Human-Readable Translations (i18next pluralization)

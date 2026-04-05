@@ -8,13 +8,12 @@ use std::collections::VecDeque;
 use std::process::Stdio;
 use std::sync::Arc;
 use tauri::{ipc::Channel, AppHandle};
-use tokio::io::{AsyncBufReadExt, BufReader as AsyncBufReader};
 use tokio::process::Command;
 use tokio::sync::mpsc;
 
 // FFmpeg time= regex for realtime progress parsing during trim/clip
 lazy_static::lazy_static! {
-    static ref FFMPEG_TIME_RE: Regex = Regex::new(r"time=(\d+:\d+:\d+\.\d+)").unwrap();
+    static ref FFMPEG_TIME_RE: Regex = Regex::new(r"time=(-?\d+:\d+:\d+\.\d+)").unwrap();
     static ref FFMPEG_SPEED_RE: Regex = Regex::new(r"speed=\s*(\S+)x").unwrap();
 }
 
@@ -27,7 +26,7 @@ const SCENECLIP_IDX_ETA: usize = 6;
 
 /// Parse time string (HH:MM:SS, MM:SS, or SS) to seconds
 fn parse_time_to_seconds(time_str: Option<&str>) -> f64 {
-    let s = match time_str {
+    let mut s = match time_str {
         Some(t) => t.trim(),
         None => return 0.0,
     };
@@ -36,22 +35,29 @@ fn parse_time_to_seconds(time_str: Option<&str>) -> f64 {
         return 0.0;
     }
 
+    let is_negative = s.starts_with('-');
+    if is_negative {
+        s = &s[1..];
+    }
+
     let parts: Vec<&str> = s.split(':').collect();
-    match parts.len() {
+    let secs = match parts.len() {
         1 => parts[0].parse::<f64>().unwrap_or(0.0),
         2 => {
             let mins: f64 = parts[0].parse().unwrap_or(0.0);
-            let secs: f64 = parts[1].parse().unwrap_or(0.0);
-            mins * 60.0 + secs
+            let s: f64 = parts[1].parse().unwrap_or(0.0);
+            mins * 60.0 + s
         }
         3 => {
             let hrs: f64 = parts[0].parse().unwrap_or(0.0);
             let mins: f64 = parts[1].parse().unwrap_or(0.0);
-            let secs: f64 = parts[2].parse().unwrap_or(0.0);
-            hrs * 3600.0 + mins * 60.0 + secs
+            let s: f64 = parts[2].parse().unwrap_or(0.0);
+            hrs * 3600.0 + mins * 60.0 + s
         }
         _ => 0.0,
-    }
+    };
+
+    if is_negative { -secs } else { secs }
 }
 
 /// Download event types for channel streaming
@@ -89,7 +95,9 @@ pub enum DownloadEvent {
     Log {
         id: String,
         message: String,
-        level: String, // 'info', 'warning', 'error'
+        level: String, // 'info', 'warning', 'error', 'stdout', 'stderr'
+        #[serde(default)]
+        is_replace: bool,
     },
     /// Download completed successfully
     #[serde(rename_all = "camelCase")]
@@ -134,6 +142,7 @@ async fn perform_download_attempt(
         id: id.clone(),
         message: "Fetching metadata...".to_string(),
         level: "info".to_string(),
+        is_replace: false,
     });
 
     // Quick Metadata Fetch
@@ -185,6 +194,7 @@ async fn perform_download_attempt(
                     id: id.clone(),
                     message: "Metadata fetch failed, proceeding with default values.".to_string(),
                     level: "warning".to_string(),
+                    is_replace: false,
                 });
             }
         }
@@ -248,6 +258,7 @@ async fn perform_download_attempt(
         id: id.clone(),
         message: format!("Executing yt-dlp with {} args", args.len()),
         level: "info".to_string(),
+        is_replace: false,
     });
 
     // 6. Spawn Process (Async)
@@ -328,109 +339,141 @@ async fn perform_download_attempt(
 
     // Spawn stdout handler
     let stdout_handle = tokio::spawn(async move {
-        let reader = AsyncBufReader::new(stdout);
-        let mut lines = reader.lines();
+        use tokio::io::AsyncReadExt;
+        let mut buf = [0u8; 1024];
+        let mut line_acc = String::new();
         let mut is_post_processing = false;
+        let mut stdout_stream = stdout;
+        let mut last_percent_terminal = -100.0;
 
-        while let Ok(Some(line)) = lines.next_line().await {
-            if line.contains("SCENECLIP_DL;") {
-                let parts: Vec<&str> = line.split(';').collect();
-                if parts.len() >= 7 {
-                    let downloaded: f64 = parts[SCENECLIP_IDX_DOWNLOADED].parse().unwrap_or(0.0);
-                    let total: f64 = parts[SCENECLIP_IDX_TOTAL].parse().unwrap_or(0.0);
-                    let total_est: f64 = parts[SCENECLIP_IDX_TOTAL_EST].parse().unwrap_or(0.0);
-                    let speed_val: f64 = parts[SCENECLIP_IDX_SPEED].parse().unwrap_or(0.0);
-                    let eta_val: u64 = parts[SCENECLIP_IDX_ETA].parse().unwrap_or(0);
+        loop {
+            match stdout_stream.read(&mut buf).await {
+                Ok(0) => break,
+                Ok(n) => {
+                    let chunk = String::from_utf8_lossy(&buf[..n]);
+                    for c in chunk.chars() {
+                        if c == '\n' || c == '\r' {
+                            if !line_acc.is_empty() {
+                                let line = line_acc.clone();
+                                let is_carriage = c == '\r';
+                                line_acc.clear();
 
-                    let final_total = if total > 0.0 { total } else { total_est };
-                    let mut percent = if final_total > 0.0 {
-                        (downloaded / final_total) * 100.0
-                    } else {
-                        0.0
-                    };
+                                if line.contains("SCENECLIP_DL;") {
+                                    let parts: Vec<&str> = line.split(';').collect();
+                                    if parts.len() >= 7 {
+                                        let downloaded: f64 = parts[SCENECLIP_IDX_DOWNLOADED].parse().unwrap_or(0.0);
+                                        let total: f64 = parts[SCENECLIP_IDX_TOTAL].parse().unwrap_or(0.0);
+                                        let total_est: f64 = parts[SCENECLIP_IDX_TOTAL_EST].parse().unwrap_or(0.0);
+                                        let speed_val: f64 = parts[SCENECLIP_IDX_SPEED].parse().unwrap_or(0.0);
+                                        let eta_val: u64 = parts[SCENECLIP_IDX_ETA].parse().unwrap_or(0);
 
-                    // ETA Lying Protection: If we expect a merge, add 30% buffer during download phase
-                    let mut total_eta = eta_val as f64;
-                    if expect_pp && !is_post_processing {
-                        total_eta *= 1.3;
+                                        let final_total = if total > 0.0 { total } else { total_est };
+                                        let mut percent = if final_total > 0.0 {
+                                            (downloaded / final_total) * 100.0
+                                        } else {
+                                            0.0
+                                        };
+
+                                        // Throttled terminal output for progress
+                                        if (percent - last_percent_terminal).abs() > 1.0 {
+                                            let speed_str = format!("{:.2} MiB/s", speed_val / 1024.0 / 1024.0);
+                                            let msg = format!("[download] {:.1}% of {:.2}MiB at {} ETA {}s", percent, final_total / 1024.0 / 1024.0, speed_str, eta_val);
+                                            let _ = sender_stdout.send(DownloadEvent::Log {
+                                                id: id_clone.clone(),
+                                                message: msg,
+                                                level: "stdout".to_string(),
+                                                is_replace: is_carriage,
+                                            });
+                                            last_percent_terminal = percent;
+                                        }
+
+                                        // ETA Lying Protection: If we expect a merge, add 30% buffer during download phase
+                                        let mut total_eta = eta_val as f64;
+                                        if expect_pp && !is_post_processing {
+                                            total_eta *= 1.3;
+                                        }
+
+                                        // Cap at 80% during download if post-processing is expected
+                                        // This leaves 20% (80-100%) for post-processing phase
+                                        if expect_pp && !is_post_processing && percent > 80.0 {
+                                            percent = 80.0;
+                                        }
+
+                                        let _ = sender_stdout.send(DownloadEvent::Progress {
+                                            id: id_clone.clone(),
+                                            percent,
+                                            speed: format!("{:.2} MiB/s", speed_val / 1024.0 / 1024.0),
+                                            eta: format!("{}s", total_eta as u64),
+                                            total_size: format!("{:.2} MiB", final_total / 1024.0 / 1024.0),
+                                            status: "downloading".to_string(),
+                                            speed_raw: Some(speed_val),
+                                            eta_raw: Some(total_eta as u64),
+                                        });
+                                    }
+
+                                    // Handle download finished - transition to post-processing phase
+                                    if parts.len() >= 2 && parts[1] == "finished" && is_clipping && !is_post_processing {
+                                        is_post_processing = true; // Prevent duplicate progress events
+                                        let trim_status = if is_gif {
+                                            "Creating GIF..."
+                                        } else if is_audio_mode {
+                                            "Processing audio..."
+                                        } else {
+                                            "Trimming video..."
+                                        };
+
+                                        let _ = sender_stdout.send(DownloadEvent::Progress {
+                                            id: id_clone.clone(),
+                                            percent: 80.0,
+                                            speed: "N/A".to_string(),
+                                            eta: "Processing...".to_string(),
+                                            total_size: "N/A".to_string(),
+                                            status: trim_status.to_string(),
+                                            speed_raw: None,
+                                            eta_raw: None,
+                                        });
+                                    }
+                                } else if line.contains("SCENECLIP_PP;") {
+                                    is_post_processing = true;
+                                    let parts: Vec<&str> = line.split(';').collect();
+                                    if parts.len() >= 3 {
+                                        let status_detail = parts[2].to_string();
+                                        let display_status = match status_detail.as_str() {
+                                            "FFmpegMerger" => "Merging streams...",
+                                            "FFmpegExtractAudio" => "Extracting audio...",
+                                            "FFmpegEmbedSubtitle" => "Embedding subtitles...",
+                                            "FFmpegVideoConvertor" => "Converting video...",
+                                            "FFmpegMetadata" => "Adding metadata...",
+                                            _ => "Post-processing...",
+                                        };
+
+                                        let _ = sender_stdout.send(DownloadEvent::Progress {
+                                            id: id_clone.clone(),
+                                            percent: 95.0,
+                                            speed: "N/A".to_string(),
+                                            eta: "Calculating...".to_string(),
+                                            total_size: "N/A".to_string(),
+                                            status: display_status.to_string(),
+                                            speed_raw: None,
+                                            eta_raw: None,
+                                        });
+                                    }
+                                } else {
+                                    // Forward standard lines
+                                    let _ = sender_stdout.send(DownloadEvent::Log {
+                                        id: id_clone.clone(),
+                                        message: line,
+                                        level: "stdout".to_string(),
+                                        is_replace: is_carriage,
+                                    });
+                                }
+                            }
+                        } else {
+                            line_acc.push(c);
+                        }
                     }
-
-                    // Cap at 80% during download if post-processing is expected
-                    // This leaves 20% (80-100%) for post-processing phase
-                    if expect_pp && !is_post_processing && percent > 80.0 {
-                        percent = 80.0;
-                    }
-
-                    let _ = sender_stdout.send(DownloadEvent::Progress {
-                        id: id_clone.clone(),
-                        percent,
-                        speed: format!("{:.2} MiB/s", speed_val / 1024.0 / 1024.0),
-                        eta: format!("{}s", total_eta as u64),
-                        total_size: format!("{:.2} MiB", final_total / 1024.0 / 1024.0),
-                        status: "downloading".to_string(),
-                        speed_raw: Some(speed_val),
-                        eta_raw: Some(total_eta as u64),
-                    });
                 }
-
-                // Handle download finished - transition to post-processing phase
-                // FFmpeg progress is now parsed from stderr in realtime
-                if parts.len() >= 2 && parts[1] == "finished" && is_clipping && !is_post_processing
-                {
-                    is_post_processing = true; // Prevent duplicate progress events
-                    let trim_status = if is_gif {
-                        "Creating GIF..."
-                    } else if is_audio_mode {
-                        "Processing audio..."
-                    } else {
-                        "Trimming video..."
-                    };
-
-                    // Send initial 80% progress to indicate trim phase started
-                    // Realtime progress (80-99%) now comes from stderr FFmpeg time= parsing
-                    let _ = sender_stdout.send(DownloadEvent::Progress {
-                        id: id_clone.clone(),
-                        percent: 80.0,
-                        speed: "N/A".to_string(),
-                        eta: "Processing...".to_string(),
-                        total_size: "N/A".to_string(),
-                        status: trim_status.to_string(),
-                        speed_raw: None,
-                        eta_raw: None,
-                    });
-                }
-            } else if line.contains("SCENECLIP_PP;") {
-                is_post_processing = true;
-                let parts: Vec<&str> = line.split(';').collect();
-                if parts.len() >= 3 {
-                    let status_detail = parts[2].to_string();
-                    let display_status = match status_detail.as_str() {
-                        "FFmpegMerger" => "Merging streams...",
-                        "FFmpegExtractAudio" => "Extracting audio...",
-                        "FFmpegEmbedSubtitle" => "Embedding subtitles...",
-                        "FFmpegVideoConvertor" => "Converting video...",
-                        "FFmpegMetadata" => "Adding metadata...",
-                        _ => "Post-processing...",
-                    };
-
-                    let _ = sender_stdout.send(DownloadEvent::Progress {
-                        id: id_clone.clone(),
-                        percent: 95.0,
-                        speed: "N/A".to_string(),
-                        eta: "Calculating...".to_string(),
-                        total_size: "N/A".to_string(),
-                        status: display_status.to_string(),
-                        speed_raw: None,
-                        eta_raw: None,
-                    });
-                }
-            } else {
-                // Stream other messages (Extractor logs, warnings, etc) to UI
-                let _ = sender_stdout.send(DownloadEvent::Log {
-                    id: id_clone.clone(),
-                    message: line,
-                    level: "info".to_string(),
-                });
+                Err(_) => break,
             }
         }
     });
@@ -445,69 +488,105 @@ async fn perform_download_attempt(
 
     // Spawn stderr handler (Parse FFmpeg progress for realtime trim updates)
     let stderr_handle = tokio::spawn(async move {
-        let reader = AsyncBufReader::new(stderr);
-        let mut lines = reader.lines();
+        use tokio::io::AsyncReadExt;
         let mut error_buffer: VecDeque<String> = VecDeque::new();
-        let mut last_percent: f64 = 0.0;
+        let mut last_percent_progress: f64 = 0.0;
+        let mut last_percent_terminal: f64 = -100.0;
+        let mut buf = [0u8; 1024];
+        let mut line_acc = String::new();
+        let mut stderr_stream = stderr;
 
-        while let Ok(Some(line)) = lines.next_line().await {
-            // Parse FFmpeg time= for realtime trim progress
-            if stderr_is_clipping && stderr_clip_duration > 0.0 {
-                if let Some(caps) = FFMPEG_TIME_RE.captures(&line) {
-                    if let Some(time_match) = caps.get(1) {
-                        let time_str = time_match.as_str();
-                        let current_secs = parse_time_to_seconds(Some(time_str));
+        let mut initial_time: Option<f64> = None;
 
-                        // FFmpeg downloader does download+trim in one pass
-                        // Map time= to 0-99% of total clip duration
-                        let trim_progress = (current_secs / stderr_clip_duration).min(1.0);
-                        let percent = (trim_progress * 99.0).min(99.0);
+        loop {
+            match stderr_stream.read(&mut buf).await {
+                Ok(0) => break,
+                Ok(n) => {
+                    let chunk = String::from_utf8_lossy(&buf[..n]);
+                    for c in chunk.chars() {
+                        if c == '\n' || c == '\r' {
+                            if !line_acc.is_empty() {
+                                let line = line_acc.clone();
+                                let is_carriage = c == '\r';
+                                line_acc.clear();
 
-                        let status_text = if stderr_is_gif {
-                            "Creating GIF..."
-                        } else if stderr_is_audio {
-                            "Processing audio..."
+                                let mut is_progress_line = false;
+
+                                // Parse FFmpeg time= for realtime trim progress
+                                if stderr_is_clipping && stderr_clip_duration > 0.0 {
+                                    if let Some(caps) = FFMPEG_TIME_RE.captures(&line) {
+                                        if let Some(time_match) = caps.get(1) {
+                                            is_progress_line = true;
+                                            let time_str = time_match.as_str();
+                                            let current_secs = parse_time_to_seconds(Some(time_str));
+                                            
+                                            // Calculate relative progress from first seen timestamp
+                                            if initial_time.is_none() {
+                                                initial_time = Some(current_secs);
+                                            }
+                                            let diff = current_secs - initial_time.unwrap();
+                                            // Handle edge cases where current_secs slightly regresses
+                                            let processed_secs = diff.max(0.0);
+                                            
+                                            let trim_progress = (processed_secs / stderr_clip_duration).max(0.0).min(1.0);
+                                            let percent = (trim_progress * 99.0).min(99.0);
+
+                                            let status_text = if stderr_is_gif { "Creating GIF..." } else if stderr_is_audio { "Processing audio..." } else { "Downloading & Trimming..." };
+
+                                            if (percent - last_percent_progress).abs() > 1.0 {
+                                                let speed_str = FFMPEG_SPEED_RE.captures(&line).and_then(|c| c.get(1)).map(|m| format!("{}x", m.as_str())).unwrap_or_else(|| "N/A".to_string());
+                                                let remaining_secs = ((1.0 - trim_progress) * stderr_clip_duration) as u64;
+
+                                                let _ = sender_stderr.send(DownloadEvent::Progress {
+                                                    id: id_stderr.clone(),
+                                                    percent,
+                                                    speed: speed_str,
+                                                    eta: if remaining_secs > 0 { format!("~{}s", remaining_secs) } else { "Finishing...".to_string() },
+                                                    total_size: "N/A".to_string(),
+                                                    status: status_text.to_string(),
+                                                    speed_raw: None,
+                                                    eta_raw: Some(remaining_secs),
+                                                });
+                                                last_percent_progress = percent;
+                                            }
+                                            
+                                            // Throttle terminal output for ffmpeg progress
+                                            if (percent - last_percent_terminal).abs() > 1.0 {
+                                                let _ = sender_stderr.send(DownloadEvent::Log {
+                                                    id: id_stderr.clone(),
+                                                    message: line.clone(),
+                                                    level: "stderr".to_string(),
+                                                    is_replace: is_carriage,
+                                                });
+                                                last_percent_terminal = percent;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if !is_progress_line {
+                                    // The user requested maximum transparency, so we forward ALL output directly
+                                    let _ = sender_stderr.send(DownloadEvent::Log {
+                                        id: id_stderr.clone(),
+                                        message: line.clone(),
+                                        level: "stderr".to_string(),
+                                        is_replace: is_carriage,
+                                    });
+
+                                    // Keep last 20 lines for error reporting
+                                    if error_buffer.len() >= 20 {
+                                        error_buffer.pop_front();
+                                    }
+                                    error_buffer.push_back(line);
+                                }
+                            }
                         } else {
-                            "Downloading & Trimming..."
-                        };
-
-                        // Throttle: only send if changed by at least 1%
-                        if (percent - last_percent).abs() > 1.0 {
-                            // Parse speed from same line if available
-                            let speed_str = FFMPEG_SPEED_RE
-                                .captures(&line)
-                                .and_then(|c| c.get(1))
-                                .map(|m| format!("{}x", m.as_str()))
-                                .unwrap_or_else(|| "N/A".to_string());
-
-                            let remaining_secs =
-                                ((1.0 - trim_progress) * stderr_clip_duration) as u64;
-
-                            let _ = sender_stderr.send(DownloadEvent::Progress {
-                                id: id_stderr.clone(),
-                                percent,
-                                speed: speed_str,
-                                eta: if remaining_secs > 0 {
-                                    format!("~{}s", remaining_secs)
-                                } else {
-                                    "Finishing...".to_string()
-                                },
-                                total_size: "N/A".to_string(),
-                                status: status_text.to_string(),
-                                speed_raw: None,
-                                eta_raw: Some(remaining_secs),
-                            });
-                            last_percent = percent;
+                            line_acc.push(c);
                         }
                     }
                 }
+                Err(_) => break,
             }
-
-            // Keep last 20 lines for error reporting
-            if error_buffer.len() >= 20 {
-                error_buffer.pop_front();
-            }
-            error_buffer.push_back(line);
         }
         error_buffer
     });
@@ -616,6 +695,7 @@ pub async fn download_media_internal(
                             "JavaScript Challenge failed. Retrying without external JS runtime..."
                                 .to_string(),
                         level: "warning".to_string(),
+                        is_replace: false,
                     });
                     // Disable JS Runtime for next attempt
                     current_options.disable_js_runtime = Some(true);
@@ -637,6 +717,7 @@ pub async fn download_media_internal(
                             "YouTube anti-bot detection triggered. Retrying with different client..."
                                 .to_string(),
                         level: "warning".to_string(),
+                        is_replace: false,
                     });
                 } else if error_lower.contains("error number -138")
                     || error_lower.contains("timed out")
@@ -644,10 +725,10 @@ pub async fn download_media_internal(
                 {
                     let _ = sender.send(DownloadEvent::Log {
                         id: id.clone(),
-                        message: "Connection timed out. Retrying...".to_string(),
+                        message: format!("Command aborted: {}", id),
                         level: "warning".to_string(),
-                    });
-                    // Could increase timeout here if we tracked it in options
+                        is_replace: false,
+                    });             // Could increase timeout here if we tracked it in options
                 } else {
                     // Unknown error, break and fail
                     // We suppressed the error event, so we must send it now

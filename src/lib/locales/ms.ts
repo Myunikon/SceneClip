@@ -15,7 +15,8 @@ export const ms = {
         logs: "Log",
         remove: "Buang",
         retry: "Cuba Lagi",
-        unknown: "Tidak Diketahui"
+        unknown: "Tidak Diketahui",
+        view_terminal: "Lihat Terminal"
     },
     error_boundary: {
         title: "Ada masalah berlaku.",
@@ -1046,7 +1047,10 @@ export const ms = {
         copy: "Salin",
         copy_line: "Salin Baris",
         ready: "Sistem siap. Menunggu tugas...",
-        no_logs: "Tidak ada log {{filter}} ditemukan."
+        no_logs: "Tidak ada log {{filter}} ditemukan.",
+        no_output: "Menunggu output...",
+        no_output_hint: "Output akan muncul di sini apabila proses bermula",
+        dev_hint: "Output proses mentah untuk penyahpepijatan"
     },
 
     // ETA Human-Readable Translations (i18next pluralization)

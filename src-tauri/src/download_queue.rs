@@ -722,6 +722,12 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                     pid,
                                     ..
                                 } => {
+                                    // Emit live terminal output for developer mode
+                                    let _ = app_monitor.emit("task_output", serde_json::json!({
+                                        "taskId": task_id,
+                                        "line": format!("[Process] Started with PID: {}", pid),
+                                        "level": "info"
+                                    }));
                                     state_monitor.update_task(&task_id, |t| {
                                         t.pid = Some(pid);
                                         t.status_detail = Some("Downloading...".to_string());
@@ -734,6 +740,14 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                     file_path,
                                     ..
                                 } => {
+                                    // Emit live terminal output for developer mode
+                                    if let Some(ref cmd) = ytdlp_command {
+                                        let _ = app_monitor.emit("task_output", serde_json::json!({
+                                            "taskId": task_id,
+                                            "line": format!("$ {}", cmd),
+                                            "level": "info"
+                                        }));
+                                    }
                                     state_monitor.update_task(&task_id, |t| {
                                         if let Some(ti) = title {
                                             t.title = ti;
@@ -839,6 +853,12 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                 crate::commands::download::DownloadEvent::Error {
                                     message, ..
                                 } => {
+                                    // Emit live terminal output for developer mode
+                                    let _ = app_monitor.emit("task_output", serde_json::json!({
+                                        "taskId": task_id,
+                                        "line": format!("[ERROR] {}", message),
+                                        "level": "error"
+                                    }));
                                     // AUTO-RETRY LOGIC
                                     let mut should_retry = false;
                                     let mut delay = 0;
@@ -916,6 +936,12 @@ pub async fn start_queue_processor(app: AppHandle, state: Arc<QueueState>) {
                                     level,
                                     ..
                                 } => {
+                                    // Emit live terminal output for developer mode
+                                    let _ = app_monitor.emit("task_output", serde_json::json!({
+                                        "taskId": task_id,
+                                        "line": message,
+                                        "level": level
+                                    }));
                                     if level == "warning" || level == "error" {
                                         state_monitor.update_task(&task_id, |t| {
                                             if matches!(t.status, TaskStatus::Paused | TaskStatus::Stopped) {

@@ -16,7 +16,8 @@ export const en = {
         remove: "Remove",
         delete: "Delete",
         retry: "Retry",
-        unknown: "Unknown"
+        unknown: "Unknown",
+        view_terminal: "View Terminal"
     },
     error_boundary: {
         title: "Something went wrong.",
@@ -1023,6 +1024,9 @@ export const en = {
         copy_line: "Copy Line",
         ready: "System ready. Waiting for tasks...",
         no_logs: "No {{filter}} logs found.",
+        no_output: "Waiting for output...",
+        no_output_hint: "Output will appear here when the process starts",
+        dev_hint: "Raw process output for debugging"
     },
 
     empty_state: {

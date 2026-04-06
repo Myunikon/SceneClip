@@ -735,7 +735,31 @@ export const en = {
         batch_import_btn: "Batch Import from File",
         batch_imported_title: "Batch Imported",
         batch_imported_desc: "{{count}} URLs copied to clipboard. Paste in generic dialog.",
-        import_failed: "Import Failed"
+        import_failed: "Import Failed",
+        error_explanation: {
+            title: "Error Analysis",
+            youtube_timeout_bot: {
+                title: "FFmpeg Blocked (YouTube Anti-Bot)",
+                description: "Error `-138` (Connection Timed Out) occurs because YouTube's servers actively blocked the connection.",
+                points: {
+                    p1: "You used the clip feature (`--download-sections`), which delegates the raw download to FFmpeg.",
+                    p2: "While yt-dlp easily bypasses bot checks, FFmpeg has a generic signature that YouTube immediately flags.",
+                    p3: "The request is forcefully disconnected by the server, resulting in the timeout."
+                },
+                workarounds_title: "How to fix this:",
+                workaround_1: "**Download full, cut later:** Download the entire video natively, then trim it locally.",
+                workaround_2: "**Network settings:** Try turning off persistent connections (`-http_persistent 0`).",
+                workaround_3: "**Proxy/VPN:** A VPN or restarting your modem can sometimes reset the IP ban."
+            },
+            generic: {
+                title: "Download Failed",
+                description: "An unexpected error occurred during the download process. Please view the terminal for detailed logs, or try again later.",
+                workarounds_title: "Suggestions:",
+                workaround_1: "Check your internet connection.",
+                workaround_2: "Ensure you are using the latest version of yt-dlp via updater.",
+                workaround_3: "Try downloading a different resolution or format."
+            }
+        }
     },
     updater_banner: {
         update_available: "yt-dlp update available:",

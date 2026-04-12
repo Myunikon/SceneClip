@@ -1220,6 +1220,12 @@ pub async fn build_ytdlp_args(
     if settings.embed_thumbnail && !is_clipping {
         args.push("--embed-thumbnail".to_string());
 
+        // Pre-convert thumbnails to PNG to avoid "Filter not found" errors
+        // when FFmpeg lacks the WebP decoder (libwebp). This ensures the
+        // ThumbnailsConvertor crop step receives a universally-supported format.
+        args.push("--convert-thumbnails".to_string());
+        args.push("png".to_string());
+
         // Aesthetic Fix: Auto-cropping (square) for audio thumbnails
         if fmt == "mp3"
             || fmt == "m4a"
@@ -1230,7 +1236,7 @@ pub async fn build_ytdlp_args(
             || fmt == "audio"
         {
             args.push("--ppa".to_string());
-            args.push("ThumbnailsConvertor:-vf crop=min(iw\\,ih):min(iw\\,ih)".to_string());
+            args.push("ThumbnailsConvertor:-vf crop=min(iw\\\\,ih):min(iw\\\\,ih)".to_string());
         }
     }
     if (settings.embed_chapters || settings.use_metadata_enhancer) && !is_clipping {

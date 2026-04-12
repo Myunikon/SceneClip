@@ -1226,18 +1226,6 @@ pub async fn build_ytdlp_args(
         args.push("--convert-thumbnails".to_string());
         args.push("png".to_string());
 
-        // Aesthetic Fix: Auto-cropping (square) for audio thumbnails
-        if fmt == "mp3"
-            || fmt == "m4a"
-            || fmt == "flac"
-            || fmt == "wav"
-            || fmt == "opus"
-            || fmt == "aac"
-            || fmt == "audio"
-        {
-            args.push("--ppa".to_string());
-            args.push("ThumbnailsConvertor:-vf crop=min(iw\\\\,ih):min(iw\\\\,ih)".to_string());
-        }
     }
     if (settings.embed_chapters || settings.use_metadata_enhancer) && !is_clipping {
         args.push("--embed-chapters".to_string());

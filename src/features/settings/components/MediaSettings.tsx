@@ -1,12 +1,10 @@
 import { useState } from 'react'
 import { useTranslation, Trans } from 'react-i18next'
-import { Select } from '@/components/ui'
-import { Switch } from '@/components/ui'
+import { Select, Switch, Input, Tooltip, TooltipContent, TooltipTrigger, OverflowTooltip } from '@/components/ui'
 import { AppSettings } from '@/store/slices/types'
 import { PostProcessorPreset } from '@/types'
 import { SettingItem, SettingSection } from './SettingItem'
 import { Check, Plus, Trash2, X, Sliders } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipTrigger, OverflowTooltip } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 
@@ -329,9 +327,7 @@ export function MediaSettings({ settings, setSetting }: MediaSettingsProps) {
                             <div className="grid grid-cols-3 gap-4">
                                 <div className="col-span-2 space-y-1.5">
                                     <label className="text-xs font-medium text-muted-foreground">{t('settings.quality.presets.name_label')}</label>
-                                    <input
-                                        type="text"
-                                        className="w-full bg-background border border-input rounded-md px-3 py-1.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-muted-foreground/50"
+                                    <Input
                                         placeholder={t('settings.quality.presets.placeholder_name')}
                                         value={newPreset.name}
                                         onChange={e => setNewPreset({ ...newPreset, name: e.target.value })}
@@ -355,9 +351,8 @@ export function MediaSettings({ settings, setSetting }: MediaSettingsProps) {
 
                             <div className="space-y-1.5">
                                 <label className="text-xs font-medium text-muted-foreground">{t('settings.quality.presets.args_label')}</label>
-                                <input
-                                    type="text"
-                                    className="w-full font-mono bg-background border border-input rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-muted-foreground/50"
+                                <Input
+                                    className="font-mono"
                                     placeholder={t('settings.quality.presets.placeholder_args')}
                                     value={newPreset.args}
                                     onChange={e => setNewPreset({ ...newPreset, args: e.target.value })}
@@ -366,9 +361,7 @@ export function MediaSettings({ settings, setSetting }: MediaSettingsProps) {
 
                             <div className="space-y-1.5">
                                 <label className="text-xs font-medium text-muted-foreground">{t('settings.quality.presets.desc_label')}</label>
-                                <input
-                                    type="text"
-                                    className="w-full bg-background border border-input rounded-md px-3 py-1.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-muted-foreground/50"
+                                <Input
                                     placeholder={t('settings.quality.presets.placeholder_desc')}
                                     value={newPreset.description}
                                     onChange={e => setNewPreset({ ...newPreset, description: e.target.value })}

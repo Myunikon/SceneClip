@@ -1,7 +1,7 @@
 import * as React from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { useFloating, autoUpdate, offset, flip, shift, useHover, useFocus, useDismiss, useRole, useInteractions, FloatingPortal } from '@floating-ui/react'
-import { cn } from "../../lib/utils"
+import { cn } from "@/lib/utils"
 
 // --- Contexts ---
 
@@ -140,14 +140,6 @@ function useMergeRefs<T>(...refs: (React.Ref<T> | undefined)[]) {
 export const TooltipTrigger = React.forwardRef<HTMLElement, React.HTMLProps<HTMLElement> & { asChild?: boolean }>(
     ({ children, asChild, ...props }, propRef) => {
         const context = useTooltip()
-
-        // Remove unsafe useMemo + casting
-        // Using React.isValidElement to check for children is good, but accessing .ref directly is unsafe in TypeScript
-        // However, for "asChild" pattern, we need to merge refs.
-
-        // Fix: Simply use the propRef and context ref. 
-        // We rely on React.cloneElement to pass the ref down if asChild is used.
-        // For strict type safety, we treat children as ReactElement.
 
         const mergedRef = useMergeRefs(context.refs.setReference, propRef, (children as any)?.ref)
 

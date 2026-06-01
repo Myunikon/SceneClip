@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import { Switch } from '@/components/ui'
-import { Select } from '@/components/ui' // Reused for "Insert Variable"
+import { Switch, Select, Input } from '@/components/ui'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { useTranslation } from 'react-i18next'
 import { AppSettings } from '@/store/slices/types'
@@ -152,8 +151,8 @@ export function DownloadSettings({ settings, setSetting }: DownloadSettingsProps
                             </div>
                         </div>
 
-                        <input
-                            className="w-full p-2.5 rounded-lg border bg-background text-sm font-mono focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-muted-foreground/50 shadow-sm"
+                        <Input
+                            className="font-mono"
                             value={settings.filenameTemplate}
                             onChange={e => setSetting('filenameTemplate', e.target.value)}
                             placeholder="{title}"

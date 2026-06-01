@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
-import { cn } from '../../lib/utils'
+import { cn } from '@/lib/utils'
 
 interface SliderProps {
     min: number

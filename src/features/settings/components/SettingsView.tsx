@@ -1,3 +1,4 @@
+/* eslint-disable react-compiler/react-compiler */
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Globe, Palette, HardDrive, Film, Info, FileClock, Cpu } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -26,6 +27,7 @@ interface SidebarButtonProps {
 }
 
 function SidebarButton({ tab, isActive, onClick, buttonRef, onKeyDown }: SidebarButtonProps) {
+    "use no memo";
     const [isEnabled, setIsEnabled] = useState(false)
     const localRef = useRef<HTMLButtonElement>(null)
     const textRef = useRef<HTMLSpanElement>(null)
@@ -34,7 +36,10 @@ function SidebarButton({ tab, isActive, onClick, buttonRef, onKeyDown }: Sidebar
     const setRef = (element: HTMLButtonElement | null) => {
         (localRef as React.MutableRefObject<HTMLButtonElement | null>).current = element
         if (typeof buttonRef === 'function') buttonRef(element)
-        else if (buttonRef) (buttonRef as React.MutableRefObject<HTMLButtonElement | null>).current = element
+        else if (buttonRef) {
+            const r = buttonRef as any
+            r.current = element
+        }
     }
 
     useEffect(() => {

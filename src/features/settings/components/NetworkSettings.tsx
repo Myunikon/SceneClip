@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Switch, Select, Slider, Button } from '@/components/ui'
+import { Switch, Select, Slider, Button, Input, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui'
 import { AppSettings } from '@/store/slices/types'
 import { SettingItem, SettingSection } from './SettingItem'
 import { Key, FolderOpen, X } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { cn } from '@/lib/utils'
+
 
 import { validateUrlBackend } from '@/lib/validators'
 
@@ -58,17 +57,13 @@ export function NetworkSettings({ settings, setSetting }: NetworkSettingsProps) 
 
                     {/* Speed Limit */}
                     <SettingItem title={t('settings.network.speed_limit')} layout="vertical">
-                        <div className="relative">
-                            <input
-                                className="w-full p-2.5 rounded-lg border border-input bg-background/80 font-mono text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/50"
+                            <Input
+                                className="font-mono pr-12"
                                 value={settings.speedLimit}
                                 onChange={(e) => setSetting('speedLimit', e.target.value)}
                                 placeholder="0"
+                                suffix={<span className="text-xs text-muted-foreground/50">KB/s</span>}
                             />
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
-                                KB/s
-                            </div>
-                        </div>
                     </SettingItem>
                 </div>
             </SettingSection>
@@ -77,13 +72,9 @@ export function NetworkSettings({ settings, setSetting }: NetworkSettingsProps) 
                 <div className="space-y-4">
                     {/* Proxy */}
                     <SettingItem title={t('settings.network.proxy') || "Proxy Server"} layout="vertical">
-                        <input
-                            className={cn(
-                                "w-full p-2.5 rounded-lg border bg-background/80 font-mono text-sm focus:ring-2 transition-all placeholder:text-muted-foreground/50",
-                                proxyError
-                                    ? "border-red-500 focus:ring-red-500/20 focus:border-red-500"
-                                    : "border-input focus:ring-primary/20 focus:border-primary"
-                            )}
+                        <Input
+                            className="font-mono"
+                            error={proxyError}
                             value={settings.proxy}
                             onChange={(e) => {
                                 setSetting('proxy', e.target.value)
@@ -101,8 +92,8 @@ export function NetworkSettings({ settings, setSetting }: NetworkSettingsProps) 
 
                     {/* User Agent */}
                     <SettingItem title={t('settings.network.user_agent')} layout="vertical">
-                        <input
-                            className="w-full p-2.5 rounded-lg border border-input bg-background/80 font-mono text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/50"
+                        <Input
+                            className="font-mono"
                             value={settings.userAgent || ''}
                             onChange={(e) => setSetting('userAgent', e.target.value)}
                             placeholder={t('settings.network.placeholders.ua') || "Default Chrome"}
@@ -137,9 +128,7 @@ export function NetworkSettings({ settings, setSetting }: NetworkSettingsProps) 
                                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                     {t('settings.advanced.content_enhancements.po_token_label')}
                                 </label>
-                                <input
-                                    type="text"
-                                    className="w-full bg-secondary/50 border border-border/50 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                                <Input
                                     placeholder={t('settings.advanced.content_enhancements.po_token_placeholder')}
                                     value={settings.poToken || ''}
                                     onChange={(e) => setSetting('poToken', e.target.value)}
@@ -149,9 +138,7 @@ export function NetworkSettings({ settings, setSetting }: NetworkSettingsProps) 
                                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                     {t('settings.advanced.content_enhancements.visitor_data_label') || "Visitor Data"}
                                 </label>
-                                <input
-                                    type="text"
-                                    className="w-full bg-secondary/50 border border-border/50 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                                <Input
                                     placeholder={t('settings.advanced.content_enhancements.visitor_data_placeholder')}
                                     value={settings.visitorData || ''}
                                     onChange={(e) => setSetting('visitorData', e.target.value)}
@@ -209,11 +196,8 @@ export function NetworkSettings({ settings, setSetting }: NetworkSettingsProps) 
                             >
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
-                                        <input
-                                            className={cn(
-                                                "w-full p-2.5 rounded-xl border font-mono text-xs shadow-sm transition-all outline-none pr-10",
-                                                "bg-secondary/30 focus:bg-background border-input focus:ring-2 focus:ring-primary/20"
-                                            )}
+                                        <Input
+                                            className="font-mono pr-10 text-xs"
                                             value={settings.cookiePath || ''}
                                             readOnly
                                             placeholder={t('settings.advanced.no_file')}

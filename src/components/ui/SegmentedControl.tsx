@@ -1,6 +1,6 @@
 import { motion } from "framer-motion"
 import { ComponentType, useId } from "react"
-import { cn } from "../../lib/utils"
+import { cn } from "@/lib/utils"
 
 interface Option {
     value: string

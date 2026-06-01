@@ -1,5 +1,5 @@
 import { Sparkles } from 'lucide-react'
-import { useAddDialogContext } from '../dialogs/add-dialog/AddDialogContext'
+import { useAddDialogContext } from '@/features/downloads/components/add-dialog/AddDialogContext'
 import { OptionCard, ChoiceGroup } from './CommonSettings'
 import { cn } from '../../lib/utils'
 
@@ -63,7 +63,6 @@ export function SelectDownloadType() {
                             ]}
                         />
                         <div className="text-[10px] text-orange-600 dark:text-yellow-500/80 bg-orange-500/5 dark:bg-yellow-500/5 p-2 rounded-lg border border-orange-500/20 dark:border-yellow-500/10 flex items-center gap-2">
-                            <span className="shrink-0">⚠️</span>
                             <span>GIFs are limited to 480p to prevent huge file sizes and crashes.</span>
                         </div>
                     </OptionCard>
@@ -213,7 +212,7 @@ export function SelectDownloadType() {
                         if (!isSelectedAvailable) {
                             // Short & clear warning
                             const warnText = t('dialog.codec.reencode_short') || "Re-encode required"
-                            codecDesc = `⚠️ ${warnText} (${codecDesc})`
+                            codecDesc = `${warnText} (${codecDesc})`
                         }
 
                         return (

@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronsUpDown, Check } from 'lucide-react'
-import { cn } from '../../lib/utils'
-import { useDropdown } from '../../hooks/useDropdown'
+import { cn } from '@/lib/utils'
+import { useDropdown } from '@/hooks/useDropdown'
 
 interface Option {
     value: string

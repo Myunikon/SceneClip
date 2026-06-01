@@ -68,7 +68,7 @@ export function useBackendLogs() {
                     try {
                         // Call original console method first
                         originalFn.apply(console, args)
-                    } catch (e) {
+                    } catch {
                         // Ignore errors in original console (rare)
                     }
 
@@ -122,7 +122,7 @@ export function useBackendLogs() {
                             source,
                             stackTrace
                         })
-                    } catch (err) {
+                    } catch {
                         // Failsafe: if interception fails, don't break the app
                         if (originalConsole.current?.error) {
                             // We can't log to console because we intercepted it!

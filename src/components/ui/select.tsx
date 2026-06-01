@@ -1,15 +1,15 @@
-import { useEffect } from 'react'
+import React, { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronDown, Check } from 'lucide-react'
-import { cn } from '../../lib/utils'
-import { useDropdown } from '../../hooks/useDropdown'
+import { cn } from '@/lib/utils'
+import { useDropdown } from '@/hooks/useDropdown'
 
 interface Option {
     value: string
     label: string
 }
 
-interface SelectProps {
+export interface SelectProps {
     value: string
     onChange: (value: string) => void
     options: Option[]
@@ -91,6 +91,10 @@ export function Select({ value, onChange, options, placeholder, className, disab
                 type="button"
                 onClick={() => !disabled && toggle()}
                 onKeyDown={handleKeyDown}
+                role="combobox"
+                aria-expanded={isOpen}
+                aria-haspopup="listbox"
+                aria-controls="select-listbox"
                 className={cn(
                     "w-full flex items-center justify-between px-3 h-10 text-sm rounded-lg border focus:outline-none transition-all focus:ring-2 focus:ring-primary/50",
                     "bg-white hover:bg-secondary/40 border-neutral-300 dark:border-white/10 hover:border-primary/30",
@@ -101,12 +105,15 @@ export function Select({ value, onChange, options, placeholder, className, disab
                 )}
             >
                 <span className={cn("truncate", !selectedOption && "text-muted-foreground")}>{displayLabel}</span>
-                <ChevronDown className={cn("w-4 h-4 opacity-50", isOpen && "rotate-180")} strokeWidth={1.5} />
+                <ChevronDown className={cn("w-4 h-4 opacity-50 transition-transform duration-200", isOpen && "rotate-180")} strokeWidth={1.5} />
             </button>
 
             {isOpen && coords && createPortal(
                 <div
                     ref={listRef}
+                    id="select-listbox"
+                    role="listbox"
+                    aria-label={placeholder || "Select option"}
                     className="fixed z-[9999] mt-1 overflow-hidden rounded-xl border border-border/50 bg-popover/95 backdrop-blur-xl shadow-xl animate-in fade-in duration-150"
                     style={{
                         top: coords.top,
@@ -120,6 +127,9 @@ export function Select({ value, onChange, options, placeholder, className, disab
                             <button
                                 key={option.value}
                                 type="button"
+                                role="option"
+                                aria-selected={option.value === value}
+                                tabIndex={-1}
                                 onClick={() => {
                                     onChange(option.value)
                                     close()

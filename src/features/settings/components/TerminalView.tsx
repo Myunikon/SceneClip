@@ -6,8 +6,7 @@ import { writeText } from '@tauri-apps/plugin-clipboard-manager'
 import { save } from '@tauri-apps/plugin-dialog'
 import { writeTextFile } from '@tauri-apps/plugin-fs'
 import { notify } from '@/lib/notify'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Button, Input } from '@/components/ui'
 import { useTranslation } from 'react-i18next'
 import { LogEntry, LogLevel } from '@/store/slices/types'
 
@@ -231,14 +230,14 @@ export function TerminalView() {
                     </div>
 
                     {/* Search */}
-                    <div className="flex-1 relative group">
-                        <Search className="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-primary transition-colors" />
-                        <input
+                    <div className="flex-1 relative group text-zinc-300">
+                        <Input
                             type="text"
+                            icon={<Search className="w-3 h-3" />}
                             placeholder="Search logs..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-zinc-900/50 border border-white/5 rounded py-1 pl-7 pr-2 outline-none focus:border-primary/30 focus:bg-zinc-900 transition-all text-[10px]"
+                            className="h-7 pl-7 text-[10px] bg-zinc-900/50 border-white/5 focus:bg-zinc-900 focus:border-primary/30 text-zinc-300"
                         />
                     </div>
                 </div>

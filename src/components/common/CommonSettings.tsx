@@ -269,11 +269,7 @@ export function ChoiceGroup<T extends string | number | undefined>({
                                         </div>
                                     )}
 
-                                    {opt.recommended && (
-                                        <div className="absolute -top-1 -right-1">
-                                            <Star className="w-2.5 h-2.5 text-yellow-500 fill-yellow-500" />
-                                        </div>
-                                    )}
+
                                 </button>
                             </TooltipTrigger>
                             {opt.title && (

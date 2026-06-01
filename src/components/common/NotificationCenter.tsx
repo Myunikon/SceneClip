@@ -27,7 +27,7 @@ export function NotificationCenter() {
     // Filter out 'info' logs (debug/verbose) and map strictly to "important" events
     const logsWithIndex = logs.map((log, idx) => ({ ...log, originalIndex: idx }))
     const recentLogs = logsWithIndex
-        .filter(log => log.level !== 'info') // User req: only important events (error, warning, success)
+        .filter(log => ['success', 'warning', 'error'].includes(log.level)) // Only show important events (error, warning, success)
         .reverse()
         .slice(0, 50)
 

@@ -585,7 +585,7 @@ export const en = {
             trim_required: "Trim Required",
             max_duration: "Max 30s",
             trim_desc: "GIF format requires trimming. Select a short clip (max 30 seconds) for best results.",
-            too_long: "Clip is too long! Max {{max}}s for GIF. Current: {{current}}s",
+            too_long: "Clip is too long. Max {{max}}s for GIF. Current: {{current}}s",
         },
 
         // Clip section

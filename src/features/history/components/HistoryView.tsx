@@ -21,8 +21,8 @@ import {
 import { openPath } from '@tauri-apps/plugin-opener'
 import { exists } from '@tauri-apps/plugin-fs'
 
-import { CommandModal, ConfirmDialog } from '@/components/dialogs'
-import { CompressDialog } from '@/components/dialogs'
+import { ConfirmDialog } from '@/components/ui'
+import { CommandModal, CompressDialog } from '@/features/downloads/components'
 import { parseSize, cn } from '@/lib/utils'
 import { SegmentedControl } from '@/components/ui'
 import { HistoryItem } from './HistoryItem'

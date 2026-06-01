@@ -1,11 +1,10 @@
 import { Terminal, History, Database, Monitor, Music, FolderOpen, Loader2, X } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger, Select, Switch, Button, Input } from '@/components/ui'
 import { useTranslation } from 'react-i18next'
-import { Select, Switch, Button } from '@/components/ui'
 import { AppSettings } from '@/store/slices/types'
 import { useAppStore } from '@/store'
 import { SettingItem, SettingSection } from './SettingItem'
-import { ConfirmationModal } from '@/components/dialogs'
+import { ConfirmationModal } from '@/components/ui'
 import { useState, useEffect } from 'react'
 import { notify } from '@/lib/notify'
 import { validateBinary, detectBinaryType } from '@/lib/binary-validator'
@@ -126,15 +125,13 @@ function BinaryPathInput({ label, value, onChange, description, expectedType }: 
         <SettingItem title={label} layout="vertical" description={description}>
             <div className="flex gap-2">
                 <div className="relative flex-1">
-                    <input
+                    <Input
                         className={cn(
-                            "w-full p-2.5 rounded-xl border font-mono text-xs shadow-sm transition-all outline-none",
-                            "bg-secondary/30 focus:bg-background",
+                            "font-mono text-xs",
                             status.isValid === true && "ring-2 ring-emerald-500/50 border-emerald-500/50 bg-emerald-500/5",
-                            status.isValid === false && "ring-2 ring-red-500/50 border-red-500/50 bg-red-500/5",
-                            status.isValid === null && "border-input focus:ring-2 focus:ring-primary/20",
                             status.loading && "opacity-70"
                         )}
+                        error={status.isValid === false}
                         value={value}
                         onChange={e => {
                             onChange(e.target.value)

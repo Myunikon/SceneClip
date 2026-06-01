@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { cn } from '../../lib/utils'
+import { cn } from '@/lib/utils'
 
 interface RangeSliderProps {
     duration: number // in seconds

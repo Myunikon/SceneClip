@@ -6,7 +6,7 @@ export interface LanguageOption {
     label: string
 }
 
-export interface ParsedMetadata extends VideoMeta { }
+export type ParsedMetadata = VideoMeta
 
 /**
  * Parses raw yt-dlp JSON metadata using the Rust backend.

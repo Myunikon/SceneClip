@@ -8,8 +8,7 @@ import { AppSettings } from '@/store/slices/types'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
 import { SettingSection } from './SettingItem'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Button, Input } from '@/components/ui'
 import { extractHostname } from '@/lib/validators'
 
 
@@ -296,48 +295,42 @@ export function KeyringManager({ settings, setSetting }: KeyringManagerProps) {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-medium text-muted-foreground ml-1">{t('settings.security.service_domain')}</label>
-                                        <div className="relative group">
-                                            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                            <input
-                                                className="w-full pl-9 p-2.5 rounded-lg border border-input bg-background/80 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-muted-foreground/50 shadow-sm"
+                                            <Input
+                                                icon={<Globe className="w-4 h-4" />}
                                                 placeholder={t('settings.security.service_placeholder') || "e.g. crunchyroll.com"}
                                                 value={service}
                                                 onChange={e => setService(e.target.value)}
                                                 autoFocus
                                             />
-                                        </div>
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-medium text-muted-foreground ml-1">{t('settings.security.username')}</label>
-                                        <div className="relative group">
-                                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                            <input
-                                                className="w-full pl-9 p-2.5 rounded-lg border border-input bg-background/80 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-muted-foreground/50 shadow-sm"
+                                            <Input
+                                                icon={<User className="w-4 h-4" />}
                                                 placeholder={t('settings.security.username_placeholder') || "user@example.com"}
                                                 value={username}
                                                 onChange={e => setUsername(e.target.value)}
                                             />
-                                        </div>
                                     </div>
                                     <div className="col-span-1 md:col-span-2 space-y-1.5">
                                         <label className="text-xs font-medium text-muted-foreground ml-1">{t('settings.security.password')}</label>
-                                        <div className="relative group">
-                                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                            <input
-                                                className="w-full pl-9 p-2.5 rounded-lg border border-input bg-background/80 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all pr-10 placeholder:text-muted-foreground/50 shadow-sm"
+                                            <Input
+                                                icon={<Lock className="w-4 h-4" />}
+                                                className="pr-10"
                                                 placeholder={t('settings.security.password_placeholder') || "Enter secure password"}
                                                 type={showPassword ? "text" : "password"}
                                                 value={password}
                                                 onChange={e => setPassword(e.target.value)}
+                                                suffix={
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPassword(!showPassword)}
+                                                        className="pointer-events-auto text-muted-foreground hover:text-foreground transition-colors p-1"
+                                                    >
+                                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                    </button>
+                                                }
                                             />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowPassword(!showPassword)}
-                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
-                                            >
-                                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                            </button>
-                                        </div>
                                     </div>
                                 </div>
 

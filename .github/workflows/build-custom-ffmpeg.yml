@@ -1,10 +1,9 @@
 name: Build Custom FFmpeg (Native Matrix)
-# "Diet Custom Build" - Built natively on each OS to ensure valid dependencies.
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 1 * *' # Monthly update
+    - cron: '0 0 1 * *' 
 
 jobs:
   build-ffmpeg:
@@ -17,9 +16,7 @@ jobs:
           # --- Windows (Native MSYS2) ---
           - os: windows-latest
             platform_name: win-x64
-            # Tauri sidecar name (must match MSVC triple used in release.yml)
             target_filename: ffmpeg-x86_64-pc-windows-msvc.exe 
-            # Use MSYS2 shell for building
             shell_type: "msys2 {0}"
             install_cmd: >-
               pacman -S --noconfirm --needed 
@@ -35,9 +32,11 @@ jobs:
               mingw-w64-x86_64-svt-av1 
               mingw-w64-x86_64-zlib 
               mingw-w64-x86_64-openssl
+            # 🔴 FIX: Moved static ldflags strictly to Windows
             configure_flags: >-
               --target-os=mingw32
               --arch=x86_64
+              --extra-ldflags="-static"
 
           # --- macOS (Native Apple Silicon) ---
           - os: macos-latest
@@ -68,7 +67,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # --- Setup MSYS2 (Windows Only) ---
       - name: Setup MSYS2 (Windows)
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2
@@ -88,16 +86,15 @@ jobs:
       - name: Configure (Diet Build)
         working-directory: ffmpeg-src
         run: |
-          # Set PKG_CONFIG_PATH for macOS (Homebrew)
           if [ "$RUNNER_OS" == "macOS" ]; then
              export PKG_CONFIG_PATH="/opt/homebrew/opt/openssl@3/lib/pkgconfig:$PKG_CONFIG_PATH"
           fi
 
+          # 🔴 FIX: Removed `--extra-ldflags="-static"` from global configuration
           ./configure \
             ${{ matrix.configure_flags }} \
             --pkg-config-flags="--static" \
             --extra-cflags="-Os" \
-            --extra-ldflags="-static" \
             --disable-debug \
             --disable-doc \
             --disable-ffplay \
@@ -126,7 +123,6 @@ jobs:
           echo "Original Size:"
           ls -rhS ffmpeg*
           
-          # Strip
           strip ffmpeg* || true
           
           echo "Final Size:"
@@ -135,7 +131,6 @@ jobs:
       - name: Rename to Tauri Target
         working-directory: ffmpeg-src
         run: |
-          # Find the binary (ffmpeg or ffmpeg.exe) and move it to the target name
           if [ -f "ffmpeg.exe" ]; then
              mv ffmpeg.exe ../${{ matrix.target_filename }}
           else
